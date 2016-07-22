@@ -16,6 +16,37 @@ done.
 
 > The only requirement is the Go Programming Language, at least v1.6
 
+## Hello, 世界
+
+Create a file named `hello.go`
+
+```go
+package main
+
+import (
+	"net/http"
+	"github.com/sheng/air"
+)
+
+func main() {
+	a := air.New()
+	a.GET("/", homeHandler)
+	a.Run(":8080")
+}
+
+func homeHandler(c air.Context) error {
+	return c.String(http.StatusOK, "Hello, 世界")
+}
+```
+
+and run it:
+
+```bash
+$ go run hello.go
+```
+
+then open your browser and visit `http://localhost:8000`.
+
 ## Community
 
 If you want to discuss this framework, or ask questions about it, simply post questions or ideas [here](https://github.com/sheng/air/issues).
