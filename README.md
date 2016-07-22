@@ -45,7 +45,7 @@ and run it:
 $ go run hello.go
 ```
 
-then open your browser and visit `http://localhost:8000`.
+then open your browser and visit `http://localhost:8080`.
 
 ## Community
 
