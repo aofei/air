@@ -8,6 +8,7 @@ type (
 		routes map[string]Route
 		air    *Air
 	}
+
 	node struct {
 		kind          kind
 		label         byte
@@ -18,8 +19,10 @@ type (
 		pnames        []string
 		methodHandler *methodHandler
 	}
-	kind          uint8
-	children      []*node
+
+	kind     uint8
+	children []*node
+
 	methodHandler struct {
 		get    HandlerFunc
 		post   HandlerFunc
