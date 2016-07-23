@@ -5,8 +5,6 @@ import (
 	"net/http"
 
 	"github.com/valyala/fasthttp"
-
-	"air/log"
 )
 
 type (
@@ -48,12 +46,12 @@ type (
 		size      int64
 		committed bool
 		writer    io.Writer
-		logger    log.Logger
+		logger    Logger
 	}
 )
 
 // NewResponse returns `FastResponse` instance.
-func NewResponse(c *fasthttp.RequestCtx, l log.Logger) *FastResponse {
+func NewResponse(c *fasthttp.RequestCtx, l Logger) *FastResponse {
 	return &FastResponse{
 		RequestCtx: c,
 		header:     &FastResponseHeader{ResponseHeader: &c.Response.Header},

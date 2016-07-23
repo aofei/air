@@ -13,8 +13,6 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
-
-	"air/log"
 )
 
 type (
@@ -173,7 +171,7 @@ type (
 		SetHandler(HandlerFunc)
 
 		// Logger returns the `Logger` instance.
-		Logger() *log.Logger
+		Logger() *Logger
 
 		// Air returns the `Air` instance.
 		Air() *Air
@@ -471,7 +469,7 @@ func (c *airContext) SetHandler(h HandlerFunc) {
 	c.handler = h
 }
 
-func (c *airContext) Logger() *log.Logger {
+func (c *airContext) Logger() *Logger {
 	return &c.air.logger
 }
 
