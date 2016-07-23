@@ -128,14 +128,7 @@ const (
 	DELETE = "DELETE"
 )
 
-var (
-	methods = [4]string{
-		GET,
-		POST,
-		PUT,
-		DELETE,
-	}
-)
+var methods = [4]string{GET, POST, PUT, DELETE}
 
 // Errors
 var (
@@ -268,54 +261,38 @@ func (a *Air) Debug() bool {
 	return a.debug
 }
 
-// Pre adds gas to the chain which is run before router.
-func (a *Air) Pre(gas ...GasFunc) {
-	a.pregases = append(a.pregases, gas...)
+// Precontain adds gases to the chain which is run before router.
+func (a *Air) Precontain(gases ...GasFunc) {
+	a.pregases = append(a.pregases, gases...)
 }
 
-// Use adds gas to the chain which is run after router.
-func (a *Air) Use(gas ...GasFunc) {
-	a.gases = append(a.gases, gas...)
+// Contain adds gases to the chain which is run after router.
+func (a *Air) Contain(gases ...GasFunc) {
+	a.gases = append(a.gases, gases...)
 }
 
 // GET registers a new GET route for a path with matching handler in the router
 // with optional route-level gases.
-func (a *Air) GET(path string, h HandlerFunc, m ...GasFunc) {
-	a.add(GET, path, h, m...)
+func (a *Air) GET(path string, handler HandlerFunc, gases ...GasFunc) {
+	a.add(GET, path, handler, gases...)
 }
 
 // POST registers a new POST route for a path with matching handler in the
 // router with optional route-level gases.
-func (a *Air) POST(path string, h HandlerFunc, m ...GasFunc) {
-	a.add(POST, path, h, m...)
+func (a *Air) POST(path string, handler HandlerFunc, gases ...GasFunc) {
+	a.add(POST, path, handler, gases...)
 }
 
 // PUT registers a new PUT route for a path with matching handler in the
 // router with optional route-level gases.
-func (a *Air) PUT(path string, h HandlerFunc, m ...GasFunc) {
-	a.add(PUT, path, h, m...)
+func (a *Air) PUT(path string, handler HandlerFunc, gases ...GasFunc) {
+	a.add(PUT, path, handler, gases...)
 }
 
 // DELETE registers a new DELETE route for a path with matching handler in the router
 // with optional route-level gases.
-func (a *Air) DELETE(path string, h HandlerFunc, m ...GasFunc) {
-	a.add(DELETE, path, h, m...)
-}
-
-// Any registers a new route for all HTTP methods and path with matching handler
-// in the router with optional route-level gases.
-func (a *Air) Any(path string, handler HandlerFunc, gases ...GasFunc) {
-	for _, m := range methods {
-		a.add(m, path, handler, gases...)
-	}
-}
-
-// Match registers a new route for multiple HTTP methods and path with matching
-// handler in the router with optional route-level gases.
-func (a *Air) Match(methods []string, path string, handler HandlerFunc, gases ...GasFunc) {
-	for _, m := range methods {
-		a.add(m, path, handler, gases...)
-	}
+func (a *Air) DELETE(path string, handler HandlerFunc, gases ...GasFunc) {
+	a.add(DELETE, path, handler, gases...)
 }
 
 // Static registers a new route with path prefix to serve static files from the
@@ -352,10 +329,10 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 }
 
 // Group creates a new router group with prefix and optional group-level gases.
-func (a *Air) Group(prefix string, m ...GasFunc) (g *Group) {
-	g = &Group{prefix: prefix, air: a}
-	g.Use(m...)
-	return
+func (a *Air) Group(prefix string, gases ...GasFunc) *Group {
+	g := &Group{prefix: prefix, air: a}
+	g.Contain(gases...)
+	return g
 }
 
 // URI generates a URI from handler.
@@ -384,8 +361,8 @@ func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 }
 
 // URL is an alias for `URI` function.
-func (a *Air) URL(h HandlerFunc, params ...interface{}) string {
-	return a.URI(h, params...)
+func (a *Air) URL(handler HandlerFunc, params ...interface{}) string {
+	return a.URI(handler, params...)
 }
 
 // Routes returns the registered routes.
@@ -413,7 +390,7 @@ func (a *Air) ServeHTTP(req Request, res Response) {
 	c := a.pool.Get().(*airContext)
 	c.Reset(req, res)
 
-	// Gas
+	// Gases
 	h := func(Context) error {
 		method := req.Method()
 		path := req.URL().Path()
@@ -464,10 +441,10 @@ func (he *HTTPError) Error() string {
 }
 
 // WrapGas wrap `HandlerFunc` into `GasFunc`.
-func WrapGas(h HandlerFunc) GasFunc {
+func WrapGas(handler HandlerFunc) GasFunc {
 	return func(next HandlerFunc) HandlerFunc {
 		return func(c Context) error {
-			if err := h(c); err != nil {
+			if err := handler(c); err != nil {
 				return err
 			}
 			return next(c)
@@ -475,10 +452,10 @@ func WrapGas(h HandlerFunc) GasFunc {
 	}
 }
 
-func handlerName(h HandlerFunc) string {
-	t := reflect.ValueOf(h).Type()
+func handlerName(handler HandlerFunc) string {
+	t := reflect.ValueOf(handler).Type()
 	if t.Kind() == reflect.Func {
-		return runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
+		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
 	}
 	return t.String()
 }
