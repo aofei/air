@@ -29,7 +29,7 @@ func (b *binder) Bind(i interface{}, c Context) (err error) {
 	}
 	ctype := req.Header().Get(HeaderContentType)
 	if req.Body() == nil {
-		err = NewHTTPError(http.StatusBadRequest, "request body can't be empty")
+		err = NewHTTPError(http.StatusBadRequest, "Request Body Can't Be Empty")
 		return
 	}
 	err = ErrUnsupportedMediaType
