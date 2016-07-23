@@ -1,4 +1,4 @@
-package log
+package air
 
 import (
 	"bytes"
@@ -18,7 +18,7 @@ import (
 type (
 	Logger struct {
 		prefix     string
-		level      Lvl
+		level      LoggerLevel
 		output     io.Writer
 		template   *fasttemplate.Template
 		levels     []string
@@ -26,13 +26,13 @@ type (
 		mutex      sync.Mutex
 	}
 
-	Lvl uint8
+	LoggerLevel uint8
 
 	JSON map[string]interface{}
 )
 
 const (
-	DEBUG Lvl = iota
+	DEBUG LoggerLevel = iota
 	INFO
 	WARN
 	ERROR
@@ -40,13 +40,10 @@ const (
 	OFF
 )
 
-var (
-	global        = New("-")
-	defaultHeader = `{"time":"${time_rfc3339}","level":"${level}","prefix":"${prefix}",` +
-		`"file":"${short_file}","line":"${line}"}`
-)
+var defaultHeader = `{"time":"${time_rfc3339}","level":"${level}","prefix":"${prefix}",` +
+	`"file":"${short_file}","line":"${line}"}`
 
-func New(prefix string) (l Logger) {
+func NewLogger(prefix string) (l Logger) {
 	l = Logger{
 		level:    INFO,
 		prefix:   prefix,
@@ -84,11 +81,11 @@ func (l *Logger) SetPrefix(p string) {
 	l.prefix = p
 }
 
-func (l *Logger) Level() Lvl {
+func (l *Logger) Level() LoggerLevel {
 	return l.level
 }
 
-func (l *Logger) SetLevel(v Lvl) {
+func (l *Logger) SetLevel(v LoggerLevel) {
 	l.level = v
 }
 
@@ -179,107 +176,7 @@ func (l *Logger) Fatalj(j JSON) {
 	l.log(FATAL, "json", j)
 }
 
-func Prefix() string {
-	return global.Prefix()
-}
-
-func SetPrefix(p string) {
-	global.SetPrefix(p)
-}
-
-func Level() Lvl {
-	return global.Level()
-}
-
-func SetLevel(v Lvl) {
-	global.SetLevel(v)
-}
-
-func Output() io.Writer {
-	return global.Output()
-}
-
-func SetOutput(w io.Writer) {
-	global.SetOutput(w)
-}
-
-func SetHeader(h string) {
-	global.SetHeader(h)
-}
-
-func Print(i ...interface{}) {
-	global.Print(i...)
-}
-
-func Printf(format string, args ...interface{}) {
-	global.Printf(format, args...)
-}
-
-func Printj(j JSON) {
-	global.Printj(j)
-}
-
-func Debug(i ...interface{}) {
-	global.Debug(i...)
-}
-
-func Debugf(format string, args ...interface{}) {
-	global.Debugf(format, args...)
-}
-
-func Debugj(j JSON) {
-	global.Debugj(j)
-}
-
-func Info(i ...interface{}) {
-	global.Info(i...)
-}
-
-func Infof(format string, args ...interface{}) {
-	global.Infof(format, args...)
-}
-
-func Infoj(j JSON) {
-	global.Infoj(j)
-}
-
-func Warn(i ...interface{}) {
-	global.Warn(i...)
-}
-
-func Warnf(format string, args ...interface{}) {
-	global.Warnf(format, args...)
-}
-
-func Warnj(j JSON) {
-	global.Warnj(j)
-}
-
-func Error(i ...interface{}) {
-	global.Error(i...)
-}
-
-func Errorf(format string, args ...interface{}) {
-	global.Errorf(format, args...)
-}
-
-func Errorj(j JSON) {
-	global.Errorj(j)
-}
-
-func Fatal(i ...interface{}) {
-	global.Fatal(i...)
-}
-
-func Fatalf(format string, args ...interface{}) {
-	global.Fatalf(format, args...)
-}
-
-func Fatalj(j JSON) {
-	global.Fatalj(j)
-}
-
-func (l *Logger) log(v Lvl, format string, args ...interface{}) {
+func (l *Logger) log(v LoggerLevel, format string, args ...interface{}) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	buf := l.bufferPool.Get().(*bytes.Buffer)
