@@ -14,7 +14,7 @@ $ go get github.com/sheng/air
 
 done.
 
-> The only requirement is the Go Programming Language, at least v1.6
+> The only requirement is the [Go](https://golang.org/dl/), at least v1.6
 
 ## Hello, 世界
 
@@ -46,6 +46,10 @@ $ go run hello.go
 ```
 
 then open your browser and visit `http://localhost:8080`.
+
+## Documention
+
+* [GoDoc](https://godoc.org/github.com/sheng/air)
 
 ## Community
 
