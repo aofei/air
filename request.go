@@ -6,8 +6,6 @@ import (
 	"mime/multipart"
 
 	"github.com/valyala/fasthttp"
-
-	"air/log"
 )
 
 type (
@@ -92,12 +90,12 @@ type (
 		*fasthttp.RequestCtx
 		header Header
 		url    URL
-		logger log.Logger
+		logger Logger
 	}
 )
 
 // NewRequest returns `FastRequest` instance.
-func NewRequest(c *fasthttp.RequestCtx, l log.Logger) *FastRequest {
+func NewRequest(c *fasthttp.RequestCtx, l Logger) *FastRequest {
 	return &FastRequest{
 		RequestCtx: c,
 		url:        &FastURL{URI: c.URI()},

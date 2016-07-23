@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/valyala/fasthttp"
-
-	"air/log"
 )
 
 type (
@@ -17,7 +15,7 @@ type (
 		SetHandler(Handler)
 
 		// SetLogger sets the logger for the HTTP server.
-		SetLogger(log.Logger)
+		SetLogger(Logger)
 
 		// Start starts the HTTP server.
 		Start() error
@@ -28,7 +26,7 @@ type (
 		*fasthttp.Server
 		config  Config
 		handler Handler
-		logger  log.Logger
+		logger  Logger
 		pool    *pool
 	}
 
@@ -117,7 +115,7 @@ func WithConfig(c Config) (s *FastServer) {
 		handler: FastHandlerFunc(func(req Request, res Response) {
 			s.logger.Error("handler not set, use `SetHandler()` to set it.")
 		}),
-		logger: log.New("air"),
+		logger: NewLogger("air"),
 	}
 	s.ReadTimeout = c.ReadTimeout
 	s.WriteTimeout = c.WriteTimeout
@@ -131,7 +129,7 @@ func (s *FastServer) SetHandler(h Handler) {
 }
 
 // SetLogger implements `Server#SetLogger` function.
-func (s *FastServer) SetLogger(l log.Logger) {
+func (s *FastServer) SetLogger(l Logger) {
 	s.logger = l
 }
 

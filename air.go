@@ -12,8 +12,6 @@ import (
 	"sync"
 
 	"golang.org/x/net/context"
-
-	"air/log"
 )
 
 type (
@@ -29,7 +27,7 @@ type (
 		pool             sync.Pool
 		debug            bool
 		router           *Router
-		logger           log.Logger
+		logger           Logger
 	}
 
 	// Route contains a handler and information for matching against requests.
@@ -170,8 +168,8 @@ func New() *Air {
 	// Defaults
 	a.SetHTTPErrorHandler(a.DefaultHTTPErrorHandler)
 	a.SetBinder(&binder{})
-	l := log.New("air")
-	l.SetLevel(log.ERROR)
+	l := NewLogger("air")
+	l.SetLevel(ERROR)
 	a.SetLogger(l)
 	return a
 }
@@ -194,12 +192,12 @@ func (a *Air) Router() *Router {
 }
 
 // Logger returns the logger instance.
-func (a *Air) Logger() log.Logger {
+func (a *Air) Logger() Logger {
 	return a.logger
 }
 
 // SetLogger defines a custom logger.
-func (a *Air) SetLogger(l log.Logger) {
+func (a *Air) SetLogger(l Logger) {
 	a.logger = l
 }
 
@@ -209,7 +207,7 @@ func (a *Air) SetLogOutput(w io.Writer) {
 }
 
 // SetLogLevel sets the log level for the logger. Default value ERROR.
-func (a *Air) SetLogLevel(l log.Lvl) {
+func (a *Air) SetLogLevel(l LoggerLevel) {
 	a.logger.SetLevel(l)
 }
 
@@ -253,7 +251,7 @@ func (a *Air) SetRenderer(r Renderer) {
 // SetDebug enable/disable debug mode.
 func (a *Air) SetDebug(on bool) {
 	a.debug = on
-	a.SetLogLevel(log.DEBUG)
+	a.SetLogLevel(DEBUG)
 }
 
 // Debug returns debug mode (enabled or disabled).
