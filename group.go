@@ -1,15 +1,13 @@
 package air
 
-type (
-	// Group is a set of sub-routes for a specified route. It can be used for inner
-	// routes that share a common gas or functionality that should be separate
-	// from the parent air instance while still inheriting from it.
-	Group struct {
-		prefix string
-		gases  []GasFunc
-		air    *Air
-	}
-)
+// Group is a set of sub-routes for a specified route. It can be used for inner
+// routes that share a common gas or functionality that should be separate
+// from the parent air instance while still inheriting from it.
+type Group struct {
+	prefix string
+	gases  []GasFunc
+	air    *Air
+}
 
 // Contain implements `Air#Contain()` for sub-routes within the Group.
 func (g *Group) Contain(gases ...GasFunc) {
