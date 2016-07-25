@@ -199,10 +199,6 @@ type (
 	}
 )
 
-const (
-	indexPage = "index.html"
-)
-
 func (c *airContext) Context() context.Context {
 	return c.context
 }
