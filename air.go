@@ -358,11 +358,6 @@ func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 	return uri.String()
 }
 
-// URL is an alias for `URI` function.
-func (a *Air) URL(handler HandlerFunc, params ...interface{}) string {
-	return a.URI(handler, params...)
-}
-
 // Routes returns the registered routes.
 func (a *Air) Routes() []Route {
 	routes := []Route{}
