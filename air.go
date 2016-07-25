@@ -63,6 +63,14 @@ type (
 	}
 )
 
+// HTTP methods (which follows the REST principles)
+const (
+	GET    = "GET"
+	POST   = "POST"
+	PUT    = "PUT" // The Air advise you to forget the PATCH.
+	DELETE = "DELETE"
+)
+
 // MIME types
 const (
 	MIMEApplicationJSON       = "application/json; charset=utf-8"
@@ -118,14 +126,7 @@ const (
 	HeaderXCSRFToken              = "X-CSRF-Token"
 )
 
-// HTTP methods (which follows the REST principles)
-const (
-	GET    = "GET"
-	POST   = "POST"
-	PUT    = "PUT" // The Air advise you to forget the PATCH.
-	DELETE = "DELETE"
-)
-
+// For easy for-range
 var methods = [4]string{GET, POST, PUT, DELETE}
 
 // Errors
