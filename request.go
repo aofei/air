@@ -21,8 +21,8 @@ type (
 		// the `Host` header or the host name given in the URI itself.
 		Host() string
 
-		// RURI returns the unmodified `Request-URI` sent by the client.
-		RURI() string
+		// RequestURI returns the unmodified `Request-URI` sent by the client.
+		RequestURI() string
 
 		// SetURI sets the URI of the request.
 		SetURI(string)
@@ -159,9 +159,9 @@ func (r *FastRequest) SetMethod(method string) {
 	r.Request.Header.SetMethodBytes([]byte(method))
 }
 
-// RURI implements `Request#RURI` function.
-func (r *FastRequest) RURI() string {
-	return string(r.RequestURI())
+// RequestURI implements `Request#RequestURI` function.
+func (r *FastRequest) RequestURI() string {
+	return string(r.Request.RequestURI())
 }
 
 // SetURI implements `Request#SetURI` function.
