@@ -85,8 +85,8 @@ type (
 		Cookies() []Cookie
 	}
 
-	// FastRequest implements `Request`.
-	FastRequest struct {
+	// fastRequest implements `Request`.
+	fastRequest struct {
 		*fasthttp.RequestCtx
 		header Header
 		uri    URI
@@ -94,9 +94,8 @@ type (
 	}
 )
 
-// NewRequest returns `FastRequest` instance.
-func NewRequest(c *fasthttp.RequestCtx, l Logger) *FastRequest {
-	return &FastRequest{
+func NewRequest(c *fasthttp.RequestCtx, l Logger) *fastRequest {
+	return &fastRequest{
 		RequestCtx: c,
 		uri:        &FastURI{URI: c.URI()},
 		header:     &fastRequestHeader{RequestHeader: &c.Request.Header},
@@ -104,88 +103,71 @@ func NewRequest(c *fasthttp.RequestCtx, l Logger) *FastRequest {
 	}
 }
 
-// IsTLS implements `Request#TLS` function.
-func (r *FastRequest) IsTLS() bool {
+func (r *fastRequest) IsTLS() bool {
 	return r.RequestCtx.IsTLS()
 }
 
-// Scheme implements `Request#Scheme` function.
-func (r *FastRequest) Scheme() string {
+func (r *fastRequest) Scheme() string {
 	return string(r.RequestCtx.URI().Scheme())
 }
 
-// Host implements `Request#Host` function.
-func (r *FastRequest) Host() string {
+func (r *fastRequest) Host() string {
 	return string(r.RequestCtx.Host())
 }
 
-// URI implements `Request#URI` function.
-func (r *FastRequest) URI() URI {
+func (r *fastRequest) URI() URI {
 	return r.uri
 }
 
-// Header implements `Request#Header` function.
-func (r *FastRequest) Header() Header {
+func (r *fastRequest) Header() Header {
 	return r.header
 }
 
-// Referer implements `Request#Referer` function.
-func (r *FastRequest) Referer() string {
+func (r *fastRequest) Referer() string {
 	return string(r.Request.Header.Referer())
 }
 
-// ContentLength implements `Request#ContentLength` function.
-func (r *FastRequest) ContentLength() int64 {
+func (r *fastRequest) ContentLength() int64 {
 	return int64(r.Request.Header.ContentLength())
 }
 
-// UserAgent implements `Request#UserAgent` function.
-func (r *FastRequest) UserAgent() string {
+func (r *fastRequest) UserAgent() string {
 	return string(r.RequestCtx.UserAgent())
 }
 
-// RemoteAddress implements `Request#RemoteAddress` function.
-func (r *FastRequest) RemoteAddress() string {
+func (r *fastRequest) RemoteAddress() string {
 	return r.RemoteAddr().String()
 }
 
-// Method implements `Request#Method` function.
-func (r *FastRequest) Method() string {
+func (r *fastRequest) Method() string {
 	return string(r.RequestCtx.Method())
 }
 
-// SetMethod implements `Request#SetMethod` function.
-func (r *FastRequest) SetMethod(method string) {
+func (r *fastRequest) SetMethod(method string) {
 	r.Request.Header.SetMethodBytes([]byte(method))
 }
 
-// RequestURI implements `Request#RequestURI` function.
-func (r *FastRequest) RequestURI() string {
+func (r *fastRequest) RequestURI() string {
 	return string(r.Request.RequestURI())
 }
 
-// SetURI implements `Request#SetURI` function.
-func (r *FastRequest) SetURI(uri string) {
+func (r *fastRequest) SetURI(uri string) {
 	r.Request.Header.SetRequestURI(uri)
 }
 
-// Body implements `Request#Body` function.
-func (r *FastRequest) Body() io.Reader {
+func (r *fastRequest) Body() io.Reader {
 	return bytes.NewBuffer(r.Request.Body())
 }
 
-// SetBody implements `Request#SetBody` function.
-func (r *FastRequest) SetBody(reader io.Reader) {
+func (r *fastRequest) SetBody(reader io.Reader) {
 	r.Request.SetBodyStream(reader, 0)
 }
 
-// FormValue implements `Request#FormValue` function.
-func (r *FastRequest) FormValue(name string) string {
+func (r *fastRequest) FormValue(name string) string {
 	return string(r.RequestCtx.FormValue(name))
 }
 
-// FormParams implements `Request#FormParams` function.
-func (r *FastRequest) FormParams() (params map[string][]string) {
+func (r *fastRequest) FormParams() (params map[string][]string) {
 	params = make(map[string][]string)
 	mf, err := r.RequestCtx.MultipartForm()
 
@@ -209,18 +191,15 @@ func (r *FastRequest) FormParams() (params map[string][]string) {
 	return
 }
 
-// FormFile implements `Request#FormFile` function.
-func (r *FastRequest) FormFile(name string) (*multipart.FileHeader, error) {
+func (r *fastRequest) FormFile(name string) (*multipart.FileHeader, error) {
 	return r.RequestCtx.FormFile(name)
 }
 
-// MultipartForm implements `Request#MultipartForm` function.
-func (r *FastRequest) MultipartForm() (*multipart.Form, error) {
+func (r *fastRequest) MultipartForm() (*multipart.Form, error) {
 	return r.RequestCtx.MultipartForm()
 }
 
-// Cookie implements `Request#Cookie` function.
-func (r *FastRequest) Cookie(name string) (Cookie, error) {
+func (r *fastRequest) Cookie(name string) (Cookie, error) {
 	c := new(fasthttp.Cookie)
 	b := r.Request.Header.Cookie(name)
 	if b == nil {
@@ -231,8 +210,7 @@ func (r *FastRequest) Cookie(name string) (Cookie, error) {
 	return &fastCookie{c}, nil
 }
 
-// Cookies implements `Request#Cookies` function.
-func (r *FastRequest) Cookies() []Cookie {
+func (r *fastRequest) Cookies() []Cookie {
 	cookies := []Cookie{}
 	r.Request.Header.VisitAllCookie(func(name, value []byte) {
 		c := new(fasthttp.Cookie)
@@ -243,7 +221,7 @@ func (r *FastRequest) Cookies() []Cookie {
 	return cookies
 }
 
-func (r *FastRequest) reset(c *fasthttp.RequestCtx, h Header, u URI) {
+func (r *fastRequest) reset(c *fasthttp.RequestCtx, h Header, u URI) {
 	r.RequestCtx = c
 	r.header = h
 	r.uri = u
