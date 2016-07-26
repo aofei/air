@@ -69,8 +69,8 @@ func NewServer(addr string) Server {
 	return WithConfig(c)
 }
 
-// WithTLS returns `fastServer` with provided TLS config.
-func WithTLS(addr, certFile, keyFile string) Server {
+// NewServerWithTLS returns `Server` with provided TLS config.
+func NewServerWithTLS(addr, certFile, keyFile string) Server {
 	c := Config{
 		Address:     addr,
 		TLSCertFile: certFile,
@@ -79,8 +79,8 @@ func WithTLS(addr, certFile, keyFile string) Server {
 	return WithConfig(c)
 }
 
-// WithConfig returns `Server` with provided config.
-func WithConfig(c Config) Server {
+// NewServerWithConfig returns `Server` with provided config.
+func NewServerWithConfig(c Config) Server {
 	s := &fastServer{
 		Server: new(fasthttp.Server),
 		config: c,
