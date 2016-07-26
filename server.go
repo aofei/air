@@ -45,9 +45,9 @@ type (
 		ServeHTTP(Request, Response)
 	}
 
-	// FastHandlerFunc is an adapter to allow the use of `func(Request, Response)` as
+	// handlerFunc is an adapter to allow the use of `func(Request, Response)` as
 	// an HTTP handler.
-	FastHandlerFunc func(Request, Response)
+	handlerFunc func(Request, Response)
 
 	pool struct {
 		request        sync.Pool
@@ -57,11 +57,6 @@ type (
 		uri            sync.Pool
 	}
 )
-
-// ServeHTTP serves HTTP request.
-func (h FastHandlerFunc) ServeHTTP(req Request, res Response) {
-	h(req, res)
-}
 
 // NewServer returns `Server` with provided listen address.
 func NewServer(addr string) Server {
@@ -113,7 +108,7 @@ func NewServerWithConfig(c Config) Server {
 			},
 		},
 	}
-	s.handler = FastHandlerFunc(func(req Request, res Response) {
+	s.handler = handlerFunc(func(req Request, res Response) {
 		s.logger.Error("handler not set, use `SetHandler()` to set it.")
 	})
 	s.ReadTimeout = c.ReadTimeout
@@ -177,6 +172,11 @@ func (s *fastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 	s.pool.uri.Put(reqURI)
 	s.pool.response.Put(res)
 	s.pool.responseHeader.Put(resHdr)
+}
+
+// ServeHTTP serves HTTP request.
+func (h *handlerFunc) ServeHTTP(req Request, res Response) {
+	h(req, res)
 }
 
 // FastWrapHandler wraps `fasthttp.RequestHandler` into `HandlerFunc`.
