@@ -27,39 +27,34 @@ type (
 		Contains(string) bool
 	}
 
-	// FastRequestHeader holds `fasthttp.RequestHeader`.
-	FastRequestHeader struct {
+	// fastRequestHeader holds `fasthttp.RequestHeader`.
+	fastRequestHeader struct {
 		*fasthttp.RequestHeader
 	}
 
-	// FastResponseHeader holds `fasthttp.ResponseHeader`.
-	FastResponseHeader struct {
+	// fastResponseHeader holds `fasthttp.ResponseHeader`.
+	fastResponseHeader struct {
 		*fasthttp.ResponseHeader
 	}
 )
 
-// Add implements `Header#Add` function.
-func (h *FastRequestHeader) Add(key, val string) {
+func (h *fastRequestHeader) Add(key, val string) {
 	h.RequestHeader.Add(key, val)
 }
 
-// Del implements `Header#Del` function.
-func (h *FastRequestHeader) Del(key string) {
+func (h *fastRequestHeader) Del(key string) {
 	h.RequestHeader.Del(key)
 }
 
-// Set implements `Header#Set` function.
-func (h *FastRequestHeader) Set(key, val string) {
+func (h *fastRequestHeader) Set(key, val string) {
 	h.RequestHeader.Set(key, val)
 }
 
-// Get implements `Header#Get` function.
-func (h *FastRequestHeader) Get(key string) string {
+func (h *fastRequestHeader) Get(key string) string {
 	return string(h.RequestHeader.Peek(key))
 }
 
-// Keys implements `Header#Keys` function.
-func (h *FastRequestHeader) Keys() []string {
+func (h *fastRequestHeader) Keys() []string {
 	keys := make([]string, h.RequestHeader.Len())
 	i := 0
 	h.RequestHeader.VisitAll(func(k, v []byte) {
@@ -69,37 +64,31 @@ func (h *FastRequestHeader) Keys() []string {
 	return keys
 }
 
-// Contains implements `Header#Contains` function.
-func (h *FastRequestHeader) Contains(key string) bool {
+func (h *fastRequestHeader) Contains(key string) bool {
 	return h.RequestHeader.Peek(key) != nil
 }
 
-func (h *FastRequestHeader) reset(hdr *fasthttp.RequestHeader) {
+func (h *fastRequestHeader) reset(hdr *fasthttp.RequestHeader) {
 	h.RequestHeader = hdr
 }
 
-// Add implements `Header#Add` function.
-func (h *FastResponseHeader) Add(key, val string) {
+func (h *fastResponseHeader) Add(key, val string) {
 	h.ResponseHeader.Add(key, val)
 }
 
-// Del implements `Header#Del` function.
-func (h *FastResponseHeader) Del(key string) {
+func (h *fastResponseHeader) Del(key string) {
 	h.ResponseHeader.Del(key)
 }
 
-// Get implements `Header#Get` function.
-func (h *FastResponseHeader) Get(key string) string {
+func (h *fastResponseHeader) Get(key string) string {
 	return string(h.ResponseHeader.Peek(key))
 }
 
-// Set implements `Header#Set` function.
-func (h *FastResponseHeader) Set(key, val string) {
+func (h *fastResponseHeader) Set(key, val string) {
 	h.ResponseHeader.Set(key, val)
 }
 
-// Keys implements `Header#Keys` function.
-func (h *FastResponseHeader) Keys() []string {
+func (h *fastResponseHeader) Keys() []string {
 	keys := make([]string, h.ResponseHeader.Len())
 	i := 0
 	h.ResponseHeader.VisitAll(func(k, v []byte) {
@@ -109,11 +98,10 @@ func (h *FastResponseHeader) Keys() []string {
 	return keys
 }
 
-// Contains implements `Header#Contains` function.
-func (h *FastResponseHeader) Contains(key string) bool {
+func (h *fastResponseHeader) Contains(key string) bool {
 	return h.ResponseHeader.Peek(key) != nil
 }
 
-func (h *FastResponseHeader) reset(hdr *fasthttp.ResponseHeader) {
+func (h *fastResponseHeader) reset(hdr *fasthttp.ResponseHeader) {
 	h.ResponseHeader = hdr
 }
