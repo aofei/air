@@ -55,23 +55,23 @@ func (h *FastRequestHeader) Set(key, val string) {
 
 // Get implements `Header#Get` function.
 func (h *FastRequestHeader) Get(key string) string {
-	return string(h.Peek(key))
+	return string(h.RequestHeader.Peek(key))
 }
 
 // Keys implements `Header#Keys` function.
-func (h *FastRequestHeader) Keys() (keys []string) {
-	keys = make([]string, h.Len())
+func (h *FastRequestHeader) Keys() []string {
+	keys := make([]string, h.RequestHeader.Len())
 	i := 0
-	h.VisitAll(func(k, v []byte) {
+	h.RequestHeader.VisitAll(func(k, v []byte) {
 		keys[i] = string(k)
 		i++
 	})
-	return
+	return keys
 }
 
 // Contains implements `Header#Contains` function.
 func (h *FastRequestHeader) Contains(key string) bool {
-	return h.Peek(key) != nil
+	return h.RequestHeader.Peek(key) != nil
 }
 
 func (h *FastRequestHeader) reset(hdr *fasthttp.RequestHeader) {
@@ -90,7 +90,7 @@ func (h *FastResponseHeader) Del(key string) {
 
 // Get implements `Header#Get` function.
 func (h *FastResponseHeader) Get(key string) string {
-	return string(h.Peek(key))
+	return string(h.ResponseHeader.Peek(key))
 }
 
 // Set implements `Header#Set` function.
@@ -99,19 +99,19 @@ func (h *FastResponseHeader) Set(key, val string) {
 }
 
 // Keys implements `Header#Keys` function.
-func (h *FastResponseHeader) Keys() (keys []string) {
-	keys = make([]string, h.Len())
+func (h *FastResponseHeader) Keys() []string {
+	keys := make([]string, h.ResponseHeader.Len())
 	i := 0
-	h.VisitAll(func(k, v []byte) {
+	h.ResponseHeader.VisitAll(func(k, v []byte) {
 		keys[i] = string(k)
 		i++
 	})
-	return
+	return keys
 }
 
 // Contains implements `Header#Contains` function.
 func (h *FastResponseHeader) Contains(key string) bool {
-	return h.Peek(key) != nil
+	return h.ResponseHeader.Peek(key) != nil
 }
 
 func (h *FastResponseHeader) reset(hdr *fasthttp.ResponseHeader) {
