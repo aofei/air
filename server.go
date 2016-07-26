@@ -179,8 +179,8 @@ func (h handlerFunc) ServeHTTP(req Request, res Response) {
 	h(req, res)
 }
 
-// FastWrapHandler wraps `fasthttp.RequestHandler` into `HandlerFunc`.
-func FastWrapHandler(h fasthttp.RequestHandler) HandlerFunc {
+// fastWrapHandler wraps `fasthttp.RequestHandler` into `HandlerFunc`.
+func fastWrapHandler(h fasthttp.RequestHandler) HandlerFunc {
 	return func(c Context) error {
 		req := c.Request().(*fastRequest)
 		res := c.Response().(*fastResponse)
@@ -192,9 +192,9 @@ func FastWrapHandler(h fasthttp.RequestHandler) HandlerFunc {
 	}
 }
 
-// FastWrapGas wraps `func(fasthttp.RequestHandler) fasthttp.RequestHandler`
+// fastWrapGas wraps `func(fasthttp.RequestHandler) fasthttp.RequestHandler`
 // into `GasFunc`
-func FastWrapGas(m func(fasthttp.RequestHandler) fasthttp.RequestHandler) GasFunc {
+func fastWrapGas(m func(fasthttp.RequestHandler) fasthttp.RequestHandler) GasFunc {
 	return func(next HandlerFunc) HandlerFunc {
 		return func(c Context) (err error) {
 			req := c.Request().(*fastRequest)
