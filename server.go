@@ -107,7 +107,7 @@ func WithConfig(c Config) (s *fastServer) {
 			},
 			uri: sync.Pool{
 				New: func() interface{} {
-					return &FastURI{}
+					return &fastURI{}
 				},
 			},
 		},
@@ -158,7 +158,7 @@ func (s *fastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 	// Request
 	req := s.pool.request.Get().(*fastRequest)
 	reqHdr := s.pool.requestHeader.Get().(*fastRequestHeader)
-	reqURI := s.pool.uri.Get().(*FastURI)
+	reqURI := s.pool.uri.Get().(*fastURI)
 	reqHdr.reset(&c.Request.Header)
 	reqURI.reset(c.URI())
 	req.reset(c, reqHdr, reqURI)
