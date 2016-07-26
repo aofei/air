@@ -77,11 +77,11 @@ type (
 		SetParamValues(...string)
 
 		// QueryParam returns the query param for the provided name. It is an alias
-		// for `URL#QueryParam()`.
+		// for `URI#QueryParam()`.
 		QueryParam(string) string
 
 		// QueryParams returns the query parameters as map.
-		// It is an alias for `URL#QueryParams()`.
+		// It is an alias for `URI#QueryParams()`.
 		QueryParams() map[string][]string
 
 		// FormValue returns the form field value for the provided name. It is an
@@ -275,11 +275,11 @@ func (c *airContext) SetParamValues(values ...string) {
 }
 
 func (c *airContext) QueryParam(name string) string {
-	return c.request.URL().QueryParam(name)
+	return c.request.URI().QueryParam(name)
 }
 
 func (c *airContext) QueryParams() map[string][]string {
-	return c.request.URL().QueryParams()
+	return c.request.URI().QueryParams()
 }
 
 func (c *airContext) FormValue(name string) string {
@@ -440,11 +440,11 @@ func (c *airContext) NoContent(code int) error {
 	return nil
 }
 
-func (c *airContext) Redirect(code int, url string) error {
+func (c *airContext) Redirect(code int, uri string) error {
 	if code < http.StatusMultipleChoices || code > http.StatusTemporaryRedirect {
 		return ErrInvalidRedirectCode
 	}
-	c.response.Header().Set(HeaderLocation, url)
+	c.response.Header().Set(HeaderLocation, uri)
 	c.response.WriteHeader(code)
 	return nil
 }

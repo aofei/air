@@ -55,7 +55,7 @@ type (
 		response       sync.Pool
 		requestHeader  sync.Pool
 		responseHeader sync.Pool
-		url            sync.Pool
+		uri            sync.Pool
 	}
 )
 
@@ -106,9 +106,9 @@ func WithConfig(c Config) (s *FastServer) {
 					return &FastResponseHeader{}
 				},
 			},
-			url: sync.Pool{
+			uri: sync.Pool{
 				New: func() interface{} {
-					return &FastURL{}
+					return &FastURI{}
 				},
 			},
 		},
@@ -162,10 +162,10 @@ func (s *FastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 	// Request
 	req := s.pool.request.Get().(*FastRequest)
 	reqHdr := s.pool.requestHeader.Get().(*FastRequestHeader)
-	reqURL := s.pool.url.Get().(*FastURL)
+	reqURI := s.pool.uri.Get().(*FastURI)
 	reqHdr.reset(&c.Request.Header)
-	reqURL.reset(c.URI())
-	req.reset(c, reqHdr, reqURL)
+	reqURI.reset(c.URI())
+	req.reset(c, reqHdr, reqURI)
 
 	// Response
 	res := s.pool.response.Get().(*FastResponse)
@@ -178,7 +178,7 @@ func (s *FastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 	// Return to pool
 	s.pool.request.Put(req)
 	s.pool.requestHeader.Put(reqHdr)
-	s.pool.url.Put(reqURL)
+	s.pool.uri.Put(reqURI)
 	s.pool.response.Put(res)
 	s.pool.responseHeader.Put(resHdr)
 }
