@@ -228,7 +228,7 @@ func (r *FastRequest) Cookie(name string) (Cookie, error) {
 	}
 	c.SetKey(name)
 	c.SetValueBytes(b)
-	return &FastCookie{c}, nil
+	return &fastCookie{c}, nil
 }
 
 // Cookies implements `Request#Cookies` function.
@@ -238,7 +238,7 @@ func (r *FastRequest) Cookies() []Cookie {
 		c := new(fasthttp.Cookie)
 		c.SetKeyBytes(name)
 		c.SetValueBytes(value)
-		cookies = append(cookies, &FastCookie{c})
+		cookies = append(cookies, &fastCookie{c})
 	})
 	return cookies
 }
