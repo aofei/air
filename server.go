@@ -88,7 +88,7 @@ func WithConfig(c Config) (s *FastServer) {
 		pool: &pool{
 			request: sync.Pool{
 				New: func() interface{} {
-					return &FastRequest{logger: s.logger}
+					return &fastRequest{logger: s.logger}
 				},
 			},
 			response: sync.Pool{
@@ -160,7 +160,7 @@ func (s *FastServer) startCustomListener() error {
 
 func (s *FastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 	// Request
-	req := s.pool.request.Get().(*FastRequest)
+	req := s.pool.request.Get().(*fastRequest)
 	reqHdr := s.pool.requestHeader.Get().(*fastRequestHeader)
 	reqURI := s.pool.uri.Get().(*FastURI)
 	reqHdr.reset(&c.Request.Header)
@@ -186,7 +186,7 @@ func (s *FastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 // FastWrapHandler wraps `fasthttp.RequestHandler` into `HandlerFunc`.
 func FastWrapHandler(h fasthttp.RequestHandler) HandlerFunc {
 	return func(c Context) error {
-		req := c.Request().(*FastRequest)
+		req := c.Request().(*fastRequest)
 		res := c.Response().(*FastResponse)
 		ctx := req.RequestCtx
 		h(ctx)
@@ -201,7 +201,7 @@ func FastWrapHandler(h fasthttp.RequestHandler) HandlerFunc {
 func FastWrapGas(m func(fasthttp.RequestHandler) fasthttp.RequestHandler) GasFunc {
 	return func(next HandlerFunc) HandlerFunc {
 		return func(c Context) (err error) {
-			req := c.Request().(*FastRequest)
+			req := c.Request().(*fastRequest)
 			res := c.Response().(*FastResponse)
 			ctx := req.RequestCtx
 			m(func(ctx *fasthttp.RequestCtx) {
