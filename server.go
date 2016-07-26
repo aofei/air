@@ -93,7 +93,7 @@ func WithConfig(c Config) (s *FastServer) {
 			},
 			response: sync.Pool{
 				New: func() interface{} {
-					return &FastResponse{logger: s.logger}
+					return &fastResponse{logger: s.logger}
 				},
 			},
 			requestHeader: sync.Pool{
@@ -168,7 +168,7 @@ func (s *FastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 	req.reset(c, reqHdr, reqURI)
 
 	// Response
-	res := s.pool.response.Get().(*FastResponse)
+	res := s.pool.response.Get().(*fastResponse)
 	resHdr := s.pool.responseHeader.Get().(*fastResponseHeader)
 	resHdr.reset(&c.Response.Header)
 	res.reset(c, resHdr)
@@ -187,7 +187,7 @@ func (s *FastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 func FastWrapHandler(h fasthttp.RequestHandler) HandlerFunc {
 	return func(c Context) error {
 		req := c.Request().(*fastRequest)
-		res := c.Response().(*FastResponse)
+		res := c.Response().(*fastResponse)
 		ctx := req.RequestCtx
 		h(ctx)
 		res.status = ctx.Response.StatusCode()
@@ -202,7 +202,7 @@ func FastWrapGas(m func(fasthttp.RequestHandler) fasthttp.RequestHandler) GasFun
 	return func(next HandlerFunc) HandlerFunc {
 		return func(c Context) (err error) {
 			req := c.Request().(*fastRequest)
-			res := c.Response().(*FastResponse)
+			res := c.Response().(*fastResponse)
 			ctx := req.RequestCtx
 			m(func(ctx *fasthttp.RequestCtx) {
 				next(c)

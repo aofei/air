@@ -85,7 +85,6 @@ type (
 		Cookies() []Cookie
 	}
 
-	// fastRequest implements `Request`.
 	fastRequest struct {
 		*fasthttp.RequestCtx
 		header Header
@@ -94,6 +93,7 @@ type (
 	}
 )
 
+// NewRequest returns `FastRequest` instance.
 func NewRequest(c *fasthttp.RequestCtx, l Logger) *fastRequest {
 	return &fastRequest{
 		RequestCtx: c,

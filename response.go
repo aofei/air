@@ -38,8 +38,7 @@ type (
 		SetWriter(io.Writer)
 	}
 
-	// FastResponse implements `Response`.
-	FastResponse struct {
+	fastResponse struct {
 		*fasthttp.RequestCtx
 		header    Header
 		status    int
@@ -50,9 +49,9 @@ type (
 	}
 )
 
-// NewResponse returns `FastResponse` instance.
-func NewResponse(c *fasthttp.RequestCtx, l Logger) *FastResponse {
-	return &FastResponse{
+// NewResponse returns `fastResponse` instance.
+func NewResponse(c *fasthttp.RequestCtx, l Logger) *fastResponse {
+	return &fastResponse{
 		RequestCtx: c,
 		header:     &fastResponseHeader{ResponseHeader: &c.Response.Header},
 		writer:     c,
@@ -60,13 +59,11 @@ func NewResponse(c *fasthttp.RequestCtx, l Logger) *FastResponse {
 	}
 }
 
-// Header implements `Response#Header` function.
-func (r *FastResponse) Header() Header {
+func (r *fastResponse) Header() Header {
 	return r.header
 }
 
-// WriteHeader implements `Response#WriteHeader` function.
-func (r *FastResponse) WriteHeader(code int) {
+func (r *fastResponse) WriteHeader(code int) {
 	if r.committed {
 		r.logger.Warn("response already committed")
 		return
@@ -76,8 +73,7 @@ func (r *FastResponse) WriteHeader(code int) {
 	r.committed = true
 }
 
-// Write implements `Response#Write` function.
-func (r *FastResponse) Write(b []byte) (n int, err error) {
+func (r *fastResponse) Write(b []byte) (n int, err error) {
 	if !r.committed {
 		r.WriteHeader(http.StatusOK)
 	}
@@ -86,8 +82,7 @@ func (r *FastResponse) Write(b []byte) (n int, err error) {
 	return
 }
 
-// SetCookie implements `Response#SetCookie` function.
-func (r *FastResponse) SetCookie(c Cookie) {
+func (r *fastResponse) SetCookie(c Cookie) {
 	cookie := new(fasthttp.Cookie)
 	cookie.SetKey(c.Name())
 	cookie.SetValue(c.Value())
@@ -99,32 +94,27 @@ func (r *FastResponse) SetCookie(c Cookie) {
 	r.Response.Header.SetCookie(cookie)
 }
 
-// Status implements `Response#Status` function.
-func (r *FastResponse) Status() int {
+func (r *fastResponse) Status() int {
 	return r.status
 }
 
-// Size implements `Response#Size` function.
-func (r *FastResponse) Size() int64 {
+func (r *fastResponse) Size() int64 {
 	return r.size
 }
 
-// Committed implements `Response#Committed` function.
-func (r *FastResponse) Committed() bool {
+func (r *fastResponse) Committed() bool {
 	return r.committed
 }
 
-// Writer implements `Response#Writer` function.
-func (r *FastResponse) Writer() io.Writer {
+func (r *fastResponse) Writer() io.Writer {
 	return r.writer
 }
 
-// SetWriter implements `Response#SetWriter` function.
-func (r *FastResponse) SetWriter(w io.Writer) {
+func (r *fastResponse) SetWriter(w io.Writer) {
 	r.writer = w
 }
 
-func (r *FastResponse) reset(c *fasthttp.RequestCtx, h Header) {
+func (r *fastResponse) reset(c *fasthttp.RequestCtx, h Header) {
 	r.RequestCtx = c
 	r.header = h
 	r.status = http.StatusOK
