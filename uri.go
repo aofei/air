@@ -60,7 +60,7 @@ func (u *FastURI) QueryParams() map[string][]string {
 		}
 		params[string(k)] = append(params[string(k)], string(v))
 	})
-	return
+	return params
 }
 
 // QueryString implements `URI#QueryString` function.
