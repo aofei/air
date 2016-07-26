@@ -18,22 +18,22 @@ type (
 		Scheme() string
 
 		// Host returns HTTP request host. Per RFC 2616, this is either the value of
-		// the `Host` header or the host name given in the URL itself.
+		// the `Host` header or the host name given in the URI itself.
 		Host() string
 
-		// URI returns the unmodified `Request-URI` sent by the client.
-		URI() string
+		// RURI returns the unmodified `Request-URI` sent by the client.
+		RURI() string
 
 		// SetURI sets the URI of the request.
 		SetURI(string)
 
-		// URL returns `fasthttp.URL`.
-		URL() URL
+		// URI returns `fasthttp.URI`.
+		URI() URI
 
 		// Header returns `fasthttp.Header`.
 		Header() Header
 
-		// Referer returns the referring URL, if sent in the request.
+		// Referer returns the referring URI, if sent in the request.
 		Referer() string
 
 		// Protocol returns the protocol version string of the HTTP request.
@@ -89,7 +89,7 @@ type (
 	FastRequest struct {
 		*fasthttp.RequestCtx
 		header Header
-		url    URL
+		uri    URI
 		logger Logger
 	}
 )
@@ -98,7 +98,7 @@ type (
 func NewRequest(c *fasthttp.RequestCtx, l Logger) *FastRequest {
 	return &FastRequest{
 		RequestCtx: c,
-		url:        &FastURL{URI: c.URI()},
+		uri:        &FastURI{URI: c.URI()},
 		header:     &FastRequestHeader{RequestHeader: &c.Request.Header},
 		logger:     l,
 	}
@@ -119,9 +119,9 @@ func (r *FastRequest) Host() string {
 	return string(r.RequestCtx.Host())
 }
 
-// URL implements `Request#URL` function.
-func (r *FastRequest) URL() URL {
-	return r.url
+// URI implements `Request#URI` function.
+func (r *FastRequest) URI() URI {
+	return r.uri
 }
 
 // Header implements `Request#Header` function.
@@ -159,8 +159,8 @@ func (r *FastRequest) SetMethod(method string) {
 	r.Request.Header.SetMethodBytes([]byte(method))
 }
 
-// URI implements `Request#URI` function.
-func (r *FastRequest) URI() string {
+// RURI implements `Request#RURI` function.
+func (r *FastRequest) RURI() string {
 	return string(r.RequestURI())
 }
 
@@ -243,8 +243,8 @@ func (r *FastRequest) Cookies() []Cookie {
 	return cookies
 }
 
-func (r *FastRequest) reset(c *fasthttp.RequestCtx, h Header, u URL) {
+func (r *FastRequest) reset(c *fasthttp.RequestCtx, h Header, u URI) {
 	r.RequestCtx = c
 	r.header = h
-	r.url = u
+	r.uri = u
 }

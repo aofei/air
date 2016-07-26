@@ -57,7 +57,7 @@ func StaticWithConfig(config StaticConfig) air.GasFunc {
 	return func(next air.HandlerFunc) air.HandlerFunc {
 		return func(c air.Context) error {
 			fs := http.Dir(config.Root)
-			p := c.Request().URL().Path()
+			p := c.Request().URI().Path()
 			if strings.Contains(c.Path(), "*") { // If serving from a group, e.g. `/static*`.
 				p = c.P(0)
 			}
