@@ -5,6 +5,9 @@ import "github.com/valyala/fasthttp"
 type (
 	// URI defines the interface for HTTP request uri.
 	URI interface {
+		// FullURI returns full uri in the form {Scheme}://{Host}{RequestURI}#{Hash}.
+		FullURI() string
+
 		// Path returns the request URI path.
 		Path() string
 
@@ -27,6 +30,11 @@ type (
 	}
 )
 
+// FullURI implements `URI#FullURI` function.
+func (u *FastURI) FullURI() string {
+	return string(u.URI.FullURI())
+}
+
 // Path implements `URI#Path` function.
 func (u *FastURI) Path() string {
 	return string(u.URI.PathOriginal())
@@ -39,7 +47,7 @@ func (u *FastURI) SetPath(path string) {
 
 // QueryParam implements `URI#QueryParam` function.
 func (u *FastURI) QueryParam(name string) string {
-	return string(u.QueryArgs().Peek(name))
+	return string(u.URI.QueryArgs().Peek(name))
 }
 
 // QueryParams implements `URI#QueryParams` function.
