@@ -63,14 +63,14 @@ func (h FastHandlerFunc) ServeHTTP(req Request, res Response) {
 	h(req, res)
 }
 
-// NewServer returns `fastServer` with provided listen address.
-func NewServer(addr string) *fastServer {
+// NewServer returns `Server` with provided listen address.
+func NewServer(addr string) Server {
 	c := Config{Address: addr}
 	return WithConfig(c)
 }
 
 // WithTLS returns `fastServer` with provided TLS config.
-func WithTLS(addr, certFile, keyFile string) *fastServer {
+func WithTLS(addr, certFile, keyFile string) Server {
 	c := Config{
 		Address:     addr,
 		TLSCertFile: certFile,
@@ -79,47 +79,47 @@ func WithTLS(addr, certFile, keyFile string) *fastServer {
 	return WithConfig(c)
 }
 
-// WithConfig returns `fastServer` with provided config.
-func WithConfig(c Config) (s *fastServer) {
-	s = &fastServer{
+// WithConfig returns `Server` with provided config.
+func WithConfig(c Config) Server {
+	s := &fastServer{
 		Server: new(fasthttp.Server),
 		config: c,
-		pool: &pool{
-			request: sync.Pool{
-				New: func() interface{} {
-					return &fastRequest{logger: s.logger}
-				},
-			},
-			response: sync.Pool{
-				New: func() interface{} {
-					return &fastResponse{logger: s.logger}
-				},
-			},
-			requestHeader: sync.Pool{
-				New: func() interface{} {
-					return &fastRequestHeader{}
-				},
-			},
-			responseHeader: sync.Pool{
-				New: func() interface{} {
-					return &fastResponseHeader{}
-				},
-			},
-			uri: sync.Pool{
-				New: func() interface{} {
-					return &fastURI{}
-				},
-			},
-		},
-		handler: FastHandlerFunc(func(req Request, res Response) {
-			s.logger.Error("handler not set, use `SetHandler()` to set it.")
-		}),
 		logger: NewLogger("air"),
 	}
+	s.pool = &pool{
+		request: sync.Pool{
+			New: func() interface{} {
+				return &fastRequest{logger: s.logger}
+			},
+		},
+		response: sync.Pool{
+			New: func() interface{} {
+				return &fastResponse{logger: s.logger}
+			},
+		},
+		requestHeader: sync.Pool{
+			New: func() interface{} {
+				return &fastRequestHeader{}
+			},
+		},
+		responseHeader: sync.Pool{
+			New: func() interface{} {
+				return &fastResponseHeader{}
+			},
+		},
+		uri: sync.Pool{
+			New: func() interface{} {
+				return &fastURI{}
+			},
+		},
+	}
+	s.handler = FastHandlerFunc(func(req Request, res Response) {
+		s.logger.Error("handler not set, use `SetHandler()` to set it.")
+	})
 	s.ReadTimeout = c.ReadTimeout
 	s.WriteTimeout = c.WriteTimeout
 	s.Handler = s.ServeHTTP
-	return
+	return s
 }
 
 func (s *fastServer) SetHandler(h Handler) {
