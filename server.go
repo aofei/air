@@ -175,7 +175,7 @@ func (s *fastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 }
 
 // ServeHTTP serves HTTP request.
-func (h *handlerFunc) ServeHTTP(req Request, res Response) {
+func (h handlerFunc) ServeHTTP(req Request, res Response) {
 	h(req, res)
 }
 
