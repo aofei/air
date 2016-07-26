@@ -16,10 +16,10 @@ type (
 		Bind(interface{}, Context) error
 	}
 
-	binder struct{}
+	airBinder struct{}
 )
 
-func (b *binder) Bind(i interface{}, c Context) (err error) {
+func (b *airBinder) Bind(i interface{}, c Context) (err error) {
 	req := c.Request()
 	if req.Method() == GET {
 		if err = b.bindData(i, c.QueryParams()); err != nil {
@@ -50,7 +50,7 @@ func (b *binder) Bind(i interface{}, c Context) (err error) {
 	return
 }
 
-func (b *binder) bindData(ptr interface{}, data map[string][]string) error {
+func (b *airBinder) bindData(ptr interface{}, data map[string][]string) error {
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
 

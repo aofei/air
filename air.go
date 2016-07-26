@@ -168,7 +168,7 @@ func New() *Air {
 
 	// Defaults
 	a.SetHTTPErrorHandler(a.DefaultHTTPErrorHandler)
-	a.SetBinder(&binder{})
+	a.SetBinder(&airBinder{})
 	l := NewLogger("air")
 	l.SetLevel(ERROR)
 	a.SetLogger(l)
@@ -234,14 +234,14 @@ func (a *Air) SetHTTPErrorHandler(h HTTPErrorHandler) {
 	a.httpErrorHandler = h
 }
 
-// SetBinder registers a custom binder. It's invoked by `Context#Bind()`.
-func (a *Air) SetBinder(b Binder) {
-	a.binder = b
-}
-
 // Binder returns the binder instance.
 func (a *Air) Binder() Binder {
 	return a.binder
+}
+
+// SetBinder registers a custom binder. It's invoked by `Context#Bind()`.
+func (a *Air) SetBinder(b Binder) {
+	a.binder = b
 }
 
 // SetRenderer registers an HTML template renderer. It's invoked by `Context#Render()`.
@@ -249,15 +249,15 @@ func (a *Air) SetRenderer(r Renderer) {
 	a.renderer = r
 }
 
+// Debug returns debug mode (enabled or disabled).
+func (a *Air) Debug() bool {
+	return a.debug
+}
+
 // SetDebug enable/disable debug mode.
 func (a *Air) SetDebug(on bool) {
 	a.debug = on
 	a.SetLogLevel(DEBUG)
-}
-
-// Debug returns debug mode (enabled or disabled).
-func (a *Air) Debug() bool {
-	return a.debug
 }
 
 // Precontain adds gases to the chain which is run before router.
