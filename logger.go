@@ -23,7 +23,7 @@ type (
 		template   *fasttemplate.Template
 		levels     []string
 		bufferPool sync.Pool
-		mutex      sync.Mutex
+		mutex      *sync.Mutex
 	}
 
 	LoggerLevel uint8
