@@ -24,34 +24,28 @@ type (
 		QueryString() string
 	}
 
-	// FastURI implements `URI`.
-	FastURI struct {
+	fastURI struct {
 		*fasthttp.URI
 	}
 )
 
-// FullURI implements `URI#FullURI` function.
-func (u *FastURI) FullURI() string {
+func (u *fastURI) FullURI() string {
 	return string(u.URI.FullURI())
 }
 
-// Path implements `URI#Path` function.
-func (u *FastURI) Path() string {
+func (u *fastURI) Path() string {
 	return string(u.URI.PathOriginal())
 }
 
-// SetPath implements `URI#SetPath` function.
-func (u *FastURI) SetPath(path string) {
+func (u *fastURI) SetPath(path string) {
 	u.URI.SetPath(path)
 }
 
-// QueryParam implements `URI#QueryParam` function.
-func (u *FastURI) QueryParam(name string) string {
+func (u *fastURI) QueryParam(name string) string {
 	return string(u.URI.QueryArgs().Peek(name))
 }
 
-// QueryParams implements `URI#QueryParams` function.
-func (u *FastURI) QueryParams() map[string][]string {
+func (u *fastURI) QueryParams() map[string][]string {
 	params := make(map[string][]string)
 	u.URI.QueryArgs().VisitAll(func(k, v []byte) {
 		_, ok := params[string(k)]
@@ -63,11 +57,10 @@ func (u *FastURI) QueryParams() map[string][]string {
 	return params
 }
 
-// QueryString implements `URI#QueryString` function.
-func (u *FastURI) QueryString() string {
+func (u *fastURI) QueryString() string {
 	return string(u.URI.QueryString())
 }
 
-func (u *FastURI) reset(uri *fasthttp.URI) {
+func (u *fastURI) reset(uri *fasthttp.URI) {
 	u.URI = uri
 }
