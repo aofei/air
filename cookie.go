@@ -57,8 +57,8 @@ type (
 	}
 )
 
-// NewCookie creates an instance of `fastCookie`.
-func NewCookie() *fastCookie {
+// NewCookie creates an instance of `Cookie`.
+func NewCookie() Cookie {
 	return &fastCookie{}
 }
 

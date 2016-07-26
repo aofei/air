@@ -93,8 +93,8 @@ type (
 	}
 )
 
-// NewRequest returns `FastRequest` instance.
-func NewRequest(c *fasthttp.RequestCtx, l Logger) *fastRequest {
+// NewRequest returns `Request` instance.
+func NewRequest(c *fasthttp.RequestCtx, l Logger) Request {
 	return &fastRequest{
 		RequestCtx: c,
 		uri:        &fastURI{URI: c.URI()},
