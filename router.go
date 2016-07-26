@@ -2,7 +2,7 @@ package air
 
 type (
 	// Router is the registry of all registered routes for an `Air` instance for
-	// request matching and URL path parameter parsing.
+	// request matching and URI path parameter parsing.
 	Router struct {
 		tree   *node
 		routes map[string]Route
@@ -256,7 +256,7 @@ func (n *node) checkMethodNotAllowed() HandlerFunc {
 	return NotFoundHandler
 }
 
-// Find lookup a handler registed for method and path. It also parses URL for path
+// Find lookup a handler registed for method and path. It also parses URI for path
 // parameters and load them into context.
 //
 // For performance:

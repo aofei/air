@@ -387,7 +387,7 @@ func (a *Air) ServeHTTP(req Request, res Response) {
 	// Gases
 	h := func(Context) error {
 		method := req.Method()
-		path := req.URL().Path()
+		path := req.URI().Path()
 		a.router.Find(method, path, c)
 		h := c.handler
 		for i := len(a.gases) - 1; i >= 0; i-- {

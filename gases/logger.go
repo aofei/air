@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/valyala/fasttemplate"
-
 	"air"
+
+	"github.com/valyala/fasttemplate"
 )
 
 type (
@@ -116,7 +116,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 				case "method":
 					return w.Write([]byte(req.Method()))
 				case "path":
-					p := req.URL().Path()
+					p := req.URI().Path()
 					if p == "" {
 						p = "/"
 					}
