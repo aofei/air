@@ -51,9 +51,9 @@ func (u *FastURI) QueryParam(name string) string {
 }
 
 // QueryParams implements `URI#QueryParams` function.
-func (u *FastURI) QueryParams() (params map[string][]string) {
-	params = make(map[string][]string)
-	u.QueryArgs().VisitAll(func(k, v []byte) {
+func (u *FastURI) QueryParams() map[string][]string {
+	params := make(map[string][]string)
+	u.URI.QueryArgs().VisitAll(func(k, v []byte) {
 		_, ok := params[string(k)]
 		if !ok {
 			params[string(k)] = make([]string, 0)
