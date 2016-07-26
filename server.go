@@ -81,8 +81,8 @@ func WithTLS(addr, certFile, keyFile string) *FastServer {
 }
 
 // WithConfig returns `FastServer` with provided config.
-func WithConfig(c Config) *FastServer {
-	s := &FastServer{
+func WithConfig(c Config) (s *FastServer) {
+	s = &FastServer{
 		Server: new(fasthttp.Server),
 		config: c,
 		pool: &pool{
