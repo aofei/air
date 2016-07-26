@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
-
 	"air"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 type (
