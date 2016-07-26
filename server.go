@@ -21,8 +21,7 @@ type (
 		Start() error
 	}
 
-	// FastServer implements `Server`.
-	FastServer struct {
+	fastServer struct {
 		*fasthttp.Server
 		config  Config
 		handler Handler
@@ -64,14 +63,14 @@ func (h FastHandlerFunc) ServeHTTP(req Request, res Response) {
 	h(req, res)
 }
 
-// NewServer returns `FastServer` with provided listen address.
-func NewServer(addr string) *FastServer {
+// NewServer returns `fastServer` with provided listen address.
+func NewServer(addr string) *fastServer {
 	c := Config{Address: addr}
 	return WithConfig(c)
 }
 
-// WithTLS returns `FastServer` with provided TLS config.
-func WithTLS(addr, certFile, keyFile string) *FastServer {
+// WithTLS returns `fastServer` with provided TLS config.
+func WithTLS(addr, certFile, keyFile string) *fastServer {
 	c := Config{
 		Address:     addr,
 		TLSCertFile: certFile,
@@ -80,9 +79,9 @@ func WithTLS(addr, certFile, keyFile string) *FastServer {
 	return WithConfig(c)
 }
 
-// WithConfig returns `FastServer` with provided config.
-func WithConfig(c Config) (s *FastServer) {
-	s = &FastServer{
+// WithConfig returns `fastServer` with provided config.
+func WithConfig(c Config) (s *fastServer) {
+	s = &fastServer{
 		Server: new(fasthttp.Server),
 		config: c,
 		pool: &pool{
@@ -123,18 +122,15 @@ func WithConfig(c Config) (s *FastServer) {
 	return
 }
 
-// SetHandler implements `Server#SetHandler` function.
-func (s *FastServer) SetHandler(h Handler) {
+func (s *fastServer) SetHandler(h Handler) {
 	s.handler = h
 }
 
-// SetLogger implements `Server#SetLogger` function.
-func (s *FastServer) SetLogger(l Logger) {
+func (s *fastServer) SetLogger(l Logger) {
 	s.logger = l
 }
 
-// Start implements `Server#Start` function.
-func (s *FastServer) Start() error {
+func (s *fastServer) Start() error {
 	if s.config.Listener == nil {
 		return s.startDefaultListener()
 	}
@@ -142,7 +138,7 @@ func (s *FastServer) Start() error {
 
 }
 
-func (s *FastServer) startDefaultListener() error {
+func (s *fastServer) startDefaultListener() error {
 	c := s.config
 	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
 		return s.ListenAndServeTLS(c.Address, c.TLSCertFile, c.TLSKeyFile)
@@ -150,7 +146,7 @@ func (s *FastServer) startDefaultListener() error {
 	return s.ListenAndServe(c.Address)
 }
 
-func (s *FastServer) startCustomListener() error {
+func (s *fastServer) startCustomListener() error {
 	c := s.config
 	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
 		return s.ServeTLS(c.Listener, c.TLSCertFile, c.TLSKeyFile)
@@ -158,7 +154,7 @@ func (s *FastServer) startCustomListener() error {
 	return s.Serve(c.Listener)
 }
 
-func (s *FastServer) ServeHTTP(c *fasthttp.RequestCtx) {
+func (s *fastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 	// Request
 	req := s.pool.request.Get().(*fastRequest)
 	reqHdr := s.pool.requestHeader.Get().(*fastRequestHeader)
