@@ -97,7 +97,7 @@ type (
 func NewRequest(c *fasthttp.RequestCtx, l Logger) *fastRequest {
 	return &fastRequest{
 		RequestCtx: c,
-		uri:        &FastURI{URI: c.URI()},
+		uri:        &fastURI{URI: c.URI()},
 		header:     &fastRequestHeader{RequestHeader: &c.Request.Header},
 		logger:     l,
 	}
