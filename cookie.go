@@ -52,7 +52,6 @@ type (
 		SetHTTPOnly(bool)
 	}
 
-	// fastCookie implements `Cookie`.
 	fastCookie struct {
 		*fasthttp.Cookie
 	}
