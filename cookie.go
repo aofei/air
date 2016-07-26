@@ -52,78 +52,69 @@ type (
 		SetHTTPOnly(bool)
 	}
 
-	// FastCookie implements `Cookie`.
-	FastCookie struct {
+	// fastCookie implements `Cookie`.
+	fastCookie struct {
 		*fasthttp.Cookie
 	}
 )
 
-// Name implements `Cookie#Name` function.
-func (c *FastCookie) Name() string {
+// NewCookie creates an instance of `fastCookie`.
+func NewCookie() *fastCookie {
+	return &fastCookie{}
+}
+
+func (c *fastCookie) Name() string {
 	return string(c.Cookie.Key())
 }
 
-// SetName implements `Cookie#SetName` function.
-func (c *FastCookie) SetName(name string) {
+func (c *fastCookie) SetName(name string) {
 	c.Cookie.SetKey(name)
 }
 
-// Value implements `Cookie#Value` function.
-func (c *FastCookie) Value() string {
+func (c *fastCookie) Value() string {
 	return string(c.Cookie.Value())
 }
 
-// SetValue implements `Cookie#SetValue` function.
-func (c *FastCookie) SetValue(value string) {
+func (c *fastCookie) SetValue(value string) {
 	c.Cookie.SetValue(value)
 }
 
-// Path implements `Cookie#Path` function.
-func (c *FastCookie) Path() string {
+func (c *fastCookie) Path() string {
 	return string(c.Cookie.Path())
 }
 
-// SetPath implements `Cookie#SetPath` function.
-func (c *FastCookie) SetPath(path string) {
+func (c *fastCookie) SetPath(path string) {
 	c.Cookie.SetPath(path)
 }
 
-// Domain implements `Cookie#Domain` function.
-func (c *FastCookie) Domain() string {
+func (c *fastCookie) Domain() string {
 	return string(c.Cookie.Domain())
 }
 
-// SetDomain implements `Cookie#SetDomain` function.
-func (c *FastCookie) SetDomain(domain string) {
+func (c *fastCookie) SetDomain(domain string) {
 	c.Cookie.SetDomain(domain)
 }
 
-// Expires implements `Cookie#Expires` function.
-func (c *FastCookie) Expires() time.Time {
+func (c *fastCookie) Expires() time.Time {
 	return c.Cookie.Expire()
 }
 
-// SetExpires implements `Cookie#SetExpires` function.
-func (c *FastCookie) SetExpires(expires time.Time) {
+func (c *fastCookie) SetExpires(expires time.Time) {
 	c.Cookie.SetExpire(expires)
 }
 
-// Secure implements `Cookie#Secure` function.
-func (c *FastCookie) Secure() bool {
+func (c *fastCookie) Secure() bool {
 	return c.Cookie.Secure()
 }
 
-// SetSecure implements `Cookie#SetSecure` function.
-func (c *FastCookie) SetSecure(secure bool) {
+func (c *fastCookie) SetSecure(secure bool) {
 	c.Cookie.SetSecure(secure)
 }
 
-// HTTPOnly implements `Cookie#HTTPOnly` function.
-func (c *FastCookie) HTTPOnly() bool {
+func (c *fastCookie) HTTPOnly() bool {
 	return c.Cookie.HTTPOnly()
 }
 
-// SetHTTPOnly implements `Cookie#SetHTTPOnly` function.
-func (c *FastCookie) SetHTTPOnly(httpOnly bool) {
+func (c *fastCookie) SetHTTPOnly(httpOnly bool) {
 	c.Cookie.SetHTTPOnly(httpOnly)
 }

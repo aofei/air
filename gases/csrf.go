@@ -137,7 +137,7 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 			}
 
 			// Set CSRF cookie
-			cookie := new(air.FastCookie)
+			cookie := air.NewCookie()
 			cookie.SetName(config.CookieName)
 			cookie.SetValue(token)
 			if config.CookiePath != "" {
