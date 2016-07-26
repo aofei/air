@@ -66,7 +66,7 @@ func (h FastHandlerFunc) ServeHTTP(req Request, res Response) {
 // NewServer returns `Server` with provided listen address.
 func NewServer(addr string) Server {
 	c := Config{Address: addr}
-	return WithConfig(c)
+	return NewServerWithConfig(c)
 }
 
 // NewServerWithTLS returns `Server` with provided TLS config.
@@ -76,7 +76,7 @@ func NewServerWithTLS(addr, certFile, keyFile string) Server {
 		TLSCertFile: certFile,
 		TLSKeyFile:  keyFile,
 	}
-	return WithConfig(c)
+	return NewServerWithConfig(c)
 }
 
 // NewServerWithConfig returns `Server` with provided config.
