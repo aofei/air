@@ -49,8 +49,8 @@ type (
 	}
 )
 
-// NewResponse returns `fastResponse` instance.
-func NewResponse(c *fasthttp.RequestCtx, l Logger) *fastResponse {
+// NewResponse returns `Response` instance.
+func NewResponse(c *fasthttp.RequestCtx, l Logger) Response {
 	return &fastResponse{
 		RequestCtx: c,
 		header:     &fastResponseHeader{ResponseHeader: &c.Response.Header},
