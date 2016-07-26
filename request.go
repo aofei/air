@@ -99,7 +99,7 @@ func NewRequest(c *fasthttp.RequestCtx, l Logger) *FastRequest {
 	return &FastRequest{
 		RequestCtx: c,
 		uri:        &FastURI{URI: c.URI()},
-		header:     &FastRequestHeader{RequestHeader: &c.Request.Header},
+		header:     &fastRequestHeader{RequestHeader: &c.Request.Header},
 		logger:     l,
 	}
 }

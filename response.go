@@ -54,7 +54,7 @@ type (
 func NewResponse(c *fasthttp.RequestCtx, l Logger) *FastResponse {
 	return &FastResponse{
 		RequestCtx: c,
-		header:     &FastResponseHeader{ResponseHeader: &c.Response.Header},
+		header:     &fastResponseHeader{ResponseHeader: &c.Response.Header},
 		writer:     c,
 		logger:     l,
 	}
