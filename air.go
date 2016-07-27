@@ -254,10 +254,9 @@ func (a *Air) Debug() bool {
 	return a.debug
 }
 
-// SetDebug enable/disable debug mode.
+// SetDebug enables/disables debug mode.
 func (a *Air) SetDebug(on bool) {
 	a.debug = on
-	a.SetLogLevel(DEBUG)
 }
 
 // Precontain adds gases to the chain which is run before router.
@@ -415,6 +414,7 @@ func (a *Air) Run(addr string) {
 	s.SetHandler(a)
 	s.SetLogger(a.logger)
 	if a.Debug() {
+		a.SetLogLevel(DEBUG)
 		a.logger.Debug("running in debug mode")
 	}
 	a.logger.Error(s.Start())
