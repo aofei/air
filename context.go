@@ -330,14 +330,18 @@ func (c *airContext) Render(code int, name string, data interface{}) (err error)
 	if err = c.air.renderer.Render(buf, name, data, c); err != nil {
 		return
 	}
-	c.response.Header().Set(HeaderContentType, MIMETextHTML)
+	if c.response.Header().Get(HeaderContentType) == "" {
+		c.response.Header().Set(HeaderContentType, MIMETextHTML)
+	}
 	c.response.WriteHeader(code)
 	_, err = c.response.Write(buf.Bytes())
 	return
 }
 
 func (c *airContext) HTML(code int, html string) (err error) {
-	c.response.Header().Set(HeaderContentType, MIMETextHTML)
+	if c.response.Header().Get(HeaderContentType) == "" {
+		c.response.Header().Set(HeaderContentType, MIMETextHTML)
+	}
 	c.response.WriteHeader(code)
 	_, err = c.response.Write([]byte(html))
 	return
@@ -486,6 +490,13 @@ func (c *airContext) ServeContent(content io.ReadSeeker, name string, modtime ti
 	return err
 }
 
+func (c *airContext) Reset(req Request, res Response) {
+	c.context = context.Background()
+	c.request = req
+	c.response = res
+	c.handler = NotFoundHandler
+}
+
 // ContentTypeByExtension returns the MIME type associated with the file based on
 // its extension. It returns `application/octet-stream` incase MIME type is not
 // found.
@@ -494,11 +505,4 @@ func ContentTypeByExtension(name string) (t string) {
 		t = MIMEOctetStream
 	}
 	return
-}
-
-func (c *airContext) Reset(req Request, res Response) {
-	c.context = context.Background()
-	c.request = req
-	c.response = res
-	c.handler = NotFoundHandler
 }
