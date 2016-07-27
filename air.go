@@ -414,7 +414,7 @@ func (a *Air) Run(addr string) {
 	s.SetLogger(a.logger)
 	if a.Debug() {
 		a.SetLogLevel(DEBUG)
-		a.logger.Debug("running in debug mode")
+		a.logger.Debug("Running In Debug Mode")
 	}
 	a.logger.Error(s.Start())
 }
