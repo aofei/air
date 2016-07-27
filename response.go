@@ -65,7 +65,7 @@ func (r *fastResponse) Header() Header {
 
 func (r *fastResponse) WriteHeader(code int) {
 	if r.committed {
-		r.logger.Warn("response already committed")
+		r.logger.Warn("Response Already Committed")
 		return
 	}
 	r.status = code

@@ -52,7 +52,7 @@ func NewRouter(a *Air) *Router {
 func (r *Router) Add(method, path string, h HandlerFunc, a *Air) {
 	// Validate path
 	if path == "" {
-		a.logger.Fatal("path cannot be empty")
+		a.logger.Fatal("Path Cannot Be Empty")
 	}
 	if path[0] != '/' {
 		path = "/" + path

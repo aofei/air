@@ -109,7 +109,7 @@ func NewServerWithConfig(c Config) Server {
 		},
 	}
 	s.handler = handlerFunc(func(req Request, res Response) {
-		s.logger.Error("handler not set, use `SetHandler()` to set it.")
+		s.logger.Error("Handler Not Set, Use `SetHandler()` To Set It.")
 	})
 	s.ReadTimeout = c.ReadTimeout
 	s.WriteTimeout = c.WriteTimeout

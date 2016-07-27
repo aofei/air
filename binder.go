@@ -55,7 +55,7 @@ func (b *airBinder) bindData(ptr interface{}, data map[string][]string) error {
 	val := reflect.ValueOf(ptr).Elem()
 
 	if typ.Kind() != reflect.Struct {
-		return errors.New("binding element must be a struct")
+		return errors.New("Binding Element Must Be A Struct")
 	}
 
 	for i := 0; i < typ.NumField(); i++ {
@@ -133,7 +133,7 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 	case reflect.String:
 		structField.SetString(val)
 	default:
-		return errors.New("unknown type")
+		return errors.New("Unknown Type")
 	}
 	return nil
 }
