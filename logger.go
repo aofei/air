@@ -16,7 +16,31 @@ import (
 )
 
 type (
-	Logger struct {
+	// Logger defines the logging interface.
+	Logger interface {
+		SetOutput(io.Writer)
+		SetLevel(LoggerLevel)
+		Print(...interface{})
+		Printf(string, ...interface{})
+		Printj(JSON)
+		Debug(...interface{})
+		Debugf(string, ...interface{})
+		Debugj(JSON)
+		Info(...interface{})
+		Infof(string, ...interface{})
+		Infoj(JSON)
+		Warn(...interface{})
+		Warnf(string, ...interface{})
+		Warnj(JSON)
+		Error(...interface{})
+		Errorf(string, ...interface{})
+		Errorj(JSON)
+		Fatal(...interface{})
+		Fatalj(JSON)
+		Fatalf(string, ...interface{})
+	}
+
+	airLogger struct {
 		prefix     string
 		level      LoggerLevel
 		output     io.Writer
@@ -26,11 +50,14 @@ type (
 		mutex      sync.Mutex
 	}
 
+	// LoggerLevel is a level of the Logger
 	LoggerLevel uint8
 
+	// JSON for Logger output format
 	JSON map[string]interface{}
 )
 
+// LoggerLevel
 const (
 	DEBUG LoggerLevel = iota
 	INFO
@@ -43,23 +70,24 @@ const (
 var defaultHeader = `{"time":"${time_rfc3339}","level":"${level}","prefix":"${prefix}",` +
 	`"file":"${short_file}","line":"${line}"}`
 
-func NewLogger(prefix string) (l Logger) {
-	l = Logger{
-		level:    INFO,
-		prefix:   prefix,
-		template: l.newTemplate(defaultHeader),
+// NewLogger creates an instance of `Logger`
+func NewLogger(prefix string) Logger {
+	l := &airLogger{
+		level:  INFO,
+		prefix: prefix,
 		bufferPool: sync.Pool{
 			New: func() interface{} {
 				return bytes.NewBuffer(make([]byte, 256))
 			},
 		},
 	}
+	l.template = l.newTemplate(defaultHeader)
 	l.initLevels()
 	l.SetOutput(os.Stdout)
-	return
+	return l
 }
 
-func (l *Logger) initLevels() {
+func (l *airLogger) initLevels() {
 	l.levels = []string{
 		"DEBUG",
 		"INFO",
@@ -69,114 +97,114 @@ func (l *Logger) initLevels() {
 	}
 }
 
-func (l *Logger) newTemplate(format string) *fasttemplate.Template {
+func (l *airLogger) newTemplate(format string) *fasttemplate.Template {
 	return fasttemplate.New(format, "${", "}")
 }
 
-func (l *Logger) Prefix() string {
+func (l *airLogger) Prefix() string {
 	return l.prefix
 }
 
-func (l *Logger) SetPrefix(p string) {
+func (l *airLogger) SetPrefix(p string) {
 	l.prefix = p
 }
 
-func (l *Logger) Level() LoggerLevel {
+func (l *airLogger) Level() LoggerLevel {
 	return l.level
 }
 
-func (l *Logger) SetLevel(v LoggerLevel) {
+func (l *airLogger) SetLevel(v LoggerLevel) {
 	l.level = v
 }
 
-func (l *Logger) Output() io.Writer {
+func (l *airLogger) Output() io.Writer {
 	return l.output
 }
 
-func (l *Logger) SetHeader(h string) {
+func (l *airLogger) SetHeader(h string) {
 	l.template = l.newTemplate(h)
 }
 
-func (l *Logger) SetOutput(w io.Writer) {
+func (l *airLogger) SetOutput(w io.Writer) {
 	l.output = w
 }
 
-func (l *Logger) Print(i ...interface{}) {
+func (l *airLogger) Print(i ...interface{}) {
 	fmt.Fprintln(l.output, i...)
 }
 
-func (l *Logger) Printf(format string, args ...interface{}) {
+func (l *airLogger) Printf(format string, args ...interface{}) {
 	f := fmt.Sprintf("%s\n", format)
 	fmt.Fprintf(l.output, f, args...)
 }
 
-func (l *Logger) Printj(j JSON) {
+func (l *airLogger) Printj(j JSON) {
 	json.NewEncoder(l.output).Encode(j)
 }
 
-func (l *Logger) Debug(i ...interface{}) {
+func (l *airLogger) Debug(i ...interface{}) {
 	l.log(DEBUG, "", i...)
 }
 
-func (l *Logger) Debugf(format string, args ...interface{}) {
+func (l *airLogger) Debugf(format string, args ...interface{}) {
 	l.log(DEBUG, format, args...)
 }
 
-func (l *Logger) Debugj(j JSON) {
+func (l *airLogger) Debugj(j JSON) {
 	l.log(DEBUG, "json", j)
 }
 
-func (l *Logger) Info(i ...interface{}) {
+func (l *airLogger) Info(i ...interface{}) {
 	l.log(INFO, "", i...)
 }
 
-func (l *Logger) Infof(format string, args ...interface{}) {
+func (l *airLogger) Infof(format string, args ...interface{}) {
 	l.log(INFO, format, args...)
 }
 
-func (l *Logger) Infoj(j JSON) {
+func (l *airLogger) Infoj(j JSON) {
 	l.log(INFO, "json", j)
 }
 
-func (l *Logger) Warn(i ...interface{}) {
+func (l *airLogger) Warn(i ...interface{}) {
 	l.log(WARN, "", i...)
 }
 
-func (l *Logger) Warnf(format string, args ...interface{}) {
+func (l *airLogger) Warnf(format string, args ...interface{}) {
 	l.log(WARN, format, args...)
 }
 
-func (l *Logger) Warnj(j JSON) {
+func (l *airLogger) Warnj(j JSON) {
 	l.log(WARN, "json", j)
 }
 
-func (l *Logger) Error(i ...interface{}) {
+func (l *airLogger) Error(i ...interface{}) {
 	l.log(ERROR, "", i...)
 }
 
-func (l *Logger) Errorf(format string, args ...interface{}) {
+func (l *airLogger) Errorf(format string, args ...interface{}) {
 	l.log(ERROR, format, args...)
 }
 
-func (l *Logger) Errorj(j JSON) {
+func (l *airLogger) Errorj(j JSON) {
 	l.log(ERROR, "json", j)
 }
 
-func (l *Logger) Fatal(i ...interface{}) {
+func (l *airLogger) Fatal(i ...interface{}) {
 	l.log(FATAL, "", i...)
 	os.Exit(1)
 }
 
-func (l *Logger) Fatalf(format string, args ...interface{}) {
+func (l *airLogger) Fatalf(format string, args ...interface{}) {
 	l.log(FATAL, format, args...)
 	os.Exit(1)
 }
 
-func (l *Logger) Fatalj(j JSON) {
+func (l *airLogger) Fatalj(j JSON) {
 	l.log(FATAL, "json", j)
 }
 
-func (l *Logger) log(v LoggerLevel, format string, args ...interface{}) {
+func (l *airLogger) log(v LoggerLevel, format string, args ...interface{}) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	buf := l.bufferPool.Get().(*bytes.Buffer)

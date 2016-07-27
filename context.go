@@ -171,7 +171,7 @@ type (
 		SetHandler(HandlerFunc)
 
 		// Logger returns the `Logger` instance.
-		Logger() *Logger
+		Logger() Logger
 
 		// Air returns the `Air` instance.
 		Air() *Air
@@ -469,8 +469,8 @@ func (c *airContext) SetHandler(h HandlerFunc) {
 	c.handler = h
 }
 
-func (c *airContext) Logger() *Logger {
-	return &c.air.logger
+func (c *airContext) Logger() Logger {
+	return c.air.logger
 }
 
 func (c *airContext) ServeContent(content io.ReadSeeker, name string, modtime time.Time) error {
