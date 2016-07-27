@@ -112,7 +112,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 				case "host":
 					return w.Write([]byte(req.Host()))
 				case "uri":
-					return w.Write([]byte(req.URI()))
+					return w.Write([]byte(req.RequestURI()))
 				case "method":
 					return w.Write([]byte(req.Method()))
 				case "path":
