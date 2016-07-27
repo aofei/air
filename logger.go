@@ -57,7 +57,7 @@ type (
 	JSON map[string]interface{}
 )
 
-// LoggerLevel
+// Logger levels
 const (
 	DEBUG LoggerLevel = iota
 	INFO
