@@ -14,6 +14,9 @@ import (
 type (
 	// CSRFConfig defines the config for CSRF gas.
 	CSRFConfig struct {
+		// Skipper defines a function to skip gas.
+		Skipper Skipper
+
 		// TokenLength is the length of the generated token.
 		TokenLength uint8 `json:"token_length"`
 		// Optional. Default value 32.
@@ -64,6 +67,7 @@ type (
 var (
 	// DefaultCSRFConfig is the default CSRF gas config.
 	DefaultCSRFConfig = CSRFConfig{
+		Skipper:      defaultSkipper,
 		TokenLength:  32,
 		TokenLookup:  "header:" + air.HeaderXCSRFToken,
 		ContextKey:   "csrf",
@@ -83,6 +87,9 @@ func CSRF() air.GasFunc {
 // See `CSRF()`.
 func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 	// Defaults
+	if config.Skipper == nil {
+		config.Skipper = DefaultCSRFConfig.Skipper
+	}
 	if config.TokenLength == 0 {
 		config.TokenLength = DefaultCSRFConfig.TokenLength
 	}
@@ -111,6 +118,10 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
 		return func(c air.Context) error {
+			if config.Skipper(c) {
+				return next(c)
+			}
+
 			req := c.Request()
 			k, err := c.Cookie(config.CookieName)
 			token := ""

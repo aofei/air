@@ -8,8 +8,11 @@ import (
 )
 
 type (
-	// RecoverConfig defines the config for recover gas.
+	// RecoverConfig defines the config for Recover gas.
 	RecoverConfig struct {
+		// Skipper defines a function to skip gas.
+		Skipper Skipper
+
 		// Size of the stack to be printed.
 		// Optional. Default value 4KB.
 		StackSize int `json:"stack_size"`
@@ -26,8 +29,9 @@ type (
 )
 
 var (
-	// DefaultRecoverConfig is the default recover gas config.
+	// DefaultRecoverConfig is the default Recover gas config.
 	DefaultRecoverConfig = RecoverConfig{
+		Skipper:           defaultSkipper,
 		StackSize:         4 << 10, // 4 KB
 		DisableStackAll:   false,
 		DisablePrintStack: false,
@@ -40,16 +44,23 @@ func Recover() air.GasFunc {
 	return RecoverWithConfig(DefaultRecoverConfig)
 }
 
-// RecoverWithConfig returns a recover gas from config.
+// RecoverWithConfig returns a Recover gas from config.
 // See: `Recover()`.
 func RecoverWithConfig(config RecoverConfig) air.GasFunc {
 	// Defaults
+	if config.Skipper == nil {
+		config.Skipper = DefaultRecoverConfig.Skipper
+	}
 	if config.StackSize == 0 {
 		config.StackSize = DefaultRecoverConfig.StackSize
 	}
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
 		return func(c air.Context) error {
+			if config.Skipper(c) {
+				return next(c)
+			}
+
 			defer func() {
 				if r := recover(); r != nil {
 					var err error

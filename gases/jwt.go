@@ -12,8 +12,11 @@ import (
 )
 
 type (
-	// JWTConfig defines the config for JWT auth gas.
+	// JWTConfig defines the config for JWT gas.
 	JWTConfig struct {
+		// Skipper defines a function to skip gas.
+		Skipper Skipper
+
 		// Signing key to validate token.
 		// Required.
 		SigningKey []byte `json:"signing_key"`
@@ -50,6 +53,7 @@ const (
 var (
 	// DefaultJWTConfig is the default JWT auth gas config.
 	DefaultJWTConfig = JWTConfig{
+		Skipper:       defaultSkipper,
 		SigningMethod: AlgorithmHS256,
 		ContextKey:    "user",
 		TokenLookup:   "header:" + air.HeaderAuthorization,
@@ -73,6 +77,9 @@ func JWT(key []byte) air.GasFunc {
 // See: `JWT()`.
 func JWTWithConfig(config JWTConfig) air.GasFunc {
 	// Defaults
+	if config.Skipper == nil {
+		config.Skipper = DefaultJWTConfig.Skipper
+	}
 	if config.SigningKey == nil {
 		panic("jwt gas requires signing key")
 	}
@@ -96,6 +103,10 @@ func JWTWithConfig(config JWTConfig) air.GasFunc {
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
 		return func(c air.Context) error {
+			if config.Skipper(c) {
+				return next(c)
+			}
+
 			auth, err := extractor(c)
 			if err != nil {
 				return air.NewHTTPError(http.StatusBadRequest, err.Error())

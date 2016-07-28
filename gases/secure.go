@@ -7,8 +7,11 @@ import (
 )
 
 type (
-	// SecureConfig defines the config for secure gas.
+	// SecureConfig defines the config for Secure gas.
 	SecureConfig struct {
+		// Skipper defines a function to skip gas.
+		Skipper Skipper
+
 		// XSSProtection provides protection against cross-site scripting attack (XSS)
 		// by setting the `X-XSS-Protection` header.
 		// Optional. Default value "1; mode=block".
@@ -54,15 +57,16 @@ type (
 )
 
 var (
-	// DefaultSecureConfig is the default secure gas config.
+	// DefaultSecureConfig is the default Secure gas config.
 	DefaultSecureConfig = SecureConfig{
+		Skipper:            defaultSkipper,
 		XSSProtection:      "1; mode=block",
 		ContentTypeNosniff: "nosniff",
 		XFrameOptions:      "SAMEORIGIN",
 	}
 )
 
-// Secure returns a secure gas.
+// Secure returns a Secure gas.
 // Secure gas provides protection against cross-site scripting (XSS) attack,
 // content type sniffing, clickjacking, insecure connection and other code injection
 // attacks.
@@ -70,11 +74,20 @@ func Secure() air.GasFunc {
 	return SecureWithConfig(DefaultSecureConfig)
 }
 
-// SecureWithConfig returns a secure gas from config.
+// SecureWithConfig returns a Secure gas from config.
 // See: `Secure()`.
 func SecureWithConfig(config SecureConfig) air.GasFunc {
+	// Defaults
+	if config.Skipper == nil {
+		config.Skipper = DefaultSecureConfig.Skipper
+	}
+
 	return func(next air.HandlerFunc) air.HandlerFunc {
 		return func(c air.Context) error {
+			if config.Skipper(c) {
+				return next(c)
+			}
+
 			req := c.Request()
 			res := c.Response()
 

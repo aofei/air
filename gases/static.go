@@ -10,8 +10,11 @@ import (
 )
 
 type (
-	// StaticConfig defines the config for static gas.
+	// StaticConfig defines the config for Static gas.
 	StaticConfig struct {
+		// Skipper defines a function to skip gas.
+		Skipper Skipper
+
 		// Root directory from where the static content is served.
 		// Required.
 		Root string `json:"root"`
@@ -32,13 +35,14 @@ type (
 )
 
 var (
-	// DefaultStaticConfig is the default static gas config.
+	// DefaultStaticConfig is the default Static gas config.
 	DefaultStaticConfig = StaticConfig{
-		Index: "index.html",
+		Skipper: defaultSkipper,
+		Index:   "index.html",
 	}
 )
 
-// Static returns a static gas to serves static content from the provided
+// Static returns a Static gas to serves static content from the provided
 // root directory.
 func Static(root string) air.GasFunc {
 	c := DefaultStaticConfig
@@ -46,16 +50,23 @@ func Static(root string) air.GasFunc {
 	return StaticWithConfig(c)
 }
 
-// StaticWithConfig returns a static gas from config.
+// StaticWithConfig returns a Static gas from config.
 // See `Static()`.
 func StaticWithConfig(config StaticConfig) air.GasFunc {
 	// Defaults
+	if config.Skipper == nil {
+		config.Skipper = DefaultStaticConfig.Skipper
+	}
 	if config.Index == "" {
 		config.Index = DefaultStaticConfig.Index
 	}
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
 		return func(c air.Context) error {
+			if config.Skipper(c) {
+				return next(c)
+			}
+
 			fs := http.Dir(config.Root)
 			p := c.Request().URI().Path()
 			if strings.Contains(c.Path(), "*") { // If serving from a group, e.g. `/static*`.
