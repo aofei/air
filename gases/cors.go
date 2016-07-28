@@ -11,6 +11,9 @@ import (
 type (
 	// CORSConfig defines the config for CORS gas.
 	CORSConfig struct {
+		// Skipper defines a function to skip gas.
+		Skipper Skipper
+
 		// AllowOrigin defines a list of origins that may access the resource.
 		// Optional. Default value []string{"*"}.
 		AllowOrigins []string `json:"allow_origins"`
@@ -47,6 +50,7 @@ type (
 var (
 	// DefaultCORSConfig is the default CORS gas config.
 	DefaultCORSConfig = CORSConfig{
+		Skipper:      defaultSkipper,
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{air.GET, air.POST, air.PUT, air.DELETE},
 	}
@@ -62,6 +66,9 @@ func CORS() air.GasFunc {
 // See: `CORS()`.
 func CORSWithConfig(config CORSConfig) air.GasFunc {
 	// Defaults
+	if config.Skipper == nil {
+		config.Skipper = DefaultCORSConfig.Skipper
+	}
 	if len(config.AllowOrigins) == 0 {
 		config.AllowOrigins = DefaultCORSConfig.AllowOrigins
 	}
@@ -75,6 +82,10 @@ func CORSWithConfig(config CORSConfig) air.GasFunc {
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
 		return func(c air.Context) error {
+			if config.Skipper(c) {
+				return next(c)
+			}
+
 			req := c.Request()
 			res := c.Response()
 			origin := req.Header().Get(air.HeaderOrigin)

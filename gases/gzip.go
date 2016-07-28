@@ -12,8 +12,11 @@ import (
 )
 
 type (
-	// GzipConfig defines the config for gzip gas.
+	// GzipConfig defines the config for Gzip gas.
 	GzipConfig struct {
+		// Skipper defines a function to skip gas.
+		Skipper Skipper
+
 		// Gzip compression level.
 		// Optional. Default value -1.
 		Level int `json:"level"`
@@ -26,22 +29,26 @@ type (
 )
 
 var (
-	// DefaultGzipConfig is the default gzip gas config.
+	// DefaultGzipConfig is the default Gzip gas config.
 	DefaultGzipConfig = GzipConfig{
-		Level: -1,
+		Skipper: defaultSkipper,
+		Level:   -1,
 	}
 )
 
-// Gzip returns a gas which compresses HTTP response using gzip compression
+// Gzip returns a gas which compresses HTTP response using Gzip compression
 // scheme.
 func Gzip() air.GasFunc {
 	return GzipWithConfig(DefaultGzipConfig)
 }
 
-// GzipWithConfig return gzip gas from config.
+// GzipWithConfig return Gzip gas from config.
 // See: `Gzip()`.
 func GzipWithConfig(config GzipConfig) air.GasFunc {
 	// Defaults
+	if config.Skipper == nil {
+		config.Skipper = DefaultGzipConfig.Skipper
+	}
 	if config.Level == 0 {
 		config.Level = DefaultGzipConfig.Level
 	}
@@ -51,6 +58,10 @@ func GzipWithConfig(config GzipConfig) air.GasFunc {
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
 		return func(c air.Context) error {
+			if config.Skipper(c) {
+				return next(c)
+			}
+
 			res := c.Response()
 			res.Header().Add(air.HeaderVary, air.HeaderAcceptEncoding)
 			if strings.Contains(c.Request().Header().Get(air.HeaderAcceptEncoding), scheme) {
