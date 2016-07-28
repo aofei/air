@@ -330,18 +330,14 @@ func (c *airContext) Render(code int, name string, data interface{}) (err error)
 	if err = c.air.renderer.Render(buf, name, data, c); err != nil {
 		return
 	}
-	if c.response.Header().Get(HeaderContentType) == "" {
-		c.response.Header().Set(HeaderContentType, MIMETextHTML)
-	}
+	c.response.Header().Set(HeaderContentType, MIMETextHTML)
 	c.response.WriteHeader(code)
 	_, err = c.response.Write(buf.Bytes())
 	return
 }
 
 func (c *airContext) HTML(code int, html string) (err error) {
-	if c.response.Header().Get(HeaderContentType) == "" {
-		c.response.Header().Set(HeaderContentType, MIMETextHTML)
-	}
+	c.response.Header().Set(HeaderContentType, MIMETextHTML)
 	c.response.WriteHeader(code)
 	_, err = c.response.Write([]byte(html))
 	return
