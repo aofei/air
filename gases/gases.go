@@ -1,6 +1,6 @@
 package gases
 
-import "air"
+import "github.com/sheng/air"
 
 type (
 	// Skipper defines a function to skip gas. Returning true skips processing

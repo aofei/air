@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"air"
+	"github.com/sheng/air"
 )
 
 type (

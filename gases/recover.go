@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"air"
+	"github.com/sheng/air"
 )
 
 type (

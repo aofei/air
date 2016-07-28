@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"air"
+	"github.com/sheng/air"
 )
 
 type (
