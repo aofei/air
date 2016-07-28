@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"air"
+	"github.com/sheng/air"
 )
 
 type (

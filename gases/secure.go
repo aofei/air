@@ -3,7 +3,7 @@ package gases
 import (
 	"fmt"
 
-	"air"
+	"github.com/sheng/air"
 )
 
 type (

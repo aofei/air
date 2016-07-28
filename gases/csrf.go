@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"air"
+	"github.com/sheng/air"
 )
 
 type (
