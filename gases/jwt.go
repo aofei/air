@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"air"
+	"github.com/sheng/air"
 
 	"github.com/dgrijalva/jwt-go"
 )

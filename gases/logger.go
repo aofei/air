@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"air"
+	"github.com/sheng/air"
 
 	"github.com/valyala/fasttemplate"
 )
