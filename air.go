@@ -295,14 +295,14 @@ func (a *Air) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 // Static registers a new route with path prefix to serve static files from the
 // provided root directory.
 func (a *Air) Static(prefix, root string) {
-	a.GET(prefix+"*", func(c Context) error {
+	a.Get(prefix+"*", func(c Context) error {
 		return c.File(path.Join(root, c.P(0)))
 	})
 }
 
 // File registers a new route with path to serve a static file.
 func (a *Air) File(path, file string) {
-	a.GET(path, func(c Context) error {
+	a.Get(path, func(c Context) error {
 		return c.File(file)
 	})
 }
