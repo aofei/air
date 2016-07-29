@@ -30,7 +30,7 @@ import (
 
 func main() {
 	a := air.New()
-	a.GET("/", homeHandler)
+	a.Get("/", homeHandler)
 	a.Run(":8080")
 }
 
