@@ -49,6 +49,8 @@ then open your browser and visit `http://localhost:8080`.
 
 ## Documention
 
+* English(editing...)
+* 简体中文(编辑中...)
 * [GoDoc](https://godoc.org/github.com/sheng/air)
 
 ## Gas
