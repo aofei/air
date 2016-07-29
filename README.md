@@ -6,7 +6,7 @@ High-performance? Fastest? Almost all of the framework are using these words to 
 
 ## Installation
 
-Open your terminal and execute:
+Open your terminal and execute
 
 ```bash
 $ go get github.com/sheng/air
@@ -39,7 +39,7 @@ func homeHandler(c air.Context) error {
 }
 ```
 
-and run it:
+and run it
 
 ```bash
 $ go run hello.go
@@ -55,18 +55,22 @@ then open your browser and visit `http://localhost:8080`.
 
 As we all know that the Air is a mixture of a combination of multiple gases. So the same is that this framework adopts the Gas as its composition. Everyone can create new Gas and use it within this framework.
 
-> ### Built-in Gases
->
-> Gas | Description
-> --- | ---
-> [Logger](https://godoc.org/github.com/sheng/air/gases#Logger) | Log HTTP requests
-> [Recover](https://godoc.org/github.com/sheng/air/gases#Recover) | Recover from panics
-> [Gzip](https://godoc.org/github.com/sheng/air/gases#Gzip) | Send gzip HTTP response
-> [JWT](https://godoc.org/github.com/sheng/air/gases#JWT) | JWT authentication
-> [Secure](https://godoc.org/github.com/sheng/air/gases#Secure) | Protection against attacks
-> [CORS](https://godoc.org/github.com/sheng/air/gases#CORS) | Cross-Origin Resource Sharing
-> [CSRF](https://godoc.org/github.com/sheng/air/gases#CSRF) | Cross-Site Request Forgery
-> [Static](https://godoc.org/github.com/sheng/air/gases#Static) | Serve static files
+**Built-in Gases**
+
+Gas | Description
+--- | ---
+[Logger](https://godoc.org/github.com/sheng/air/gases#Logger) | Log HTTP requests
+[Recover](https://godoc.org/github.com/sheng/air/gases#Recover) | Recover from panics
+[Gzip](https://godoc.org/github.com/sheng/air/gases#Gzip) | Send gzip HTTP response
+[JWT](https://godoc.org/github.com/sheng/air/gases#JWT) | JWT authentication
+[Secure](https://godoc.org/github.com/sheng/air/gases#Secure) | Protection against attacks
+[CORS](https://godoc.org/github.com/sheng/air/gases#CORS) | Cross-Origin Resource Sharing
+[CSRF](https://godoc.org/github.com/sheng/air/gases#CSRF) | Cross-Site Request Forgery
+[Static](https://godoc.org/github.com/sheng/air/gases#Static) | Serve static files
+
+**Add-on Gases**
+
+If you want to find other Gases, or create your own Gas for this framework, simply visit [here](https://github.com/air-gases).
 
 ## Community
 
