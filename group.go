@@ -21,23 +21,23 @@ func (g *Group) Contain(gases ...GasFunc) {
 	}
 }
 
-// GET implements `Air#GET()` for sub-routes within the Group.
-func (g *Group) GET(path string, handler HandlerFunc, gases ...GasFunc) {
+// Get implements `Air#Get()` for sub-routes within the Group.
+func (g *Group) Get(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(GET, path, handler, gases...)
 }
 
-// POST implements `Air#POST()` for sub-routes within the Group.
-func (g *Group) POST(path string, handler HandlerFunc, gases ...GasFunc) {
+// Post implements `Air#Post()` for sub-routes within the Group.
+func (g *Group) Post(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(POST, path, handler, gases...)
 }
 
-// PUT implements `Air#PUT()` for sub-routes within the Group.
-func (g *Group) PUT(path string, handler HandlerFunc, gases ...GasFunc) {
+// Put implements `Air#Put()` for sub-routes within the Group.
+func (g *Group) Put(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(PUT, path, handler, gases...)
 }
 
-// DELETE implements `Air#DELETE()` for sub-routes within the Group.
-func (g *Group) DELETE(path string, handler HandlerFunc, gases ...GasFunc) {
+// Delete implements `Air#Delete()` for sub-routes within the Group.
+func (g *Group) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(DELETE, path, handler, gases...)
 }
 
