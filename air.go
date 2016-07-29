@@ -268,27 +268,27 @@ func (a *Air) Contain(gases ...GasFunc) {
 	a.gases = append(a.gases, gases...)
 }
 
-// GET registers a new GET route for a path with matching handler in the router
+// Get registers a new GET route for a path with matching handler in the router
 // with optional route-level gases.
-func (a *Air) GET(path string, handler HandlerFunc, gases ...GasFunc) {
+func (a *Air) Get(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(GET, path, handler, gases...)
 }
 
-// POST registers a new POST route for a path with matching handler in the
+// Post registers a new POST route for a path with matching handler in the
 // router with optional route-level gases.
-func (a *Air) POST(path string, handler HandlerFunc, gases ...GasFunc) {
+func (a *Air) Post(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(POST, path, handler, gases...)
 }
 
-// PUT registers a new PUT route for a path with matching handler in the
+// Put registers a new PUT route for a path with matching handler in the
 // router with optional route-level gases.
-func (a *Air) PUT(path string, handler HandlerFunc, gases ...GasFunc) {
+func (a *Air) Put(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(PUT, path, handler, gases...)
 }
 
-// DELETE registers a new DELETE route for a path with matching handler in the router
+// Delete registers a new DELETE route for a path with matching handler in the router
 // with optional route-level gases.
-func (a *Air) DELETE(path string, handler HandlerFunc, gases ...GasFunc) {
+func (a *Air) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(DELETE, path, handler, gases...)
 }
 
