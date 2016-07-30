@@ -34,7 +34,7 @@ func main() {
 	a.Run(":8080")
 }
 
-func homeHandler(c air.Context) error {
+func homeHandler(c *air.Context) error {
 	return c.String(http.StatusOK, "Hello, 世界")
 }
 ```

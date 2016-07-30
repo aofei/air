@@ -61,7 +61,7 @@ type (
 
 	// csrfTokenExtractor defines a function that takes `air.Context` and returns
 	// either a token or an error.
-	csrfTokenExtractor func(air.Context) (string, error)
+	csrfTokenExtractor func(*air.Context) (string, error)
 )
 
 var (
@@ -117,12 +117,12 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 	}
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
-		return func(c air.Context) error {
+		return func(c *air.Context) error {
 			if config.Skipper(c) {
 				return next(c)
 			}
 
-			req := c.Request()
+			req := c.Request
 			k, err := c.Cookie(config.CookieName)
 			token := ""
 
@@ -148,7 +148,7 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 			}
 
 			// Set CSRF cookie
-			cookie := air.NewCookie()
+			cookie := air.Cookie{}
 			cookie.SetName(config.CookieName)
 			cookie.SetValue(token)
 			if config.CookiePath != "" {
@@ -166,7 +166,7 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 			c.Set(config.ContextKey, token)
 
 			// Protect clients from caching the response
-			c.Response().Header().Add(air.HeaderVary, air.HeaderCookie)
+			c.Response.Header.Add(air.HeaderVary, air.HeaderCookie)
 
 			return next(c)
 		}
@@ -176,15 +176,15 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 // csrfTokenFromForm returns a `csrfTokenExtractor` that extracts token from the
 // provided request header.
 func csrfTokenFromHeader(header string) csrfTokenExtractor {
-	return func(c air.Context) (string, error) {
-		return c.Request().Header().Get(header), nil
+	return func(c *air.Context) (string, error) {
+		return c.Request.Header.Get(header), nil
 	}
 }
 
 // csrfTokenFromForm returns a `csrfTokenExtractor` that extracts token from the
 // provided form parameter.
 func csrfTokenFromForm(param string) csrfTokenExtractor {
-	return func(c air.Context) (string, error) {
+	return func(c *air.Context) (string, error) {
 		token := c.FormValue(param)
 		if token == "" {
 			return "", errors.New("empty csrf token in form param")
@@ -196,7 +196,7 @@ func csrfTokenFromForm(param string) csrfTokenExtractor {
 // csrfTokenFromQuery returns a `csrfTokenExtractor` that extracts token from the
 // provided query parameter.
 func csrfTokenFromQuery(param string) csrfTokenExtractor {
-	return func(c air.Context) (string, error) {
+	return func(c *air.Context) (string, error) {
 		token := c.QueryParam(param)
 		if token == "" {
 			return "", errors.New("empty csrf token in query param")

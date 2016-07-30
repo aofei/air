@@ -8,171 +8,102 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-type (
-	// Request defines the interface for HTTP request.
-	Request interface {
-		// IsTLS returns true if HTTP connection is TLS otherwise false.
-		IsTLS() bool
-
-		// Scheme returns the HTTP protocol scheme, `http` or `https`.
-		Scheme() string
-
-		// Host returns HTTP request host. Per RFC 2616, this is either the value of
-		// the `Host` header or the host name given in the URI itself.
-		Host() string
-
-		// RequestURI returns the unmodified `Request-URI` sent by the client.
-		RequestURI() string
-
-		// SetURI sets the URI of the request.
-		SetURI(string)
-
-		// URI returns `fasthttp.URI`.
-		URI() URI
-
-		// Header returns `fasthttp.Header`.
-		Header() Header
-
-		// Referer returns the referring URI, if sent in the request.
-		Referer() string
-
-		// Protocol returns the protocol version string of the HTTP request.
-		// Protocol() string
-
-		// ProtocolMajor returns the major protocol version of the HTTP request.
-		// ProtocolMajor() int
-
-		// ProtocolMinor returns the minor protocol version of the HTTP request.
-		// ProtocolMinor() int
-
-		// ContentLength returns the size of request's body.
-		ContentLength() int64
-
-		// UserAgent returns the client's `User-Agent`.
-		UserAgent() string
-
-		// RemoteAddress returns the client's network address.
-		RemoteAddress() string
-
-		// Method returns the request's HTTP function.
-		Method() string
-
-		// SetMethod sets the HTTP method of the request.
-		SetMethod(string)
-
-		// Body returns request's body.
-		Body() io.Reader
-
-		// Body sets request's body.
-		SetBody(io.Reader)
-
-		// FormValue returns the form field value for the provided name.
-		FormValue(string) string
-
-		// FormParams returns the form parameters.
-		FormParams() map[string][]string
-
-		// FormFile returns the multipart form file for the provided name.
-		FormFile(string) (*multipart.FileHeader, error)
-
-		// MultipartForm returns the multipart form.
-		MultipartForm() (*multipart.Form, error)
-
-		// Cookie returns the named cookie provided in the request.
-		Cookie(string) (Cookie, error)
-
-		// Cookies returns the HTTP cookies sent with the request.
-		Cookies() []Cookie
-	}
-
-	fastRequest struct {
-		*fasthttp.RequestCtx
-		header Header
-		uri    URI
-		logger Logger
-	}
-)
+// Request for HTTP request.
+type Request struct {
+	fastCtx *fasthttp.RequestCtx
+	Header  Header
+	URI     URI
+	Logger  Logger
+}
 
 // NewRequest returns `Request` instance.
-func NewRequest(c *fasthttp.RequestCtx, l Logger) Request {
-	return &fastRequest{
-		RequestCtx: c,
-		uri:        &fastURI{URI: c.URI()},
-		header:     &fastRequestHeader{RequestHeader: &c.Request.Header},
-		logger:     l,
+func NewRequest(c *fasthttp.RequestCtx, l Logger) *Request {
+	return &Request{
+		fastCtx: c,
+		URI:     URI{fastURI: c.URI()},
+		Header:  &fastRequestHeader{RequestHeader: &c.Request.Header},
+		Logger:  l,
 	}
 }
 
-func (r *fastRequest) IsTLS() bool {
-	return r.RequestCtx.IsTLS()
+// IsTLS returns true if HTTP connection is TLS otherwise false.
+func (r *Request) IsTLS() bool {
+	return r.fastCtx.IsTLS()
 }
 
-func (r *fastRequest) Scheme() string {
-	return string(r.RequestCtx.URI().Scheme())
+// Scheme returns the HTTP protocol scheme, `http` or `https`.
+func (r *Request) Scheme() string {
+	return string(r.fastCtx.Request.URI().Scheme())
 }
 
-func (r *fastRequest) Host() string {
-	return string(r.RequestCtx.Host())
+// Host returns HTTP request host. Per RFC 2616, this is either the value of
+// the `Host` header or the host name given in the URI itself.
+func (r *Request) Host() string {
+	return string(r.fastCtx.Request.Host())
 }
 
-func (r *fastRequest) URI() URI {
-	return r.uri
+// Referer returns the referring URI, if sent in the request.
+func (r *Request) Referer() string {
+	return string(r.fastCtx.Request.Header.Referer())
 }
 
-func (r *fastRequest) Header() Header {
-	return r.header
+// ContentLength returns the size of request's body.
+func (r *Request) ContentLength() int64 {
+	return int64(r.fastCtx.Request.Header.ContentLength())
 }
 
-func (r *fastRequest) Referer() string {
-	return string(r.Request.Header.Referer())
+// UserAgent returns the client's `User-Agent`.
+func (r *Request) UserAgent() string {
+	return string(r.fastCtx.UserAgent())
 }
 
-func (r *fastRequest) ContentLength() int64 {
-	return int64(r.Request.Header.ContentLength())
+// RemoteAddr returns the client's network address.
+func (r *Request) RemoteAddr() string {
+	return r.fastCtx.RemoteAddr().String()
 }
 
-func (r *fastRequest) UserAgent() string {
-	return string(r.RequestCtx.UserAgent())
+// Method returns the request's HTTP function.
+func (r *Request) Method() string {
+	return string(r.fastCtx.Method())
 }
 
-func (r *fastRequest) RemoteAddress() string {
-	return r.RemoteAddr().String()
+// SetMethod sets the HTTP method of the request.
+func (r *Request) SetMethod(method string) {
+	r.fastCtx.Request.Header.SetMethodBytes([]byte(method))
 }
 
-func (r *fastRequest) Method() string {
-	return string(r.RequestCtx.Method())
+// RequestURI returns the unmodified `Request-URI` sent by the client.
+func (r *Request) RequestURI() string {
+	return string(r.fastCtx.Request.RequestURI())
 }
 
-func (r *fastRequest) SetMethod(method string) {
-	r.Request.Header.SetMethodBytes([]byte(method))
+// SetURI sets the URI of the request.
+func (r *Request) SetURI(uri string) {
+	r.fastCtx.Request.Header.SetRequestURI(uri)
 }
 
-func (r *fastRequest) RequestURI() string {
-	return string(r.Request.RequestURI())
+// Body returns request's body.
+func (r *Request) Body() io.Reader {
+	return bytes.NewBuffer(r.fastCtx.Request.Body())
 }
 
-func (r *fastRequest) SetURI(uri string) {
-	r.Request.Header.SetRequestURI(uri)
+// Body sets request's body.
+func (r *Request) SetBody(reader io.Reader) {
+	r.fastCtx.Request.SetBodyStream(reader, 0)
 }
 
-func (r *fastRequest) Body() io.Reader {
-	return bytes.NewBuffer(r.Request.Body())
+// FormValue returns the form field value for the provided name.
+func (r *Request) FormValue(name string) string {
+	return string(r.fastCtx.FormValue(name))
 }
 
-func (r *fastRequest) SetBody(reader io.Reader) {
-	r.Request.SetBodyStream(reader, 0)
-}
-
-func (r *fastRequest) FormValue(name string) string {
-	return string(r.RequestCtx.FormValue(name))
-}
-
-func (r *fastRequest) FormParams() (params map[string][]string) {
+// FormParams returns the form parameters.
+func (r *Request) FormParams() (params map[string][]string) {
 	params = make(map[string][]string)
-	mf, err := r.RequestCtx.MultipartForm()
+	mf, err := r.fastCtx.Request.MultipartForm()
 
 	if err == fasthttp.ErrNoMultipartForm {
-		r.PostArgs().VisitAll(func(k, v []byte) {
+		r.fastCtx.PostArgs().VisitAll(func(k, v []byte) {
 			key := string(k)
 			if _, ok := params[key]; ok {
 				params[key] = append(params[key], string(v))
@@ -191,38 +122,42 @@ func (r *fastRequest) FormParams() (params map[string][]string) {
 	return
 }
 
-func (r *fastRequest) FormFile(name string) (*multipart.FileHeader, error) {
-	return r.RequestCtx.FormFile(name)
+// FormFile returns the multipart form file for the provided name.
+func (r *Request) FormFile(name string) (*multipart.FileHeader, error) {
+	return r.fastCtx.FormFile(name)
 }
 
-func (r *fastRequest) MultipartForm() (*multipart.Form, error) {
-	return r.RequestCtx.MultipartForm()
+// MultipartForm returns the multipart form.
+func (r *Request) MultipartForm() (*multipart.Form, error) {
+	return r.fastCtx.MultipartForm()
 }
 
-func (r *fastRequest) Cookie(name string) (Cookie, error) {
+// Cookie returns the named cookie provided in the request.
+func (r *Request) Cookie(name string) (Cookie, error) {
 	c := new(fasthttp.Cookie)
-	b := r.Request.Header.Cookie(name)
+	b := r.fastCtx.Request.Header.Cookie(name)
 	if b == nil {
-		return nil, ErrCookieNotFound
+		return Cookie{}, ErrCookieNotFound
 	}
 	c.SetKey(name)
 	c.SetValueBytes(b)
-	return &fastCookie{c}, nil
+	return Cookie{c}, nil
 }
 
-func (r *fastRequest) Cookies() []Cookie {
+// Cookies returns the HTTP cookies sent with the request.
+func (r *Request) Cookies() []Cookie {
 	cookies := []Cookie{}
-	r.Request.Header.VisitAllCookie(func(name, value []byte) {
+	r.fastCtx.Request.Header.VisitAllCookie(func(name, value []byte) {
 		c := new(fasthttp.Cookie)
 		c.SetKeyBytes(name)
 		c.SetValueBytes(value)
-		cookies = append(cookies, &fastCookie{c})
+		cookies = append(cookies, Cookie{c})
 	})
 	return cookies
 }
 
-func (r *fastRequest) reset(c *fasthttp.RequestCtx, h Header, u URI) {
-	r.RequestCtx = c
-	r.header = h
-	r.uri = u
+func (r *Request) reset(c *fasthttp.RequestCtx, h Header, u URI) {
+	r.fastCtx = c
+	r.Header = h
+	r.URI = u
 }

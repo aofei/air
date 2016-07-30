@@ -56,7 +56,7 @@ func RecoverWithConfig(config RecoverConfig) air.GasFunc {
 	}
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
-		return func(c air.Context) error {
+		return func(c *air.Context) error {
 			if config.Skipper(c) {
 				return next(c)
 			}
@@ -73,7 +73,7 @@ func RecoverWithConfig(config RecoverConfig) air.GasFunc {
 					stack := make([]byte, config.StackSize)
 					length := runtime.Stack(stack, !config.DisableStackAll)
 					if !config.DisablePrintStack {
-						c.Logger().Printf("[%s] %s %s", "PANIC RECOVER", err, stack[:length])
+						c.Air.Logger.Printf("[%s] %s %s", "PANIC RECOVER", err, stack[:length])
 					}
 					c.Error(err)
 				}

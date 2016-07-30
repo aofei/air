@@ -18,341 +18,174 @@ import (
 type (
 	// Context represents the context of the current HTTP request. It holds request and
 	// response objects, path, path parameters, data and registered handler.
-	Context interface {
-		// Context returns `net/context.Context`.
-		Context() context.Context
-
-		// SetContext sets `net/context.Context`.
-		SetContext(context.Context)
-
-		// Deadline returns the time when work done on behalf of this context
-		// should be canceled.  Deadline returns ok==false when no deadline is
-		// set.  Successive calls to Deadline return the same results.
-		Deadline() (deadline time.Time, ok bool)
-
-		// Done returns a channel that's closed when work done on behalf of this
-		// context should be canceled.  Done may return nil if this context can
-		// never be canceled.  Successive calls to Done return the same value.
-		Done() <-chan struct{}
-
-		// Err returns a non-nil error value after Done is closed.  Err returns
-		// Canceled if the context was canceled or DeadlineExceeded if the
-		// context's deadline passed.  No other values for Err are defined.
-		// After Done is closed, successive calls to Err return the same value.
-		Err() error
-
-		// Value returns the value associated with this context for key, or nil
-		// if no value is associated with key.  Successive calls to Value with
-		// the same key returns the same result.
-		Value(key interface{}) interface{}
-
-		// Request returns `Request` interface.
-		Request() Request
-
-		// Request returns `Response` interface.
-		Response() Response
-
-		// Path returns the registered path for the handler.
-		Path() string
-
-		// SetPath sets the registered path for the handler.
-		SetPath(string)
-
-		// P returns path parameter by index.
-		P(int) string
-
-		// Param returns path parameter by name.
-		Param(string) string
-
-		// ParamNames returns path parameter names.
-		ParamNames() []string
-
-		// SetParamNames sets path parameter names.
-		SetParamNames(...string)
-
-		// ParamValues returns path parameter values.
-		ParamValues() []string
-
-		// SetParamValues sets path parameter values.
-		SetParamValues(...string)
-
-		// QueryParam returns the query param for the provided name. It is an alias
-		// for `URI#QueryParam()`.
-		QueryParam(string) string
-
-		// QueryParams returns the query parameters as map.
-		// It is an alias for `URI#QueryParams()`.
-		QueryParams() map[string][]string
-
-		// FormValue returns the form field value for the provided name. It is an
-		// alias for `Request#FormValue()`.
-		FormValue(string) string
-
-		// FormParams returns the form parameters as map.
-		// It is an alias for `Request#FormParams()`.
-		FormParams() map[string][]string
-
-		// FormFile returns the multipart form file for the provided name. It is an
-		// alias for `Request#FormFile()`.
-		FormFile(string) (*multipart.FileHeader, error)
-
-		// MultipartForm returns the multipart form.
-		// It is an alias for `Request#MultipartForm()`.
-		MultipartForm() (*multipart.Form, error)
-
-		// Cookie returns the named cookie provided in the request.
-		// It is an alias for `Request#Cookie()`.
-		Cookie(string) (Cookie, error)
-
-		// SetCookie adds a `Set-Cookie` header in HTTP response.
-		// It is an alias for `Response#SetCookie()`.
-		SetCookie(Cookie)
-
-		// Cookies returns the HTTP cookies sent with the request.
-		// It is an alias for `Request#Cookies()`.
-		Cookies() []Cookie
-
-		// Get retrieves data from the context.
-		Get(string) interface{}
-
-		// Set saves data in the context.
-		Set(string, interface{})
-
-		// Bind binds the request body into provided type `i`. The default binder
-		// does it based on Content-Type header.
-		Bind(interface{}) error
-
-		// Render renders a template with data and sends a text/html response with status
-		// code. Templates can be registered using `Air.SetRenderer()`.
-		Render(int, string, interface{}) error
-
-		// HTML sends an HTTP response with status code.
-		HTML(int, string) error
-
-		// String sends a string response with status code.
-		String(int, string) error
-
-		// JSON sends a JSON response with status code.
-		JSON(int, interface{}) error
-
-		// JSONBlob sends a JSON blob response with status code.
-		JSONBlob(int, []byte) error
-
-		// JSONP sends a JSONP response with status code. It uses `callback` to construct
-		// the JSONP payload.
-		JSONP(int, string, interface{}) error
-
-		// XML sends an XML response with status code.
-		XML(int, interface{}) error
-
-		// XMLBlob sends a XML blob response with status code.
-		XMLBlob(int, []byte) error
-
-		// File sends a response with the content of the file.
-		File(string) error
-
-		// Attachment sends a response from `io.ReaderSeeker` as attachment, prompting
-		// client to save the file.
-		Attachment(io.ReadSeeker, string) error
-
-		// NoContent sends a response with no body and a status code.
-		NoContent(int) error
-
-		// Redirect redirects the request with status code.
-		Redirect(int, string) error
-
-		// Error invokes the registered HTTP error handler. Generally used by gas.
-		Error(err error)
-
-		// Handler returns the matched handler by router.
-		Handler() HandlerFunc
-
-		// SetHandler sets the matched handler by router.
-		SetHandler(HandlerFunc)
-
-		// Logger returns the `Logger` instance.
-		Logger() Logger
-
-		// Air returns the `Air` instance.
-		Air() *Air
-
-		// ServeContent sends static content from `io.Reader` and handles caching
-		// via `If-Modified-Since` request header. It automatically sets `Content-Type`
-		// and `Last-Modified` response headers.
-		ServeContent(io.ReadSeeker, string, time.Time) error
-
-		// Reset resets the context after request completes. It must be called along
-		// with `Air#AcquireContext()` and `Air#ReleaseContext()`.
-		// See `Air#ServeHTTP()`
-		Reset(Request, Response)
-	}
-
-	airContext struct {
-		context  context.Context
-		request  Request
-		response Response
-		path     string
-		pnames   []string
-		pvalues  []string
-		handler  HandlerFunc
-		air      *Air
+	Context struct {
+		goContext   context.Context
+		Request     Request
+		Response    Response
+		Path        string
+		ParamNames  []string
+		ParamValues []string
+		Handler     HandlerFunc
+		Air         *Air
 	}
 )
 
-func (c *airContext) Context() context.Context {
-	return c.context
+// Deadline returns the time when work done on behalf of this context
+// should be canceled.  Deadline returns ok==false when no deadline is
+// set.  Successive calls to Deadline return the same results.
+func (c *Context) Deadline() (deadline time.Time, ok bool) {
+	return c.goContext.Deadline()
 }
 
-func (c *airContext) SetContext(ctx context.Context) {
-	c.context = ctx
+// Done returns a channel that's closed when work done on behalf of this
+// context should be canceled.  Done may return nil if this context can
+// never be canceled.  Successive calls to Done return the same value.
+func (c *Context) Done() <-chan struct{} {
+	return c.goContext.Done()
 }
 
-func (c *airContext) Deadline() (deadline time.Time, ok bool) {
-	return c.context.Deadline()
+// Err returns a non-nil error value after Done is closed.  Err returns
+// Canceled if the context was canceled or DeadlineExceeded if the
+// context's deadline passed.  No other values for Err are defined.
+// After Done is closed, successive calls to Err return the same value.
+func (c *Context) Err() error {
+	return c.goContext.Err()
 }
 
-func (c *airContext) Done() <-chan struct{} {
-	return c.context.Done()
+// Value returns the value associated with this context for key, or nil
+// if no value is associated with key.  Successive calls to Value with
+// the same key returns the same result.
+func (c *Context) Value(key interface{}) interface{} {
+	return c.goContext.Value(key)
 }
 
-func (c *airContext) Err() error {
-	return c.context.Err()
-}
-
-func (c *airContext) Value(key interface{}) interface{} {
-	return c.context.Value(key)
-}
-
-func (c *airContext) Request() Request {
-	return c.request
-}
-
-func (c *airContext) Response() Response {
-	return c.response
-}
-
-func (c *airContext) Path() string {
-	return c.path
-}
-
-func (c *airContext) SetPath(p string) {
-	c.path = p
-}
-
-func (c *airContext) P(i int) (value string) {
-	l := len(c.pnames)
+// P returns path parameter by index.
+func (c *Context) P(i int) (value string) {
+	l := len(c.ParamNames)
 	if i < l {
-		value = c.pvalues[i]
+		value = c.ParamValues[i]
 	}
 	return
 }
 
-func (c *airContext) Param(name string) (value string) {
-	l := len(c.pnames)
-	for i, n := range c.pnames {
+// Param returns path parameter by name.
+func (c *Context) Param(name string) (value string) {
+	l := len(c.ParamNames)
+	for i, n := range c.ParamNames {
 		if n == name && i < l {
-			value = c.pvalues[i]
+			value = c.ParamValues[i]
 			break
 		}
 	}
 	return
 }
 
-func (c *airContext) ParamNames() []string {
-	return c.pnames
+// QueryParam returns the query param for the provided name. It is an alias
+// for `URI#QueryParam()`.
+func (c *Context) QueryParam(name string) string {
+	return c.Request.URI.QueryParam(name)
 }
 
-func (c *airContext) SetParamNames(names ...string) {
-	c.pnames = names
+// QueryParams returns the query parameters as map.
+// It is an alias for `URI#QueryParams()`.
+func (c *Context) QueryParams() map[string][]string {
+	return c.Request.URI.QueryParams()
 }
 
-func (c *airContext) ParamValues() []string {
-	return c.pvalues
+// FormValue returns the form field value for the provided name. It is an
+// alias for `Request#FormValue()`.
+func (c *Context) FormValue(name string) string {
+	return c.Request.FormValue(name)
 }
 
-func (c *airContext) SetParamValues(values ...string) {
-	c.pvalues = values
+// FormParams returns the form parameters as map.
+// It is an alias for `Request#FormParams()`.
+func (c *Context) FormParams() map[string][]string {
+	return c.Request.FormParams()
 }
 
-func (c *airContext) QueryParam(name string) string {
-	return c.request.URI().QueryParam(name)
+// FormFile returns the multipart form file for the provided name. It is an
+// alias for `Request#FormFile()`.
+func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
+	return c.Request.FormFile(name)
 }
 
-func (c *airContext) QueryParams() map[string][]string {
-	return c.request.URI().QueryParams()
+// MultipartForm returns the multipart form.
+// It is an alias for `Request#MultipartForm()`.
+func (c *Context) MultipartForm() (*multipart.Form, error) {
+	return c.Request.MultipartForm()
 }
 
-func (c *airContext) FormValue(name string) string {
-	return c.request.FormValue(name)
+// Cookie returns the named cookie provided in the request.
+// It is an alias for `Request#Cookie()`.
+func (c *Context) Cookie(name string) (Cookie, error) {
+	return c.Request.Cookie(name)
 }
 
-func (c *airContext) FormParams() map[string][]string {
-	return c.request.FormParams()
+// SetCookie adds a `Set-Cookie` header in HTTP response.
+// It is an alias for `Response#SetCookie()`.
+func (c *Context) SetCookie(cookie Cookie) {
+	c.Response.SetCookie(cookie)
 }
 
-func (c *airContext) FormFile(name string) (*multipart.FileHeader, error) {
-	return c.request.FormFile(name)
+// Cookies returns the HTTP cookies sent with the request.
+// It is an alias for `Request#Cookies()`.
+func (c *Context) Cookies() []Cookie {
+	return c.Request.Cookies()
 }
 
-func (c *airContext) MultipartForm() (*multipart.Form, error) {
-	return c.request.MultipartForm()
+// Set saves data in the context.
+func (c *Context) Set(key string, val interface{}) {
+	c.goContext = context.WithValue(c.goContext, key, val)
 }
 
-func (c *airContext) Cookie(name string) (Cookie, error) {
-	return c.request.Cookie(name)
+// Get retrieves data from the context.
+func (c *Context) Get(key string) interface{} {
+	return c.goContext.Value(key)
 }
 
-func (c *airContext) SetCookie(cookie Cookie) {
-	c.response.SetCookie(cookie)
+// Bind binds the request body into provided type `i`. The default binder
+// does it based on Content-Type header.
+func (c *Context) Bind(i interface{}) error {
+	return c.Air.Binder.Bind(i, c)
 }
 
-func (c *airContext) Cookies() []Cookie {
-	return c.request.Cookies()
-}
-
-func (c *airContext) Set(key string, val interface{}) {
-	c.context = context.WithValue(c.context, key, val)
-}
-
-func (c *airContext) Get(key string) interface{} {
-	return c.context.Value(key)
-}
-
-func (c *airContext) Bind(i interface{}) error {
-	return c.air.binder.Bind(i, c)
-}
-
-func (c *airContext) Render(code int, name string, data interface{}) (err error) {
-	if c.air.renderer == nil {
+// Render renders a template with data and sends a text/html response with status
+// code. Templates can be registered using `Air.SetRenderer()`.
+func (c *Context) Render(code int, name string, data interface{}) (err error) {
+	if c.Air.Renderer == nil {
 		return ErrRendererNotRegistered
 	}
 	buf := new(bytes.Buffer)
-	if err = c.air.renderer.Render(buf, name, data, c); err != nil {
+	if err = c.Air.Renderer.Render(buf, name, data, c); err != nil {
 		return
 	}
-	c.response.Header().Set(HeaderContentType, MIMETextHTML)
-	c.response.WriteHeader(code)
-	_, err = c.response.Write(buf.Bytes())
+	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
+	c.Response.WriteHeader(code)
+	_, err = c.Response.Write(buf.Bytes())
 	return
 }
 
-func (c *airContext) HTML(code int, html string) (err error) {
-	c.response.Header().Set(HeaderContentType, MIMETextHTML)
-	c.response.WriteHeader(code)
-	_, err = c.response.Write([]byte(html))
+// HTML sends an HTTP response with status code.
+func (c *Context) HTML(code int, html string) (err error) {
+	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
+	c.Response.WriteHeader(code)
+	_, err = c.Response.Write([]byte(html))
 	return
 }
 
-func (c *airContext) String(code int, s string) (err error) {
-	c.response.Header().Set(HeaderContentType, MIMETextPlain)
-	c.response.WriteHeader(code)
-	_, err = c.response.Write([]byte(s))
+// String sends a string response with status code.
+func (c *Context) String(code int, s string) (err error) {
+	c.Response.Header.Set(HeaderContentType, MIMETextPlain)
+	c.Response.WriteHeader(code)
+	_, err = c.Response.Write([]byte(s))
 	return
 }
 
-func (c *airContext) JSON(code int, i interface{}) (err error) {
+// JSON sends a JSON response with status code.
+func (c *Context) JSON(code int, i interface{}) (err error) {
 	b, err := json.Marshal(i)
-	if c.air.Debug() {
+	if c.Air.Debug {
 		b, err = json.MarshalIndent(i, "", "  ")
 	}
 	if err != nil {
@@ -361,33 +194,37 @@ func (c *airContext) JSON(code int, i interface{}) (err error) {
 	return c.JSONBlob(code, b)
 }
 
-func (c *airContext) JSONBlob(code int, b []byte) (err error) {
-	c.response.Header().Set(HeaderContentType, MIMEApplicationJSON)
-	c.response.WriteHeader(code)
-	_, err = c.response.Write(b)
+// JSONBlob sends a JSON blob response with status code.
+func (c *Context) JSONBlob(code int, b []byte) (err error) {
+	c.Response.Header.Set(HeaderContentType, MIMEApplicationJSON)
+	c.Response.WriteHeader(code)
+	_, err = c.Response.Write(b)
 	return
 }
 
-func (c *airContext) JSONP(code int, callback string, i interface{}) (err error) {
+// JSONP sends a JSONP response with status code. It uses `callback` to construct
+// the JSONP payload.
+func (c *Context) JSONP(code int, callback string, i interface{}) (err error) {
 	b, err := json.Marshal(i)
 	if err != nil {
 		return err
 	}
-	c.response.Header().Set(HeaderContentType, MIMEApplicationJavaScript)
-	c.response.WriteHeader(code)
-	if _, err = c.response.Write([]byte(callback + "(")); err != nil {
+	c.Response.Header.Set(HeaderContentType, MIMEApplicationJavaScript)
+	c.Response.WriteHeader(code)
+	if _, err = c.Response.Write([]byte(callback + "(")); err != nil {
 		return
 	}
-	if _, err = c.response.Write(b); err != nil {
+	if _, err = c.Response.Write(b); err != nil {
 		return
 	}
-	_, err = c.response.Write([]byte(");"))
+	_, err = c.Response.Write([]byte(");"))
 	return
 }
 
-func (c *airContext) XML(code int, i interface{}) (err error) {
+// XML sends an XML response with status code.
+func (c *Context) XML(code int, i interface{}) (err error) {
 	b, err := xml.Marshal(i)
-	if c.air.Debug() {
+	if c.Air.Debug {
 		b, err = xml.MarshalIndent(i, "", "  ")
 	}
 	if err != nil {
@@ -396,17 +233,19 @@ func (c *airContext) XML(code int, i interface{}) (err error) {
 	return c.XMLBlob(code, b)
 }
 
-func (c *airContext) XMLBlob(code int, b []byte) (err error) {
-	c.response.Header().Set(HeaderContentType, MIMEApplicationXML)
-	c.response.WriteHeader(code)
-	if _, err = c.response.Write([]byte(xml.Header)); err != nil {
+// XMLBlob sends a XML blob response with status code.
+func (c *Context) XMLBlob(code int, b []byte) (err error) {
+	c.Response.Header.Set(HeaderContentType, MIMEApplicationXML)
+	c.Response.WriteHeader(code)
+	if _, err = c.Response.Write([]byte(xml.Header)); err != nil {
 		return
 	}
-	_, err = c.response.Write(b)
+	_, err = c.Response.Write(b)
 	return
 }
 
-func (c *airContext) File(file string) error {
+// File sends a response with the content of the file.
+func (c *Context) File(file string) error {
 	f, err := os.Open(file)
 	if err != nil {
 		return ErrNotFound
@@ -427,70 +266,65 @@ func (c *airContext) File(file string) error {
 	return c.ServeContent(f, fi.Name(), fi.ModTime())
 }
 
-func (c *airContext) Attachment(r io.ReadSeeker, name string) (err error) {
-	c.response.Header().Set(HeaderContentType, ContentTypeByExtension(name))
-	c.response.Header().Set(HeaderContentDisposition, "attachment; filename="+name)
-	c.response.WriteHeader(http.StatusOK)
-	_, err = io.Copy(c.response, r)
+// Attachment sends a response from `io.ReaderSeeker` as attachment, prompting
+// client to save the file.
+func (c *Context) Attachment(r io.ReadSeeker, name string) (err error) {
+	c.Response.Header.Set(HeaderContentType, ContentTypeByExtension(name))
+	c.Response.Header.Set(HeaderContentDisposition, "attachment; filename="+name)
+	c.Response.WriteHeader(http.StatusOK)
+	_, err = io.Copy(&c.Response, r)
 	return
 }
 
-func (c *airContext) NoContent(code int) error {
-	c.response.WriteHeader(code)
+// NoContent sends a response with no body and a status code.
+func (c *Context) NoContent(code int) error {
+	c.Response.WriteHeader(code)
 	return nil
 }
 
-func (c *airContext) Redirect(code int, uri string) error {
+// Redirect redirects the request with status code.
+func (c *Context) Redirect(code int, uri string) error {
 	if code < http.StatusMultipleChoices || code > http.StatusTemporaryRedirect {
 		return ErrInvalidRedirectCode
 	}
-	c.response.Header().Set(HeaderLocation, uri)
-	c.response.WriteHeader(code)
+	c.Response.Header.Set(HeaderLocation, uri)
+	c.Response.WriteHeader(code)
 	return nil
 }
 
-func (c *airContext) Error(err error) {
-	c.air.httpErrorHandler(err, c)
+// Error invokes the registered HTTP error handler. Generally used by gas.
+func (c *Context) Error(err error) {
+	c.Air.HTTPErrorHandler(err, c)
 }
 
-func (c *airContext) Air() *Air {
-	return c.air
-}
+// ServeContent sends static content from `io.Reader` and handles caching
+// via `If-Modified-Since` request header. It automatically sets `Content-Type`
+// and `Last-Modified` response headers.
+func (c *Context) ServeContent(content io.ReadSeeker, name string, modtime time.Time) error {
+	req := c.Request
+	res := c.Response
 
-func (c *airContext) Handler() HandlerFunc {
-	return c.handler
-}
-
-func (c *airContext) SetHandler(h HandlerFunc) {
-	c.handler = h
-}
-
-func (c *airContext) Logger() Logger {
-	return c.air.logger
-}
-
-func (c *airContext) ServeContent(content io.ReadSeeker, name string, modtime time.Time) error {
-	req := c.Request()
-	res := c.Response()
-
-	if t, err := time.Parse(http.TimeFormat, req.Header().Get(HeaderIfModifiedSince)); err == nil && modtime.Before(t.Add(1*time.Second)) {
-		res.Header().Del(HeaderContentType)
-		res.Header().Del(HeaderContentLength)
+	if t, err := time.Parse(http.TimeFormat, req.Header.Get(HeaderIfModifiedSince)); err == nil && modtime.Before(t.Add(1*time.Second)) {
+		res.Header.Del(HeaderContentType)
+		res.Header.Del(HeaderContentLength)
 		return c.NoContent(http.StatusNotModified)
 	}
 
-	res.Header().Set(HeaderContentType, ContentTypeByExtension(name))
-	res.Header().Set(HeaderLastModified, modtime.UTC().Format(http.TimeFormat))
+	res.Header.Set(HeaderContentType, ContentTypeByExtension(name))
+	res.Header.Set(HeaderLastModified, modtime.UTC().Format(http.TimeFormat))
 	res.WriteHeader(http.StatusOK)
-	_, err := io.Copy(res, content)
+	_, err := io.Copy(&res, content)
 	return err
 }
 
-func (c *airContext) Reset(req Request, res Response) {
-	c.context = context.Background()
-	c.request = req
-	c.response = res
-	c.handler = NotFoundHandler
+// Reset resets the context after request completes. It must be called along
+// with `Air#AcquireContext()` and `Air#ReleaseContext()`.
+// See `Air#ServeHTTP()`
+func (c *Context) Reset(req Request, res Response) {
+	c.goContext = context.Background()
+	c.Request = req
+	c.Response = res
+	c.Handler = NotFoundHandler
 }
 
 // ContentTypeByExtension returns the MIME type associated with the file based on
