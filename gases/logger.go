@@ -90,13 +90,13 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 	}
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
-		return func(c air.Context) (err error) {
+		return func(c *air.Context) (err error) {
 			if config.Skipper(c) {
 				return next(c)
 			}
 
-			req := c.Request()
-			res := c.Response()
+			req := c.Request
+			res := c.Response
 			start := time.Now()
 			if err = next(c); err != nil {
 				c.Error(err)
@@ -111,10 +111,10 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 				case "time_rfc3339":
 					return w.Write([]byte(time.Now().Format(time.RFC3339)))
 				case "remote_ip":
-					ra := req.RemoteAddress()
-					if ip := req.Header().Get(air.HeaderXRealIP); ip != "" {
+					ra := req.RemoteAddr()
+					if ip := req.Header.Get(air.HeaderXRealIP); ip != "" {
 						ra = ip
-					} else if ip = req.Header().Get(air.HeaderXForwardedFor); ip != "" {
+					} else if ip = req.Header.Get(air.HeaderXForwardedFor); ip != "" {
 						ra = ip
 					} else {
 						ra, _, _ = net.SplitHostPort(ra)
@@ -127,7 +127,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 				case "method":
 					return w.Write([]byte(req.Method()))
 				case "path":
-					p := req.URI().Path()
+					p := req.URI.Path()
 					if p == "" {
 						p = "/"
 					}
@@ -137,7 +137,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 				case "user_agent":
 					return w.Write([]byte(req.UserAgent()))
 				case "status":
-					n := res.Status()
+					n := res.Status
 					return w.Write([]byte(strconv.Itoa(n)))
 				case "latency":
 					l := stop.Sub(start).Nanoseconds() / 1000
@@ -145,13 +145,13 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 				case "latency_human":
 					return w.Write([]byte(stop.Sub(start).String()))
 				case "bytes_in":
-					b := req.Header().Get(air.HeaderContentLength)
+					b := req.Header.Get(air.HeaderContentLength)
 					if b == "" {
 						b = "0"
 					}
 					return w.Write([]byte(b))
 				case "bytes_out":
-					return w.Write([]byte(strconv.FormatInt(res.Size(), 10)))
+					return w.Write([]byte(strconv.FormatInt(res.Size, 10)))
 				}
 				return 0, nil
 			})

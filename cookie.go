@@ -6,114 +6,77 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-type (
-	// Cookie defines the interface for HTTP cookie.
-	Cookie interface {
-		// Name returns the name of the cookie.
-		Name() string
-
-		// SetName sets the name of the cookie.
-		SetName(string)
-
-		// Value returns the value of the cookie.
-		Value() string
-
-		// SetValue sets the value of the cookie.
-		SetValue(string)
-
-		// Path returns the path of the cookie.
-		Path() string
-
-		// SetPath sets the path of the cookie.
-		SetPath(string)
-
-		// Domain returns the domain of the cookie.
-		Domain() string
-
-		// SetDomain sets the domain of the cookie.
-		SetDomain(string)
-
-		// Expires returns the expiry time of the cookie.
-		Expires() time.Time
-
-		// SetExpires sets the expiry time of the cookie.
-		SetExpires(time.Time)
-
-		// Secure indicates if cookie is secured.
-		Secure() bool
-
-		// SetSecure sets the cookie as Secure.
-		SetSecure(bool)
-
-		// HTTPOnly indicate if cookies is HTTP only.
-		HTTPOnly() bool
-
-		// SetHTTPOnly sets the cookie as HTTPOnly.
-		SetHTTPOnly(bool)
-	}
-
-	fastCookie struct {
-		*fasthttp.Cookie
-	}
-)
-
-// NewCookie creates an instance of `Cookie`.
-func NewCookie() Cookie {
-	return &fastCookie{}
+// Cookie for HTTP cookie.
+type Cookie struct {
+	fastCookie *fasthttp.Cookie
 }
 
-func (c *fastCookie) Name() string {
-	return string(c.Cookie.Key())
+// Name returns the name of the cookie.
+func (c *Cookie) Name() string {
+	return string(c.fastCookie.Key())
 }
 
-func (c *fastCookie) SetName(name string) {
-	c.Cookie.SetKey(name)
+// SetName sets the name of the cookie.
+func (c *Cookie) SetName(name string) {
+	c.fastCookie.SetKey(name)
 }
 
-func (c *fastCookie) Value() string {
-	return string(c.Cookie.Value())
+// Value returns the value of the cookie.
+func (c *Cookie) Value() string {
+	return string(c.fastCookie.Value())
 }
 
-func (c *fastCookie) SetValue(value string) {
-	c.Cookie.SetValue(value)
+// SetValue sets the value of the cookie.
+func (c *Cookie) SetValue(value string) {
+	c.fastCookie.SetValue(value)
 }
 
-func (c *fastCookie) Path() string {
-	return string(c.Cookie.Path())
+// Path returns the path of the cookie.
+func (c *Cookie) Path() string {
+	return string(c.fastCookie.Path())
 }
 
-func (c *fastCookie) SetPath(path string) {
-	c.Cookie.SetPath(path)
+// SetPath sets the path of the cookie.
+func (c *Cookie) SetPath(path string) {
+	c.fastCookie.SetPath(path)
 }
 
-func (c *fastCookie) Domain() string {
-	return string(c.Cookie.Domain())
+// Domain returns the domain of the cookie.
+func (c *Cookie) Domain() string {
+	return string(c.fastCookie.Domain())
 }
 
-func (c *fastCookie) SetDomain(domain string) {
-	c.Cookie.SetDomain(domain)
+// SetDomain sets the domain of the cookie.
+func (c *Cookie) SetDomain(domain string) {
+	c.fastCookie.SetDomain(domain)
 }
 
-func (c *fastCookie) Expires() time.Time {
-	return c.Cookie.Expire()
+// Expires returns the expiry time of the cookie.
+func (c *Cookie) Expires() time.Time {
+	return c.fastCookie.Expire()
 }
 
-func (c *fastCookie) SetExpires(expires time.Time) {
-	c.Cookie.SetExpire(expires)
+// SetExpires sets the expiry time of the cookie.
+func (c *Cookie) SetExpires(expires time.Time) {
+	c.fastCookie.SetExpire(expires)
 }
 
-func (c *fastCookie) Secure() bool {
-	return c.Cookie.Secure()
+// Secure indicates if cookie is secured.
+func (c *Cookie) Secure() bool {
+	return c.fastCookie.Secure()
 }
 
-func (c *fastCookie) SetSecure(secure bool) {
-	c.Cookie.SetSecure(secure)
+// SetSecure sets the cookie as Secure.
+func (c *Cookie) SetSecure(secure bool) {
+	c.fastCookie.SetSecure(secure)
 }
 
-func (c *fastCookie) HTTPOnly() bool {
-	return c.Cookie.HTTPOnly()
+// HTTPOnly indicate if cookies is HTTP only.
+func (c *Cookie) HTTPOnly() bool {
+	return c.fastCookie.HTTPOnly()
 }
 
-func (c *fastCookie) SetHTTPOnly(httpOnly bool) {
-	c.Cookie.SetHTTPOnly(httpOnly)
+// SetHTTPOnly sets the cookie as HTTPOnly.
+func (c *Cookie) SetHTTPOnly(httpOnly bool) {
+	c.fastCookie.SetHTTPOnly(httpOnly)
 }

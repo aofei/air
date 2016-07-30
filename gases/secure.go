@@ -83,32 +83,32 @@ func SecureWithConfig(config SecureConfig) air.GasFunc {
 	}
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
-		return func(c air.Context) error {
+		return func(c *air.Context) error {
 			if config.Skipper(c) {
 				return next(c)
 			}
 
-			req := c.Request()
-			res := c.Response()
+			req := c.Request
+			res := c.Response
 
 			if config.XSSProtection != "" {
-				res.Header().Set(air.HeaderXXSSProtection, config.XSSProtection)
+				res.Header.Set(air.HeaderXXSSProtection, config.XSSProtection)
 			}
 			if config.ContentTypeNosniff != "" {
-				res.Header().Set(air.HeaderXContentTypeOptions, config.ContentTypeNosniff)
+				res.Header.Set(air.HeaderXContentTypeOptions, config.ContentTypeNosniff)
 			}
 			if config.XFrameOptions != "" {
-				res.Header().Set(air.HeaderXFrameOptions, config.XFrameOptions)
+				res.Header.Set(air.HeaderXFrameOptions, config.XFrameOptions)
 			}
-			if (req.IsTLS() || (req.Header().Get(air.HeaderXForwardedProto) == "https")) && config.HSTSMaxAge != 0 {
+			if (req.IsTLS() || (req.Header.Get(air.HeaderXForwardedProto) == "https")) && config.HSTSMaxAge != 0 {
 				subdomains := ""
 				if !config.HSTSExcludeSubdomains {
 					subdomains = "; includeSubdomains"
 				}
-				res.Header().Set(air.HeaderStrictTransportSecurity, fmt.Sprintf("max-age=%d%s", config.HSTSMaxAge, subdomains))
+				res.Header.Set(air.HeaderStrictTransportSecurity, fmt.Sprintf("max-age=%d%s", config.HSTSMaxAge, subdomains))
 			}
 			if config.ContentSecurityPolicy != "" {
-				res.Header().Set(air.HeaderContentSecurityPolicy, config.ContentSecurityPolicy)
+				res.Header.Set(air.HeaderContentSecurityPolicy, config.ContentSecurityPolicy)
 			}
 			return next(c)
 		}

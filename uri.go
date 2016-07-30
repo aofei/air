@@ -2,52 +2,35 @@ package air
 
 import "github.com/valyala/fasthttp"
 
-type (
-	// URI defines the interface for HTTP request uri.
-	URI interface {
-		// FullURI returns full uri in the form {Scheme}://{Host}{RequestURI}#{Hash}.
-		FullURI() string
-
-		// Path returns the request URI path.
-		Path() string
-
-		// SetPath sets the request URI path.
-		SetPath(string)
-
-		// QueryParam returns the query param for the provided name.
-		QueryParam(string) string
-
-		// QueryParam returns the query parameters as map.
-		QueryParams() map[string][]string
-
-		// QueryString returns the URI query string.
-		QueryString() string
-	}
-
-	fastURI struct {
-		*fasthttp.URI
-	}
-)
-
-func (u *fastURI) FullURI() string {
-	return string(u.URI.FullURI())
+// URI for HTTP request URI.
+type URI struct {
+	fastURI *fasthttp.URI
 }
 
-func (u *fastURI) Path() string {
-	return string(u.URI.PathOriginal())
+// FullURI returns full URI in the form {Scheme}://{Host}{RequestURI}#{Hash}.
+func (u *URI) FullURI() string {
+	return string(u.fastURI.FullURI())
 }
 
-func (u *fastURI) SetPath(path string) {
-	u.URI.SetPath(path)
+// Path returns the request URI path.
+func (u *URI) Path() string {
+	return string(u.fastURI.PathOriginal())
 }
 
-func (u *fastURI) QueryParam(name string) string {
-	return string(u.URI.QueryArgs().Peek(name))
+// SetPath sets the request URI path.
+func (u *URI) SetPath(path string) {
+	u.fastURI.SetPath(path)
 }
 
-func (u *fastURI) QueryParams() map[string][]string {
+// QueryParam returns the query param for the provided name.
+func (u *URI) QueryParam(name string) string {
+	return string(u.fastURI.QueryArgs().Peek(name))
+}
+
+// QueryParam returns the query parameters as map.
+func (u *URI) QueryParams() map[string][]string {
 	params := make(map[string][]string)
-	u.URI.QueryArgs().VisitAll(func(k, v []byte) {
+	u.fastURI.QueryArgs().VisitAll(func(k, v []byte) {
 		_, ok := params[string(k)]
 		if !ok {
 			params[string(k)] = make([]string, 0)
@@ -57,10 +40,11 @@ func (u *fastURI) QueryParams() map[string][]string {
 	return params
 }
 
-func (u *fastURI) QueryString() string {
-	return string(u.URI.QueryString())
+// QueryString returns the URI query string.
+func (u *URI) QueryString() string {
+	return string(u.fastURI.QueryString())
 }
 
-func (u *fastURI) reset(uri *fasthttp.URI) {
-	u.URI = uri
+func (u *URI) reset(uri *fasthttp.URI) {
+	u.fastURI = uri
 }

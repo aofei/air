@@ -62,14 +62,14 @@ func StaticWithConfig(config StaticConfig) air.GasFunc {
 	}
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
-		return func(c air.Context) error {
+		return func(c *air.Context) error {
 			if config.Skipper(c) {
 				return next(c)
 			}
 
 			fs := http.Dir(config.Root)
-			p := c.Request().URI().Path()
-			if strings.Contains(c.Path(), "*") { // If serving from a group, e.g. `/static*`.
+			p := c.Request.URI.Path()
+			if strings.Contains(c.Path, "*") { // If serving from a group, e.g. `/static*`.
 				p = c.P(0)
 			}
 			file := path.Clean(p)
@@ -116,9 +116,9 @@ func StaticWithConfig(config StaticConfig) air.GasFunc {
 					}
 
 					// Create a directory index
-					res := c.Response()
-					res.Header().Set(air.HeaderContentType, air.MIMETextHTML)
-					if _, err = fmt.Fprintf(res, "<pre>\n"); err != nil {
+					res := c.Response
+					res.Header.Set(air.HeaderContentType, air.MIMETextHTML)
+					if _, err = fmt.Fprintf(&res, "<pre>\n"); err != nil {
 						return err
 					}
 					for _, d := range dirs {
@@ -128,11 +128,11 @@ func StaticWithConfig(config StaticConfig) air.GasFunc {
 							color = "#e91e63"
 							name += "/"
 						}
-						if _, err = fmt.Fprintf(res, "<a href=\"%s\" style=\"color: %s;\">%s</a>\n", name, color, name); err != nil {
+						if _, err = fmt.Fprintf(&res, "<a href=\"%s\" style=\"color: %s;\">%s</a>\n", name, color, name); err != nil {
 							return err
 						}
 					}
-					_, err = fmt.Fprintf(res, "</pre>\n")
+					_, err = fmt.Fprintf(&res, "</pre>\n")
 					return err
 				} else {
 					return next(c)

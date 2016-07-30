@@ -8,81 +8,51 @@ import (
 )
 
 type (
-	// Response defines the interface for HTTP response.
-	Response interface {
-		// Header returns `fasthttp.Header`
-		Header() Header
-
-		// WriteHeader sends an HTTP response header with status code.
-		WriteHeader(int)
-
-		// Write writes the data to the connection as part of an HTTP reply.
-		Write(b []byte) (int, error)
-
-		// SetCookie adds a `Set-Cookie` header in HTTP response.
-		SetCookie(Cookie)
-
-		// Status returns the HTTP response status.
-		Status() int
-
-		// Size returns the number of bytes written to HTTP response.
-		Size() int64
-
-		// Committed returns true if HTTP response header is written, otherwise false.
-		Committed() bool
-
-		// Write returns the HTTP response writer.
-		Writer() io.Writer
-
-		// SetWriter sets the HTTP response writer.
-		SetWriter(io.Writer)
-	}
-
-	fastResponse struct {
-		*fasthttp.RequestCtx
-		header    Header
-		status    int
-		size      int64
-		committed bool
-		writer    io.Writer
-		logger    Logger
+	// Response for HTTP response.
+	Response struct {
+		fastCtx   *fasthttp.RequestCtx
+		Header    Header
+		Status    int
+		Size      int64
+		Committed bool
+		Writer    io.Writer
+		Logger    Logger
 	}
 )
 
 // NewResponse returns `Response` instance.
-func NewResponse(c *fasthttp.RequestCtx, l Logger) Response {
-	return &fastResponse{
-		RequestCtx: c,
-		header:     &fastResponseHeader{ResponseHeader: &c.Response.Header},
-		writer:     c,
-		logger:     l,
+func NewResponse(c *fasthttp.RequestCtx, l Logger) *Response {
+	return &Response{
+		fastCtx: c,
+		Header:  &fastResponseHeader{ResponseHeader: &c.Response.Header},
+		Writer:  c,
+		Logger:  l,
 	}
 }
 
-func (r *fastResponse) Header() Header {
-	return r.header
-}
-
-func (r *fastResponse) WriteHeader(code int) {
-	if r.committed {
-		r.logger.Warn("Response Already Committed")
+// WriteHeader sends an HTTP response header with status code.
+func (r *Response) WriteHeader(code int) {
+	if r.Committed {
+		r.Logger.Warn("Response Already Committed")
 		return
 	}
-	r.status = code
-	r.SetStatusCode(code)
-	r.committed = true
+	r.Status = code
+	r.fastCtx.SetStatusCode(code)
+	r.Committed = true
 }
 
-func (r *fastResponse) Write(b []byte) (n int, err error) {
-	if !r.committed {
+// Write writes the data to the connection as part of an HTTP reply.
+func (r *Response) Write(b []byte) (n int, err error) {
+	if !r.Committed {
 		r.WriteHeader(http.StatusOK)
 	}
-	n, err = r.writer.Write(b)
-	r.size += int64(n)
+	n, err = r.Writer.Write(b)
+	r.Size += int64(n)
 	return
 }
 
-func (r *fastResponse) SetCookie(c Cookie) {
+// SetCookie adds a `Set-Cookie` header in HTTP response.
+func (r *Response) SetCookie(c Cookie) {
 	cookie := new(fasthttp.Cookie)
 	cookie.SetKey(c.Name())
 	cookie.SetValue(c.Value())
@@ -91,34 +61,14 @@ func (r *fastResponse) SetCookie(c Cookie) {
 	cookie.SetExpire(c.Expires())
 	cookie.SetSecure(c.Secure())
 	cookie.SetHTTPOnly(c.HTTPOnly())
-	r.Response.Header.SetCookie(cookie)
+	r.fastCtx.Response.Header.SetCookie(cookie)
 }
 
-func (r *fastResponse) Status() int {
-	return r.status
-}
-
-func (r *fastResponse) Size() int64 {
-	return r.size
-}
-
-func (r *fastResponse) Committed() bool {
-	return r.committed
-}
-
-func (r *fastResponse) Writer() io.Writer {
-	return r.writer
-}
-
-func (r *fastResponse) SetWriter(w io.Writer) {
-	r.writer = w
-}
-
-func (r *fastResponse) reset(c *fasthttp.RequestCtx, h Header) {
-	r.RequestCtx = c
-	r.header = h
-	r.status = http.StatusOK
-	r.size = 0
-	r.committed = false
-	r.writer = c
+func (r *Response) reset(c *fasthttp.RequestCtx, h Header) {
+	r.fastCtx = c
+	r.Header = h
+	r.Status = http.StatusOK
+	r.Size = 0
+	r.Committed = false
+	r.Writer = c
 }

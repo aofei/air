@@ -15,7 +15,7 @@ func (g *Group) Contain(gases ...GasFunc) {
 	// Allow all requests to reach the group as they might get dropped if router
 	// doesn't find a match, making none of the group gas process.
 	for _, m := range methods {
-		g.air.add(m, g.prefix+"*", func(c Context) error {
+		g.air.add(m, g.prefix+"*", func(c *Context) error {
 			return ErrNotFound
 		}, g.gases...)
 	}

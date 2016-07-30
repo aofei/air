@@ -81,15 +81,15 @@ func CORSWithConfig(config CORSConfig) air.GasFunc {
 	maxAge := strconv.Itoa(config.MaxAge)
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
-		return func(c air.Context) error {
+		return func(c *air.Context) error {
 			if config.Skipper(c) {
 				return next(c)
 			}
 
-			req := c.Request()
-			res := c.Response()
-			origin := req.Header().Get(air.HeaderOrigin)
-			originSet := req.Header().Contains(air.HeaderOrigin) // Issue #517
+			req := c.Request
+			res := c.Response
+			origin := req.Header.Get(air.HeaderOrigin)
+			originSet := req.Header.Contains(air.HeaderOrigin) // Issue #517
 
 			// Check allowed origins
 			allowedOrigin := ""
@@ -101,41 +101,41 @@ func CORSWithConfig(config CORSConfig) air.GasFunc {
 			}
 
 			// Simple request
-			res.Header().Add(air.HeaderVary, air.HeaderOrigin)
+			res.Header.Add(air.HeaderVary, air.HeaderOrigin)
 			if !originSet || allowedOrigin == "" {
 				return next(c)
 			}
-			res.Header().Set(air.HeaderAccessControlAllowOrigin, allowedOrigin)
+			res.Header.Set(air.HeaderAccessControlAllowOrigin, allowedOrigin)
 			if config.AllowCredentials {
-				res.Header().Set(air.HeaderAccessControlAllowCredentials, "true")
+				res.Header.Set(air.HeaderAccessControlAllowCredentials, "true")
 			}
 			if exposeHeaders != "" {
-				res.Header().Set(air.HeaderAccessControlExposeHeaders, exposeHeaders)
+				res.Header.Set(air.HeaderAccessControlExposeHeaders, exposeHeaders)
 			}
 			return next(c)
 
 			// Preflight request
-			res.Header().Add(air.HeaderVary, air.HeaderOrigin)
-			res.Header().Add(air.HeaderVary, air.HeaderAccessControlRequestMethod)
-			res.Header().Add(air.HeaderVary, air.HeaderAccessControlRequestHeaders)
+			res.Header.Add(air.HeaderVary, air.HeaderOrigin)
+			res.Header.Add(air.HeaderVary, air.HeaderAccessControlRequestMethod)
+			res.Header.Add(air.HeaderVary, air.HeaderAccessControlRequestHeaders)
 			if !originSet || allowedOrigin == "" {
 				return next(c)
 			}
-			res.Header().Set(air.HeaderAccessControlAllowOrigin, allowedOrigin)
-			res.Header().Set(air.HeaderAccessControlAllowMethods, allowMethods)
+			res.Header.Set(air.HeaderAccessControlAllowOrigin, allowedOrigin)
+			res.Header.Set(air.HeaderAccessControlAllowMethods, allowMethods)
 			if config.AllowCredentials {
-				res.Header().Set(air.HeaderAccessControlAllowCredentials, "true")
+				res.Header.Set(air.HeaderAccessControlAllowCredentials, "true")
 			}
 			if allowHeaders != "" {
-				res.Header().Set(air.HeaderAccessControlAllowHeaders, allowHeaders)
+				res.Header.Set(air.HeaderAccessControlAllowHeaders, allowHeaders)
 			} else {
-				h := req.Header().Get(air.HeaderAccessControlRequestHeaders)
+				h := req.Header.Get(air.HeaderAccessControlRequestHeaders)
 				if h != "" {
-					res.Header().Set(air.HeaderAccessControlAllowHeaders, h)
+					res.Header.Set(air.HeaderAccessControlAllowHeaders, h)
 				}
 			}
 			if config.MaxAge > 0 {
-				res.Header().Set(air.HeaderAccessControlMaxAge, maxAge)
+				res.Header.Set(air.HeaderAccessControlMaxAge, maxAge)
 			}
 			return c.NoContent(http.StatusNoContent)
 		}
