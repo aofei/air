@@ -38,7 +38,7 @@ type (
 		TokenLookup string `json:"token_lookup"`
 	}
 
-	jwtExtractor func(air.Context) (string, error)
+	jwtExtractor func(*air.Context) (string, error)
 )
 
 const (
@@ -102,7 +102,7 @@ func JWTWithConfig(config JWTConfig) air.GasFunc {
 	}
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
-		return func(c air.Context) error {
+		return func(c *air.Context) error {
 			if config.Skipper(c) {
 				return next(c)
 			}
@@ -132,8 +132,8 @@ func JWTWithConfig(config JWTConfig) air.GasFunc {
 // jwtFromHeader returns a `jwtExtractor` that extracts token from the provided
 // request header.
 func jwtFromHeader(header string) jwtExtractor {
-	return func(c air.Context) (string, error) {
-		auth := c.Request().Header().Get(header)
+	return func(c *air.Context) (string, error) {
+		auth := c.Request.Header.Get(header)
 		l := len(bearer)
 		if len(auth) > l+1 && auth[:l] == bearer {
 			return auth[l+1:], nil
@@ -145,7 +145,7 @@ func jwtFromHeader(header string) jwtExtractor {
 // jwtFromQuery returns a `jwtExtractor` that extracts token from the provided query
 // parameter.
 func jwtFromQuery(param string) jwtExtractor {
-	return func(c air.Context) (string, error) {
+	return func(c *air.Context) (string, error) {
 		token := c.QueryParam(param)
 		if token == "" {
 			return "", errors.New("empty jwt in query param")

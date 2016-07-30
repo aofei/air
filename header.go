@@ -27,12 +27,10 @@ type (
 		Contains(string) bool
 	}
 
-	// fastRequestHeader holds `fasthttp.RequestHeader`.
 	fastRequestHeader struct {
 		*fasthttp.RequestHeader
 	}
 
-	// fastResponseHeader holds `fasthttp.ResponseHeader`.
 	fastResponseHeader struct {
 		*fasthttp.ResponseHeader
 	}

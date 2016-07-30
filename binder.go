@@ -13,21 +13,21 @@ import (
 type (
 	// Binder is the interface that wraps the Bind method.
 	Binder interface {
-		Bind(interface{}, Context) error
+		Bind(interface{}, *Context) error
 	}
 
 	airBinder struct{}
 )
 
-func (b *airBinder) Bind(i interface{}, c Context) (err error) {
-	req := c.Request()
+func (b *airBinder) Bind(i interface{}, c *Context) (err error) {
+	req := c.Request
 	if req.Method() == GET {
 		if err = b.bindData(i, c.QueryParams()); err != nil {
 			err = NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		return
 	}
-	ctype := req.Header().Get(HeaderContentType)
+	ctype := req.Header.Get(HeaderContentType)
 	if req.Body() == nil {
 		err = NewHTTPError(http.StatusBadRequest, "Request Body Can't Be Empty")
 		return

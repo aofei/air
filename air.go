@@ -20,14 +20,14 @@ type (
 		pregases         []GasFunc
 		gases            []GasFunc
 		maxParam         *int
-		notFoundHandler  HandlerFunc
-		httpErrorHandler HTTPErrorHandler
-		binder           Binder
-		renderer         Renderer
 		pool             sync.Pool
-		debug            bool
-		router           *Router
-		logger           Logger
+		NotFoundHandler  HandlerFunc
+		HTTPErrorHandler HTTPErrorHandler
+		Binder           Binder
+		Renderer         Renderer
+		Debug            bool
+		Router           *Router
+		Logger           Logger
 	}
 
 	// Route contains a handler and information for matching against requests.
@@ -47,10 +47,10 @@ type (
 	GasFunc func(HandlerFunc) HandlerFunc
 
 	// HandlerFunc defines a function to server HTTP requests.
-	HandlerFunc func(Context) error
+	HandlerFunc func(*Context) error
 
 	// HTTPErrorHandler is a centralized HTTP error handler.
-	HTTPErrorHandler func(error, Context)
+	HTTPErrorHandler func(error, *Context)
 
 	// Validator is the interface that wraps the Validate function.
 	Validator interface {
@@ -59,7 +59,7 @@ type (
 
 	// Renderer is the interface that wraps the Render function.
 	Renderer interface {
-		Render(io.Writer, string, interface{}, Context) error
+		Render(io.Writer, string, interface{}, *Context) error
 	}
 )
 
@@ -148,11 +148,11 @@ var (
 
 // Error handlers
 var (
-	NotFoundHandler = func(c Context) error {
+	NotFoundHandler = func(c *Context) error {
 		return ErrNotFound
 	}
 
-	MethodNotAllowedHandler = func(c Context) error {
+	MethodNotAllowedHandler = func(c *Context) error {
 		return ErrMethodNotAllowed
 	}
 )
@@ -161,101 +161,46 @@ var (
 func New() *Air {
 	a := &Air{maxParam: new(int)}
 	a.pool.New = func() interface{} {
-		return a.NewContext(nil, nil)
+		return a.NewContext(Request{}, Response{})
 	}
-	a.router = NewRouter(a)
+	a.Router = NewRouter(a)
 
 	// Defaults
-	a.SetHTTPErrorHandler(a.DefaultHTTPErrorHandler)
-	a.SetBinder(&airBinder{})
+	a.HTTPErrorHandler = a.DefaultHTTPErrorHandler
+	a.Binder = &airBinder{}
 	l := NewLogger("air")
 	l.SetLevel(ERROR)
-	a.SetLogger(l)
+	a.Logger = l
 	return a
 }
 
 // NewContext returns a Context instance.
-func (a *Air) NewContext(req Request, res Response) Context {
-	return &airContext{
-		context:  context.Background(),
-		request:  req,
-		response: res,
-		air:      a,
-		pvalues:  make([]string, *a.maxParam),
-		handler:  NotFoundHandler,
+func (a *Air) NewContext(req Request, res Response) *Context {
+	return &Context{
+		goContext:   context.Background(),
+		Request:     req,
+		Response:    res,
+		Air:         a,
+		ParamValues: make([]string, *a.maxParam),
+		Handler:     NotFoundHandler,
 	}
 }
 
-// Router returns router.
-func (a *Air) Router() *Router {
-	return a.router
-}
-
-// Logger returns the logger instance.
-func (a *Air) Logger() Logger {
-	return a.logger
-}
-
-// SetLogger defines a custom logger.
-func (a *Air) SetLogger(l Logger) {
-	a.logger = l
-}
-
-// SetLogOutput sets the output destination for the logger. Default value is `os.Std*`
-func (a *Air) SetLogOutput(w io.Writer) {
-	a.logger.SetOutput(w)
-}
-
-// SetLogLevel sets the log level for the logger. Default value ERROR.
-func (a *Air) SetLogLevel(l LoggerLevel) {
-	a.logger.SetLevel(l)
-}
-
 // DefaultHTTPErrorHandler invokes the default HTTP error handler.
-func (a *Air) DefaultHTTPErrorHandler(err error, c Context) {
+func (a *Air) DefaultHTTPErrorHandler(err error, c *Context) {
 	code := http.StatusInternalServerError
 	msg := http.StatusText(code)
 	if he, ok := err.(*HTTPError); ok {
 		code = he.Code
 		msg = he.Message
 	}
-	if a.debug {
+	if a.Debug {
 		msg = err.Error()
 	}
-	if !c.Response().Committed() {
+	if !c.Response.Committed {
 		c.String(code, msg)
 	}
-	a.logger.Error(err)
-}
-
-// SetHTTPErrorHandler registers a custom Air.HTTPErrorHandler.
-func (a *Air) SetHTTPErrorHandler(h HTTPErrorHandler) {
-	a.httpErrorHandler = h
-}
-
-// Binder returns the binder instance.
-func (a *Air) Binder() Binder {
-	return a.binder
-}
-
-// SetBinder registers a custom binder. It's invoked by `Context#Bind()`.
-func (a *Air) SetBinder(b Binder) {
-	a.binder = b
-}
-
-// SetRenderer registers an HTML template renderer. It's invoked by `Context#Render()`.
-func (a *Air) SetRenderer(r Renderer) {
-	a.renderer = r
-}
-
-// Debug returns debug mode (enabled or disabled).
-func (a *Air) Debug() bool {
-	return a.debug
-}
-
-// SetDebug enables/disables debug mode.
-func (a *Air) SetDebug(on bool) {
-	a.debug = on
+	a.Logger.Error(err)
 }
 
 // Precontain adds gases to the chain which is run before router.
@@ -295,21 +240,21 @@ func (a *Air) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 // Static registers a new route with path prefix to serve static files from the
 // provided root directory.
 func (a *Air) Static(prefix, root string) {
-	a.Get(prefix+"*", func(c Context) error {
+	a.Get(prefix+"*", func(c *Context) error {
 		return c.File(path.Join(root, c.P(0)))
 	})
 }
 
 // File registers a new route with path to serve a static file.
 func (a *Air) File(path, file string) {
-	a.Get(path, func(c Context) error {
+	a.Get(path, func(c *Context) error {
 		return c.File(file)
 	})
 }
 
 func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 	name := handlerName(handler)
-	a.router.Add(method, path, func(c Context) error {
+	a.Router.Add(method, path, func(c *Context) error {
 		h := handler
 		// Chain gases
 		for i := len(gases) - 1; i >= 0; i-- {
@@ -322,7 +267,7 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 		Path:    path,
 		Handler: name,
 	}
-	a.router.routes[method+path] = r
+	a.Router.Routes[method+path] = r
 }
 
 // Group creates a new router group with prefix and optional group-level gases.
@@ -338,7 +283,7 @@ func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 	ln := len(params)
 	n := 0
 	name := handlerName(handler)
-	for _, r := range a.router.routes {
+	for _, r := range a.Router.Routes {
 		if r.Handler == name {
 			for i, l := 0, len(r.Path); i < l; i++ {
 				if r.Path[i] == ':' && n < ln {
@@ -357,15 +302,6 @@ func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 	return uri.String()
 }
 
-// Routes returns the registered routes.
-func (a *Air) Routes() []Route {
-	routes := []Route{}
-	for _, v := range a.router.routes {
-		routes = append(routes, v)
-	}
-	return routes
-}
-
 // AcquireContext returns an empty `Context` instance from the pool.
 // You must be return the context by calling `ReleaseContext()`.
 func (a *Air) AcquireContext() Context {
@@ -379,15 +315,15 @@ func (a *Air) ReleaseContext(c Context) {
 }
 
 func (a *Air) ServeHTTP(req Request, res Response) {
-	c := a.pool.Get().(*airContext)
+	c := a.pool.Get().(*Context)
 	c.Reset(req, res)
 
 	// Gases
-	h := func(Context) error {
+	h := func(*Context) error {
 		method := req.Method()
-		path := req.URI().Path()
-		a.router.Find(method, path, c)
-		h := c.handler
+		path := req.URI.Path()
+		a.Router.Find(method, path, c)
+		h := c.Handler
 		for i := len(a.gases) - 1; i >= 0; i-- {
 			h = a.gases[i](h)
 		}
@@ -401,7 +337,7 @@ func (a *Air) ServeHTTP(req Request, res Response) {
 
 	// Execute chain
 	if err := h(c); err != nil {
-		a.httpErrorHandler(err, c)
+		a.HTTPErrorHandler(err, c)
 	}
 
 	a.pool.Put(c)
@@ -411,12 +347,12 @@ func (a *Air) ServeHTTP(req Request, res Response) {
 func (a *Air) Run(addr string) {
 	s := NewServer(addr)
 	s.SetHandler(a)
-	s.SetLogger(a.logger)
-	if a.Debug() {
-		a.SetLogLevel(DEBUG)
-		a.logger.Debug("Running In Debug Mode")
+	s.SetLogger(a.Logger)
+	if a.Debug {
+		a.Logger.SetLevel(DEBUG)
+		a.Logger.Debug("Running In Debug Mode")
 	}
-	a.logger.Error(s.Start())
+	a.Logger.Error(s.Start())
 }
 
 // NewHTTPError creates a new HTTPError instance.
@@ -436,7 +372,7 @@ func (he *HTTPError) Error() string {
 // WrapGas wrap `HandlerFunc` into `GasFunc`.
 func WrapGas(handler HandlerFunc) GasFunc {
 	return func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
+		return func(c *Context) error {
 			if err := handler(c); err != nil {
 				return err
 			}

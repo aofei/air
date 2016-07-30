@@ -57,32 +57,32 @@ func GzipWithConfig(config GzipConfig) air.GasFunc {
 	scheme := "gzip"
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
-		return func(c air.Context) error {
+		return func(c *air.Context) error {
 			if config.Skipper(c) {
 				return next(c)
 			}
 
-			res := c.Response()
-			res.Header().Add(air.HeaderVary, air.HeaderAcceptEncoding)
-			if strings.Contains(c.Request().Header().Get(air.HeaderAcceptEncoding), scheme) {
-				rw := res.Writer()
+			res := c.Response
+			res.Header.Add(air.HeaderVary, air.HeaderAcceptEncoding)
+			if strings.Contains(c.Request.Header.Get(air.HeaderAcceptEncoding), scheme) {
+				rw := res.Writer
 				gw := pool.Get().(*gzip.Writer)
 				gw.Reset(rw)
 				defer func() {
-					if res.Size() == 0 {
+					if res.Size == 0 {
 						// We have to reset response to it's pristine state when
 						// nothing is written to body or error is returned.
 						// See issue #424, #407.
-						res.SetWriter(rw)
-						res.Header().Del(air.HeaderContentEncoding)
+						res.Writer = rw
+						res.Header.Del(air.HeaderContentEncoding)
 						gw.Reset(ioutil.Discard)
 					}
 					gw.Close()
 					pool.Put(gw)
 				}()
 				g := gzipResponseWriter{Response: res, Writer: gw}
-				res.Header().Set(air.HeaderContentEncoding, scheme)
-				res.SetWriter(g)
+				res.Header.Set(air.HeaderContentEncoding, scheme)
+				res.Writer = g
 			}
 			return next(c)
 		}
@@ -90,8 +90,8 @@ func GzipWithConfig(config GzipConfig) air.GasFunc {
 }
 
 func (g gzipResponseWriter) Write(b []byte) (int, error) {
-	if g.Header().Get(air.HeaderContentType) == "" {
-		g.Header().Set(air.HeaderContentType, http.DetectContentType(b))
+	if g.Header.Get(air.HeaderContentType) == "" {
+		g.Header.Set(air.HeaderContentType, http.DetectContentType(b))
 	}
 	return g.Writer.Write(b)
 }

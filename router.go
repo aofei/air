@@ -5,8 +5,8 @@ type (
 	// request matching and URI path parameter parsing.
 	Router struct {
 		tree   *node
-		routes map[string]Route
-		air    *Air
+		Routes map[string]Route
+		Air    *Air
 	}
 
 	node struct {
@@ -43,8 +43,8 @@ func NewRouter(a *Air) *Router {
 		tree: &node{
 			methodHandler: new(methodHandler),
 		},
-		routes: make(map[string]Route),
-		air:    a,
+		Routes: make(map[string]Route),
+		Air:    a,
 	}
 }
 
@@ -52,7 +52,7 @@ func NewRouter(a *Air) *Router {
 func (r *Router) Add(method, path string, h HandlerFunc, a *Air) {
 	// Validate path
 	if path == "" {
-		a.logger.Fatal("Path Cannot Be Empty")
+		a.Logger.Fatal("Path Cannot Be Empty")
 	}
 	if path[0] != '/' {
 		path = "/" + path
@@ -264,7 +264,7 @@ func (n *node) checkMethodNotAllowed() HandlerFunc {
 // - Get context from `Air#AcquireContext()`
 // - Reset it `Context#Reset()`
 // - Return it `Air#ReleaseContext()`.
-func (r *Router) Find(method, path string, context Context) {
+func (r *Router) Find(method, path string, context *Context) {
 	cn := r.tree // Current node as root
 
 	var (
@@ -274,7 +274,7 @@ func (r *Router) Find(method, path string, context Context) {
 		nk      kind   // Next kind
 		nn      *node  // Next node
 		ns      string // Next search
-		pvalues = context.ParamValues()
+		pvalues = context.ParamValues
 	)
 
 	// Search order static > param > any
@@ -376,13 +376,13 @@ func (r *Router) Find(method, path string, context Context) {
 	}
 
 End:
-	context.SetHandler(cn.findHandler(method))
-	context.SetPath(cn.ppath)
-	context.SetParamNames(cn.pnames...)
+	context.Handler = cn.findHandler(method)
+	context.Path = cn.ppath
+	context.ParamNames = cn.pnames
 
 	// NOTE: Slow zone...
-	if context.Handler() == nil {
-		context.SetHandler(cn.checkMethodNotAllowed())
+	if context.Handler == nil {
+		context.Handler = cn.checkMethodNotAllowed()
 
 		// Dig further for any, might have an empty value for *, e.g.
 		// serving a directory. Issue #207.
@@ -390,12 +390,12 @@ End:
 			return
 		}
 		if h := cn.findHandler(method); h != nil {
-			context.SetHandler(h)
+			context.Handler = h
 		} else {
-			context.SetHandler(cn.checkMethodNotAllowed())
+			context.Handler = cn.checkMethodNotAllowed()
 		}
-		context.SetPath(cn.ppath)
-		context.SetParamNames(cn.pnames...)
+		context.Path = cn.ppath
+		context.ParamNames = cn.pnames
 		pvalues[len(cn.pnames)-1] = ""
 	}
 
