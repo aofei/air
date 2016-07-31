@@ -3,103 +3,99 @@ package air
 import "github.com/valyala/fasthttp"
 
 type (
-	// Header defines the interface for HTTP header.
-	Header interface {
-		// Add adds the key, value pair to the header. It appends to any existing values
-		// associated with key.
-		Add(string, string)
-
-		// Del deletes the values associated with key.
-		Del(string)
-
-		// Set sets the header entries associated with key to the single element value.
-		// It replaces any existing values associated with key.
-		Set(string, string)
-
-		// Get gets the first value associated with the given key. If there are
-		// no values associated with the key, Get returns "".
-		Get(string) string
-
-		// Keys returns the header keys.
-		Keys() []string
-
-		// Contains checks if the header is set.
-		Contains(string) bool
+	// RequestHeader for HTTP request header.
+	RequestHeader struct {
+		fastRequestHeader *fasthttp.RequestHeader
 	}
 
-	fastRequestHeader struct {
-		*fasthttp.RequestHeader
-	}
-
-	fastResponseHeader struct {
-		*fasthttp.ResponseHeader
+	// ResponseHeader for HTTP response header.
+	ResponseHeader struct {
+		fastResponseHeader *fasthttp.ResponseHeader
 	}
 )
 
-func (h *fastRequestHeader) Add(key, val string) {
-	h.RequestHeader.Add(key, val)
+// Add adds the key, value pair to the header. It appends to any existing values
+// associated with key.
+func (h *RequestHeader) Add(key, val string) {
+	h.fastRequestHeader.Add(key, val)
 }
 
-func (h *fastRequestHeader) Del(key string) {
-	h.RequestHeader.Del(key)
+// Del deletes the values associated with key.
+func (h *RequestHeader) Del(key string) {
+	h.fastRequestHeader.Del(key)
 }
 
-func (h *fastRequestHeader) Set(key, val string) {
-	h.RequestHeader.Set(key, val)
+// Set sets the header entries associated with key to the single element value.
+// It replaces any existing values associated with key.
+func (h *RequestHeader) Set(key, val string) {
+	h.fastRequestHeader.Set(key, val)
 }
 
-func (h *fastRequestHeader) Get(key string) string {
-	return string(h.RequestHeader.Peek(key))
+// Get gets the first value associated with the given key. If there are
+// no values associated with the key, Get returns "".
+func (h *RequestHeader) Get(key string) string {
+	return string(h.fastRequestHeader.Peek(key))
 }
 
-func (h *fastRequestHeader) Keys() []string {
-	keys := make([]string, h.RequestHeader.Len())
+// Keys returns the header keys.
+func (h *RequestHeader) Keys() []string {
+	keys := make([]string, h.fastRequestHeader.Len())
 	i := 0
-	h.RequestHeader.VisitAll(func(k, v []byte) {
+	h.fastRequestHeader.VisitAll(func(k, v []byte) {
 		keys[i] = string(k)
 		i++
 	})
 	return keys
 }
 
-func (h *fastRequestHeader) Contains(key string) bool {
-	return h.RequestHeader.Peek(key) != nil
+// Contains checks if the header is set.
+func (h *RequestHeader) Contains(key string) bool {
+	return h.fastRequestHeader.Peek(key) != nil
 }
 
-func (h *fastRequestHeader) reset(hdr *fasthttp.RequestHeader) {
-	h.RequestHeader = hdr
+func (h *RequestHeader) reset(hdr *fasthttp.RequestHeader) {
+	h.fastRequestHeader = hdr
 }
 
-func (h *fastResponseHeader) Add(key, val string) {
-	h.ResponseHeader.Add(key, val)
+// Add adds the key, value pair to the header. It appends to any existing values
+// associated with key.
+func (h *ResponseHeader) Add(key, val string) {
+	h.fastResponseHeader.Add(key, val)
 }
 
-func (h *fastResponseHeader) Del(key string) {
-	h.ResponseHeader.Del(key)
+// Del deletes the values associated with key.
+func (h *ResponseHeader) Del(key string) {
+	h.fastResponseHeader.Del(key)
 }
 
-func (h *fastResponseHeader) Get(key string) string {
-	return string(h.ResponseHeader.Peek(key))
+// Get gets the first value associated with the given key. If there are
+// no values associated with the key, Get returns "".
+func (h *ResponseHeader) Get(key string) string {
+	return string(h.fastResponseHeader.Peek(key))
 }
 
-func (h *fastResponseHeader) Set(key, val string) {
-	h.ResponseHeader.Set(key, val)
+// Set sets the header entries associated with key to the single element value.
+// It replaces any existing values associated with key.
+func (h *ResponseHeader) Set(key, val string) {
+	h.fastResponseHeader.Set(key, val)
 }
 
-func (h *fastResponseHeader) Keys() []string {
-	keys := make([]string, h.ResponseHeader.Len())
+// Keys returns the header keys.
+func (h *ResponseHeader) Keys() []string {
+	keys := make([]string, h.fastResponseHeader.Len())
 	i := 0
-	h.ResponseHeader.VisitAll(func(k, v []byte) {
+	h.fastResponseHeader.VisitAll(func(k, v []byte) {
 		keys[i] = string(k)
 		i++
 	})
 	return keys
 }
 
-func (h *fastResponseHeader) Contains(key string) bool {
-	return h.ResponseHeader.Peek(key) != nil
+// Contains checks if the header is set.
+func (h *ResponseHeader) Contains(key string) bool {
+	return h.fastResponseHeader.Peek(key) != nil
 }
 
-func (h *fastResponseHeader) reset(hdr *fasthttp.ResponseHeader) {
-	h.ResponseHeader = hdr
+func (h *ResponseHeader) reset(hdr *fasthttp.ResponseHeader) {
+	h.fastResponseHeader = hdr
 }

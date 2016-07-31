@@ -94,12 +94,12 @@ func NewServerWithConfig(c Config) Server {
 		},
 		requestHeader: sync.Pool{
 			New: func() interface{} {
-				return &fastRequestHeader{}
+				return &RequestHeader{}
 			},
 		},
 		responseHeader: sync.Pool{
 			New: func() interface{} {
-				return &fastResponseHeader{}
+				return &ResponseHeader{}
 			},
 		},
 		uri: sync.Pool{
@@ -152,17 +152,17 @@ func (s *fastServer) startCustomListener() error {
 func (s *fastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 	// Request
 	req := s.pool.request.Get().(*Request)
-	reqHdr := s.pool.requestHeader.Get().(*fastRequestHeader)
+	reqHdr := s.pool.requestHeader.Get().(*RequestHeader)
 	reqURI := s.pool.uri.Get().(*URI)
 	reqHdr.reset(&c.Request.Header)
 	reqURI.reset(c.URI())
-	req.reset(c, reqHdr, *reqURI)
+	req.reset(c, *reqHdr, *reqURI)
 
 	// Response
 	res := s.pool.response.Get().(*Response)
-	resHdr := s.pool.responseHeader.Get().(*fastResponseHeader)
+	resHdr := s.pool.responseHeader.Get().(*ResponseHeader)
 	resHdr.reset(&c.Response.Header)
-	res.reset(c, resHdr)
+	res.reset(c, *resHdr)
 
 	s.handler.ServeHTTP(*req, *res)
 
