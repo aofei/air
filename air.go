@@ -161,7 +161,7 @@ var (
 func New() *Air {
 	a := &Air{maxParam: new(int)}
 	a.pool.New = func() interface{} {
-		return a.NewContext(Request{}, Response{})
+		return a.NewContext(&Request{}, &Response{})
 	}
 	a.Router = NewRouter(a)
 
@@ -175,7 +175,7 @@ func New() *Air {
 }
 
 // NewContext returns a Context instance.
-func (a *Air) NewContext(req Request, res Response) *Context {
+func (a *Air) NewContext(req *Request, res *Response) *Context {
 	return &Context{
 		goContext:   context.Background(),
 		Request:     req,
@@ -314,7 +314,7 @@ func (a *Air) ReleaseContext(c Context) {
 	a.pool.Put(c)
 }
 
-func (a *Air) ServeHTTP(req Request, res Response) {
+func (a *Air) ServeHTTP(req *Request, res *Response) {
 	c := a.pool.Get().(*Context)
 	c.Reset(req, res)
 

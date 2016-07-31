@@ -23,7 +23,7 @@ type (
 	}
 
 	gzipResponseWriter struct {
-		air.Response
+		*air.Response
 		io.Writer
 	}
 )

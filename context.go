@@ -20,8 +20,8 @@ type (
 	// response objects, path, path parameters, data and registered handler.
 	Context struct {
 		goContext   context.Context
-		Request     Request
-		Response    Response
+		Request     *Request
+		Response    *Response
 		Path        string
 		ParamNames  []string
 		ParamValues []string
@@ -272,7 +272,7 @@ func (c *Context) Attachment(r io.ReadSeeker, name string) (err error) {
 	c.Response.Header.Set(HeaderContentType, ContentTypeByExtension(name))
 	c.Response.Header.Set(HeaderContentDisposition, "attachment; filename="+name)
 	c.Response.WriteHeader(http.StatusOK)
-	_, err = io.Copy(&c.Response, r)
+	_, err = io.Copy(c.Response, r)
 	return
 }
 
@@ -313,14 +313,14 @@ func (c *Context) ServeContent(content io.ReadSeeker, name string, modtime time.
 	res.Header.Set(HeaderContentType, ContentTypeByExtension(name))
 	res.Header.Set(HeaderLastModified, modtime.UTC().Format(http.TimeFormat))
 	res.WriteHeader(http.StatusOK)
-	_, err := io.Copy(&res, content)
+	_, err := io.Copy(res, content)
 	return err
 }
 
 // Reset resets the context after request completes. It must be called along
 // with `Air#AcquireContext()` and `Air#ReleaseContext()`.
 // See `Air#ServeHTTP()`
-func (c *Context) Reset(req Request, res Response) {
+func (c *Context) Reset(req *Request, res *Response) {
 	c.goContext = context.Background()
 	c.Request = req
 	c.Response = res
