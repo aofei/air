@@ -11,7 +11,7 @@ import (
 // Request for HTTP request.
 type Request struct {
 	fastCtx *fasthttp.RequestCtx
-	Header  Header
+	Header  RequestHeader
 	URI     URI
 	Logger  Logger
 }
@@ -21,7 +21,7 @@ func NewRequest(c *fasthttp.RequestCtx, l Logger) *Request {
 	return &Request{
 		fastCtx: c,
 		URI:     URI{fastURI: c.URI()},
-		Header:  &fastRequestHeader{RequestHeader: &c.Request.Header},
+		Header:  RequestHeader{fastRequestHeader: &c.Request.Header},
 		Logger:  l,
 	}
 }
@@ -156,7 +156,7 @@ func (r *Request) Cookies() []Cookie {
 	return cookies
 }
 
-func (r *Request) reset(c *fasthttp.RequestCtx, h Header, u URI) {
+func (r *Request) reset(c *fasthttp.RequestCtx, h RequestHeader, u URI) {
 	r.fastCtx = c
 	r.Header = h
 	r.URI = u
