@@ -10,16 +10,9 @@ import (
 	"strings"
 )
 
-type (
-	// Binder is the interface that wraps the Bind method.
-	Binder interface {
-		Bind(interface{}, *Context) error
-	}
+type Binder struct{}
 
-	airBinder struct{}
-)
-
-func (b *airBinder) Bind(i interface{}, c *Context) (err error) {
+func (b *Binder) Bind(i interface{}, c *Context) (err error) {
 	req := c.Request
 	if req.Method() == GET {
 		if err = b.bindData(i, c.QueryParams()); err != nil {
@@ -50,7 +43,7 @@ func (b *airBinder) Bind(i interface{}, c *Context) (err error) {
 	return
 }
 
-func (b *airBinder) bindData(ptr interface{}, data map[string][]string) error {
+func (b *Binder) bindData(ptr interface{}, data map[string][]string) error {
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
 

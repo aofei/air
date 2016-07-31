@@ -23,7 +23,7 @@ type (
 		pool             sync.Pool
 		NotFoundHandler  HandlerFunc
 		HTTPErrorHandler HTTPErrorHandler
-		Binder           Binder
+		Binder           *Binder
 		Renderer         Renderer
 		Debug            bool
 		Router           *Router
@@ -155,7 +155,7 @@ func New() *Air {
 
 	// Defaults
 	a.HTTPErrorHandler = a.DefaultHTTPErrorHandler
-	a.Binder = &airBinder{}
+	a.Binder = &Binder{}
 	l := NewLogger("air")
 	l.SetLevel(ERROR)
 	a.Logger = l
