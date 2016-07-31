@@ -11,7 +11,7 @@ type (
 	// Response for HTTP response.
 	Response struct {
 		fastCtx   *fasthttp.RequestCtx
-		Header    ResponseHeader
+		Header    *ResponseHeader
 		Status    int
 		Size      int64
 		Committed bool
@@ -24,7 +24,7 @@ type (
 func NewResponse(c *fasthttp.RequestCtx, l Logger) *Response {
 	return &Response{
 		fastCtx: c,
-		Header:  ResponseHeader{fastResponseHeader: &c.Response.Header},
+		Header:  &ResponseHeader{fastResponseHeader: &c.Response.Header},
 		Writer:  c,
 		Logger:  l,
 	}
@@ -64,7 +64,7 @@ func (r *Response) SetCookie(c Cookie) {
 	r.fastCtx.Response.Header.SetCookie(cookie)
 }
 
-func (r *Response) reset(c *fasthttp.RequestCtx, h ResponseHeader) {
+func (r *Response) reset(c *fasthttp.RequestCtx, h *ResponseHeader) {
 	r.fastCtx = c
 	r.Header = h
 	r.Status = http.StatusOK
