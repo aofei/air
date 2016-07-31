@@ -23,7 +23,7 @@ type (
 
 	fastServer struct {
 		*fasthttp.Server
-		config  Config
+		config  *Config
 		handler Handler
 		logger  Logger
 		pool    *pool
@@ -39,15 +39,15 @@ type (
 		WriteTimeout time.Duration // Maximum duration before timing out write of the response.
 	}
 
-	// Handler defines an interface to server HTTP requests via `ServeHTTP(Request, Response)`
+	// Handler defines an interface to server HTTP requests via `ServeHTTP(*Request, *Response)`
 	// function.
 	Handler interface {
-		ServeHTTP(Request, Response)
+		ServeHTTP(*Request, *Response)
 	}
 
-	// handlerFunc is an adapter to allow the use of `func(Request, Response)` as
+	// handlerFunc is an adapter to allow the use of `func(*Request, *Response)` as
 	// an HTTP handler.
-	handlerFunc func(Request, Response)
+	handlerFunc func(*Request, *Response)
 
 	pool struct {
 		request        sync.Pool
@@ -60,13 +60,13 @@ type (
 
 // NewServer returns `Server` with provided listen address.
 func NewServer(addr string) Server {
-	c := Config{Address: addr}
+	c := &Config{Address: addr}
 	return NewServerWithConfig(c)
 }
 
 // NewServerWithTLS returns `Server` with provided TLS config.
 func NewServerWithTLS(addr, certFile, keyFile string) Server {
-	c := Config{
+	c := &Config{
 		Address:     addr,
 		TLSCertFile: certFile,
 		TLSKeyFile:  keyFile,
@@ -75,7 +75,7 @@ func NewServerWithTLS(addr, certFile, keyFile string) Server {
 }
 
 // NewServerWithConfig returns `Server` with provided config.
-func NewServerWithConfig(c Config) Server {
+func NewServerWithConfig(c *Config) Server {
 	s := &fastServer{
 		Server: new(fasthttp.Server),
 		config: c,
@@ -108,7 +108,7 @@ func NewServerWithConfig(c Config) Server {
 			},
 		},
 	}
-	s.handler = handlerFunc(func(req Request, res Response) {
+	s.handler = handlerFunc(func(req *Request, res *Response) {
 		s.logger.Error("Handler Not Set, Use `SetHandler()` To Set It.")
 	})
 	s.ReadTimeout = c.ReadTimeout
@@ -156,15 +156,15 @@ func (s *fastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 	reqURI := s.pool.uri.Get().(*URI)
 	reqHdr.reset(&c.Request.Header)
 	reqURI.reset(c.URI())
-	req.reset(c, *reqHdr, *reqURI)
+	req.reset(c, reqHdr, reqURI)
 
 	// Response
 	res := s.pool.response.Get().(*Response)
 	resHdr := s.pool.responseHeader.Get().(*ResponseHeader)
 	resHdr.reset(&c.Response.Header)
-	res.reset(c, *resHdr)
+	res.reset(c, resHdr)
 
-	s.handler.ServeHTTP(*req, *res)
+	s.handler.ServeHTTP(req, res)
 
 	// Return to pool
 	s.pool.request.Put(req)
@@ -175,7 +175,7 @@ func (s *fastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 }
 
 // ServeHTTP serves HTTP request.
-func (h handlerFunc) ServeHTTP(req Request, res Response) {
+func (h handlerFunc) ServeHTTP(req *Request, res *Response) {
 	h(req, res)
 }
 
