@@ -30,32 +30,20 @@ type (
 		Logger           Logger
 	}
 
-	// Route contains a handler and information for matching against requests.
-	Route struct {
-		Method  string
-		Path    string
-		Handler string
-	}
-
 	// HTTPError represents an error that occurred while handling a request.
 	HTTPError struct {
 		Code    int
 		Message string
 	}
 
-	// GasFunc defines a function to process gas.
-	GasFunc func(HandlerFunc) HandlerFunc
-
 	// HandlerFunc defines a function to server HTTP requests.
 	HandlerFunc func(*Context) error
 
+	// GasFunc defines a function to process gas.
+	GasFunc func(HandlerFunc) HandlerFunc
+
 	// HTTPErrorHandler is a centralized HTTP error handler.
 	HTTPErrorHandler func(error, *Context)
-
-	// Validator is the interface that wraps the Validate function.
-	Validator interface {
-		Validate() error
-	}
 
 	// Renderer is the interface that wraps the Render function.
 	Renderer interface {

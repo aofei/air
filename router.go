@@ -20,6 +20,13 @@ type (
 		methodHandler *methodHandler
 	}
 
+	// Route contains a handler and information for matching against requests.
+	Route struct {
+		Method  string
+		Path    string
+		Handler string
+	}
+
 	kind     uint8
 	children []*node
 
