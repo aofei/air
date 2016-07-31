@@ -2,7 +2,7 @@
 
 An ideal RESTful web framework for Go. You can use it to develop a dynamic website or RESTful web service as natural as breathing.
 
-High-performance? Fastest? Almost all of the framework are using these words to tell people that they are the best. Maybe they are, maybe not. This framework does not intend to follow the crowd. So, the Air web framework can assure you only one sentence: **it can run properly.**
+High-performance? Fastest? Almost all of the web frameworks are using these words to tell people that they are the best. Maybe they are, maybe not. This framework does not intend to follow the crowd. So, the Air web framework can assure you only one sentence: **it can run properly.**
 
 ## Installation
 
@@ -55,7 +55,7 @@ then open your browser and visit `http://localhost:8080`.
 
 ## Gas
 
-As we all know that the Air is a mixture of a combination of multiple gases. So the same is that this framework adopts the Gas as its composition. Everyone can create new Gas and use it within this framework.
+As we all know that the Air is a mixture of gases. So the same is that this framework adopts the Gas as its composition. Everyone can create new Gas and use it within this framework.
 
 **Built-in Gases**
 
