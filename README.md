@@ -14,7 +14,7 @@ $ go get github.com/sheng/air
 
 done.
 
-> The only requirement is the [Go](https://golang.org/dl/), at least v1.6
+> The only requirement is the [Go](https://golang.org/dl/), at least v1.5
 
 ## Hello, 世界
 
