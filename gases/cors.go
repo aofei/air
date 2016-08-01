@@ -137,7 +137,8 @@ func CORSWithConfig(config CORSConfig) air.GasFunc {
 			if config.MaxAge > 0 {
 				res.Header.Set(air.HeaderAccessControlMaxAge, maxAge)
 			}
-			return c.NoContent(http.StatusNoContent)
+			c.StatusCode = http.StatusNoContent
+			return c.NoContent()
 		}
 	}
 }

@@ -25,6 +25,7 @@ type Context struct {
 	ParamNames  []string
 	ParamValues []string
 	Data        map[string]interface{}
+	StatusCode  int
 	Handler     HandlerFunc
 	Air         *Air
 }
@@ -149,42 +150,42 @@ func (c *Context) Bind(i interface{}) error {
 	return c.Air.Binder.Bind(i, c)
 }
 
-// Render renders a template with `Context#Data` and sends a text/html response
-// with status code.
-func (c *Context) Render(code int, tplName string) (err error) {
+// Render renders a template with `Context#Data` and `Context#Data["template"]`
+// and sends a text/html response with `Context#StatusCode`.
+func (c *Context) Render() (err error) {
 	if c.Air.Renderer == nil {
 		return ErrRendererNotRegistered
 	}
 	buf := new(bytes.Buffer)
-	if err = c.Air.Renderer.Render(buf, tplName, c); err != nil {
+	if err = c.Air.Renderer.Render(buf, c.Data["template"].(string), c); err != nil {
 		return
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
-	c.Response.WriteHeader(code)
+	c.Response.WriteHeader(c.StatusCode)
 	_, err = c.Response.Write(buf.Bytes())
 	return
 }
 
-// HTML sends an HTTP response with status code.
-func (c *Context) HTML(code int) (err error) {
+// HTML sends an HTTP response with `Context#StatusCode` and `Context#Data["html"]`.
+func (c *Context) HTML() (err error) {
 	data := c.Data["html"].(string)
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
-	c.Response.WriteHeader(code)
+	c.Response.WriteHeader(c.StatusCode)
 	_, err = c.Response.Write([]byte(data))
 	return
 }
 
-// String sends a string response with status code.
-func (c *Context) String(code int) (err error) {
+// String sends a string response with `Context#StatusCode` and `Context#Data["string"]`.
+func (c *Context) String() (err error) {
 	data := c.Data["string"].(string)
 	c.Response.Header.Set(HeaderContentType, MIMETextPlain)
-	c.Response.WriteHeader(code)
+	c.Response.WriteHeader(c.StatusCode)
 	_, err = c.Response.Write([]byte(data))
 	return
 }
 
-// JSON sends a JSON response with status code.
-func (c *Context) JSON(code int) (err error) {
+// JSON sends a JSON response with `Context#StatusCode` and `Context#Data["json"]`.
+func (c *Context) JSON() (err error) {
 	data := c.Data["json"]
 	b, err := json.Marshal(data)
 	if c.Air.Debug {
@@ -193,28 +194,28 @@ func (c *Context) JSON(code int) (err error) {
 	if err != nil {
 		return err
 	}
-	return c.JSONBlob(code, b)
+	return c.JSONBlob(b)
 }
 
-// JSONBlob sends a JSON blob response with status code.
-func (c *Context) JSONBlob(code int, b []byte) (err error) {
+// JSONBlob sends a JSON blob response with `Context#StatusCode`.
+func (c *Context) JSONBlob(b []byte) (err error) {
 	c.Response.Header.Set(HeaderContentType, MIMEApplicationJSON)
-	c.Response.WriteHeader(code)
+	c.Response.WriteHeader(c.StatusCode)
 	_, err = c.Response.Write(b)
 	return
 }
 
-// JSONP sends a JSONP response with status code. It uses `callback` to construct
-// the JSONP payload.
-func (c *Context) JSONP(code int, callback string) (err error) {
+// JSONP sends a JSONP response with `Context#StatusCode` and `Context#Data["jsonp"]`.
+// It uses `Context#Data["callback"]` to construct the JSONP payload.
+func (c *Context) JSONP() (err error) {
 	data := c.Data["jsonp"]
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 	c.Response.Header.Set(HeaderContentType, MIMEApplicationJavaScript)
-	c.Response.WriteHeader(code)
-	if _, err = c.Response.Write([]byte(callback + "(")); err != nil {
+	c.Response.WriteHeader(c.StatusCode)
+	if _, err = c.Response.Write([]byte(c.Data["callback"].(string) + "(")); err != nil {
 		return
 	}
 	if _, err = c.Response.Write(b); err != nil {
@@ -224,8 +225,8 @@ func (c *Context) JSONP(code int, callback string) (err error) {
 	return
 }
 
-// XML sends an XML response with status code.
-func (c *Context) XML(code int, i interface{}) (err error) {
+// XML sends an XML response with `Context#StatusCode` and `Context#Data["xml"]`.
+func (c *Context) XML() (err error) {
 	data := c.Data["xml"]
 	b, err := xml.Marshal(data)
 	if c.Air.Debug {
@@ -234,13 +235,13 @@ func (c *Context) XML(code int, i interface{}) (err error) {
 	if err != nil {
 		return err
 	}
-	return c.XMLBlob(code, b)
+	return c.XMLBlob(b)
 }
 
-// XMLBlob sends a XML blob response with status code.
-func (c *Context) XMLBlob(code int, b []byte) (err error) {
+// XMLBlob sends a XML blob response with `Context#StatusCode`.
+func (c *Context) XMLBlob(b []byte) (err error) {
 	c.Response.Header.Set(HeaderContentType, MIMEApplicationXML)
-	c.Response.WriteHeader(code)
+	c.Response.WriteHeader(c.StatusCode)
 	if _, err = c.Response.Write([]byte(xml.Header)); err != nil {
 		return
 	}
@@ -280,19 +281,19 @@ func (c *Context) Attachment(r io.ReadSeeker, name string) (err error) {
 	return
 }
 
-// NoContent sends a response with no body and a status code.
-func (c *Context) NoContent(code int) error {
-	c.Response.WriteHeader(code)
+// NoContent sends a response with no body and a `Context#StatusCode`.
+func (c *Context) NoContent() error {
+	c.Response.WriteHeader(c.StatusCode)
 	return nil
 }
 
-// Redirect redirects the request with status code.
-func (c *Context) Redirect(code int, uri string) error {
-	if code < http.StatusMultipleChoices || code > http.StatusTemporaryRedirect {
+// Redirect redirects the request with `Context#StatusCode`.
+func (c *Context) Redirect(uri string) error {
+	if c.StatusCode < http.StatusMultipleChoices || c.StatusCode > http.StatusTemporaryRedirect {
 		return ErrInvalidRedirectCode
 	}
 	c.Response.Header.Set(HeaderLocation, uri)
-	c.Response.WriteHeader(code)
+	c.Response.WriteHeader(c.StatusCode)
 	return nil
 }
 
@@ -311,7 +312,8 @@ func (c *Context) ServeContent(content io.ReadSeeker, name string, modtime time.
 	if t, err := time.Parse(http.TimeFormat, req.Header.Get(HeaderIfModifiedSince)); err == nil && modtime.Before(t.Add(1*time.Second)) {
 		res.Header.Del(HeaderContentType)
 		res.Header.Del(HeaderContentLength)
-		return c.NoContent(http.StatusNotModified)
+		c.StatusCode = http.StatusNotModified
+		return c.NoContent()
 	}
 
 	res.Header.Set(HeaderContentType, ContentTypeByExtension(name))
