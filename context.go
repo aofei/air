@@ -149,8 +149,8 @@ func (c *Context) Bind(i interface{}) error {
 	return c.Air.Binder.Bind(i, c)
 }
 
-// Render renders a template with `Context#Data` and sends a text/html response with status
-// code. Templates can be registered using `Air.SetRenderer()`.
+// Render renders a template with `Context#Data` and sends a text/html response
+// with status code.
 func (c *Context) Render(code int, tplName string) (err error) {
 	if c.Air.Renderer == nil {
 		return ErrRendererNotRegistered
