@@ -12,55 +12,52 @@ import (
 	"time"
 )
 
+// Renderer is used to provide a `Render()` method for an `Air` instance
+// for render a text/html response by using `template.Template`.
 type Renderer struct {
 	goTemplate *template.Template
-	funcMap    template.FuncMap
+	FuncMap    template.FuncMap
 }
 
-var (
-	errBadComparisonType = errors.New("invalid type for comparison")
-	errBadComparison     = errors.New("incompatible types for comparison")
-	errNoComparison      = errors.New("missing argument for comparison")
-)
-
-type typeKind int
-
-const (
-	invalidKind typeKind = iota
-	boolKind
-	complexKind
-	intKind
-	floatKind
-	stringKind
-	uintKind
-)
-
+// Render renders a text/html response by using `template.Template`
 func (r *Renderer) Render(wr io.Writer, tplName string, c *Context) error {
 	return r.goTemplate.ExecuteTemplate(wr, tplName, c.Data)
 }
 
+// initDefaultTempleFuncs initializes the default template funcs.
 func (r *Renderer) initDefaultTempleFuncs() {
-	r.funcMap = make(template.FuncMap)
-	r.funcMap["strlen"] = strlen
-	r.funcMap["substr"] = substr
-	r.funcMap["str2html"] = str2html
-	r.funcMap["html2str"] = html2str
-	r.funcMap["datefmt"] = datefmt
-	r.funcMap["eq"] = eq
-	r.funcMap["ne"] = ne
-	r.funcMap["lt"] = lt
-	r.funcMap["le"] = le
-	r.funcMap["gt"] = gt
-	r.funcMap["ge"] = ge
+	r.FuncMap = make(template.FuncMap)
+	r.FuncMap["strlen"] = strlen
+	r.FuncMap["substr"] = substr
+	r.FuncMap["str2html"] = str2html
+	r.FuncMap["html2str"] = html2str
+	r.FuncMap["datefmt"] = datefmt
+	r.FuncMap["eq"] = eq
+	r.FuncMap["ne"] = ne
+	r.FuncMap["lt"] = lt
+	r.FuncMap["le"] = le
+	r.FuncMap["gt"] = gt
+	r.FuncMap["ge"] = ge
 }
 
-func (r *Renderer) AddTemplateFunc(name string, f interface{}) {
-	r.funcMap[name] = f
-	r.goTemplate.Funcs(r.funcMap)
-}
-
+// parseTemplates parses files into templates.
+//
+// e.g. src == "views"
+//
+// views/
+//   index.html
+//   login.html
+//   register.html
+//
+// views/parts/
+//   header.html
+//   footer.html
+//
+// will be parsed into:
+//
+// "index.html", "login.html", "register.html",
+// "parts/header.html", "parts/footer.html".
 func (r *Renderer) parseTemplates(src string) {
-	r.initDefaultTempleFuncs()
 	if src[len(src)-1] == '/' {
 		src = src[:len(src)-1]
 	}
@@ -74,17 +71,10 @@ func (r *Renderer) parseTemplates(src string) {
 			panic(err)
 		}
 		s := string(b)
-		// e.g. src == "views", "views/parts/header.html" will be "parts/header.html".
 		name := filename[len(src)+1:]
-		// First template becomes return value if not already defined,
-		// and we use that one for subsequent New calls to associate
-		// all the templates together. Also, if this file has the same name
-		// as t, this file becomes the contents of t, so
-		//  t, err := New(name).Funcs(xxx).ParseFiles(name)
-		// works. Otherwise we create a new template associated with t.
 		var tmpl *template.Template
 		if r.goTemplate == nil {
-			r.goTemplate = template.New(name).Funcs(r.funcMap)
+			r.goTemplate = template.New(name).Funcs(r.FuncMap)
 		}
 		if name == r.goTemplate.Name() {
 			tmpl = r.goTemplate
@@ -97,6 +87,24 @@ func (r *Renderer) parseTemplates(src string) {
 		}
 	}
 }
+
+type typeKind int
+
+const (
+	invalidKind typeKind = iota
+	intKind
+	uintKind
+	floatKind
+	complexKind
+	boolKind
+	stringKind
+)
+
+var (
+	errBadComparisonType = errors.New("Invalid Type For Comparison")
+	errBadComparison     = errors.New("Incompatible Types For Comparison")
+	errNoComparison      = errors.New("Missing Argument For Comparison")
+)
 
 // strlen returns the number of characters in s.
 func strlen(s string) int {
@@ -155,6 +163,24 @@ func datefmt(t time.Time, layout string) string {
 	return t.Format(layout)
 }
 
+func basicKind(v reflect.Value) (typeKind, error) {
+	switch v.Kind() {
+	case reflect.Bool:
+		return boolKind, nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return intKind, nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return uintKind, nil
+	case reflect.Float32, reflect.Float64:
+		return floatKind, nil
+	case reflect.Complex64, reflect.Complex128:
+		return complexKind, nil
+	case reflect.String:
+		return stringKind, nil
+	}
+	return invalidKind, errBadComparisonType
+}
+
 // eq evaluates the comparison a == b || a == c || ...
 func eq(arg1 interface{}, arg2 ...interface{}) (bool, error) {
 	v1 := reflect.ValueOf(arg1)
@@ -189,7 +215,7 @@ func eq(arg1 interface{}, arg2 ...interface{}) (bool, error) {
 		case uintKind:
 			truth = v1.Uint() == v2.Uint()
 		default:
-			panic("invalid kind")
+			panic("Invalid Kind")
 		}
 		if truth {
 			return true, nil
@@ -198,8 +224,8 @@ func eq(arg1 interface{}, arg2 ...interface{}) (bool, error) {
 	return false, nil
 }
 
-// ne evaluates the comparison a != b.
-func ne(arg1, arg2 interface{}) (bool, error) {
+// ne evaluates the comparison a != b && a != c && ...
+func ne(arg1 interface{}, arg2 ...interface{}) (bool, error) {
 	// != is the inverse of ==.
 	equal, err := eq(arg1, arg2)
 	return !equal, err
@@ -233,7 +259,7 @@ func lt(arg1, arg2 interface{}) (bool, error) {
 	case uintKind:
 		truth = v1.Uint() < v2.Uint()
 	default:
-		panic("invalid kind")
+		panic("Invalid Kind")
 	}
 	return truth, nil
 }
@@ -266,22 +292,4 @@ func ge(arg1, arg2 interface{}) (bool, error) {
 		return false, err
 	}
 	return !lessThan, nil
-}
-
-func basicKind(v reflect.Value) (typeKind, error) {
-	switch v.Kind() {
-	case reflect.Bool:
-		return boolKind, nil
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return intKind, nil
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return uintKind, nil
-	case reflect.Float32, reflect.Float64:
-		return floatKind, nil
-	case reflect.Complex64, reflect.Complex128:
-		return complexKind, nil
-	case reflect.String:
-		return stringKind, nil
-	}
-	return invalidKind, errBadComparisonType
 }
