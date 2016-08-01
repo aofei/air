@@ -15,20 +15,19 @@ import (
 	"golang.org/x/net/context"
 )
 
-type (
-	// Context represents the context of the current HTTP request. It holds request and
-	// response objects, path, path parameters, data and registered handler.
-	Context struct {
-		goContext   context.Context
-		Request     *Request
-		Response    *Response
-		Path        string
-		ParamNames  []string
-		ParamValues []string
-		Handler     HandlerFunc
-		Air         *Air
-	}
-)
+// Context represents the context of the current HTTP request. It holds request and
+// response objects, path, path parameters, data and registered handler.
+type Context struct {
+	goContext   context.Context
+	Request     *Request
+	Response    *Response
+	Path        string
+	ParamNames  []string
+	ParamValues []string
+	Data        map[string]interface{}
+	Handler     HandlerFunc
+	Air         *Air
+}
 
 // Deadline returns the time when work done on behalf of this context
 // should be canceled.  Deadline returns ok==false when no deadline is
@@ -150,14 +149,14 @@ func (c *Context) Bind(i interface{}) error {
 	return c.Air.Binder.Bind(i, c)
 }
 
-// Render renders a template with data and sends a text/html response with status
+// Render renders a template with `Context#Data` and sends a text/html response with status
 // code. Templates can be registered using `Air.SetRenderer()`.
-func (c *Context) Render(code int, name string, data interface{}) (err error) {
+func (c *Context) Render(code int, tplName string) (err error) {
 	if c.Air.Renderer == nil {
 		return ErrRendererNotRegistered
 	}
 	buf := new(bytes.Buffer)
-	if err = c.Air.Renderer.Render(buf, name, data, c); err != nil {
+	if err = c.Air.Renderer.Render(buf, tplName, c); err != nil {
 		return
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
@@ -167,26 +166,29 @@ func (c *Context) Render(code int, name string, data interface{}) (err error) {
 }
 
 // HTML sends an HTTP response with status code.
-func (c *Context) HTML(code int, html string) (err error) {
+func (c *Context) HTML(code int) (err error) {
+	data := c.Data["html"].(string)
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
 	c.Response.WriteHeader(code)
-	_, err = c.Response.Write([]byte(html))
+	_, err = c.Response.Write([]byte(data))
 	return
 }
 
 // String sends a string response with status code.
-func (c *Context) String(code int, s string) (err error) {
+func (c *Context) String(code int) (err error) {
+	data := c.Data["string"].(string)
 	c.Response.Header.Set(HeaderContentType, MIMETextPlain)
 	c.Response.WriteHeader(code)
-	_, err = c.Response.Write([]byte(s))
+	_, err = c.Response.Write([]byte(data))
 	return
 }
 
 // JSON sends a JSON response with status code.
-func (c *Context) JSON(code int, i interface{}) (err error) {
-	b, err := json.Marshal(i)
+func (c *Context) JSON(code int) (err error) {
+	data := c.Data["json"]
+	b, err := json.Marshal(data)
 	if c.Air.Debug {
-		b, err = json.MarshalIndent(i, "", "  ")
+		b, err = json.MarshalIndent(data, "", "\t")
 	}
 	if err != nil {
 		return err
@@ -204,8 +206,9 @@ func (c *Context) JSONBlob(code int, b []byte) (err error) {
 
 // JSONP sends a JSONP response with status code. It uses `callback` to construct
 // the JSONP payload.
-func (c *Context) JSONP(code int, callback string, i interface{}) (err error) {
-	b, err := json.Marshal(i)
+func (c *Context) JSONP(code int, callback string) (err error) {
+	data := c.Data["jsonp"]
+	b, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
@@ -223,9 +226,10 @@ func (c *Context) JSONP(code int, callback string, i interface{}) (err error) {
 
 // XML sends an XML response with status code.
 func (c *Context) XML(code int, i interface{}) (err error) {
-	b, err := xml.Marshal(i)
+	data := c.Data["xml"]
+	b, err := xml.Marshal(data)
 	if c.Air.Debug {
-		b, err = xml.MarshalIndent(i, "", "  ")
+		b, err = xml.MarshalIndent(data, "", "\t")
 	}
 	if err != nil {
 		return err
