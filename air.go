@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"path"
 	"reflect"
@@ -24,7 +23,7 @@ type (
 		NotFoundHandler  HandlerFunc
 		HTTPErrorHandler HTTPErrorHandler
 		Binder           *Binder
-		Renderer         Renderer
+		Renderer         *Renderer
 		Debug            bool
 		Router           *Router
 		Logger           Logger
@@ -44,11 +43,6 @@ type (
 
 	// HTTPErrorHandler is a centralized HTTP error handler.
 	HTTPErrorHandler func(error, *Context)
-
-	// Renderer is the interface that wraps the Render function.
-	Renderer interface {
-		Render(io.Writer, string, interface{}, *Context) error
-	}
 )
 
 // HTTP methods (which follows the REST principles)
@@ -156,6 +150,8 @@ func New() *Air {
 	// Defaults
 	a.HTTPErrorHandler = a.DefaultHTTPErrorHandler
 	a.Binder = &Binder{}
+	a.Renderer = &Renderer{}
+	a.Renderer.parseTemplates("views")
 	l := NewLogger("air")
 	l.SetLevel(ERROR)
 	a.Logger = l
@@ -170,6 +166,7 @@ func (a *Air) NewContext(req *Request, res *Response) *Context {
 		Response:    res,
 		Air:         a,
 		ParamValues: make([]string, *a.maxParam),
+		Data:        make(map[string]interface{}),
 		Handler:     NotFoundHandler,
 	}
 }
@@ -186,7 +183,8 @@ func (a *Air) DefaultHTTPErrorHandler(err error, c *Context) {
 		msg = err.Error()
 	}
 	if !c.Response.Committed {
-		c.String(code, msg)
+		c.Data["string"] = msg
+		c.String(code)
 	}
 	a.Logger.Error(err)
 }
