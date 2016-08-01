@@ -14,7 +14,7 @@ import (
 )
 
 type (
-	// Air is the top-level framework struct.
+	// Air is the top-level framework type.
 	Air struct {
 		pregases         []GasFunc
 		gases            []GasFunc
@@ -183,7 +183,8 @@ func (a *Air) DefaultHTTPErrorHandler(err error, c *Context) {
 	}
 	if !c.Response.Committed {
 		c.Data["string"] = msg
-		c.String(code)
+		c.StatusCode = code
+		c.String()
 	}
 	a.Logger.Error(err)
 }
