@@ -111,7 +111,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 				case "time_rfc3339":
 					return w.Write([]byte(time.Now().Format(time.RFC3339)))
 				case "remote_ip":
-					ra := req.RemoteAddr()
+					ra := req.RemoteAddress()
 					if ip := req.Header.Get(air.HeaderXRealIP); ip != "" {
 						ra = ip
 					} else if ip = req.Header.Get(air.HeaderXForwardedFor); ip != "" {
