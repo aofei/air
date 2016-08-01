@@ -57,8 +57,8 @@ func (r *Request) UserAgent() string {
 	return string(r.fastCtx.UserAgent())
 }
 
-// RemoteAddr returns the client's network address.
-func (r *Request) RemoteAddr() string {
+// RemoteAddress returns the client's network address.
+func (r *Request) RemoteAddress() string {
 	return r.fastCtx.RemoteAddr().String()
 }
 
