@@ -7,18 +7,16 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-type (
-	// Response for HTTP response.
-	Response struct {
-		fastCtx   *fasthttp.RequestCtx
-		Header    *ResponseHeader
-		Status    int
-		Size      int64
-		Committed bool
-		Writer    io.Writer
-		Logger    Logger
-	}
-)
+// Response for HTTP response.
+type Response struct {
+	fastCtx   *fasthttp.RequestCtx
+	Header    *ResponseHeader
+	Status    int
+	Size      int64
+	Committed bool
+	Writer    io.Writer
+	Logger    Logger
+}
 
 // NewResponse returns `Response` instance.
 func NewResponse(c *fasthttp.RequestCtx, l Logger) *Response {
