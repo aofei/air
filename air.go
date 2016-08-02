@@ -151,6 +151,7 @@ func New() *Air {
 	a.HTTPErrorHandler = a.DefaultHTTPErrorHandler
 	a.Binder = &Binder{}
 	a.Renderer = &Renderer{}
+	a.Renderer.initDefaultTempleFuncMap()
 	l := NewLogger("air")
 	l.SetLevel(ERROR)
 	a.Logger = l
@@ -338,7 +339,6 @@ func (a *Air) Run(addr string) {
 		a.Logger.SetLevel(DEBUG)
 		a.Logger.Debug("Running In Debug Mode")
 	}
-	a.Renderer.initDefaultTempleFuncs()
 	a.Renderer.parseTemplates("views")
 	a.Logger.Error(s.Start())
 }
