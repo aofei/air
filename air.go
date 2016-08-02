@@ -16,10 +16,11 @@ import (
 type (
 	// Air is the top-level framework type.
 	Air struct {
-		pregases         []GasFunc
-		gases            []GasFunc
-		maxParam         *int
-		pool             sync.Pool
+		pregases []GasFunc
+		gases    []GasFunc
+		maxParam *int
+		pool     sync.Pool
+
 		Router           *Router
 		Binder           *Binder
 		Renderer         *Renderer
@@ -167,14 +168,15 @@ func New() *Air {
 // NewContext returns a Context instance.
 func (a *Air) NewContext(req *Request, res *Response) *Context {
 	return &Context{
-		goContext:   context.Background(),
+		goContext: context.Background(),
+
 		Request:     req,
 		Response:    res,
-		Air:         a,
 		ParamValues: make([]string, *a.maxParam),
 		Data:        make(map[string]interface{}),
 		StatusCode:  http.StatusOK,
 		Handler:     NotFoundHandler,
+		Air:         a,
 	}
 }
 

@@ -19,7 +19,8 @@ import (
 // Context represents the context of the current HTTP request. It holds request and
 // response objects, path, path parameters, data and registered handler.
 type Context struct {
-	goContext   context.Context
+	goContext context.Context
+
 	Request     *Request
 	Response    *Response
 	Path        string
