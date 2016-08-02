@@ -53,6 +53,7 @@ func (h *RequestHeader) Contains(key string) bool {
 	return h.fastRequestHeader.Peek(key) != nil
 }
 
+// reset resets the `RequestHeader` instance.
 func (h *RequestHeader) reset(hdr *fasthttp.RequestHeader) {
 	h.fastRequestHeader = hdr
 }
@@ -96,6 +97,7 @@ func (h *ResponseHeader) Contains(key string) bool {
 	return h.fastResponseHeader.Peek(key) != nil
 }
 
+// reset resets the `ResponseHeader` instance.
 func (h *ResponseHeader) reset(hdr *fasthttp.ResponseHeader) {
 	h.fastResponseHeader = hdr
 }
