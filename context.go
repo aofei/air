@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"golang.org/x/net/context"
@@ -153,11 +154,12 @@ func (c *Context) Bind(i interface{}) error {
 // Render renders a template with `Context#Data` and `Context#Data["template"]`
 // and sends a text/html response with `Context#StatusCode`.
 func (c *Context) Render() (err error) {
-	if c.Air.Renderer == nil {
-		return ErrRendererNotRegistered
+	t := c.Data["template"]
+	if t == nil || reflect.ValueOf(t).Kind() != reflect.String {
+		return ErrDataTemplateNotSetted
 	}
 	buf := new(bytes.Buffer)
-	if err = c.Air.Renderer.Render(buf, c.Data["template"].(string), c); err != nil {
+	if err = c.Air.Renderer.Render(buf, t.(string), c); err != nil {
 		return
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
@@ -168,28 +170,37 @@ func (c *Context) Render() (err error) {
 
 // HTML sends an HTTP response with `Context#StatusCode` and `Context#Data["html"]`.
 func (c *Context) HTML() (err error) {
-	data := c.Data["html"].(string)
+	h := c.Data["html"]
+	if h == nil || reflect.ValueOf(h).Kind() != reflect.String {
+		return ErrDataHTMLNotSetted
+	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
 	c.Response.WriteHeader(c.StatusCode)
-	_, err = c.Response.Write([]byte(data))
+	_, err = c.Response.Write([]byte(h.(string)))
 	return
 }
 
 // String sends a string response with `Context#StatusCode` and `Context#Data["string"]`.
 func (c *Context) String() (err error) {
-	data := c.Data["string"].(string)
+	s := c.Data["string"]
+	if s == nil || reflect.ValueOf(s).Kind() != reflect.String {
+		return ErrDataStringNotSetted
+	}
 	c.Response.Header.Set(HeaderContentType, MIMETextPlain)
 	c.Response.WriteHeader(c.StatusCode)
-	_, err = c.Response.Write([]byte(data))
+	_, err = c.Response.Write([]byte(s.(string)))
 	return
 }
 
 // JSON sends a JSON response with `Context#StatusCode` and `Context#Data["json"]`.
 func (c *Context) JSON() (err error) {
-	data := c.Data["json"]
-	b, err := json.Marshal(data)
+	j := c.Data["json"]
+	if j == nil {
+		return ErrDataJSONNotSetted
+	}
+	b, err := json.Marshal(j)
 	if c.Air.Debug {
-		b, err = json.MarshalIndent(data, "", "\t")
+		b, err = json.MarshalIndent(j, "", "\t")
 	}
 	if err != nil {
 		return err
@@ -208,14 +219,20 @@ func (c *Context) JSONBlob(b []byte) (err error) {
 // JSONP sends a JSONP response with `Context#StatusCode` and `Context#Data["jsonp"]`.
 // It uses `Context#Data["callback"]` to construct the JSONP payload.
 func (c *Context) JSONP() (err error) {
-	data := c.Data["jsonp"]
-	b, err := json.Marshal(data)
+	j := c.Data["jsonp"]
+	cb := c.Data["callback"]
+	if j == nil {
+		return ErrDataJSONPNotSetted
+	} else if cb == nil || reflect.ValueOf(cb).Kind() != reflect.String {
+		return ErrDataCallbackNotSetted
+	}
+	b, err := json.Marshal(j)
 	if err != nil {
 		return err
 	}
 	c.Response.Header.Set(HeaderContentType, MIMEApplicationJavaScript)
 	c.Response.WriteHeader(c.StatusCode)
-	if _, err = c.Response.Write([]byte(c.Data["callback"].(string) + "(")); err != nil {
+	if _, err = c.Response.Write([]byte(cb.(string) + "(")); err != nil {
 		return
 	}
 	if _, err = c.Response.Write(b); err != nil {
@@ -227,10 +244,13 @@ func (c *Context) JSONP() (err error) {
 
 // XML sends an XML response with `Context#StatusCode` and `Context#Data["xml"]`.
 func (c *Context) XML() (err error) {
-	data := c.Data["xml"]
-	b, err := xml.Marshal(data)
+	x := c.Data["xml"]
+	if x == nil {
+		return ErrDataXMLNotSetted
+	}
+	b, err := xml.Marshal(x)
 	if c.Air.Debug {
-		b, err = xml.MarshalIndent(data, "", "\t")
+		b, err = xml.MarshalIndent(x, "", "\t")
 	}
 	if err != nil {
 		return err

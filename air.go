@@ -123,9 +123,16 @@ var (
 	ErrServiceUnavailable  = NewHTTPError(http.StatusServiceUnavailable)  // 503
 	ErrGatewayTimeout      = NewHTTPError(http.StatusGatewayTimeout)      // 504
 
-	ErrRendererNotRegistered = errors.New("Renderer Not Registered")
-	ErrInvalidRedirectCode   = errors.New("Invalid Redirect Status Code")
-	ErrCookieNotFound        = errors.New("Cookie Not Found")
+	ErrInvalidRedirectCode = errors.New("Invalid Redirect Status Code")
+	ErrCookieNotFound      = errors.New("Cookie Not Found")
+
+	ErrDataTemplateNotSetted = errors.New("c.Data[\"template\"] Not Setted")
+	ErrDataHTMLNotSetted     = errors.New("c.Data[\"html\"] Not Setted")
+	ErrDataStringNotSetted   = errors.New("c.Data[\"string\"] Not Setted")
+	ErrDataJSONNotSetted     = errors.New("c.Data[\"json\"] Not Setted")
+	ErrDataJSONPNotSetted    = errors.New("c.Data[\"jsonp\"] Not Setted")
+	ErrDataCallbackNotSetted = errors.New("c.Data[\"callback\"] Not Setted")
+	ErrDataXMLNotSetted      = errors.New("c.Data[\"xml\"] Not Setted")
 )
 
 // Error handlers
@@ -167,6 +174,7 @@ func (a *Air) NewContext(req *Request, res *Response) *Context {
 		Air:         a,
 		ParamValues: make([]string, *a.maxParam),
 		Data:        make(map[string]interface{}),
+		StatusCode:  http.StatusOK,
 		Handler:     NotFoundHandler,
 	}
 }
