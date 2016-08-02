@@ -19,7 +19,7 @@ type Response struct {
 	Logger    Logger
 }
 
-// NewResponse returns `Response` instance.
+// NewResponse returns a new instance of `Response`.
 func NewResponse(c *fasthttp.RequestCtx, l Logger) *Response {
 	return &Response{
 		fastCtx: c,
@@ -64,6 +64,7 @@ func (r *Response) SetCookie(c Cookie) {
 	r.fastCtx.Response.Header.SetCookie(cookie)
 }
 
+// reset resets the `Response` instance.
 func (r *Response) reset(c *fasthttp.RequestCtx, h *ResponseHeader) {
 	r.fastCtx = c
 	r.Header = h
