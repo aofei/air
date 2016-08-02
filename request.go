@@ -11,18 +11,20 @@ import (
 // Request for HTTP request.
 type Request struct {
 	fastCtx *fasthttp.RequestCtx
-	Header  *RequestHeader
-	URI     *URI
-	Logger  Logger
+
+	Header *RequestHeader
+	URI    *URI
+	Logger Logger
 }
 
 // NewRequest returns `Request` instance.
 func NewRequest(c *fasthttp.RequestCtx, l Logger) *Request {
 	return &Request{
 		fastCtx: c,
-		URI:     &URI{fastURI: c.URI()},
-		Header:  &RequestHeader{fastRequestHeader: &c.Request.Header},
-		Logger:  l,
+
+		Header: &RequestHeader{fastRequestHeader: &c.Request.Header},
+		URI:    &URI{fastURI: c.URI()},
+		Logger: l,
 	}
 }
 
