@@ -12,6 +12,11 @@ func (u *URI) FullURI() string {
 	return string(u.fastURI.FullURI())
 }
 
+// RequestURI returns the request URI.
+func (u *URI) RequestURI() string {
+	return string(u.fastURI.RequestURI())
+}
+
 // Path returns the request URI path.
 func (u *URI) Path() string {
 	return string(u.fastURI.PathOriginal())

@@ -33,13 +33,13 @@ func (r *Request) IsTLS() bool {
 	return r.fastCtx.IsTLS()
 }
 
-// Scheme returns the HTTP protocol scheme, `http` or `https`.
+// Scheme returns the HTTP protocol scheme, "http" or "https".
 func (r *Request) Scheme() string {
 	return string(r.fastCtx.Request.URI().Scheme())
 }
 
 // Host returns HTTP request host. Per RFC 2616, this is either the value of
-// the `Host` header or the host name given in the URI itself.
+// the "Host" header or the host name given in the URI itself.
 func (r *Request) Host() string {
 	return string(r.fastCtx.Request.Host())
 }
@@ -54,7 +54,7 @@ func (r *Request) ContentLength() int64 {
 	return int64(r.fastCtx.Request.Header.ContentLength())
 }
 
-// UserAgent returns the client's `User-Agent`.
+// UserAgent returns the client's "User-Agent".
 func (r *Request) UserAgent() string {
 	return string(r.fastCtx.UserAgent())
 }
@@ -74,13 +74,13 @@ func (r *Request) SetMethod(method string) {
 	r.fastCtx.Request.Header.SetMethodBytes([]byte(method))
 }
 
-// RequestURI returns the unmodified `Request-URI` sent by the client.
+// RequestURI returns the unmodified "Request-URI" sent by the client.
 func (r *Request) RequestURI() string {
 	return string(r.fastCtx.Request.RequestURI())
 }
 
-// SetURI sets the URI of the request.
-func (r *Request) SetURI(uri string) {
+// SetRequestURI sets the "Request-URI".
+func (r *Request) SetRequestURI(uri string) {
 	r.fastCtx.Request.Header.SetRequestURI(uri)
 }
 
