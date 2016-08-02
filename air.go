@@ -20,13 +20,12 @@ type (
 		gases            []GasFunc
 		maxParam         *int
 		pool             sync.Pool
-		NotFoundHandler  HandlerFunc
-		HTTPErrorHandler HTTPErrorHandler
+		Router           *Router
 		Binder           *Binder
 		Renderer         *Renderer
-		Debug            bool
-		Router           *Router
+		HTTPErrorHandler HTTPErrorHandler
 		Logger           Logger
+		Debug            bool
 	}
 
 	// HTTPError represents an error that occurred while handling a request.
