@@ -24,8 +24,8 @@ func (r *Renderer) Render(wr io.Writer, tplName string, c *Context) error {
 	return r.goTemplate.ExecuteTemplate(wr, tplName, c.Data)
 }
 
-// initDefaultTempleFuncs initializes the default template funcs.
-func (r *Renderer) initDefaultTempleFuncs() {
+// initDefaultTempleFuncMap initializes the default template func map.
+func (r *Renderer) initDefaultTempleFuncMap() {
 	r.FuncMap = make(template.FuncMap)
 	r.FuncMap["strlen"] = strlen
 	r.FuncMap["substr"] = substr
