@@ -17,7 +17,7 @@ type Request struct {
 	Logger Logger
 }
 
-// NewRequest returns `Request` instance.
+// NewRequest returns a new instance of `Request`.
 func NewRequest(c *fasthttp.RequestCtx, l Logger) *Request {
 	return &Request{
 		fastCtx: c,
@@ -158,6 +158,7 @@ func (r *Request) Cookies() []Cookie {
 	return cookies
 }
 
+// reset resets the `Request` instance.
 func (r *Request) reset(c *fasthttp.RequestCtx, h *RequestHeader, u *URI) {
 	r.fastCtx = c
 	r.Header = h

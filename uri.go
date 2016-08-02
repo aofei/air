@@ -7,7 +7,7 @@ type URI struct {
 	fastURI *fasthttp.URI
 }
 
-// FullURI returns full URI in the form {Scheme}://{Host}{RequestURI}#{Hash}.
+// FullURI returns the full request URI.
 func (u *URI) FullURI() string {
 	return string(u.fastURI.FullURI())
 }
@@ -45,6 +45,7 @@ func (u *URI) QueryString() string {
 	return string(u.fastURI.QueryString())
 }
 
+// reset resets the `URI` instance.
 func (u *URI) reset(uri *fasthttp.URI) {
 	u.fastURI = uri
 }
