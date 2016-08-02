@@ -14,7 +14,7 @@ import (
 )
 
 type (
-	// Air is the top-level framework type.
+	// Air is the top-level framework struct.
 	Air struct {
 		pregases []GasFunc
 		gases    []GasFunc
@@ -45,13 +45,16 @@ type (
 	HTTPErrorHandler func(error, *Context)
 )
 
-// HTTP methods (which follows the REST principles)
+// HTTP methods (which follows the REST principle)
 const (
 	GET    = "GET"
 	POST   = "POST"
-	PUT    = "PUT" // The Air advise you to forget the PATCH.
+	PUT    = "PUT" // The Air advises you to forget the PATCH.
 	DELETE = "DELETE"
 )
+
+// For easy for-range
+var methods = [4]string{GET, POST, PUT, DELETE}
 
 // MIME types
 const (
@@ -107,9 +110,6 @@ const (
 	HeaderXCSRFToken              = "X-CSRF-Token"
 )
 
-// For easy for-range
-var methods = [4]string{GET, POST, PUT, DELETE}
-
 // Errors
 var (
 	ErrUnauthorized                = NewHTTPError(http.StatusUnauthorized)          // 401
@@ -135,7 +135,7 @@ var (
 	ErrDataXMLNotSetted      = errors.New("c.Data[\"xml\"] Not Setted")
 )
 
-// Error handlers
+// HTTP error handlers
 var (
 	NotFoundHandler = func(c *Context) error {
 		return ErrNotFound
@@ -146,7 +146,7 @@ var (
 	}
 )
 
-// New creates an instance of Air.
+// New returns a new instance of `Air`.
 func New() *Air {
 	a := &Air{maxParam: new(int)}
 	a.pool.New = func() interface{} {
@@ -165,7 +165,7 @@ func New() *Air {
 	return a
 }
 
-// NewContext returns a Context instance.
+// NewContext returns a new instance of `Context`.
 func (a *Air) NewContext(req *Request, res *Response) *Context {
 	return &Context{
 		goContext: context.Background(),
@@ -227,14 +227,14 @@ func (a *Air) Put(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(PUT, path, handler, gases...)
 }
 
-// Delete registers a new DELETE route for a path with matching handler in the router
-// with optional route-level gases.
+// Delete registers a new DELETE route for a path with matching handler in
+// the router with optional route-level gases.
 func (a *Air) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(DELETE, path, handler, gases...)
 }
 
-// Static registers a new route with path prefix to serve static files from the
-// provided root directory.
+// Static registers a new route with path prefix to serve static files from
+// the provided root directory.
 func (a *Air) Static(prefix, root string) {
 	a.Get(prefix+"*", func(c *Context) error {
 		return c.File(path.Join(root, c.P(0)))
@@ -248,6 +248,8 @@ func (a *Air) File(path, file string) {
 	})
 }
 
+// add registers a new route for a path with a HTTP method and matching handler
+// in the router with optional route-level gases.
 func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 	name := handlerName(handler)
 	a.Router.Add(method, path, func(c *Context) error {
@@ -266,14 +268,14 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 	a.Router.Routes[method+path] = r
 }
 
-// Group creates a new router group with prefix and optional group-level gases.
+// Group returns a new router group with prefix and optional group-level gases.
 func (a *Air) Group(prefix string, gases ...GasFunc) *Group {
 	g := &Group{prefix: prefix, air: a}
 	g.Contain(gases...)
 	return g
 }
 
-// URI generates a URI from handler.
+// URI returns a URI generated from handler.
 func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 	uri := new(bytes.Buffer)
 	ln := len(params)
@@ -299,17 +301,18 @@ func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 }
 
 // AcquireContext returns an empty `Context` instance from the pool.
-// You must be return the context by calling `ReleaseContext()`.
+// You must be return the context by calling `Air#ReleaseContext()`.
 func (a *Air) AcquireContext() Context {
 	return a.pool.Get().(Context)
 }
 
 // ReleaseContext returns the `Context` instance back to the pool.
-// You must call it after `AcquireContext()`.
+// You must call it after `Air#AcquireContext()`.
 func (a *Air) ReleaseContext(c Context) {
 	a.pool.Put(c)
 }
 
+// ServeHTTP implements `Handler#ServeHTTP()`.
 func (a *Air) ServeHTTP(req *Request, res *Response) {
 	c := a.pool.Get().(*Context)
 	c.Reset(req, res)
@@ -352,7 +355,7 @@ func (a *Air) Run(addr string) {
 	a.Logger.Error(s.Start())
 }
 
-// NewHTTPError creates a new HTTPError instance.
+// NewHTTPError returns a new instance of `HTTPError`.
 func NewHTTPError(code int, msg ...string) *HTTPError {
 	he := &HTTPError{Code: code, Message: http.StatusText(code)}
 	if len(msg) > 0 {
@@ -361,12 +364,12 @@ func NewHTTPError(code int, msg ...string) *HTTPError {
 	return he
 }
 
-// Error makes it compatible with `error` interface.
+// Error implements `error#Error()`.
 func (he *HTTPError) Error() string {
 	return he.Message
 }
 
-// WrapGas wrap `HandlerFunc` into `GasFunc`.
+// WrapGas wraps `HandlerFunc` into `GasFunc`.
 func WrapGas(handler HandlerFunc) GasFunc {
 	return func(next HandlerFunc) HandlerFunc {
 		return func(c *Context) error {
@@ -378,6 +381,7 @@ func WrapGas(handler HandlerFunc) GasFunc {
 	}
 }
 
+// handlerName returns the handler's func name.
 func handlerName(handler HandlerFunc) string {
 	t := reflect.ValueOf(handler).Type()
 	if t.Kind() == reflect.Func {
