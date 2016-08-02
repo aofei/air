@@ -27,17 +27,17 @@ type (
 		Debug            bool
 	}
 
-	// HTTPError represents an error that occurred while handling a request.
-	HTTPError struct {
-		Code    int
-		Message string
-	}
-
 	// HandlerFunc defines a function to server HTTP requests.
 	HandlerFunc func(*Context) error
 
 	// GasFunc defines a function to process gas.
 	GasFunc func(HandlerFunc) HandlerFunc
+
+	// HTTPError represents an error that occurred while handling a request.
+	HTTPError struct {
+		Code    int
+		Message string
+	}
 
 	// HTTPErrorHandler is a centralized HTTP error handler.
 	HTTPErrorHandler func(error, *Context)
@@ -163,25 +163,6 @@ func New() *Air {
 	return a
 }
 
-// DefaultHTTPErrorHandler invokes the default HTTP error handler.
-func (a *Air) DefaultHTTPErrorHandler(err error, c *Context) {
-	code := http.StatusInternalServerError
-	msg := http.StatusText(code)
-	if he, ok := err.(*HTTPError); ok {
-		code = he.Code
-		msg = he.Message
-	}
-	if a.Debug {
-		msg = err.Error()
-	}
-	if !c.Response.Committed {
-		c.Data["string"] = msg
-		c.StatusCode = code
-		c.String()
-	}
-	a.Logger.Error(err)
-}
-
 // Precontain adds gases to the chain which is run before router.
 func (a *Air) Precontain(gases ...GasFunc) {
 	a.pregases = append(a.pregases, gases...)
@@ -251,6 +232,18 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 	a.Router.Routes[method+path] = r
 }
 
+// AcquireContext returns an empty `Context` instance from the pool.
+// You must be return the context by calling `Air#ReleaseContext()`.
+func (a *Air) AcquireContext() Context {
+	return a.pool.Get().(Context)
+}
+
+// ReleaseContext returns the `Context` instance back to the pool.
+// You must call it after `Air#AcquireContext()`.
+func (a *Air) ReleaseContext(c Context) {
+	a.pool.Put(c)
+}
+
 // URI returns a URI generated from handler.
 func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 	uri := new(bytes.Buffer)
@@ -276,16 +269,26 @@ func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 	return uri.String()
 }
 
-// AcquireContext returns an empty `Context` instance from the pool.
-// You must be return the context by calling `Air#ReleaseContext()`.
-func (a *Air) AcquireContext() Context {
-	return a.pool.Get().(Context)
+// handlerName returns the handler's func name.
+func handlerName(handler HandlerFunc) string {
+	t := reflect.ValueOf(handler).Type()
+	if t.Kind() == reflect.Func {
+		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
+	}
+	return t.String()
 }
 
-// ReleaseContext returns the `Context` instance back to the pool.
-// You must call it after `Air#AcquireContext()`.
-func (a *Air) ReleaseContext(c Context) {
-	a.pool.Put(c)
+// Run starts the HTTP server.
+func (a *Air) Run(addr string) {
+	s := NewServer(addr)
+	s.SetHandler(a)
+	s.SetLogger(a.Logger)
+	a.Renderer.parseTemplates()
+	if a.Debug {
+		a.Logger.SetLevel(DEBUG)
+		a.Logger.Debug("Running In Debug Mode")
+	}
+	a.Logger.Error(s.Start())
 }
 
 // ServeHTTP implements `Handler#ServeHTTP()`.
@@ -318,17 +321,16 @@ func (a *Air) ServeHTTP(req *Request, res *Response) {
 	a.pool.Put(c)
 }
 
-// Run starts the HTTP server.
-func (a *Air) Run(addr string) {
-	s := NewServer(addr)
-	s.SetHandler(a)
-	s.SetLogger(a.Logger)
-	a.Renderer.parseTemplates()
-	if a.Debug {
-		a.Logger.SetLevel(DEBUG)
-		a.Logger.Debug("Running In Debug Mode")
+// WrapGas wraps `HandlerFunc` into `GasFunc`.
+func WrapGas(handler HandlerFunc) GasFunc {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(c *Context) error {
+			if err := handler(c); err != nil {
+				return err
+			}
+			return next(c)
+		}
 	}
-	a.Logger.Error(s.Start())
 }
 
 // NewHTTPError returns a new instance of `HTTPError`.
@@ -345,23 +347,21 @@ func (he *HTTPError) Error() string {
 	return he.Message
 }
 
-// WrapGas wraps `HandlerFunc` into `GasFunc`.
-func WrapGas(handler HandlerFunc) GasFunc {
-	return func(next HandlerFunc) HandlerFunc {
-		return func(c *Context) error {
-			if err := handler(c); err != nil {
-				return err
-			}
-			return next(c)
-		}
+// DefaultHTTPErrorHandler invokes the default HTTP error handler.
+func (a *Air) DefaultHTTPErrorHandler(err error, c *Context) {
+	code := http.StatusInternalServerError
+	msg := http.StatusText(code)
+	if he, ok := err.(*HTTPError); ok {
+		code = he.Code
+		msg = he.Message
 	}
-}
-
-// handlerName returns the handler's func name.
-func handlerName(handler HandlerFunc) string {
-	t := reflect.ValueOf(handler).Type()
-	if t.Kind() == reflect.Func {
-		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
+	if a.Debug {
+		msg = err.Error()
 	}
-	return t.String()
+	if !c.Response.Committed {
+		c.Data["string"] = msg
+		c.StatusCode = code
+		c.String()
+	}
+	a.Logger.Error(err)
 }
