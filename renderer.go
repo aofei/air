@@ -16,8 +16,9 @@ import (
 // for render a text/html response by using `template.Template`.
 type Renderer struct {
 	goTemplate *template.Template
-	ViewsPath  string
-	FuncMap    template.FuncMap
+
+	ViewsPath string
+	FuncMap   template.FuncMap
 }
 
 // Render renders a text/html response by using `template.Template`

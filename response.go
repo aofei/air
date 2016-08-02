@@ -9,7 +9,8 @@ import (
 
 // Response for HTTP response.
 type Response struct {
-	fastCtx   *fasthttp.RequestCtx
+	fastCtx *fasthttp.RequestCtx
+
 	Header    *ResponseHeader
 	Status    int
 	Size      int64
@@ -22,9 +23,10 @@ type Response struct {
 func NewResponse(c *fasthttp.RequestCtx, l Logger) *Response {
 	return &Response{
 		fastCtx: c,
-		Header:  &ResponseHeader{fastResponseHeader: &c.Response.Header},
-		Writer:  c,
-		Logger:  l,
+
+		Header: &ResponseHeader{fastResponseHeader: &c.Response.Header},
+		Writer: c,
+		Logger: l,
 	}
 }
 
