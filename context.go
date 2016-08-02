@@ -295,7 +295,7 @@ func (c *Context) File(file string) error {
 // Attachment sends a response from `io.ReaderSeeker` as attachment, prompting
 // client to save the file.
 func (c *Context) Attachment(r io.ReadSeeker, name string) (err error) {
-	c.Response.Header.Set(HeaderContentType, ContentTypeByExtension(name))
+	c.Response.Header.Set(HeaderContentType, contentTypeByExtension(name))
 	c.Response.Header.Set(HeaderContentDisposition, "attachment; filename="+name)
 	c.Response.WriteHeader(http.StatusOK)
 	_, err = io.Copy(c.Response, r)
@@ -337,7 +337,7 @@ func (c *Context) ServeContent(content io.ReadSeeker, name string, modtime time.
 		return c.NoContent()
 	}
 
-	res.Header.Set(HeaderContentType, ContentTypeByExtension(name))
+	res.Header.Set(HeaderContentType, contentTypeByExtension(name))
 	res.Header.Set(HeaderLastModified, modtime.UTC().Format(http.TimeFormat))
 	res.WriteHeader(http.StatusOK)
 	_, err := io.Copy(res, content)
@@ -354,10 +354,10 @@ func (c *Context) Reset(req *Request, res *Response) {
 	c.Handler = NotFoundHandler
 }
 
-// ContentTypeByExtension returns the MIME type associated with the file based on
+// contentTypeByExtension returns the MIME type associated with the file based on
 // its extension. It returns `application/octet-stream` incase MIME type is not
 // found.
-func ContentTypeByExtension(name string) (t string) {
+func contentTypeByExtension(name string) (t string) {
 	if t = mime.TypeByExtension(filepath.Ext(name)); t == "" {
 		t = MIMEOctetStream
 	}
