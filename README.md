@@ -45,7 +45,7 @@ $ go run hello.go
 
 then open your browser and visit `http://localhost:8080`.
 
-## Documention
+## Documentation
 
 * English(editing...)
 * 简体中文(编辑中...)
