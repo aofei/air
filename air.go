@@ -9,8 +9,6 @@ import (
 	"reflect"
 	"runtime"
 	"sync"
-
-	"golang.org/x/net/context"
 )
 
 type (
@@ -150,7 +148,7 @@ var (
 func New() *Air {
 	a := &Air{maxParam: new(int)}
 	a.pool.New = func() interface{} {
-		return a.NewContext(&Request{}, &Response{})
+		return NewContext(&Request{}, &Response{}, a)
 	}
 	a.Router = NewRouter(a)
 
@@ -163,21 +161,6 @@ func New() *Air {
 	l.SetLevel(ERROR)
 	a.Logger = l
 	return a
-}
-
-// NewContext returns a new instance of `Context`.
-func (a *Air) NewContext(req *Request, res *Response) *Context {
-	return &Context{
-		goContext: context.Background(),
-
-		Request:     req,
-		Response:    res,
-		ParamValues: make([]string, *a.maxParam),
-		Data:        make(map[string]interface{}),
-		StatusCode:  http.StatusOK,
-		Handler:     NotFoundHandler,
-		Air:         a,
-	}
 }
 
 // DefaultHTTPErrorHandler invokes the default HTTP error handler.
@@ -266,13 +249,6 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 		Handler: name,
 	}
 	a.Router.Routes[method+path] = r
-}
-
-// Group returns a new router group with prefix and optional group-level gases.
-func (a *Air) Group(prefix string, gases ...GasFunc) *Group {
-	g := &Group{prefix: prefix, air: a}
-	g.Contain(gases...)
-	return g
 }
 
 // URI returns a URI generated from handler.

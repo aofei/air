@@ -9,6 +9,13 @@ type Group struct {
 	air    *Air
 }
 
+// NewGroup returns a new router group with prefix and optional group-level gases.
+func NewGroup(prefix string, a *Air, gases ...GasFunc) *Group {
+	g := &Group{prefix: prefix, air: a}
+	g.Contain(gases...)
+	return g
+}
+
 // Contain implements `Air#Contain()` for sub-routes within the Group.
 func (g *Group) Contain(gases ...GasFunc) {
 	g.gases = append(g.gases, gases...)
@@ -41,12 +48,12 @@ func (g *Group) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(DELETE, path, handler, gases...)
 }
 
-// Group creates a new sub-group with prefix and optional sub-group-level gas.
-func (g *Group) Group(prefix string, gases ...GasFunc) *Group {
+// NewSubGroup creates a new sub-group with prefix and optional sub-group-level gas.
+func (g *Group) NewSubGroup(prefix string, gases ...GasFunc) *Group {
 	gs := []GasFunc{}
 	gs = append(gs, g.gases...)
 	gs = append(gs, gases...)
-	return g.air.Group(g.prefix+prefix, gs...)
+	return NewGroup(g.prefix+prefix, g.air, gs...)
 }
 
 // Static implements `Air#Static()` for sub-routes within the Group.
