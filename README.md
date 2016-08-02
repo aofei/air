@@ -23,10 +23,7 @@ Create a file named `hello.go`
 ```go
 package main
 
-import (
-	"net/http"
-	"github.com/sheng/air"
-)
+import "github.com/sheng/air"
 
 func main() {
 	a := air.New()
@@ -35,7 +32,8 @@ func main() {
 }
 
 func homeHandler(c *air.Context) error {
-	return c.String(http.StatusOK, "Hello, 世界")
+	c.Data["string"] = "Hello, 世界"
+	return c.String()
 }
 ```
 
