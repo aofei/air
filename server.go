@@ -162,7 +162,7 @@ func (s *Server) fastServeHTTP(c *fasthttp.RequestCtx) {
 }
 
 // ServeHTTP implements `ServerHandler#ServeHTTP()`.
-func (s serverHandlerFunc) ServeHTTP(req *Request, res *Response) {
+func (h serverHandlerFunc) ServeHTTP(req *Request, res *Response) {
 	h(req, res)
 }
 
