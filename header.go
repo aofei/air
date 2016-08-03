@@ -3,12 +3,12 @@ package air
 import "github.com/valyala/fasthttp"
 
 type (
-	// RequestHeader for HTTP request header.
+	// RequestHeader represents the current HTTP request header.
 	RequestHeader struct {
 		fastRequestHeader *fasthttp.RequestHeader
 	}
 
-	// ResponseHeader for HTTP response header.
+	// ResponseHeader represents the current HTTP response header.
 	ResponseHeader struct {
 		fastResponseHeader *fasthttp.ResponseHeader
 	}
@@ -53,7 +53,7 @@ func (h *RequestHeader) Contains(key string) bool {
 	return h.fastRequestHeader.Peek(key) != nil
 }
 
-// reset resets the `RequestHeader` instance.
+// reset resets the instance of `RequestHeader`.
 func (h *RequestHeader) reset(hdr *fasthttp.RequestHeader) {
 	h.fastRequestHeader = hdr
 }
@@ -97,7 +97,7 @@ func (h *ResponseHeader) Contains(key string) bool {
 	return h.fastResponseHeader.Peek(key) != nil
 }
 
-// reset resets the `ResponseHeader` instance.
+// reset resets the instance of `ResponseHeader`.
 func (h *ResponseHeader) reset(hdr *fasthttp.ResponseHeader) {
 	h.fastResponseHeader = hdr
 }

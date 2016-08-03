@@ -7,7 +7,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// Response for HTTP response.
+// Response represents the current HTTP response.
 type Response struct {
 	fastCtx *fasthttp.RequestCtx
 
@@ -17,17 +17,6 @@ type Response struct {
 	Committed bool
 	Writer    io.Writer
 	Logger    Logger
-}
-
-// NewResponse returns a new instance of `Response`.
-func NewResponse(c *fasthttp.RequestCtx, l Logger) *Response {
-	return &Response{
-		fastCtx: c,
-
-		Header: &ResponseHeader{fastResponseHeader: &c.Response.Header},
-		Writer: c,
-		Logger: l,
-	}
 }
 
 // WriteHeader sends an HTTP response header with status code.
@@ -64,7 +53,7 @@ func (r *Response) SetCookie(c Cookie) {
 	r.fastCtx.Response.Header.SetCookie(cookie)
 }
 
-// reset resets the `Response` instance.
+// reset resets the instance of `Response`.
 func (r *Response) reset(c *fasthttp.RequestCtx, h *ResponseHeader) {
 	r.fastCtx = c
 	r.Header = h
