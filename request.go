@@ -14,7 +14,7 @@ type Request struct {
 
 	Header *RequestHeader
 	URI    *URI
-	Logger Logger
+	Logger *Logger
 }
 
 // IsTLS returns true if HTTP connection is TLS otherwise false.

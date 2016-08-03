@@ -16,7 +16,7 @@ type (
 		pool       *pool
 
 		Handler ServerHandler
-		Logger  Logger
+		Logger  *Logger
 	}
 
 	// ServerConfig represents the HTTP server config.

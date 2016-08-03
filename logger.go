@@ -15,46 +15,21 @@ import (
 	"github.com/valyala/fasttemplate"
 )
 
+// Logger is used to log information generated in runtime.
 type (
-	// Logger defines the logging interface.
-	Logger interface {
-		SetOutput(io.Writer)
-		SetLevel(LoggerLevel)
-		Print(...interface{})
-		Printf(string, ...interface{})
-		Printj(JSON)
-		Debug(...interface{})
-		Debugf(string, ...interface{})
-		Debugj(JSON)
-		Info(...interface{})
-		Infof(string, ...interface{})
-		Infoj(JSON)
-		Warn(...interface{})
-		Warnf(string, ...interface{})
-		Warnj(JSON)
-		Error(...interface{})
-		Errorf(string, ...interface{})
-		Errorj(JSON)
-		Fatal(...interface{})
-		Fatalj(JSON)
-		Fatalf(string, ...interface{})
-	}
-
-	airLogger struct {
-		prefix     string
-		level      LoggerLevel
-		output     io.Writer
+	Logger struct {
 		template   *fasttemplate.Template
-		levels     []string
 		bufferPool sync.Pool
 		mutex      sync.Mutex
+		levels     []string
+
+		Prefix string
+		Level  LoggerLevel
+		Output io.Writer
 	}
 
-	// LoggerLevel is a level of the Logger
+	// LoggerLevel is level of the logger.
 	LoggerLevel uint8
-
-	// JSON for Logger output format
-	JSON map[string]interface{}
 )
 
 // Logger levels
@@ -67,27 +42,26 @@ const (
 	OFF
 )
 
-var defaultHeader = `{"time":"${time_rfc3339}","level":"${level}","prefix":"${prefix}",` +
-	`"file":"${short_file}","line":"${line}"}`
-
-// NewLogger creates an instance of `Logger`
-func NewLogger(prefix string) Logger {
-	l := &airLogger{
-		level:  INFO,
-		prefix: prefix,
+// NewLogger returns an new instance of `Logger`.
+func NewLogger(prefix string) *Logger {
+	l := &Logger{
+		Level:  INFO,
+		Prefix: prefix,
 		bufferPool: sync.Pool{
 			New: func() interface{} {
 				return bytes.NewBuffer(make([]byte, 256))
 			},
 		},
 	}
-	l.template = l.newTemplate(defaultHeader)
+	l.template = l.newTemplate(`{"time":"${time_rfc3339}","level":"${level}","prefix":"${prefix}",` +
+		`"file":"${short_file}","line":"${line}"}`)
 	l.initLevels()
-	l.SetOutput(os.Stdout)
+	l.Output = os.Stdout
 	return l
 }
 
-func (l *airLogger) initLevels() {
+// initLevels initializes the logger levels.
+func (l *Logger) initLevels() {
 	l.levels = []string{
 		"DEBUG",
 		"INFO",
@@ -97,114 +71,111 @@ func (l *airLogger) initLevels() {
 	}
 }
 
-func (l *airLogger) newTemplate(format string) *fasttemplate.Template {
+// newTemplate returns an new instance of `fasttemplate.Template`.
+func (l *Logger) newTemplate(format string) *fasttemplate.Template {
 	return fasttemplate.New(format, "${", "}")
 }
 
-func (l *airLogger) Prefix() string {
-	return l.prefix
+// SetFormat sets log format of the logger.
+func (l *Logger) SetFormat(format string) {
+	l.template = l.newTemplate(format)
 }
 
-func (l *airLogger) SetPrefix(p string) {
-	l.prefix = p
+// Print prints log info with provided type i.
+func (l *Logger) Print(i ...interface{}) {
+	fmt.Fprintln(l.Output, i...)
 }
 
-func (l *airLogger) Level() LoggerLevel {
-	return l.level
-}
-
-func (l *airLogger) SetLevel(v LoggerLevel) {
-	l.level = v
-}
-
-func (l *airLogger) Output() io.Writer {
-	return l.output
-}
-
-func (l *airLogger) SetHeader(h string) {
-	l.template = l.newTemplate(h)
-}
-
-func (l *airLogger) SetOutput(w io.Writer) {
-	l.output = w
-}
-
-func (l *airLogger) Print(i ...interface{}) {
-	fmt.Fprintln(l.output, i...)
-}
-
-func (l *airLogger) Printf(format string, args ...interface{}) {
+// Print prints log info in a format with provided type i.
+func (l *Logger) Printf(format string, args ...interface{}) {
 	f := fmt.Sprintf("%s\n", format)
-	fmt.Fprintf(l.output, f, args...)
+	fmt.Fprintf(l.Output, f, args...)
 }
 
-func (l *airLogger) Printj(j JSON) {
-	json.NewEncoder(l.output).Encode(j)
+// Printj prints log info with provided json map.
+func (l *Logger) Printj(j map[string]interface{}) {
+	json.NewEncoder(l.Output).Encode(j)
 }
 
-func (l *airLogger) Debug(i ...interface{}) {
+// Debug prints debug level log info with provided type i.
+func (l *Logger) Debug(i ...interface{}) {
 	l.log(DEBUG, "", i...)
 }
 
-func (l *airLogger) Debugf(format string, args ...interface{}) {
+// Debugf prints debug level log info in a format with provided type i.
+func (l *Logger) Debugf(format string, args ...interface{}) {
 	l.log(DEBUG, format, args...)
 }
 
-func (l *airLogger) Debugj(j JSON) {
+// Debugj prints debug level log info in a format with provided json map.
+func (l *Logger) Debugj(j map[string]interface{}) {
 	l.log(DEBUG, "json", j)
 }
 
-func (l *airLogger) Info(i ...interface{}) {
+// Info prints info level log info with provided type i.
+func (l *Logger) Info(i ...interface{}) {
 	l.log(INFO, "", i...)
 }
 
-func (l *airLogger) Infof(format string, args ...interface{}) {
+// Infof prints info level log info in a format with provided type i.
+func (l *Logger) Infof(format string, args ...interface{}) {
 	l.log(INFO, format, args...)
 }
 
-func (l *airLogger) Infoj(j JSON) {
+// Infoj prints info level log info in a format with provided json map.
+func (l *Logger) Infoj(j map[string]interface{}) {
 	l.log(INFO, "json", j)
 }
 
-func (l *airLogger) Warn(i ...interface{}) {
+// Warn prints warn level log info with provided type i.
+func (l *Logger) Warn(i ...interface{}) {
 	l.log(WARN, "", i...)
 }
 
-func (l *airLogger) Warnf(format string, args ...interface{}) {
+// Warnf prints warn level log info in a format with provided type i.
+func (l *Logger) Warnf(format string, args ...interface{}) {
 	l.log(WARN, format, args...)
 }
 
-func (l *airLogger) Warnj(j JSON) {
+// Warnj prints warn level log info in a format with provided json map.
+func (l *Logger) Warnj(j map[string]interface{}) {
 	l.log(WARN, "json", j)
 }
 
-func (l *airLogger) Error(i ...interface{}) {
+// Error prints error level log info with provided type i.
+func (l *Logger) Error(i ...interface{}) {
 	l.log(ERROR, "", i...)
 }
 
-func (l *airLogger) Errorf(format string, args ...interface{}) {
+// Errorf prints error level log info in a format with provided type i.
+func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.log(ERROR, format, args...)
 }
 
-func (l *airLogger) Errorj(j JSON) {
+// Errorj prints error level log info in a format with provided json map.
+func (l *Logger) Errorj(j map[string]interface{}) {
 	l.log(ERROR, "json", j)
 }
 
-func (l *airLogger) Fatal(i ...interface{}) {
+// Fatal prints fatal level log info with provided type i.
+func (l *Logger) Fatal(i ...interface{}) {
 	l.log(FATAL, "", i...)
 	os.Exit(1)
 }
 
-func (l *airLogger) Fatalf(format string, args ...interface{}) {
+// Fatalf prints fatal level log info in a format with provided type i.
+func (l *Logger) Fatalf(format string, args ...interface{}) {
 	l.log(FATAL, format, args...)
 	os.Exit(1)
 }
 
-func (l *airLogger) Fatalj(j JSON) {
+// Fatalj prints fatal level log info in a format with provided json map.
+func (l *Logger) Fatalj(j map[string]interface{}) {
 	l.log(FATAL, "json", j)
 }
 
-func (l *airLogger) log(v LoggerLevel, format string, args ...interface{}) {
+// log prints log info in a format with provided level and args.
+func (l *Logger) log(lvl LoggerLevel, format string, args ...interface{}) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	buf := l.bufferPool.Get().(*bytes.Buffer)
@@ -212,7 +183,7 @@ func (l *airLogger) log(v LoggerLevel, format string, args ...interface{}) {
 	defer l.bufferPool.Put(buf)
 	_, file, line, _ := runtime.Caller(3)
 
-	if v >= l.level {
+	if lvl >= l.Level {
 		message := ""
 		if format == "" {
 			message = fmt.Sprint(args...)
@@ -226,8 +197,8 @@ func (l *airLogger) log(v LoggerLevel, format string, args ...interface{}) {
 			message = fmt.Sprintf(format, args...)
 		}
 
-		if v >= ERROR {
-			// panic(message)
+		if lvl >= ERROR {
+			panic(message)
 		}
 
 		_, err := l.template.ExecuteFunc(buf, func(w io.Writer, tag string) (int, error) {
@@ -235,9 +206,9 @@ func (l *airLogger) log(v LoggerLevel, format string, args ...interface{}) {
 			case "time_rfc3339":
 				return w.Write([]byte(time.Now().Format(time.RFC3339)))
 			case "level":
-				return w.Write([]byte(l.levels[v]))
+				return w.Write([]byte(l.levels[lvl]))
 			case "prefix":
-				return w.Write([]byte(l.prefix))
+				return w.Write([]byte(l.Prefix))
 			case "long_file":
 				return w.Write([]byte(file))
 			case "short_file":
@@ -268,7 +239,7 @@ func (l *airLogger) log(v LoggerLevel, format string, args ...interface{}) {
 				buf.WriteString(message)
 			}
 			buf.WriteByte('\n')
-			l.output.Write(buf.Bytes())
+			l.Output.Write(buf.Bytes())
 		}
 	}
 }
