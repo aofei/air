@@ -10,8 +10,12 @@ import (
 	"strings"
 )
 
+// Binder is used to provide a `Bind()` method for an `Air` instance
+// for binds a HTTP request body into privided type.
 type Binder struct{}
 
+// Bind binds the HTTP request body into provided type i based on
+// "Content-Type" header.
 func (b *Binder) Bind(i interface{}, c *Context) (err error) {
 	req := c.Request
 	if req.Method() == GET {
@@ -43,6 +47,7 @@ func (b *Binder) Bind(i interface{}, c *Context) (err error) {
 	return
 }
 
+// bindData binds the data into a type ptr.
 func (b *Binder) bindData(ptr interface{}, data map[string][]string) error {
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
@@ -95,6 +100,7 @@ func (b *Binder) bindData(ptr interface{}, data map[string][]string) error {
 	return nil
 }
 
+// setWithProperType sets the val into a structField with a proper valueKind.
 func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value) error {
 	switch valueKind {
 	case reflect.Int:
@@ -131,6 +137,7 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 	return nil
 }
 
+// setIntField sets the value into a field with a provided bitSize.
 func setIntField(value string, bitSize int, field reflect.Value) error {
 	if value == "" {
 		value = "0"
@@ -142,6 +149,7 @@ func setIntField(value string, bitSize int, field reflect.Value) error {
 	return err
 }
 
+// setUintField sets the value into a field with a provided bitSize.
 func setUintField(value string, bitSize int, field reflect.Value) error {
 	if value == "" {
 		value = "0"
@@ -153,6 +161,7 @@ func setUintField(value string, bitSize int, field reflect.Value) error {
 	return err
 }
 
+// setBoolField sets the value into a field.
 func setBoolField(value string, field reflect.Value) error {
 	if value == "" {
 		value = "false"
@@ -164,6 +173,7 @@ func setBoolField(value string, field reflect.Value) error {
 	return err
 }
 
+// setFloatField sets the value into a field with a provided bitSize.
 func setFloatField(value string, bitSize int, field reflect.Value) error {
 	if value == "" {
 		value = "0.0"
