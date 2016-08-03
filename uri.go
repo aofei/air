@@ -2,7 +2,7 @@ package air
 
 import "github.com/valyala/fasthttp"
 
-// URI for HTTP request URI.
+// URI represents the current HTTP URI.
 type URI struct {
 	fastURI *fasthttp.URI
 }
@@ -50,7 +50,7 @@ func (u *URI) QueryString() string {
 	return string(u.fastURI.QueryString())
 }
 
-// reset resets the `URI` instance.
+// reset resets the instance of `URI`.
 func (u *URI) reset(uri *fasthttp.URI) {
 	u.fastURI = uri
 }

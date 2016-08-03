@@ -48,29 +48,29 @@ func NewContext(req *Request, res *Response, a *Air) *Context {
 }
 
 // Deadline returns the time when work done on behalf of this context
-// should be canceled.  Deadline returns ok==false when no deadline is
-// set.  Successive calls to Deadline return the same results.
+// should be canceled. Deadline returns ok==false when no deadline is
+// set. Successive calls to Deadline return the same results.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
 	return c.goContext.Deadline()
 }
 
 // Done returns a channel that's closed when work done on behalf of this
-// context should be canceled.  Done may return nil if this context can
-// never be canceled.  Successive calls to Done return the same value.
+// context should be canceled. Done may return nil if this context can
+// never be canceled. Successive calls to Done return the same value.
 func (c *Context) Done() <-chan struct{} {
 	return c.goContext.Done()
 }
 
-// Err returns a non-nil error value after Done is closed.  Err returns
+// Err returns a non-nil error value after Done is closed. Err returns
 // Canceled if the context was canceled or DeadlineExceeded if the
-// context's deadline passed.  No other values for Err are defined.
+// context's deadline passed. No other values for Err are defined.
 // After Done is closed, successive calls to Err return the same value.
 func (c *Context) Err() error {
 	return c.goContext.Err()
 }
 
 // Value returns the value associated with this context for key, or nil
-// if no value is associated with key.  Successive calls to Value with
+// if no value is associated with key. Successive calls to Value with
 // the same key returns the same result.
 func (c *Context) Value(key interface{}) interface{} {
 	return c.goContext.Value(key)
@@ -103,8 +103,8 @@ func (c *Context) QueryParam(name string) string {
 	return c.Request.URI.QueryParam(name)
 }
 
-// QueryParams returns the query parameters as map.
-// It is an alias for `URI#QueryParams()`.
+// QueryParams returns the query parameters as map. It is an alias for
+// `URI#QueryParams()`.
 func (c *Context) QueryParams() map[string][]string {
 	return c.Request.URI.QueryParams()
 }
@@ -139,21 +139,16 @@ func (c *Context) Cookie(name string) (Cookie, error) {
 	return c.Request.Cookie(name)
 }
 
-// SetCookie adds a `Set-Cookie` header in HTTP response.
+// SetCookie adds a "Set-Cookie" header in HTTP response.
 // It is an alias for `Response#SetCookie()`.
 func (c *Context) SetCookie(cookie Cookie) {
 	c.Response.SetCookie(cookie)
 }
 
-// Cookies returns the HTTP cookies sent with the request.
-// It is an alias for `Request#Cookies()`.
+// Cookies returns the HTTP cookies sent with the request. It is an alias
+// for `Request#Cookies()`.
 func (c *Context) Cookies() []Cookie {
 	return c.Request.Cookies()
-}
-
-// Set saves data in the context.
-func (c *Context) Set(key string, val interface{}) {
-	c.goContext = context.WithValue(c.goContext, key, val)
 }
 
 // Get retrieves data from the context.
@@ -161,14 +156,19 @@ func (c *Context) Get(key string) interface{} {
 	return c.goContext.Value(key)
 }
 
-// Bind binds the request body into provided type `i`. The default binder
-// does it based on Content-Type header.
+// Set saves data in the context.
+func (c *Context) Set(key string, val interface{}) {
+	c.goContext = context.WithValue(c.goContext, key, val)
+}
+
+// Bind binds the request body into provided type i. The default binder doe
+// it based on "Content-Type" header.
 func (c *Context) Bind(i interface{}) error {
 	return c.Air.Binder.Bind(i, c)
 }
 
 // Render renders a template with `Context#Data` and `Context#Data["template"]`
-// and sends a text/html response with `Context#StatusCode`.
+// and sends a "text/html" response with `Context#StatusCode`.
 func (c *Context) Render() (err error) {
 	t := c.Data["template"]
 	if t == nil || reflect.ValueOf(t).Kind() != reflect.String {
@@ -339,8 +339,8 @@ func (c *Context) Error(err error) {
 }
 
 // ServeContent sends static content from `io.Reader` and handles caching
-// via `If-Modified-Since` request header. It automatically sets `Content-Type`
-// and `Last-Modified` response headers.
+// via "If-Modified-Since" request header. It automatically sets "Content-Type"
+// and "Last-Modified" response headers.
 func (c *Context) ServeContent(content io.ReadSeeker, name string, modtime time.Time) error {
 	req := c.Request
 	res := c.Response
@@ -359,8 +359,8 @@ func (c *Context) ServeContent(content io.ReadSeeker, name string, modtime time.
 	return err
 }
 
-// Reset resets the context after request completes. It must be called along
-// with `Air#AcquireContext()` and `Air#ReleaseContext()`.
+// Reset resets the instance of `Context` after request completes. It must
+// be called along with `Air#AcquireContext()` and `Air#ReleaseContext()`.
 // See `Air#ServeHTTP()`
 func (c *Context) Reset(req *Request, res *Response) {
 	c.goContext = context.Background()
@@ -369,9 +369,9 @@ func (c *Context) Reset(req *Request, res *Response) {
 	c.Handler = NotFoundHandler
 }
 
-// contentTypeByExtension returns the MIME type associated with the file based on
-// its extension. It returns `application/octet-stream` incase MIME type is not
-// found.
+// contentTypeByExtension returns the MIME type associated with the file based
+// on its extension. It returns "application/octet-stream" incase MIME type is
+// not found.
 func contentTypeByExtension(name string) (t string) {
 	if t = mime.TypeByExtension(filepath.Ext(name)); t == "" {
 		t = MIMEOctetStream
