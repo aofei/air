@@ -6,7 +6,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// Cookie for HTTP cookie.
+// Cookie represents the current HTTP response cookie.
 type Cookie struct {
 	fastCookie *fasthttp.Cookie
 }

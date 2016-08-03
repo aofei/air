@@ -8,24 +8,13 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// Request for HTTP request.
+// Request represents the current HTTP request.
 type Request struct {
 	fastCtx *fasthttp.RequestCtx
 
 	Header *RequestHeader
 	URI    *URI
 	Logger Logger
-}
-
-// NewRequest returns a new instance of `Request`.
-func NewRequest(c *fasthttp.RequestCtx, l Logger) *Request {
-	return &Request{
-		fastCtx: c,
-
-		Header: &RequestHeader{fastRequestHeader: &c.Request.Header},
-		URI:    &URI{fastURI: c.URI()},
-		Logger: l,
-	}
 }
 
 // IsTLS returns true if HTTP connection is TLS otherwise false.
@@ -158,7 +147,7 @@ func (r *Request) Cookies() []Cookie {
 	return cookies
 }
 
-// reset resets the `Request` instance.
+// reset resets the instacne of `Request`.
 func (r *Request) reset(c *fasthttp.RequestCtx, h *RequestHeader, u *URI) {
 	r.fastCtx = c
 	r.Header = h
