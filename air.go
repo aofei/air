@@ -281,8 +281,8 @@ func handlerName(handler HandlerFunc) string {
 // Run starts the HTTP server.
 func (a *Air) Run(addr string) {
 	s := NewServer(addr)
-	s.SetHandler(a)
-	s.SetLogger(a.Logger)
+	s.Handler = a
+	s.Logger = a.Logger
 	a.Renderer.parseTemplates()
 	if a.Debug {
 		a.Logger.SetLevel(DEBUG)
@@ -291,7 +291,7 @@ func (a *Air) Run(addr string) {
 	a.Logger.Error(s.Start())
 }
 
-// ServeHTTP implements `Handler#ServeHTTP()`.
+// ServeHTTP implements `ServerHandler#ServeHTTP()`.
 func (a *Air) ServeHTTP(req *Request, res *Response) {
 	c := a.pool.Get().(*Context)
 	c.Reset(req, res)
