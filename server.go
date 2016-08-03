@@ -9,28 +9,18 @@ import (
 )
 
 type (
-	// Server defines the interface for HTTP server.
-	Server interface {
-		// SetHandler sets the handler for the HTTP server.
-		SetHandler(Handler)
+	// Server represents the HTTP server.
+	Server struct {
+		fastServer *fasthttp.Server
+		config     *ServerConfig
+		pool       *pool
 
-		// SetLogger sets the logger for the HTTP server.
-		SetLogger(Logger)
-
-		// Start starts the HTTP server.
-		Start() error
+		Handler ServerHandler
+		Logger  Logger
 	}
 
-	fastServer struct {
-		*fasthttp.Server
-		config  *Config
-		handler Handler
-		logger  Logger
-		pool    *pool
-	}
-
-	// Config defines fasthttp config.
-	Config struct {
+	// ServerConfig represents the HTTP server config.
+	ServerConfig struct {
 		Address      string        // TCP address to listen on.
 		Listener     net.Listener  // Custom `net.Listener`. If set, server accepts connections on it.
 		TLSCertFile  string        // TLS certificate file path.
@@ -39,16 +29,7 @@ type (
 		WriteTimeout time.Duration // Maximum duration before timing out write of the response.
 	}
 
-	// Handler defines an interface to server HTTP requests via `ServeHTTP(*Request, *Response)`
-	// function.
-	Handler interface {
-		ServeHTTP(*Request, *Response)
-	}
-
-	// handlerFunc is an adapter to allow the use of `func(*Request, *Response)` as
-	// an HTTP handler.
-	handlerFunc func(*Request, *Response)
-
+	// pool represents the pools of a HTTP server.
 	pool struct {
 		request        sync.Pool
 		response       sync.Pool
@@ -56,17 +37,27 @@ type (
 		responseHeader sync.Pool
 		uri            sync.Pool
 	}
+
+	// ServerHandler defines an interface to server HTTP requests via
+	// `ServeHTTP(*Request, *Response)`.
+	ServerHandler interface {
+		ServeHTTP(*Request, *Response)
+	}
+
+	// serverHandlerFunc is an adapter to allow the use of `func(*Request, *Response)`
+	// as an HTTP handler.
+	serverHandlerFunc func(*Request, *Response)
 )
 
-// NewServer returns `Server` with provided listen address.
-func NewServer(addr string) Server {
-	c := &Config{Address: addr}
+// NewServer returns an new instance of `Server` with provided listen address.
+func NewServer(addr string) *Server {
+	c := &ServerConfig{Address: addr}
 	return NewServerWithConfig(c)
 }
 
-// NewServerWithTLS returns `Server` with provided TLS config.
-func NewServerWithTLS(addr, certFile, keyFile string) Server {
-	c := &Config{
+// NewServerWithTLS returns an new instance of `Server` with provided TLS config.
+func NewServerWithTLS(addr, certFile, keyFile string) *Server {
+	c := &ServerConfig{
 		Address:     addr,
 		TLSCertFile: certFile,
 		TLSKeyFile:  keyFile,
@@ -74,22 +65,22 @@ func NewServerWithTLS(addr, certFile, keyFile string) Server {
 	return NewServerWithConfig(c)
 }
 
-// NewServerWithConfig returns `Server` with provided config.
-func NewServerWithConfig(c *Config) Server {
-	s := &fastServer{
-		Server: new(fasthttp.Server),
-		config: c,
-		logger: NewLogger("air"),
+// NewServerWithConfig returns an new instance of `Server` with provided config.
+func NewServerWithConfig(c *ServerConfig) *Server {
+	s := &Server{
+		fastServer: new(fasthttp.Server),
+		config:     c,
+		Logger:     NewLogger("air"),
 	}
 	s.pool = &pool{
 		request: sync.Pool{
 			New: func() interface{} {
-				return &Request{Logger: s.logger}
+				return &Request{Logger: s.Logger}
 			},
 		},
 		response: sync.Pool{
 			New: func() interface{} {
-				return &Response{Logger: s.logger}
+				return &Response{Logger: s.Logger}
 			},
 		},
 		requestHeader: sync.Pool{
@@ -108,24 +99,17 @@ func NewServerWithConfig(c *Config) Server {
 			},
 		},
 	}
-	s.handler = handlerFunc(func(req *Request, res *Response) {
-		s.logger.Error("Handler Not Set, Use `SetHandler()` To Set It.")
+	s.Handler = serverHandlerFunc(func(req *Request, res *Response) {
+		s.Logger.Error("ServerHandler Not Set")
 	})
-	s.ReadTimeout = c.ReadTimeout
-	s.WriteTimeout = c.WriteTimeout
-	s.Handler = s.ServeHTTP
+	s.fastServer.ReadTimeout = c.ReadTimeout
+	s.fastServer.WriteTimeout = c.WriteTimeout
+	s.fastServer.Handler = s.fastServeHTTP
 	return s
 }
 
-func (s *fastServer) SetHandler(h Handler) {
-	s.handler = h
-}
-
-func (s *fastServer) SetLogger(l Logger) {
-	s.logger = l
-}
-
-func (s *fastServer) Start() error {
+// Start starts the HTTP server.
+func (s *Server) Start() error {
 	if s.config.Listener == nil {
 		return s.startDefaultListener()
 	}
@@ -133,23 +117,26 @@ func (s *fastServer) Start() error {
 
 }
 
-func (s *fastServer) startDefaultListener() error {
+// startDefaultListener starts the default HTTP linsterner.
+func (s *Server) startDefaultListener() error {
 	c := s.config
 	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
-		return s.ListenAndServeTLS(c.Address, c.TLSCertFile, c.TLSKeyFile)
+		return s.fastServer.ListenAndServeTLS(c.Address, c.TLSCertFile, c.TLSKeyFile)
 	}
-	return s.ListenAndServe(c.Address)
+	return s.fastServer.ListenAndServe(c.Address)
 }
 
-func (s *fastServer) startCustomListener() error {
+// startCustomListener starts the custom HTTP linsterner.
+func (s *Server) startCustomListener() error {
 	c := s.config
 	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
-		return s.ServeTLS(c.Listener, c.TLSCertFile, c.TLSKeyFile)
+		return s.fastServer.ServeTLS(c.Listener, c.TLSCertFile, c.TLSKeyFile)
 	}
-	return s.Serve(c.Listener)
+	return s.fastServer.Serve(c.Listener)
 }
 
-func (s *fastServer) ServeHTTP(c *fasthttp.RequestCtx) {
+// fastServeHTTP serves the fast HTTP request.
+func (s *Server) fastServeHTTP(c *fasthttp.RequestCtx) {
 	// Request
 	req := s.pool.request.Get().(*Request)
 	reqHdr := s.pool.requestHeader.Get().(*RequestHeader)
@@ -164,7 +151,7 @@ func (s *fastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 	resHdr.reset(&c.Response.Header)
 	res.reset(c, resHdr)
 
-	s.handler.ServeHTTP(req, res)
+	s.Handler.ServeHTTP(req, res)
 
 	// Return to pool
 	s.pool.request.Put(req)
@@ -174,8 +161,8 @@ func (s *fastServer) ServeHTTP(c *fasthttp.RequestCtx) {
 	s.pool.responseHeader.Put(resHdr)
 }
 
-// ServeHTTP serves HTTP request.
-func (h handlerFunc) ServeHTTP(req *Request, res *Response) {
+// ServeHTTP implements `ServerHandler#ServeHTTP()`.
+func (s serverHandlerFunc) ServeHTTP(req *Request, res *Response) {
 	h(req, res)
 }
 
