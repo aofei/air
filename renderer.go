@@ -13,7 +13,7 @@ import (
 )
 
 // Renderer is used to provide a `Render()` method for an `Air` instance
-// for render a text/html response by using `template.Template`.
+// for renders a "text/html" response by using `template.Template`.
 type Renderer struct {
 	goTemplate *template.Template
 
@@ -21,7 +21,7 @@ type Renderer struct {
 	FuncMap   template.FuncMap
 }
 
-// Render renders a text/html response by using `template.Template`
+// Render renders a "text/html" response by using `template.Template`
 func (r *Renderer) Render(wr io.Writer, tplName string, c *Context) error {
 	return r.goTemplate.ExecuteTemplate(wr, tplName, c.Data)
 }
@@ -90,6 +90,7 @@ func (r *Renderer) parseTemplates() {
 	}
 }
 
+// Basic type kind
 type typeKind int
 
 const (
@@ -102,6 +103,7 @@ const (
 	stringKind
 )
 
+// Template func error
 var (
 	errBadComparisonType = errors.New("Invalid Type For Comparison")
 	errBadComparison     = errors.New("Incompatible Types For Comparison")
@@ -165,6 +167,7 @@ func datefmt(t time.Time, layout string) string {
 	return t.Format(layout)
 }
 
+// basicKind returns a basic type kind with a provided `reflect.Value`.
 func basicKind(v reflect.Value) (typeKind, error) {
 	switch v.Kind() {
 	case reflect.Bool:
