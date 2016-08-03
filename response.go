@@ -16,7 +16,7 @@ type Response struct {
 	Size      int64
 	Committed bool
 	Writer    io.Writer
-	Logger    Logger
+	Logger    *Logger
 }
 
 // WriteHeader sends an HTTP response header with status code.

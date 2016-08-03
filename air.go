@@ -23,7 +23,7 @@ type (
 		Binder           *Binder
 		Renderer         *Renderer
 		HTTPErrorHandler HTTPErrorHandler
-		Logger           Logger
+		Logger           *Logger
 		Debug            bool
 	}
 
@@ -158,7 +158,7 @@ func New() *Air {
 	a.Renderer = &Renderer{ViewsPath: "views"}
 	a.Renderer.initDefaultTempleFuncMap()
 	l := NewLogger("air")
-	l.SetLevel(ERROR)
+	l.Level = ERROR
 	a.Logger = l
 	return a
 }
@@ -285,7 +285,7 @@ func (a *Air) Run(addr string) {
 	s.Logger = a.Logger
 	a.Renderer.parseTemplates()
 	if a.Debug {
-		a.Logger.SetLevel(DEBUG)
+		a.Logger.Level = DEBUG
 		a.Logger.Debug("Running In Debug Mode")
 	}
 	a.Logger.Error(s.Start())
