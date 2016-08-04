@@ -35,8 +35,7 @@ type Context struct {
 // NewContext returns a new instance of `Context`.
 func NewContext(req *Request, res *Response, a *Air) *Context {
 	return &Context{
-		goContext: context.Background(),
-
+		goContext:   context.Background(),
 		Request:     req,
 		Response:    res,
 		ParamValues: make([]string, *a.maxParam),
