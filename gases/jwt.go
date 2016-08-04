@@ -121,7 +121,7 @@ func JWTWithConfig(config JWTConfig) air.GasFunc {
 			})
 			if err == nil && token.Valid {
 				// Store user information from token into context.
-				c.Set(config.ContextKey, token)
+				c.AssociateValue(config.ContextKey, token)
 				return next(c)
 			}
 			return air.ErrUnauthorized

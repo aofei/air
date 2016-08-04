@@ -76,6 +76,11 @@ func (c *Context) Value(key interface{}) interface{} {
 	return c.goContext.Value(key)
 }
 
+// AssociateValue associates request-scoped value into the context.
+func (c *Context) AssociateValue(key string, val interface{}) {
+	c.goContext = context.WithValue(c.goContext, key, val)
+}
+
 // P returns path parameter by index.
 func (c *Context) P(i int) (value string) {
 	l := len(c.ParamNames)
@@ -149,16 +154,6 @@ func (c *Context) SetCookie(cookie Cookie) {
 // for `Request#Cookies()`.
 func (c *Context) Cookies() []Cookie {
 	return c.Request.Cookies()
-}
-
-// Get retrieves data from the context.
-func (c *Context) Get(key string) interface{} {
-	return c.goContext.Value(key)
-}
-
-// Set saves data in the context.
-func (c *Context) Set(key string, val interface{}) {
-	c.goContext = context.WithValue(c.goContext, key, val)
 }
 
 // Bind binds the request body into provided type i. The default binder doe
