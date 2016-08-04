@@ -4,7 +4,8 @@ type (
 	// Router is the registry of all registered routes for an `Air` instance for
 	// request matching and URI path parameter parsing.
 	Router struct {
-		tree   *node
+		tree *node
+
 		Routes map[string]Route
 		Air    *Air
 	}
