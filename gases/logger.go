@@ -99,7 +99,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 			res := c.Response
 			start := time.Now()
 			if err = next(c); err != nil {
-				c.Error(err)
+				c.Air.HTTPErrorHandler(err, c)
 			}
 			stop := time.Now()
 			buf := config.bufferPool.Get().(*bytes.Buffer)

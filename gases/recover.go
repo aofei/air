@@ -75,7 +75,7 @@ func RecoverWithConfig(config RecoverConfig) air.GasFunc {
 					if !config.DisablePrintStack {
 						c.Air.Logger.Printf("[%s] %s %s", "PANIC RECOVER", err, stack[:length])
 					}
-					c.Error(err)
+					c.Air.HTTPErrorHandler(err, c)
 				}
 			}()
 			return next(c)
