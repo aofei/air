@@ -77,7 +77,7 @@ func (c *Context) Value(key interface{}) interface{} {
 }
 
 // SetValue sets request-scoped value into the context.
-func (c *Context) SetValue(key string, val interface{}) {
+func (c *Context) SetValue(key interface{}, val interface{}) {
 	c.goContext = context.WithValue(c.goContext, key, val)
 }
 
