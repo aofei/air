@@ -163,7 +163,7 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 			c.SetCookie(cookie)
 
 			// Store token in the context
-			c.Set(config.ContextKey, token)
+			c.AssociateValue(config.ContextKey, token)
 
 			// Protect clients from caching the response
 			c.Response.Header.Add(air.HeaderVary, air.HeaderCookie)
