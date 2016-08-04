@@ -333,11 +333,6 @@ func (c *Context) Redirect(uri string) error {
 	return nil
 }
 
-// Error invokes the registered HTTP error handler. Generally used by gas.
-func (c *Context) Error(err error) {
-	c.Air.HTTPErrorHandler(err, c)
-}
-
 // ServeContent sends static content from `io.Reader` and handles caching
 // via "If-Modified-Since" request header. It automatically sets "Content-Type"
 // and "Last-Modified" response headers.

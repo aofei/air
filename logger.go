@@ -198,7 +198,7 @@ func (l *Logger) log(lvl LoggerLevel, format string, args ...interface{}) {
 		}
 
 		if lvl >= ERROR {
-			panic(message)
+			// panic(message)
 		}
 
 		_, err := l.template.ExecuteFunc(buf, func(w io.Writer, tag string) (int, error) {
