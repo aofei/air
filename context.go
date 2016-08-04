@@ -76,8 +76,8 @@ func (c *Context) Value(key interface{}) interface{} {
 	return c.goContext.Value(key)
 }
 
-// AssociateValue associates request-scoped value into the context.
-func (c *Context) AssociateValue(key string, val interface{}) {
+// SetValue sets request-scoped value into the context.
+func (c *Context) SetValue(key string, val interface{}) {
 	c.goContext = context.WithValue(c.goContext, key, val)
 }
 
