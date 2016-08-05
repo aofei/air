@@ -32,7 +32,7 @@ func (u *URI) QueryParam(name string) string {
 	return string(u.fastURI.QueryArgs().Peek(name))
 }
 
-// QueryParam returns the query parameters as map.
+// QueryParams returns the query parameters as map.
 func (u *URI) QueryParams() map[string][]string {
 	params := make(map[string][]string)
 	u.fastURI.QueryArgs().VisitAll(func(k, v []byte) {
