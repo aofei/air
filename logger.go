@@ -86,7 +86,7 @@ func (l *Logger) Print(i ...interface{}) {
 	fmt.Fprintln(l.Output, i...)
 }
 
-// Print prints log info in a format with provided type i.
+// Printf prints log info in a format with provided type i.
 func (l *Logger) Printf(format string, args ...interface{}) {
 	f := fmt.Sprintf("%s\n", format)
 	fmt.Fprintf(l.Output, f, args...)
