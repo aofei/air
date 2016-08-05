@@ -1,8 +1,6 @@
 package gases
 
 import (
-	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/sheng/air"
@@ -75,10 +73,7 @@ func CORSWithConfig(config CORSConfig) air.GasFunc {
 	if len(config.AllowMethods) == 0 {
 		config.AllowMethods = DefaultCORSConfig.AllowMethods
 	}
-	allowMethods := strings.Join(config.AllowMethods, ",")
-	allowHeaders := strings.Join(config.AllowHeaders, ",")
 	exposeHeaders := strings.Join(config.ExposeHeaders, ",")
-	maxAge := strconv.Itoa(config.MaxAge)
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
 		return func(c *air.Context) error {
@@ -100,7 +95,6 @@ func CORSWithConfig(config CORSConfig) air.GasFunc {
 				}
 			}
 
-			// Simple request
 			res.Header.Add(air.HeaderVary, air.HeaderOrigin)
 			if !originSet || allowedOrigin == "" {
 				return next(c)
@@ -113,32 +107,6 @@ func CORSWithConfig(config CORSConfig) air.GasFunc {
 				res.Header.Set(air.HeaderAccessControlExposeHeaders, exposeHeaders)
 			}
 			return next(c)
-
-			// Preflight request
-			res.Header.Add(air.HeaderVary, air.HeaderOrigin)
-			res.Header.Add(air.HeaderVary, air.HeaderAccessControlRequestMethod)
-			res.Header.Add(air.HeaderVary, air.HeaderAccessControlRequestHeaders)
-			if !originSet || allowedOrigin == "" {
-				return next(c)
-			}
-			res.Header.Set(air.HeaderAccessControlAllowOrigin, allowedOrigin)
-			res.Header.Set(air.HeaderAccessControlAllowMethods, allowMethods)
-			if config.AllowCredentials {
-				res.Header.Set(air.HeaderAccessControlAllowCredentials, "true")
-			}
-			if allowHeaders != "" {
-				res.Header.Set(air.HeaderAccessControlAllowHeaders, allowHeaders)
-			} else {
-				h := req.Header.Get(air.HeaderAccessControlRequestHeaders)
-				if h != "" {
-					res.Header.Set(air.HeaderAccessControlAllowHeaders, h)
-				}
-			}
-			if config.MaxAge > 0 {
-				res.Header.Set(air.HeaderAccessControlMaxAge, maxAge)
-			}
-			c.StatusCode = http.StatusNoContent
-			return c.NoContent()
 		}
 	}
 }
