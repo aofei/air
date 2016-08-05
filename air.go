@@ -201,7 +201,7 @@ func (a *Air) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 // the provided root directory.
 func (a *Air) Static(prefix, root string) {
 	a.Get(prefix+"*", func(c *Context) error {
-		return c.File(path.Join(root, c.P(0)))
+		return c.File(path.Join(root, c.Param(0)))
 	})
 }
 
