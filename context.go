@@ -80,22 +80,22 @@ func (c *Context) SetValue(key interface{}, val interface{}) {
 	c.goContext = context.WithValue(c.goContext, key, val)
 }
 
-// P returns path parameter by index.
-func (c *Context) P(i int) (value string) {
+// Param returns path parameter by provided index(RECOMMEND) or name(SLOW).
+func (c *Context) Param(ion interface{}) (value string) {
 	l := len(c.ParamNames)
-	if i < l {
-		value = c.ParamValues[i]
-	}
-	return
-}
-
-// Param returns path parameter by name.
-func (c *Context) Param(name string) (value string) {
-	l := len(c.ParamNames)
-	for i, n := range c.ParamNames {
-		if n == name && i < l {
+	switch t := ion.(type) {
+	case int:
+		i := int(t)
+		if i < l {
 			value = c.ParamValues[i]
-			break
+		}
+	case string:
+		n := string(t)
+		for i, name := range c.ParamNames {
+			if n == name && i < l {
+				value = c.ParamValues[i]
+				break
+			}
 		}
 	}
 	return
