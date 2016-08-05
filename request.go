@@ -78,7 +78,7 @@ func (r *Request) Body() io.Reader {
 	return bytes.NewBuffer(r.fastCtx.Request.Body())
 }
 
-// Body sets request's body.
+// SetBody sets request's body.
 func (r *Request) SetBody(reader io.Reader) {
 	r.fastCtx.Request.SetBodyStream(reader, 0)
 }
