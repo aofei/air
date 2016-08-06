@@ -20,16 +20,19 @@ type Config struct {
 
 	// DebugMode represents the state of `Air`'s debug mode. Default
 	// value is "false".
+	// It's called "debug_mode" in the config file.
 	DebugMode bool
 
 	// LogFormat represents the format of `Logger`'s output content.
 	// Default value is:
 	// `{"app_name":"${app_name}","time":"${time_rfc3339}",` +
 	// `"level":"${level}","file":"${short_file}","line":"${line}"}`
+	// It's called "log_format" in the config file.
 	LogFormat string
 
 	// Address represents the TCP address that `Server` to listen
 	// on. Default value is "localhost:8080".
+	// It's called "address" in the config file.
 	Address string
 
 	// Listener represens the custom `net.Listener`. If set, `Server`
@@ -38,23 +41,30 @@ type Config struct {
 
 	// TLSCertFile represents the TLS certificate file path. Default
 	// value is "".
+	// It's called "tls_cert_file" in the config file.
 	TLSCertFile string
 
 	// TLSKeyFile represents the TLS key file path. Default value
 	// is "".
+	// It's called "tls_key_file" in the config file.
 	TLSKeyFile string
 
 	// ReadTimeout represents the maximum duration before timing out
 	// read of the request. Default value is "0".
+	// It's called "read_timeout" in the config file.
+	// *It's unit in the config file is SECONDS.*
 	ReadTimeout time.Duration
 
 	// WriteTimeout represents the maximum duration before timing
 	// out write of the response. Default value is "0".
+	// It's called "write_timeout" in the config file.
+	// *It's unit in the config file is SECONDS.*
 	WriteTimeout time.Duration
 
 	// TemplatesPath represents the path of `Renderer`'s templates.
 	// Default value is "templates" that means a subdirectory of the
 	// runtime directory.
+	// It's called "templates_path" in the config file.
 	TemplatesPath string
 }
 
