@@ -1,9 +1,7 @@
 package air
 
 import (
-	"net"
 	"sync"
-	"time"
 
 	"github.com/valyala/fasthttp"
 )
@@ -12,21 +10,11 @@ type (
 	// Server represents the HTTP server.
 	Server struct {
 		fastServer *fasthttp.Server
-		config     *ServerConfig
 		pool       *pool
+		air        *Air
 
 		Handler ServerHandler
 		Logger  *Logger
-	}
-
-	// ServerConfig represents the HTTP server config.
-	ServerConfig struct {
-		Address      string        // TCP address to listen on.
-		Listener     net.Listener  // Custom `net.Listener`. If set, server accepts connections on it.
-		TLSCertFile  string        // TLS certificate file path.
-		TLSKeyFile   string        // TLS key file path.
-		ReadTimeout  time.Duration // Maximum duration before timing out read of the request.
-		WriteTimeout time.Duration // Maximum duration before timing out write of the response.
 	}
 
 	// pool represents the pools of a HTTP server.
@@ -49,28 +37,11 @@ type (
 	serverHandlerFunc func(*Request, *Response)
 )
 
-// NewServer returns an new instance of `Server` with provided listen address.
-func NewServer(addr string) *Server {
-	c := &ServerConfig{Address: addr}
-	return NewServerWithConfig(c)
-}
-
-// NewServerWithTLS returns an new instance of `Server` with provided TLS config.
-func NewServerWithTLS(addr, certFile, keyFile string) *Server {
-	c := &ServerConfig{
-		Address:     addr,
-		TLSCertFile: certFile,
-		TLSKeyFile:  keyFile,
-	}
-	return NewServerWithConfig(c)
-}
-
-// NewServerWithConfig returns an new instance of `Server` with provided config.
-func NewServerWithConfig(c *ServerConfig) *Server {
+// NewServer returns an new instance of `Server`.
+func NewServer(a *Air) *Server {
 	s := &Server{
 		fastServer: new(fasthttp.Server),
-		config:     c,
-		Logger:     NewLogger("air"),
+		air:        a,
 	}
 	s.pool = &pool{
 		request: sync.Pool{
@@ -102,15 +73,15 @@ func NewServerWithConfig(c *ServerConfig) *Server {
 	s.Handler = serverHandlerFunc(func(req *Request, res *Response) {
 		s.Logger.Error("ServerHandler Not Set")
 	})
-	s.fastServer.ReadTimeout = c.ReadTimeout
-	s.fastServer.WriteTimeout = c.WriteTimeout
+	s.fastServer.ReadTimeout = s.air.Config.ReadTimeout
+	s.fastServer.WriteTimeout = s.air.Config.WriteTimeout
 	s.fastServer.Handler = s.fastServeHTTP
 	return s
 }
 
 // Start starts the HTTP server.
 func (s *Server) Start() error {
-	if s.config.Listener == nil {
+	if s.air.Config.Listener == nil {
 		return s.startDefaultListener()
 	}
 	return s.startCustomListener()
@@ -119,7 +90,7 @@ func (s *Server) Start() error {
 
 // startDefaultListener starts the default HTTP linsterner.
 func (s *Server) startDefaultListener() error {
-	c := s.config
+	c := s.air.Config
 	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
 		return s.fastServer.ListenAndServeTLS(c.Address, c.TLSCertFile, c.TLSKeyFile)
 	}
@@ -128,7 +99,7 @@ func (s *Server) startDefaultListener() error {
 
 // startCustomListener starts the custom HTTP linsterner.
 func (s *Server) startCustomListener() error {
-	c := s.config
+	c := s.air.Config
 	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
 		return s.fastServer.ServeTLS(c.Listener, c.TLSCertFile, c.TLSKeyFile)
 	}
