@@ -5,9 +5,9 @@ type (
 	// request matching and URI path parameter parsing.
 	Router struct {
 		tree *node
+		air  *Air
 
 		Routes map[string]Route
-		Air    *Air
 	}
 
 	node struct {
@@ -51,8 +51,8 @@ func NewRouter(a *Air) *Router {
 		tree: &node{
 			methodHandler: new(methodHandler),
 		},
+		air:    a,
 		Routes: make(map[string]Route),
-		Air:    a,
 	}
 }
 

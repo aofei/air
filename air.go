@@ -24,7 +24,7 @@ type (
 		Renderer         *Renderer
 		HTTPErrorHandler HTTPErrorHandler
 		Logger           *Logger
-		Debug            bool
+		Config           *Config
 	}
 
 	// HandlerFunc defines a function to server HTTP requests.
@@ -153,13 +153,10 @@ func New() *Air {
 	a.Router = NewRouter(a)
 
 	// Defaults
-	a.HTTPErrorHandler = a.defaultHTTPErrorHandler
 	a.Binder = &Binder{}
-	a.Renderer = &Renderer{ViewsPath: "views"}
+	a.Renderer = &Renderer{air: a}
 	a.Renderer.initDefaultTempleFuncMap()
-	l := NewLogger("air")
-	l.Level = ERROR
-	a.Logger = l
+	a.HTTPErrorHandler = a.defaultHTTPErrorHandler
 	return a
 }
 
@@ -279,12 +276,19 @@ func handlerName(handler HandlerFunc) string {
 }
 
 // Run starts the HTTP server.
-func (a *Air) Run(addr string) {
-	s := NewServer(addr)
+func (a *Air) Run() {
+	if a.Config == nil {
+		a.Config = LoadConfig("")
+	}
+	a.Renderer.parseTemplates()
+	l := NewLogger(a)
+	l.Level = ERROR
+	a.Logger = l
+
+	s := NewServer(a)
 	s.Handler = a
 	s.Logger = a.Logger
-	a.Renderer.parseTemplates()
-	if a.Debug {
+	if a.Config.DebugMode {
 		a.Logger.Level = DEBUG
 		a.Logger.Debug("Running In Debug Mode")
 	}
@@ -355,7 +359,7 @@ func (a *Air) defaultHTTPErrorHandler(err error, c *Context) {
 		code = he.Code
 		msg = he.Message
 	}
-	if a.Debug {
+	if a.Config.DebugMode {
 		msg = err.Error()
 	}
 	if !c.Response.Committed {
