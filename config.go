@@ -113,10 +113,14 @@ func NewConfig(appName string) *Config {
 		c.JSON = configJSON[appName].(map[string]interface{})
 	}
 
-	dm := c.JSON["debug mode"]
-	lf := c.JSON["log format"]
+	dm := c.JSON["debug_mode"]
+	lf := c.JSON["log_format"]
 	addr := c.JSON["address"]
-	tp := c.JSON["templates path"]
+	tlscf := c.JSON["tls_cert_file"]
+	tlskf := c.JSON["tls_key_file"]
+	rt := c.JSON["read_timeout"]
+	wt := c.JSON["write_timeout"]
+	tp := c.JSON["templates_path"]
 
 	if dm != nil {
 		c.DebugMode = dm.(bool)
@@ -126,6 +130,18 @@ func NewConfig(appName string) *Config {
 	}
 	if addr != nil {
 		c.Address = addr.(string)
+	}
+	if tlscf != nil {
+		c.TLSCertFile = tlscf.(string)
+	}
+	if tlskf != nil {
+		c.TLSKeyFile = tlskf.(string)
+	}
+	if rt != nil {
+		c.ReadTimeout = time.Duration(rt.(float64)) * time.Second
+	}
+	if wt != nil {
+		c.WriteTimeout = time.Duration(wt.(float64)) * time.Second
 	}
 	if tp != nil {
 		c.TemplatesPath = tp.(string)
