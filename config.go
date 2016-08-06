@@ -12,8 +12,7 @@ import (
 // Config is a global set of configurations that for an instance of `Air`
 // for customization.
 type Config struct {
-	// AppName represens the name of current `Air` instance. Default
-	// value is "air".
+	// AppName represens the name of current `Air` instance.
 	AppName string
 
 	// JSON represents the JSON that parsing from config file.
@@ -67,7 +66,6 @@ var configJSON map[string]interface{}
 
 func init() {
 	defaultConfig = Config{
-		AppName: "air",
 		LogFormat: `{"app_name":"${app_name}","time":"${time_rfc3339}",` +
 			`"level":"${level}","file":"${short_file}","line":"${line}"}`,
 		Address:       "localhost:8080",
@@ -92,16 +90,17 @@ func init() {
 	}
 }
 
-// LoadConfig returns a new instance of `Config` with a appName by parsing
+// NewConfig returns a new instance of `Config` with a appName by parsing
 // the config file that in the rumtime directory named "config.json".
-// LoadConfig returns the defaultConfig if the config file or appName doesn't
-// exist.
-func LoadConfig(appName string) *Config {
+// NewConfig returns the defaultConfig(field "AppName" be setted to provided
+// appName) if the config file or appName doesn't exist.
+func NewConfig(appName string) *Config {
+	c := defaultConfig
 	if configJSON == nil {
-		return &defaultConfig
+		c.AppName = appName
+		return &c
 	}
 
-	c := defaultConfig
 	if len(configJSON) == 1 {
 		for k, v := range configJSON {
 			c.AppName = k
@@ -110,6 +109,7 @@ func LoadConfig(appName string) *Config {
 	} else if configJSON[appName] == nil {
 		panic(errors.New("App \"" + appName + "\" Not Exist"))
 	} else {
+		c.AppName = appName
 		c.JSON = configJSON[appName].(map[string]interface{})
 	}
 

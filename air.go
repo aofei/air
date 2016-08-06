@@ -278,7 +278,7 @@ func handlerName(handler HandlerFunc) string {
 // Run starts the HTTP server.
 func (a *Air) Run() {
 	if a.Config == nil {
-		a.Config = LoadConfig("")
+		a.Config = NewConfig("air")
 	}
 	a.Renderer.parseTemplates()
 	l := NewLogger(a)
