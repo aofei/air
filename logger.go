@@ -22,8 +22,8 @@ type (
 		bufferPool sync.Pool
 		mutex      sync.Mutex
 		levels     []string
+		air        *Air
 
-		Prefix string
 		Level  LoggerLevel
 		Output io.Writer
 	}
@@ -43,18 +43,17 @@ const (
 )
 
 // NewLogger returns an new instance of `Logger`.
-func NewLogger(prefix string) *Logger {
+func NewLogger(a *Air) *Logger {
 	l := &Logger{
-		Level:  INFO,
-		Prefix: prefix,
 		bufferPool: sync.Pool{
 			New: func() interface{} {
 				return bytes.NewBuffer(make([]byte, 256))
 			},
 		},
+		air:   a,
+		Level: INFO,
 	}
-	l.template = l.newTemplate(`{"time":"${time_rfc3339}","level":"${level}","prefix":"${prefix}",` +
-		`"file":"${short_file}","line":"${line}"}`)
+	l.template = l.newTemplate(a.Config.LogFormat)
 	l.initLevels()
 	l.Output = os.Stdout
 	return l
@@ -203,12 +202,12 @@ func (l *Logger) log(lvl LoggerLevel, format string, args ...interface{}) {
 
 		_, err := l.template.ExecuteFunc(buf, func(w io.Writer, tag string) (int, error) {
 			switch tag {
+			case "app_name":
+				return w.Write([]byte(l.air.Config.AppName))
 			case "time_rfc3339":
 				return w.Write([]byte(time.Now().Format(time.RFC3339)))
 			case "level":
 				return w.Write([]byte(l.levels[lvl]))
-			case "prefix":
-				return w.Write([]byte(l.Prefix))
 			case "long_file":
 				return w.Write([]byte(file))
 			case "short_file":

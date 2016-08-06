@@ -16,9 +16,9 @@ import (
 // for renders a "text/html" response by using `template.Template`.
 type Renderer struct {
 	goTemplate *template.Template
+	air        *Air
 
-	ViewsPath string
-	FuncMap   template.FuncMap
+	FuncMap template.FuncMap
 }
 
 // Render renders a "text/html" response by using `template.Template`
@@ -44,14 +44,14 @@ func (r *Renderer) initDefaultTempleFuncMap() {
 
 // parseTemplates parses files into templates.
 //
-// e.g. r.ViewsPath == "views"
+// e.g. Config#TemplatesPath == "templates"
 //
-// views/
+// templates/
 //   index.html
 //   login.html
 //   register.html
 //
-// views/parts/
+// templates/parts/
 //   header.html
 //   footer.html
 //
@@ -60,10 +60,11 @@ func (r *Renderer) initDefaultTempleFuncMap() {
 // "index.html", "login.html", "register.html",
 // "parts/header.html", "parts/footer.html".
 func (r *Renderer) parseTemplates() {
-	if r.ViewsPath[len(r.ViewsPath)-1] == '/' {
-		r.ViewsPath = r.ViewsPath[:len(r.ViewsPath)-1]
+	tp := r.air.Config.TemplatesPath
+	if tp[len(tp)-1] == '/' {
+		tp = tp[:len(tp)-1]
 	}
-	filenames, err := filepath.Glob(r.ViewsPath + "/*/*.html")
+	filenames, err := filepath.Glob(tp + "/*/*.html")
 	if err != nil {
 		panic(err)
 	}
@@ -73,7 +74,7 @@ func (r *Renderer) parseTemplates() {
 			panic(err)
 		}
 		s := string(b)
-		name := filename[len(r.ViewsPath)+1:]
+		name := filename[len(tp)+1:]
 		var tmpl *template.Template
 		if r.goTemplate == nil {
 			r.goTemplate = template.New(name).Funcs(r.FuncMap)

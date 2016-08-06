@@ -209,7 +209,7 @@ func (c *Context) JSON() (err error) {
 		return ErrDataJSONNotSetted
 	}
 	b, err := json.Marshal(j)
-	if c.Air.Debug {
+	if c.Air.Config.DebugMode {
 		b, err = json.MarshalIndent(j, "", "\t")
 	}
 	if err != nil {
@@ -259,7 +259,7 @@ func (c *Context) XML() (err error) {
 		return ErrDataXMLNotSetted
 	}
 	b, err := xml.Marshal(x)
-	if c.Air.Debug {
+	if c.Air.Config.DebugMode {
 		b, err = xml.MarshalIndent(x, "", "\t")
 	}
 	if err != nil {
