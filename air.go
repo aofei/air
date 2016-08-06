@@ -153,7 +153,7 @@ func New() *Air {
 	a.Router = NewRouter(a)
 
 	// Defaults
-	a.HTTPErrorHandler = a.DefaultHTTPErrorHandler
+	a.HTTPErrorHandler = a.defaultHTTPErrorHandler
 	a.Binder = &Binder{}
 	a.Renderer = &Renderer{ViewsPath: "views"}
 	a.Renderer.initDefaultTempleFuncMap()
@@ -347,8 +347,8 @@ func (he *HTTPError) Error() string {
 	return he.Message
 }
 
-// DefaultHTTPErrorHandler invokes the default HTTP error handler.
-func (a *Air) DefaultHTTPErrorHandler(err error, c *Context) {
+// defaultHTTPErrorHandler invokes the default HTTP error handler.
+func (a *Air) defaultHTTPErrorHandler(err error, c *Context) {
 	code := http.StatusInternalServerError
 	msg := http.StatusText(code)
 	if he, ok := err.(*HTTPError); ok {
