@@ -60,10 +60,8 @@ func (r *Renderer) initDefaultTempleFuncMap() {
 // "index.html", "login.html", "register.html",
 // "parts/header.html", "parts/footer.html".
 func (r *Renderer) parseTemplates() {
-	tp := r.air.Config.TemplatesPath
-	if tp[len(tp)-1] == '/' {
-		tp = tp[:len(tp)-1]
-	}
+	replace := strings.NewReplacer("\\", "/")
+	tp := strings.TrimRight(replace.Replace(r.air.Config.TemplatesPath), "/")
 	filenames, err := filepath.Glob(tp + "/*/*.html")
 	if err != nil {
 		panic(err)
