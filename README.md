@@ -51,9 +51,11 @@ then open your browser and visit `http://localhost:8080`.
 * 简体中文(编辑中...)
 * [GoDoc](https://godoc.org/github.com/sheng/air)
 
-## Gas
+## Gases
 
-As we all know that the Air is a mixture of gases. So the same is that this framework adopts the Gas as its composition. Everyone can create new Gas and use it within this framework.
+As we all know that the air is a mixture of gases. So the same is that this framework adopts the gas as its composition. Everyone can create new gas and use it within this framework simply.
+
+A gas is a function chained in the HTTP request-response cycle with access to `Context` which it uses to perform a specific action, for example, logging every request or recovering from panics.
 
 **Built-in Gases**
 
@@ -70,7 +72,7 @@ Gas | Description
 
 **Add-on Gases**
 
-If you want to find other Gases, or create your own Gas for this framework, simply visit [here](https://github.com/air-gases).
+If you want to find other gases, or create your own gas for this framework, simply visit [here](https://github.com/air-gases).
 
 ## Community
 
