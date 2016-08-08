@@ -161,6 +161,25 @@ func New() *Air {
 	return a
 }
 
+// defaultHTTPErrorHandler invokes the default HTTP error handler.
+func (a *Air) defaultHTTPErrorHandler(err error, c *Context) {
+	code := http.StatusInternalServerError
+	msg := http.StatusText(code)
+	if he, ok := err.(*HTTPError); ok {
+		code = he.Code
+		msg = he.Message
+	}
+	if a.Config.DebugMode {
+		msg = err.Error()
+	}
+	if !c.Response.Committed {
+		c.Data["string"] = msg
+		c.StatusCode = code
+		c.String()
+	}
+	a.Logger.Error(err)
+}
+
 // Precontain adds gases to the chain which is run before router.
 func (a *Air) Precontain(gases ...GasFunc) {
 	a.pregases = append(a.pregases, gases...)
@@ -242,8 +261,8 @@ func (a *Air) ReleaseContext(c Context) {
 	a.pool.Put(c)
 }
 
-// URI returns a URI generated from handler.
-func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
+// BuildURI returns a URI builded from handler with optional params.
+func (a *Air) BuildURI(handler HandlerFunc, params ...interface{}) string {
 	uri := new(bytes.Buffer)
 	ln := len(params)
 	n := 0
@@ -265,15 +284,6 @@ func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 		}
 	}
 	return uri.String()
-}
-
-// handlerName returns the handler's func name.
-func handlerName(handler HandlerFunc) string {
-	t := reflect.ValueOf(handler).Type()
-	if t.Kind() == reflect.Func {
-		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
-	}
-	return t.String()
 }
 
 // ServeHTTP implements `ServerHandler#ServeHTTP()`.
@@ -320,6 +330,15 @@ func (a *Air) Run() {
 	a.Logger.Error(s.Start())
 }
 
+// handlerName returns the handler's func name.
+func handlerName(handler HandlerFunc) string {
+	t := reflect.ValueOf(handler).Type()
+	if t.Kind() == reflect.Func {
+		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
+	}
+	return t.String()
+}
+
 // WrapGas wraps `HandlerFunc` into `GasFunc`.
 func WrapGas(handler HandlerFunc) GasFunc {
 	return func(next HandlerFunc) HandlerFunc {
@@ -344,23 +363,4 @@ func NewHTTPError(code int, msg ...string) *HTTPError {
 // Error implements `error#Error()`.
 func (he *HTTPError) Error() string {
 	return he.Message
-}
-
-// defaultHTTPErrorHandler invokes the default HTTP error handler.
-func (a *Air) defaultHTTPErrorHandler(err error, c *Context) {
-	code := http.StatusInternalServerError
-	msg := http.StatusText(code)
-	if he, ok := err.(*HTTPError); ok {
-		code = he.Code
-		msg = he.Message
-	}
-	if a.Config.DebugMode {
-		msg = err.Error()
-	}
-	if !c.Response.Committed {
-		c.Data["string"] = msg
-		c.StatusCode = code
-		c.String()
-	}
-	a.Logger.Error(err)
 }
