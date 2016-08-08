@@ -32,8 +32,8 @@ type Context struct {
 	Air         *Air
 }
 
-// NewContext returns a new instance of `Context`.
-func NewContext(req *Request, res *Response, a *Air) *Context {
+// newContext returns a new instance of `Context`.
+func newContext(req *Request, res *Response, a *Air) *Context {
 	return &Context{
 		goContext:   context.Background(),
 		Request:     req,
