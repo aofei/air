@@ -38,7 +38,7 @@ func NewContext(req *Request, res *Response, a *Air) *Context {
 		goContext:   context.Background(),
 		Request:     req,
 		Response:    res,
-		ParamValues: make([]string, *a.maxParam),
+		ParamValues: make([]string, a.maxParam),
 		Data:        make(map[string]interface{}),
 		StatusCode:  http.StatusOK,
 		Handler:     NotFoundHandler,
