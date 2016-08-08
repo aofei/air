@@ -149,7 +149,7 @@ func New() *Air {
 	a := &Air{}
 	a.pool = &sync.Pool{}
 	a.pool.New = func() interface{} {
-		return NewContext(&Request{}, &Response{}, a)
+		return newContext(&Request{}, &Response{}, a)
 	}
 	a.Config = NewConfig("air")
 	a.Router = NewRouter(a)
