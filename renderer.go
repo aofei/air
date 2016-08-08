@@ -98,8 +98,8 @@ func (r *Renderer) parseTemplates() {
 }
 
 // Render renders a "text/html" response by using `template.Template`
-func (r *Renderer) Render(wr io.Writer, tplName string, c *Context) error {
-	return r.goTemplate.ExecuteTemplate(wr, tplName, c.Data)
+func (r *Renderer) Render(wr io.Writer, templateName string, c *Context) error {
+	return r.goTemplate.ExecuteTemplate(wr, templateName, c.Data)
 }
 
 // Basic type kind
