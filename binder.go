@@ -12,7 +12,16 @@ import (
 
 // Binder is used to provide a `Bind()` method for an `Air` instance
 // for binds a HTTP request body into privided type.
-type Binder struct{}
+type Binder struct {
+	air *Air
+}
+
+// NewBinder returns a new instance of `Binder`.
+func NewBinder(a *Air) *Binder {
+	return &Binder{
+		air: a,
+	}
+}
 
 // Bind binds the HTTP request body into provided type i based on
 // "Content-Type" header.

@@ -99,8 +99,8 @@ func (r *Router) Add(method, path string, h HandlerFunc, a *Air) {
 func (r *Router) insert(method, path string, h HandlerFunc, t kind, ppath string, pnames []string, a *Air) {
 	// Adjust max param
 	l := len(pnames)
-	if *a.maxParam < l {
-		*a.maxParam = l
+	if a.maxParam < l {
+		a.maxParam = l
 	}
 
 	cn := r.tree // Current node as root
