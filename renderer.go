@@ -18,28 +18,36 @@ type Renderer struct {
 	goTemplate *template.Template
 	air        *Air
 
-	FuncMap template.FuncMap
+	TemplateFuncMap template.FuncMap
 }
 
-// Render renders a "text/html" response by using `template.Template`
-func (r *Renderer) Render(wr io.Writer, tplName string, c *Context) error {
-	return r.goTemplate.ExecuteTemplate(wr, tplName, c.Data)
+// defaultTemplateFuncMap is a default template func map of `Renderer`
+var defaultTemplateFuncMap template.FuncMap
+
+func init() {
+	tfm := make(template.FuncMap)
+
+	tfm["strlen"] = strlen
+	tfm["substr"] = substr
+	tfm["str2html"] = str2html
+	tfm["html2str"] = html2str
+	tfm["datefmt"] = datefmt
+	tfm["eq"] = eq
+	tfm["ne"] = ne
+	tfm["lt"] = lt
+	tfm["le"] = le
+	tfm["gt"] = gt
+	tfm["ge"] = ge
+
+	defaultTemplateFuncMap = tfm
 }
 
-// initDefaultTempleFuncMap initializes the default template func map.
-func (r *Renderer) initDefaultTempleFuncMap() {
-	r.FuncMap = make(template.FuncMap)
-	r.FuncMap["strlen"] = strlen
-	r.FuncMap["substr"] = substr
-	r.FuncMap["str2html"] = str2html
-	r.FuncMap["html2str"] = html2str
-	r.FuncMap["datefmt"] = datefmt
-	r.FuncMap["eq"] = eq
-	r.FuncMap["ne"] = ne
-	r.FuncMap["lt"] = lt
-	r.FuncMap["le"] = le
-	r.FuncMap["gt"] = gt
-	r.FuncMap["ge"] = ge
+// NewRenderer returns a new instance of `Renderer`.
+func NewRenderer(a *Air) *Renderer {
+	return &Renderer{
+		air:             a,
+		TemplateFuncMap: defaultTemplateFuncMap,
+	}
 }
 
 // parseTemplates parses files into templates.
@@ -75,7 +83,7 @@ func (r *Renderer) parseTemplates() {
 		name := filename[len(tp)+1:]
 		var tmpl *template.Template
 		if r.goTemplate == nil {
-			r.goTemplate = template.New(name).Funcs(r.FuncMap)
+			r.goTemplate = template.New(name).Funcs(r.TemplateFuncMap)
 		}
 		if name == r.goTemplate.Name() {
 			tmpl = r.goTemplate
@@ -87,6 +95,11 @@ func (r *Renderer) parseTemplates() {
 			panic(err)
 		}
 	}
+}
+
+// Render renders a "text/html" response by using `template.Template`
+func (r *Renderer) Render(wr io.Writer, tplName string, c *Context) error {
+	return r.goTemplate.ExecuteTemplate(wr, tplName, c.Data)
 }
 
 // Basic type kind

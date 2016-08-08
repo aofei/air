@@ -14,17 +14,17 @@ import (
 type (
 	// Air is the top-level framework struct.
 	Air struct {
+		pool     *sync.Pool
+		maxParam int
 		pregases []GasFunc
 		gases    []GasFunc
-		maxParam *int
-		pool     sync.Pool
 
+		Config           *Config
 		Router           *Router
 		Binder           *Binder
 		Renderer         *Renderer
 		HTTPErrorHandler HTTPErrorHandler
 		Logger           *Logger
-		Config           *Config
 	}
 
 	// HandlerFunc defines a function to server HTTP requests.
@@ -146,17 +146,18 @@ var (
 
 // New returns a new instance of `Air`.
 func New() *Air {
-	a := &Air{maxParam: new(int)}
+	a := &Air{}
+	a.pool = &sync.Pool{}
 	a.pool.New = func() interface{} {
 		return NewContext(&Request{}, &Response{}, a)
 	}
+	a.Config = NewConfig("air")
 	a.Router = NewRouter(a)
-
-	// Defaults
-	a.Binder = &Binder{}
-	a.Renderer = &Renderer{air: a}
-	a.Renderer.initDefaultTempleFuncMap()
+	a.Binder = NewBinder(a)
+	a.Renderer = NewRenderer(a)
 	a.HTTPErrorHandler = a.defaultHTTPErrorHandler
+	a.Logger = NewLogger(a)
+	a.Logger.Level = ERROR
 	return a
 }
 
@@ -275,26 +276,6 @@ func handlerName(handler HandlerFunc) string {
 	return t.String()
 }
 
-// Run starts the HTTP server.
-func (a *Air) Run() {
-	if a.Config == nil {
-		a.Config = NewConfig("air")
-	}
-	a.Renderer.parseTemplates()
-	l := NewLogger(a)
-	l.Level = ERROR
-	a.Logger = l
-
-	s := NewServer(a)
-	s.Handler = a
-	s.Logger = a.Logger
-	if a.Config.DebugMode {
-		a.Logger.Level = DEBUG
-		a.Logger.Debug("Running In Debug Mode")
-	}
-	a.Logger.Error(s.Start())
-}
-
 // ServeHTTP implements `ServerHandler#ServeHTTP()`.
 func (a *Air) ServeHTTP(req *Request, res *Response) {
 	c := a.pool.Get().(*Context)
@@ -323,6 +304,20 @@ func (a *Air) ServeHTTP(req *Request, res *Response) {
 	}
 
 	a.pool.Put(c)
+}
+
+// Run starts the HTTP server.
+func (a *Air) Run() {
+	s := NewServer(a)
+	s.Handler = a
+	s.Logger = a.Logger
+
+	a.Renderer.parseTemplates()
+	if a.Config.DebugMode {
+		a.Logger.Level = DEBUG
+		a.Logger.Debug("Running In Debug Mode")
+	}
+	a.Logger.Error(s.Start())
 }
 
 // WrapGas wraps `HandlerFunc` into `GasFunc`.
