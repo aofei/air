@@ -19,29 +19,29 @@ import (
 // Context represents the context of the current HTTP request. It holds request and
 // response objects, path, path parameters, data and registered handler.
 type Context struct {
-	goContext context.Context
+	goContext   context.Context
+	paramNames  []string
+	paramValues []string
+	handler     HandlerFunc
 
-	Request     *Request
-	Response    *Response
-	Path        string
-	ParamNames  []string
-	ParamValues []string
-	Data        map[string]interface{}
-	StatusCode  int
-	Handler     HandlerFunc
-	Air         *Air
+	Request    *Request
+	Response   *Response
+	Path       string
+	Data       map[string]interface{}
+	StatusCode int
+	Air        *Air
 }
 
 // newContext returns a new instance of `Context`.
 func newContext(req *Request, res *Response, a *Air) *Context {
 	return &Context{
 		goContext:   context.Background(),
+		paramValues: make([]string, a.maxParam),
+		handler:     NotFoundHandler,
 		Request:     req,
 		Response:    res,
-		ParamValues: make([]string, a.maxParam),
 		Data:        make(map[string]interface{}),
 		StatusCode:  http.StatusOK,
-		Handler:     NotFoundHandler,
 		Air:         a,
 	}
 }
@@ -82,18 +82,18 @@ func (c *Context) SetValue(key interface{}, val interface{}) {
 
 // Param returns path parameter by provided index(RECOMMEND) or name(SLOW).
 func (c *Context) Param(ion interface{}) (value string) {
-	l := len(c.ParamNames)
+	l := len(c.paramNames)
 	switch t := ion.(type) {
 	case int:
 		i := int(t)
 		if i < l {
-			value = c.ParamValues[i]
+			value = c.paramValues[i]
 		}
 	case string:
 		n := string(t)
-		for i, name := range c.ParamNames {
+		for i, name := range c.paramNames {
 			if n == name && i < l {
-				value = c.ParamValues[i]
+				value = c.paramValues[i]
 				break
 			}
 		}
@@ -348,14 +348,21 @@ func (c *Context) ServeContent(content io.ReadSeeker, name string, modtime time.
 	return err
 }
 
-// Reset resets the instance of `Context` after request completes. It must
-// be called along with `Air#AcquireContext()` and `Air#ReleaseContext()`.
-// See `Air#ServeHTTP()`
-func (c *Context) Reset(req *Request, res *Response) {
+// reset resets the instance of `Context`.
+func (c *Context) reset() {
 	c.goContext = context.Background()
-	c.Request = req
-	c.Response = res
-	c.Handler = NotFoundHandler
+	c.paramNames = c.paramNames[:0]
+	for i := range c.paramValues {
+		c.paramValues[i] = ""
+	}
+	c.handler = NotFoundHandler
+	c.Request = nil
+	c.Response = nil
+	c.Path = ""
+	for k, _ := range c.Data {
+		delete(c.Data, k)
+	}
+	c.StatusCode = http.StatusOK
 }
 
 // contentTypeByExtension returns the MIME type associated with the file based

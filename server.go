@@ -108,26 +108,37 @@ func (s *Server) startCustomListener() error {
 
 // fastServeHTTP serves the fast HTTP request.
 func (s *Server) fastServeHTTP(c *fasthttp.RequestCtx) {
-	// Request
 	req := s.pool.request.Get().(*Request)
 	reqHdr := s.pool.requestHeader.Get().(*RequestHeader)
 	reqURI := s.pool.uri.Get().(*URI)
-	reqHdr.reset(&c.Request.Header)
-	reqURI.reset(c.URI())
-	req.reset(c, reqHdr, reqURI)
 
-	// Response
 	res := s.pool.response.Get().(*Response)
 	resHdr := s.pool.responseHeader.Get().(*ResponseHeader)
-	resHdr.reset(&c.Response.Header)
-	res.reset(c, resHdr)
+
+	req.fastCtx = c
+	req.Header = reqHdr
+	req.URI = reqURI
+	reqHdr.fastRequestHeader = &c.Request.Header
+	reqURI.fastURI = c.URI()
+
+	res.fastCtx = c
+	res.Header = resHdr
+	res.Writer = c
+	resHdr.fastResponseHeader = &c.Response.Header
 
 	s.Handler.ServeHTTP(req, res)
 
-	// Return to pool
+	req.reset()
+	reqHdr.reset()
+	reqURI.reset()
+
+	res.reset()
+	resHdr.reset()
+
 	s.pool.request.Put(req)
 	s.pool.requestHeader.Put(reqHdr)
 	s.pool.uri.Put(reqURI)
+
 	s.pool.response.Put(res)
 	s.pool.responseHeader.Put(resHdr)
 }

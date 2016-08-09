@@ -148,8 +148,8 @@ func (r *Request) Cookies() []Cookie {
 }
 
 // reset resets the instacne of `Request`.
-func (r *Request) reset(c *fasthttp.RequestCtx, h *RequestHeader, u *URI) {
-	r.fastCtx = c
-	r.Header = h
-	r.URI = u
+func (r *Request) reset() {
+	r.fastCtx = nil
+	r.Header = nil
+	r.URI = nil
 }
