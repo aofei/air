@@ -10,22 +10,27 @@ import (
 // Response represents the current HTTP response.
 type Response struct {
 	fastCtx *fasthttp.RequestCtx
+	air     *Air
 
 	Header    *ResponseHeader
-	Status    int
 	Size      int64
 	Committed bool
 	Writer    io.Writer
-	Logger    *Logger
+}
+
+// newResponse returns a new instance of `Response`.
+func newResponse(a *Air) *Response {
+	return &Response{
+		air: a,
+	}
 }
 
 // WriteHeader sends an HTTP response header with status code.
 func (r *Response) WriteHeader(code int) {
 	if r.Committed {
-		r.Logger.Warn("Response Already Committed")
+		r.air.Logger.Warn("Response Already Committed")
 		return
 	}
-	r.Status = code
 	r.fastCtx.SetStatusCode(code)
 	r.Committed = true
 }
@@ -57,7 +62,6 @@ func (r *Response) SetCookie(c Cookie) {
 func (r *Response) reset() {
 	r.fastCtx = nil
 	r.Header = nil
-	r.Status = http.StatusOK
 	r.Size = 0
 	r.Committed = false
 	r.Writer = nil

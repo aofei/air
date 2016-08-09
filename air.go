@@ -9,8 +9,6 @@ import (
 	"reflect"
 	"runtime"
 	"sync"
-
-	"golang.org/x/net/context"
 )
 
 type (
@@ -158,48 +156,10 @@ var (
 // New returns a new instance of `Air`.
 func New() *Air {
 	a := &Air{}
-	a.pool = &pool{
-		context: &sync.Pool{
-			New: func() interface{} {
-				return &Context{
-					goContext:  context.Background(),
-					Params:     make(map[string]string),
-					Handler:    NotFoundHandler,
-					Data:       make(map[string]interface{}),
-					StatusCode: http.StatusOK,
-					Air:        a,
-				}
-			},
-		},
-		request: &sync.Pool{
-			New: func() interface{} {
-				return &Request{Logger: a.Logger}
-			},
-		},
-		response: &sync.Pool{
-			New: func() interface{} {
-				return &Response{Logger: a.Logger}
-			},
-		},
-		requestHeader: &sync.Pool{
-			New: func() interface{} {
-				return &RequestHeader{}
-			},
-		},
-		responseHeader: &sync.Pool{
-			New: func() interface{} {
-				return &ResponseHeader{}
-			},
-		},
-		uri: &sync.Pool{
-			New: func() interface{} {
-				return &URI{}
-			},
-		},
-	}
-	a.router = newRouter()
-	a.binder = &binder{}
-	a.renderer = newRenderer()
+	a.pool = newPool(a)
+	a.router = newRouter(a)
+	a.binder = newBinder(a)
+	a.renderer = newRenderer(a)
 	a.Config = NewConfig("air")
 	a.HTTPErrorHandler = a.defaultHTTPErrorHandler
 	a.Logger = NewLogger(a)
@@ -220,7 +180,7 @@ func (a *Air) defaultHTTPErrorHandler(err error, c *Context) {
 	}
 	if !c.Response.Committed {
 		c.Data["string"] = msg
-		c.StatusCode = code
+		c.Status = code
 		c.String()
 	}
 	a.Logger.Error(err)
@@ -300,8 +260,8 @@ func (a *Air) SetTemplateFunc(name string, f interface{}) {
 	a.renderer.templateFuncMap[name] = f
 }
 
-// BuildURI returns a URI builded from handler with optional params.
-func (a *Air) BuildURI(handler HandlerFunc, params ...interface{}) string {
+// URI returns a URI generated from handler with optional params.
+func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 	uri := new(bytes.Buffer)
 	ln := len(params)
 	n := 0
@@ -327,7 +287,7 @@ func (a *Air) BuildURI(handler HandlerFunc, params ...interface{}) string {
 
 // Run starts the HTTP server.
 func (a *Air) Run() {
-	a.renderer.parseTemplates(a.Config.TemplatesPath)
+	a.renderer.parseTemplates()
 	if a.Config.DebugMode {
 		a.Logger.Level = DEBUG
 		a.Logger.Debug("Running In Debug Mode")
@@ -368,6 +328,42 @@ func (a *Air) serveHTTP(req *Request, res *Response) {
 	a.pool.context.Put(c)
 }
 
+// newPool returnes a new instance of `pool`.
+func newPool(a *Air) *pool {
+	return &pool{
+		context: &sync.Pool{
+			New: func() interface{} {
+				return newContext(a)
+			},
+		},
+		request: &sync.Pool{
+			New: func() interface{} {
+				return newRequest(a)
+			},
+		},
+		response: &sync.Pool{
+			New: func() interface{} {
+				return newResponse(a)
+			},
+		},
+		requestHeader: &sync.Pool{
+			New: func() interface{} {
+				return &RequestHeader{}
+			},
+		},
+		responseHeader: &sync.Pool{
+			New: func() interface{} {
+				return &ResponseHeader{}
+			},
+		},
+		uri: &sync.Pool{
+			New: func() interface{} {
+				return &URI{}
+			},
+		},
+	}
+}
+
 // handlerName returns the handler's func name.
 func handlerName(handler HandlerFunc) string {
 	t := reflect.ValueOf(handler).Type()
@@ -375,18 +371,6 @@ func handlerName(handler HandlerFunc) string {
 		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
 	}
 	return t.String()
-}
-
-// WrapGas wraps `HandlerFunc` into `GasFunc`.
-func WrapGas(handler HandlerFunc) GasFunc {
-	return func(next HandlerFunc) HandlerFunc {
-		return func(c *Context) error {
-			if err := handler(c); err != nil {
-				return err
-			}
-			return next(c)
-		}
-	}
 }
 
 // NewHTTPError returns a new instance of `HTTPError`.
