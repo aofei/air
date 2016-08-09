@@ -327,12 +327,12 @@ func (a *Air) Run() {
 		a.Logger.Level = DEBUG
 		a.Logger.Debug("Running In Debug Mode")
 	}
-	s := NewServer(a)
-	a.Logger.Error(s.Start())
+	s := newServer(a)
+	a.Logger.Error(s.start())
 }
 
-// ServeHTTP implements `ServerHandler#ServeHTTP()`.
-func (a *Air) ServeHTTP(req *Request, res *Response) {
+// serveHTTP implements `serverHandler#serveHTTP()`.
+func (a *Air) serveHTTP(req *Request, res *Response) {
 	c := a.pool.context.Get().(*Context)
 	c.Request = req
 	c.Response = res
