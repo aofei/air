@@ -295,6 +295,11 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 	a.router.routes[method+path] = r
 }
 
+// AddTemplateFunc adds the f into template func map with a name.
+func (a *Air) AddTemplateFunc(name string, f interface{}) {
+	a.renderer.templateFuncMap[name] = f
+}
+
 // BuildURI returns a URI builded from handler with optional params.
 func (a *Air) BuildURI(handler HandlerFunc, params ...interface{}) string {
 	uri := new(bytes.Buffer)
