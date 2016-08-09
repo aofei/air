@@ -134,7 +134,7 @@ func (c *Context) Render() (err error) {
 		return ErrDataTemplateNotSetted
 	}
 	buf := new(bytes.Buffer)
-	if err = c.Air.Renderer.Render(buf, t.(string), c); err != nil {
+	if err = c.Air.renderer.render(buf, t.(string), c); err != nil {
 		return
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
