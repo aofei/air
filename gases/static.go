@@ -70,7 +70,7 @@ func StaticWithConfig(config StaticConfig) air.GasFunc {
 			fs := http.Dir(config.Root)
 			p := c.Request.URI.Path()
 			if strings.Contains(c.Path, "*") { // If serving from a group, e.g. `/static*`.
-				p = c.Param(0)
+				p = c.Params[c.ParamNames[0]]
 			}
 			file := path.Clean(p)
 			f, err := fs.Open(file)
