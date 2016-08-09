@@ -11,10 +11,17 @@ import (
 // Request represents the current HTTP request.
 type Request struct {
 	fastCtx *fasthttp.RequestCtx
+	air     *Air
 
 	Header *RequestHeader
 	URI    *URI
-	Logger *Logger
+}
+
+// newRequest returns a new instance of `Request`.
+func newRequest(a *Air) *Request {
+	return &Request{
+		air: a,
+	}
 }
 
 // IsTLS returns true if HTTP connection is TLS otherwise false.

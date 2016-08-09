@@ -17,6 +17,7 @@ import (
 type renderer struct {
 	goTemplate      *template.Template
 	templateFuncMap template.FuncMap
+	air             *Air
 }
 
 // defaultTemplateFuncMap is a default template func map of `renderer`
@@ -41,15 +42,16 @@ func init() {
 }
 
 // newRenderer returns a new instance of `Renderer`.
-func newRenderer() *renderer {
+func newRenderer(a *Air) *renderer {
 	return &renderer{
 		templateFuncMap: defaultTemplateFuncMap,
+		air:             a,
 	}
 }
 
 // parseTemplates parses files into templates.
 //
-// e.g. path == "templates"
+// e.g. r.air.Config.TemplatesPath == "templates"
 //
 // templates/
 //   index.html
@@ -64,9 +66,9 @@ func newRenderer() *renderer {
 //
 // "index.html", "login.html", "register.html",
 // "parts/header.html", "parts/footer.html".
-func (r *renderer) parseTemplates(path string) {
+func (r *renderer) parseTemplates() {
 	replace := strings.NewReplacer("\\", "/")
-	tp := strings.TrimRight(replace.Replace(path), "/")
+	tp := strings.TrimRight(replace.Replace(r.air.Config.TemplatesPath), "/")
 	filenames, err := filepath.Glob(tp + "/*/*.html")
 	if err != nil {
 		panic(err)
