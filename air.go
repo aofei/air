@@ -279,7 +279,7 @@ func (a *Air) Run() {
 	s.Handler = a
 	s.Logger = a.Logger
 
-	a.Renderer.parseTemplates()
+	a.Renderer.ParseTemplates(a.Config.TemplatesPath)
 	if a.Config.DebugMode {
 		a.Logger.Level = DEBUG
 		a.Logger.Debug("Running In Debug Mode")
