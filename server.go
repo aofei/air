@@ -1,29 +1,14 @@
 package air
 
-import (
-	"sync"
-
-	"github.com/valyala/fasthttp"
-)
+import "github.com/valyala/fasthttp"
 
 type (
 	// Server represents the HTTP server.
 	Server struct {
 		fastServer *fasthttp.Server
-		pool       *pool
 		air        *Air
 
 		Handler ServerHandler
-		Logger  *Logger
-	}
-
-	// pool represents the pools of a HTTP server.
-	pool struct {
-		request        sync.Pool
-		response       sync.Pool
-		requestHeader  sync.Pool
-		responseHeader sync.Pool
-		uri            sync.Pool
 	}
 
 	// ServerHandler defines an interface to server HTTP requests via
@@ -31,10 +16,6 @@ type (
 	ServerHandler interface {
 		ServeHTTP(*Request, *Response)
 	}
-
-	// serverHandlerFunc is an adapter to allow the use of `func(*Request, *Response)`
-	// as an HTTP handler.
-	serverHandlerFunc func(*Request, *Response)
 )
 
 // NewServer returns an new instance of `Server`.
@@ -42,37 +23,8 @@ func NewServer(a *Air) *Server {
 	s := &Server{
 		fastServer: new(fasthttp.Server),
 		air:        a,
+		Handler:    a,
 	}
-	s.pool = &pool{
-		request: sync.Pool{
-			New: func() interface{} {
-				return &Request{Logger: s.Logger}
-			},
-		},
-		response: sync.Pool{
-			New: func() interface{} {
-				return &Response{Logger: s.Logger}
-			},
-		},
-		requestHeader: sync.Pool{
-			New: func() interface{} {
-				return &RequestHeader{}
-			},
-		},
-		responseHeader: sync.Pool{
-			New: func() interface{} {
-				return &ResponseHeader{}
-			},
-		},
-		uri: sync.Pool{
-			New: func() interface{} {
-				return &URI{}
-			},
-		},
-	}
-	s.Handler = serverHandlerFunc(func(req *Request, res *Response) {
-		s.Logger.Error("ServerHandler Not Set")
-	})
 	s.fastServer.ReadTimeout = s.air.Config.ReadTimeout
 	s.fastServer.WriteTimeout = s.air.Config.WriteTimeout
 	s.fastServer.Handler = s.fastServeHTTP
@@ -108,12 +60,12 @@ func (s *Server) startCustomListener() error {
 
 // fastServeHTTP serves the fast HTTP request.
 func (s *Server) fastServeHTTP(c *fasthttp.RequestCtx) {
-	req := s.pool.request.Get().(*Request)
-	reqHdr := s.pool.requestHeader.Get().(*RequestHeader)
-	reqURI := s.pool.uri.Get().(*URI)
+	req := s.air.pool.request.Get().(*Request)
+	reqHdr := s.air.pool.requestHeader.Get().(*RequestHeader)
+	reqURI := s.air.pool.uri.Get().(*URI)
 
-	res := s.pool.response.Get().(*Response)
-	resHdr := s.pool.responseHeader.Get().(*ResponseHeader)
+	res := s.air.pool.response.Get().(*Response)
+	resHdr := s.air.pool.responseHeader.Get().(*ResponseHeader)
 
 	req.fastCtx = c
 	req.Header = reqHdr
@@ -135,17 +87,12 @@ func (s *Server) fastServeHTTP(c *fasthttp.RequestCtx) {
 	res.reset()
 	resHdr.reset()
 
-	s.pool.request.Put(req)
-	s.pool.requestHeader.Put(reqHdr)
-	s.pool.uri.Put(reqURI)
+	s.air.pool.request.Put(req)
+	s.air.pool.requestHeader.Put(reqHdr)
+	s.air.pool.uri.Put(reqURI)
 
-	s.pool.response.Put(res)
-	s.pool.responseHeader.Put(resHdr)
-}
-
-// ServeHTTP implements `ServerHandler#ServeHTTP()`.
-func (h serverHandlerFunc) ServeHTTP(req *Request, res *Response) {
-	h(req, res)
+	s.air.pool.response.Put(res)
+	s.air.pool.responseHeader.Put(resHdr)
 }
 
 // fastWrapHandler wraps `fasthttp.RequestHandler` into `HandlerFunc`.

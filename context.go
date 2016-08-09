@@ -32,20 +32,6 @@ type Context struct {
 	Air        *Air
 }
 
-// newContext returns a new instance of `Context`.
-func newContext(req *Request, res *Response, a *Air) *Context {
-	return &Context{
-		goContext:  context.Background(),
-		Request:    req,
-		Response:   res,
-		Params:     make(map[string]string),
-		Handler:    NotFoundHandler,
-		Data:       make(map[string]interface{}),
-		StatusCode: http.StatusOK,
-		Air:        a,
-	}
-}
-
 // Deadline returns the time when work done on behalf of this context
 // should be canceled. Deadline returns ok==false when no deadline is
 // set. Successive calls to Deadline return the same results.
