@@ -15,7 +15,6 @@ type (
 	// Air is the top-level framework struct.
 	Air struct {
 		pool     *sync.Pool
-		maxParam int
 		pregases []GasFunc
 		gases    []GasFunc
 
@@ -218,7 +217,7 @@ func (a *Air) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 // the provided root directory.
 func (a *Air) Static(prefix, root string) {
 	a.Get(prefix+"*", func(c *Context) error {
-		return c.File(path.Join(root, c.Param(0)))
+		return c.File(path.Join(root, c.Params[c.ParamNames[0]]))
 	})
 }
 
@@ -299,7 +298,7 @@ func (a *Air) ServeHTTP(req *Request, res *Response) {
 		method := req.Method()
 		path := req.URI.Path()
 		a.Router.Find(method, path, c)
-		h := c.handler
+		h := c.Handler
 		for i := len(a.gases) - 1; i >= 0; i-- {
 			h = a.gases[i](h)
 		}
