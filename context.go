@@ -320,11 +320,11 @@ func (c *Context) reset() {
 	c.Response = nil
 	c.Path = ""
 	c.ParamNames = c.ParamNames[:0]
-	for k, _ := range c.Params {
+	for k := range c.Params {
 		delete(c.Params, k)
 	}
 	c.Handler = NotFoundHandler
-	for k, _ := range c.Data {
+	for k := range c.Data {
 		delete(c.Data, k)
 	}
 	c.StatusCode = http.StatusOK
