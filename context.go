@@ -123,7 +123,7 @@ func (c *Context) Cookies() []Cookie {
 // Bind binds the request body into provided type i. The default binder doe
 // it based on "Content-Type" header.
 func (c *Context) Bind(i interface{}) error {
-	return c.Air.Binder.Bind(i, c)
+	return c.Air.binder.bind(i, c)
 }
 
 // Render renders a template with `Context#Data` and `Context#Data["template"]`
