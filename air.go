@@ -19,9 +19,9 @@ type (
 		pool     *pool
 		pregases []GasFunc
 		gases    []GasFunc
+		router   *router
 
 		Config           *Config
-		Router           *Router
 		Binder           *Binder
 		Renderer         *Renderer
 		HTTPErrorHandler HTTPErrorHandler
@@ -197,8 +197,8 @@ func New() *Air {
 			},
 		},
 	}
+	a.router = newRouter(a)
 	a.Config = NewConfig("air")
-	a.Router = NewRouter(a)
 	a.Binder = NewBinder(a)
 	a.Renderer = NewRenderer(a)
 	a.HTTPErrorHandler = a.defaultHTTPErrorHandler
@@ -279,7 +279,7 @@ func (a *Air) File(path, file string) {
 // in the router with optional route-level gases.
 func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 	name := handlerName(handler)
-	a.Router.Add(method, path, func(c *Context) error {
+	a.router.add(method, path, func(c *Context) error {
 		h := handler
 		// Chain gases
 		for i := len(gases) - 1; i >= 0; i-- {
@@ -287,12 +287,12 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 		}
 		return h(c)
 	}, a)
-	r := Route{
-		Method:  method,
-		Path:    path,
-		Handler: name,
+	r := route{
+		method:  method,
+		path:    path,
+		handler: name,
 	}
-	a.Router.Routes[method+path] = r
+	a.router.routes[method+path] = r
 }
 
 // BuildURI returns a URI builded from handler with optional params.
@@ -301,17 +301,17 @@ func (a *Air) BuildURI(handler HandlerFunc, params ...interface{}) string {
 	ln := len(params)
 	n := 0
 	name := handlerName(handler)
-	for _, r := range a.Router.Routes {
-		if r.Handler == name {
-			for i, l := 0, len(r.Path); i < l; i++ {
-				if r.Path[i] == ':' && n < ln {
-					for ; i < l && r.Path[i] != '/'; i++ {
+	for _, r := range a.router.routes {
+		if r.handler == name {
+			for i, l := 0, len(r.path); i < l; i++ {
+				if r.path[i] == ':' && n < ln {
+					for ; i < l && r.path[i] != '/'; i++ {
 					}
 					uri.WriteString(fmt.Sprintf("%v", params[n]))
 					n++
 				}
 				if i < l {
-					uri.WriteByte(r.Path[i])
+					uri.WriteByte(r.path[i])
 				}
 			}
 			break
@@ -341,7 +341,7 @@ func (a *Air) serveHTTP(req *Request, res *Response) {
 	h := func(*Context) error {
 		method := req.Method()
 		path := req.URI.Path()
-		a.Router.Find(method, path, c)
+		a.router.find(method, path, c)
 		h := c.Handler
 		for i := len(a.gases) - 1; i >= 0; i-- {
 			h = a.gases[i](h)
