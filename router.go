@@ -6,7 +6,6 @@ type (
 	router struct {
 		tree   *node
 		routes map[string]route
-		air    *Air
 	}
 
 	node struct {
@@ -45,12 +44,11 @@ const (
 )
 
 // newRouter returns a new router instance.
-func newRouter(a *Air) *router {
+func newRouter() *router {
 	return &router{
 		tree: &node{
 			methodHandler: new(methodHandler),
 		},
-		air:    a,
 		routes: make(map[string]route),
 	}
 }
