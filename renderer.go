@@ -12,16 +12,14 @@ import (
 	"time"
 )
 
-// Renderer is used to provide a `Render()` method for an `Air` instance
+// renderer is used to provide a `render()` method for an `Air` instance
 // for renders a "text/html" response by using `template.Template`.
-type Renderer struct {
-	goTemplate *template.Template
-	air        *Air
-
-	TemplateFuncMap template.FuncMap
+type renderer struct {
+	goTemplate      *template.Template
+	templateFuncMap template.FuncMap
 }
 
-// defaultTemplateFuncMap is a default template func map of `Renderer`
+// defaultTemplateFuncMap is a default template func map of `renderer`
 var defaultTemplateFuncMap template.FuncMap
 
 func init() {
@@ -42,15 +40,14 @@ func init() {
 	defaultTemplateFuncMap = tfm
 }
 
-// NewRenderer returns a new instance of `Renderer`.
-func NewRenderer(a *Air) *Renderer {
-	return &Renderer{
-		air:             a,
-		TemplateFuncMap: defaultTemplateFuncMap,
+// newRenderer returns a new instance of `Renderer`.
+func newRenderer() *renderer {
+	return &renderer{
+		templateFuncMap: defaultTemplateFuncMap,
 	}
 }
 
-// ParseTemplates parses files into templates.
+// parseTemplates parses files into templates.
 //
 // e.g. path == "templates"
 //
@@ -67,7 +64,7 @@ func NewRenderer(a *Air) *Renderer {
 //
 // "index.html", "login.html", "register.html",
 // "parts/header.html", "parts/footer.html".
-func (r *Renderer) ParseTemplates(path string) {
+func (r *renderer) parseTemplates(path string) {
 	replace := strings.NewReplacer("\\", "/")
 	tp := strings.TrimRight(replace.Replace(path), "/")
 	filenames, err := filepath.Glob(tp + "/*/*.html")
@@ -83,7 +80,7 @@ func (r *Renderer) ParseTemplates(path string) {
 		name := filename[len(tp)+1:]
 		var tmpl *template.Template
 		if r.goTemplate == nil {
-			r.goTemplate = template.New(name).Funcs(r.TemplateFuncMap)
+			r.goTemplate = template.New(name).Funcs(r.templateFuncMap)
 		}
 		if name == r.goTemplate.Name() {
 			tmpl = r.goTemplate
@@ -97,8 +94,8 @@ func (r *Renderer) ParseTemplates(path string) {
 	}
 }
 
-// Render renders a "text/html" response by using `template.Template`
-func (r *Renderer) Render(wr io.Writer, templateName string, c *Context) error {
+// render renders a "text/html" response by using `template.Template`
+func (r *renderer) render(wr io.Writer, templateName string, c *Context) error {
 	return r.goTemplate.ExecuteTemplate(wr, templateName, c.Data)
 }
 

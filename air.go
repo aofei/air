@@ -21,9 +21,9 @@ type (
 		gases    []GasFunc
 		router   *router
 		binder   *binder
+		renderer *renderer
 
 		Config           *Config
-		Renderer         *Renderer
 		HTTPErrorHandler HTTPErrorHandler
 		Logger           *Logger
 	}
@@ -197,10 +197,10 @@ func New() *Air {
 			},
 		},
 	}
-	a.router = newRouter(a)
-	a.binder = newBinder(a)
+	a.router = newRouter()
+	a.binder = &binder{}
+	a.renderer = newRenderer()
 	a.Config = NewConfig("air")
-	a.Renderer = NewRenderer(a)
 	a.HTTPErrorHandler = a.defaultHTTPErrorHandler
 	a.Logger = NewLogger(a)
 	a.Logger.Level = ERROR
@@ -322,7 +322,7 @@ func (a *Air) BuildURI(handler HandlerFunc, params ...interface{}) string {
 
 // Run starts the HTTP server.
 func (a *Air) Run() {
-	a.Renderer.ParseTemplates(a.Config.TemplatesPath)
+	a.renderer.parseTemplates(a.Config.TemplatesPath)
 	if a.Config.DebugMode {
 		a.Logger.Level = DEBUG
 		a.Logger.Debug("Running In Debug Mode")
