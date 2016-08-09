@@ -93,34 +93,3 @@ func (s *server) fastServeHTTP(c *fasthttp.RequestCtx) {
 	s.air.pool.response.Put(res)
 	s.air.pool.responseHeader.Put(resHdr)
 }
-
-// fastWrapHandler wraps `fasthttp.RequestHandler` into `HandlerFunc`.
-func fastWrapHandler(h fasthttp.RequestHandler) HandlerFunc {
-	return func(c *Context) error {
-		req := c.Request
-		res := c.Response
-		ctx := req.fastCtx
-		h(ctx)
-		res.Status = ctx.Response.StatusCode()
-		res.Size = int64(ctx.Response.Header.ContentLength())
-		return nil
-	}
-}
-
-// fastWrapGas wraps `func(fasthttp.RequestHandler) fasthttp.RequestHandler`
-// into `GasFunc`
-func fastWrapGas(m func(fasthttp.RequestHandler) fasthttp.RequestHandler) GasFunc {
-	return func(next HandlerFunc) HandlerFunc {
-		return func(c *Context) (err error) {
-			req := c.Request
-			res := c.Response
-			ctx := req.fastCtx
-			m(func(ctx *fasthttp.RequestCtx) {
-				next(c)
-			})(ctx)
-			res.Status = ctx.Response.StatusCode()
-			res.Size = int64(ctx.Response.Header.ContentLength())
-			return
-		}
-	}
-}
