@@ -20,9 +20,9 @@ type (
 		pregases []GasFunc
 		gases    []GasFunc
 		router   *router
+		binder   *binder
 
 		Config           *Config
-		Binder           *Binder
 		Renderer         *Renderer
 		HTTPErrorHandler HTTPErrorHandler
 		Logger           *Logger
@@ -198,8 +198,8 @@ func New() *Air {
 		},
 	}
 	a.router = newRouter(a)
+	a.binder = newBinder(a)
 	a.Config = NewConfig("air")
-	a.Binder = NewBinder(a)
 	a.Renderer = NewRenderer(a)
 	a.HTTPErrorHandler = a.defaultHTTPErrorHandler
 	a.Logger = NewLogger(a)

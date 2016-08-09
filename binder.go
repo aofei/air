@@ -10,22 +10,22 @@ import (
 	"strings"
 )
 
-// Binder is used to provide a `Bind()` method for an `Air` instance
+// binder is used to provide a `bind()` method for an `Air` instance
 // for binds a HTTP request body into privided type.
-type Binder struct {
+type binder struct {
 	air *Air
 }
 
-// NewBinder returns a new instance of `Binder`.
-func NewBinder(a *Air) *Binder {
-	return &Binder{
+// newBinder returns a new instance of `binder`.
+func newBinder(a *Air) *binder {
+	return &binder{
 		air: a,
 	}
 }
 
-// Bind binds the HTTP request body into provided type i based on
+// bind binds the HTTP request body into provided type i based on
 // "Content-Type" header.
-func (b *Binder) Bind(i interface{}, c *Context) (err error) {
+func (b *binder) bind(i interface{}, c *Context) (err error) {
 	req := c.Request
 	if req.Method() == GET {
 		if err = b.bindData(i, c.QueryParams()); err != nil {
@@ -57,7 +57,7 @@ func (b *Binder) Bind(i interface{}, c *Context) (err error) {
 }
 
 // bindData binds the data into a type ptr.
-func (b *Binder) bindData(ptr interface{}, data map[string][]string) error {
+func (b *binder) bindData(ptr interface{}, data map[string][]string) error {
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
 
