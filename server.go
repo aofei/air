@@ -3,27 +3,26 @@ package air
 import "github.com/valyala/fasthttp"
 
 type (
-	// Server represents the HTTP server.
-	Server struct {
+	// server represents the HTTP server.
+	server struct {
 		fastServer *fasthttp.Server
+		handler    serverHandler
 		air        *Air
-
-		Handler ServerHandler
 	}
 
-	// ServerHandler defines an interface to server HTTP requests via
+	// serverHandler defines an interface to server HTTP requests via
 	// `ServeHTTP(*Request, *Response)`.
-	ServerHandler interface {
-		ServeHTTP(*Request, *Response)
+	serverHandler interface {
+		serveHTTP(*Request, *Response)
 	}
 )
 
-// NewServer returns an new instance of `Server`.
-func NewServer(a *Air) *Server {
-	s := &Server{
+// newServer returns an new instance of `server`.
+func newServer(a *Air) *server {
+	s := &server{
 		fastServer: new(fasthttp.Server),
+		handler:    a,
 		air:        a,
-		Handler:    a,
 	}
 	s.fastServer.ReadTimeout = s.air.Config.ReadTimeout
 	s.fastServer.WriteTimeout = s.air.Config.WriteTimeout
@@ -31,8 +30,8 @@ func NewServer(a *Air) *Server {
 	return s
 }
 
-// Start starts the HTTP server.
-func (s *Server) Start() error {
+// start starts the HTTP server.
+func (s *server) start() error {
 	if s.air.Config.Listener == nil {
 		return s.startDefaultListener()
 	}
@@ -41,7 +40,7 @@ func (s *Server) Start() error {
 }
 
 // startDefaultListener starts the default HTTP linsterner.
-func (s *Server) startDefaultListener() error {
+func (s *server) startDefaultListener() error {
 	c := s.air.Config
 	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
 		return s.fastServer.ListenAndServeTLS(c.Address, c.TLSCertFile, c.TLSKeyFile)
@@ -50,7 +49,7 @@ func (s *Server) startDefaultListener() error {
 }
 
 // startCustomListener starts the custom HTTP linsterner.
-func (s *Server) startCustomListener() error {
+func (s *server) startCustomListener() error {
 	c := s.air.Config
 	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
 		return s.fastServer.ServeTLS(c.Listener, c.TLSCertFile, c.TLSKeyFile)
@@ -59,7 +58,7 @@ func (s *Server) startCustomListener() error {
 }
 
 // fastServeHTTP serves the fast HTTP request.
-func (s *Server) fastServeHTTP(c *fasthttp.RequestCtx) {
+func (s *server) fastServeHTTP(c *fasthttp.RequestCtx) {
 	req := s.air.pool.request.Get().(*Request)
 	reqHdr := s.air.pool.requestHeader.Get().(*RequestHeader)
 	reqURI := s.air.pool.uri.Get().(*URI)
@@ -78,7 +77,7 @@ func (s *Server) fastServeHTTP(c *fasthttp.RequestCtx) {
 	res.Writer = c
 	resHdr.fastResponseHeader = &c.Response.Header
 
-	s.Handler.ServeHTTP(req, res)
+	s.handler.serveHTTP(req, res)
 
 	req.reset()
 	reqHdr.reset()
