@@ -1,13 +1,12 @@
 package air
 
 type (
-	// Router is the registry of all registered routes for an `Air` instance for
+	// router is the registry of all registered routes for an `Air` instance for
 	// request matching and URI path parameter parsing.
-	Router struct {
-		tree *node
-		air  *Air
-
-		Routes map[string]Route
+	router struct {
+		tree   *node
+		routes map[string]route
+		air    *Air
 	}
 
 	node struct {
@@ -21,11 +20,11 @@ type (
 		methodHandler *methodHandler
 	}
 
-	// Route contains a handler and information for matching against requests.
-	Route struct {
-		Method  string
-		Path    string
-		Handler string
+	// route contains a handler and information for matching against requests.
+	route struct {
+		method  string
+		path    string
+		handler string
 	}
 
 	kind     uint8
@@ -45,19 +44,19 @@ const (
 	akind
 )
 
-// NewRouter returns a new Router instance.
-func NewRouter(a *Air) *Router {
-	return &Router{
+// newRouter returns a new router instance.
+func newRouter(a *Air) *router {
+	return &router{
 		tree: &node{
 			methodHandler: new(methodHandler),
 		},
 		air:    a,
-		Routes: make(map[string]Route),
+		routes: make(map[string]route),
 	}
 }
 
-// Add registers a new route for method and path with matching handler.
-func (r *Router) Add(method, path string, h HandlerFunc, a *Air) {
+// add registers a new route for method and path with matching handler.
+func (r *router) add(method, path string, h HandlerFunc, a *Air) {
 	// Validate path
 	if path == "" {
 		a.Logger.Fatal("Path Cannot Be Empty")
@@ -96,7 +95,7 @@ func (r *Router) Add(method, path string, h HandlerFunc, a *Air) {
 	r.insert(method, path, h, skind, ppath, pnames, a)
 }
 
-func (r *Router) insert(method, path string, h HandlerFunc, t kind, ppath string, pnames []string, a *Air) {
+func (r *router) insert(method, path string, h HandlerFunc, t kind, ppath string, pnames []string, a *Air) {
 	cn := r.tree // Current node as root
 	if cn == nil {
 		panic("air ⇛ invalid method")
@@ -258,9 +257,9 @@ func (n *node) checkMethodNotAllowed() HandlerFunc {
 	return NotFoundHandler
 }
 
-// Find lookup a handler registed for method and path. It also parses URI for path
+// find lookup a handler registed for method and path. It also parses URI for path
 // parameters and load them into context.
-func (r *Router) Find(method, path string, context *Context) {
+func (r *router) find(method, path string, context *Context) {
 	cn := r.tree // Current node as root
 
 	var (
