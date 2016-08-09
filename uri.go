@@ -51,6 +51,6 @@ func (u *URI) QueryString() string {
 }
 
 // reset resets the instance of `URI`.
-func (u *URI) reset(uri *fasthttp.URI) {
-	u.fastURI = uri
+func (u *URI) reset() {
+	u.fastURI = nil
 }

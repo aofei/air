@@ -54,11 +54,11 @@ func (r *Response) SetCookie(c Cookie) {
 }
 
 // reset resets the instance of `Response`.
-func (r *Response) reset(c *fasthttp.RequestCtx, h *ResponseHeader) {
-	r.fastCtx = c
-	r.Header = h
+func (r *Response) reset() {
+	r.fastCtx = nil
+	r.Header = nil
 	r.Status = http.StatusOK
 	r.Size = 0
 	r.Committed = false
-	r.Writer = c
+	r.Writer = nil
 }

@@ -266,12 +266,6 @@ func (n *node) checkMethodNotAllowed() HandlerFunc {
 
 // Find lookup a handler registed for method and path. It also parses URI for path
 // parameters and load them into context.
-//
-// For performance:
-//
-// - Get context from `Air#AcquireContext()`
-// - Reset it `Context#Reset()`
-// - Return it `Air#ReleaseContext()`.
 func (r *Router) Find(method, path string, context *Context) {
 	cn := r.tree // Current node as root
 
@@ -282,7 +276,7 @@ func (r *Router) Find(method, path string, context *Context) {
 		nk      kind   // Next kind
 		nn      *node  // Next node
 		ns      string // Next search
-		pvalues = context.ParamValues
+		pvalues = context.paramValues
 	)
 
 	// Search order static > param > any
@@ -384,13 +378,13 @@ func (r *Router) Find(method, path string, context *Context) {
 	}
 
 End:
-	context.Handler = cn.findHandler(method)
+	context.handler = cn.findHandler(method)
 	context.Path = cn.ppath
-	context.ParamNames = cn.pnames
+	context.paramNames = cn.pnames
 
 	// NOTE: Slow zone...
-	if context.Handler == nil {
-		context.Handler = cn.checkMethodNotAllowed()
+	if context.handler == nil {
+		context.handler = cn.checkMethodNotAllowed()
 
 		// Dig further for any, might have an empty value for *, e.g.
 		// serving a directory. Issue #207.
@@ -398,12 +392,12 @@ End:
 			return
 		}
 		if h := cn.findHandler(method); h != nil {
-			context.Handler = h
+			context.handler = h
 		} else {
-			context.Handler = cn.checkMethodNotAllowed()
+			context.handler = cn.checkMethodNotAllowed()
 		}
 		context.Path = cn.ppath
-		context.ParamNames = cn.pnames
+		context.paramNames = cn.pnames
 		pvalues[len(cn.pnames)-1] = ""
 	}
 
