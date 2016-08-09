@@ -149,7 +149,7 @@ func New() *Air {
 	a := &Air{}
 	a.pool = &sync.Pool{}
 	a.pool.New = func() interface{} {
-		return newContext(&Request{}, &Response{}, a)
+		return newContext(nil, nil, a)
 	}
 	a.Config = NewConfig("air")
 	a.Router = NewRouter(a)
@@ -249,18 +249,6 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 	a.Router.Routes[method+path] = r
 }
 
-// AcquireContext returns an empty `Context` instance from the pool.
-// You must be return the context by calling `Air#ReleaseContext()`.
-func (a *Air) AcquireContext() Context {
-	return a.pool.Get().(Context)
-}
-
-// ReleaseContext returns the `Context` instance back to the pool.
-// You must call it after `Air#AcquireContext()`.
-func (a *Air) ReleaseContext(c Context) {
-	a.pool.Put(c)
-}
-
 // BuildURI returns a URI builded from handler with optional params.
 func (a *Air) BuildURI(handler HandlerFunc, params ...interface{}) string {
 	uri := new(bytes.Buffer)
@@ -286,17 +274,32 @@ func (a *Air) BuildURI(handler HandlerFunc, params ...interface{}) string {
 	return uri.String()
 }
 
+// Run starts the HTTP server.
+func (a *Air) Run() {
+	s := NewServer(a)
+	s.Handler = a
+	s.Logger = a.Logger
+
+	a.Renderer.parseTemplates()
+	if a.Config.DebugMode {
+		a.Logger.Level = DEBUG
+		a.Logger.Debug("Running In Debug Mode")
+	}
+	a.Logger.Error(s.Start())
+}
+
 // ServeHTTP implements `ServerHandler#ServeHTTP()`.
 func (a *Air) ServeHTTP(req *Request, res *Response) {
 	c := a.pool.Get().(*Context)
-	c.Reset(req, res)
+	c.Request = req
+	c.Response = res
 
 	// Gases
 	h := func(*Context) error {
 		method := req.Method()
 		path := req.URI.Path()
 		a.Router.Find(method, path, c)
-		h := c.Handler
+		h := c.handler
 		for i := len(a.gases) - 1; i >= 0; i-- {
 			h = a.gases[i](h)
 		}
@@ -313,21 +316,8 @@ func (a *Air) ServeHTTP(req *Request, res *Response) {
 		a.HTTPErrorHandler(err, c)
 	}
 
+	c.reset()
 	a.pool.Put(c)
-}
-
-// Run starts the HTTP server.
-func (a *Air) Run() {
-	s := NewServer(a)
-	s.Handler = a
-	s.Logger = a.Logger
-
-	a.Renderer.parseTemplates()
-	if a.Config.DebugMode {
-		a.Logger.Level = DEBUG
-		a.Logger.Debug("Running In Debug Mode")
-	}
-	a.Logger.Error(s.Start())
 }
 
 // handlerName returns the handler's func name.

@@ -54,8 +54,8 @@ func (h *RequestHeader) Contains(key string) bool {
 }
 
 // reset resets the instance of `RequestHeader`.
-func (h *RequestHeader) reset(hdr *fasthttp.RequestHeader) {
-	h.fastRequestHeader = hdr
+func (h *RequestHeader) reset() {
+	h.fastRequestHeader = nil
 }
 
 // Add adds the key, value pair to the header. It appends to any existing values
@@ -98,6 +98,6 @@ func (h *ResponseHeader) Contains(key string) bool {
 }
 
 // reset resets the instance of `ResponseHeader`.
-func (h *ResponseHeader) reset(hdr *fasthttp.ResponseHeader) {
-	h.fastResponseHeader = hdr
+func (h *ResponseHeader) reset() {
+	h.fastResponseHeader = nil
 }
