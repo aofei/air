@@ -97,12 +97,6 @@ func (r *Router) Add(method, path string, h HandlerFunc, a *Air) {
 }
 
 func (r *Router) insert(method, path string, h HandlerFunc, t kind, ppath string, pnames []string, a *Air) {
-	// Adjust max param
-	l := len(pnames)
-	if a.maxParam < l {
-		a.maxParam = l
-	}
-
 	cn := r.tree // Current node as root
 	if cn == nil {
 		panic("air ⇛ invalid method")
@@ -270,13 +264,13 @@ func (r *Router) Find(method, path string, context *Context) {
 	cn := r.tree // Current node as root
 
 	var (
-		search  = path
-		c       *node  // Child node
-		n       int    // Param counter
-		nk      kind   // Next kind
-		nn      *node  // Next node
-		ns      string // Next search
-		pvalues = context.paramValues
+		search = path
+		c      *node  // Child node
+		n      int    // Param counter
+		nk     kind   // Next kind
+		nn     *node  // Next node
+		ns     string // Next search
+		params = context.Params
 	)
 
 	// Search order static > param > any
@@ -335,11 +329,6 @@ func (r *Router) Find(method, path string, context *Context) {
 		// Param node
 	Param:
 		if c = cn.findChildByKind(pkind); c != nil {
-			// Issue #378
-			if len(pvalues) == n {
-				continue
-			}
-
 			// Save next
 			if cn.label == '/' {
 				nk = akind
@@ -351,7 +340,7 @@ func (r *Router) Find(method, path string, context *Context) {
 			i, l := 0, len(search)
 			for ; i < l && search[i] != '/'; i++ {
 			}
-			pvalues[n] = search[:i]
+			params[cn.pnames[n]] = search[:i]
 			n++
 			search = search[i:]
 			continue
@@ -373,18 +362,18 @@ func (r *Router) Find(method, path string, context *Context) {
 			// Not found
 			return
 		}
-		pvalues[len(cn.pnames)-1] = search
+		params[cn.pnames[len(cn.pnames)-1]] = search
 		goto End
 	}
 
 End:
-	context.handler = cn.findHandler(method)
 	context.Path = cn.ppath
-	context.paramNames = cn.pnames
+	context.ParamNames = cn.pnames
+	context.Handler = cn.findHandler(method)
 
 	// NOTE: Slow zone...
-	if context.handler == nil {
-		context.handler = cn.checkMethodNotAllowed()
+	if context.Handler == nil {
+		context.Handler = cn.checkMethodNotAllowed()
 
 		// Dig further for any, might have an empty value for *, e.g.
 		// serving a directory. Issue #207.
@@ -392,13 +381,13 @@ End:
 			return
 		}
 		if h := cn.findHandler(method); h != nil {
-			context.handler = h
+			context.Handler = h
 		} else {
-			context.handler = cn.checkMethodNotAllowed()
+			context.Handler = cn.checkMethodNotAllowed()
 		}
 		context.Path = cn.ppath
-		context.paramNames = cn.pnames
-		pvalues[len(cn.pnames)-1] = ""
+		context.ParamNames = cn.pnames
+		params[cn.pnames[len(cn.pnames)-1]] = ""
 	}
 
 	return

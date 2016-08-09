@@ -19,14 +19,14 @@ import (
 // Context represents the context of the current HTTP request. It holds request and
 // response objects, path, path parameters, data and registered handler.
 type Context struct {
-	goContext   context.Context
-	paramNames  []string
-	paramValues []string
-	handler     HandlerFunc
+	goContext context.Context
 
 	Request    *Request
 	Response   *Response
 	Path       string
+	ParamNames []string
+	Params     map[string]string
+	Handler    HandlerFunc
 	Data       map[string]interface{}
 	StatusCode int
 	Air        *Air
@@ -35,14 +35,14 @@ type Context struct {
 // newContext returns a new instance of `Context`.
 func newContext(req *Request, res *Response, a *Air) *Context {
 	return &Context{
-		goContext:   context.Background(),
-		paramValues: make([]string, a.maxParam),
-		handler:     NotFoundHandler,
-		Request:     req,
-		Response:    res,
-		Data:        make(map[string]interface{}),
-		StatusCode:  http.StatusOK,
-		Air:         a,
+		goContext:  context.Background(),
+		Request:    req,
+		Response:   res,
+		Params:     make(map[string]string),
+		Handler:    NotFoundHandler,
+		Data:       make(map[string]interface{}),
+		StatusCode: http.StatusOK,
+		Air:        a,
 	}
 }
 
@@ -78,27 +78,6 @@ func (c *Context) Value(key interface{}) interface{} {
 // SetValue sets request-scoped value into the context.
 func (c *Context) SetValue(key interface{}, val interface{}) {
 	c.goContext = context.WithValue(c.goContext, key, val)
-}
-
-// Param returns path parameter by provided index(RECOMMEND) or name(SLOW).
-func (c *Context) Param(ion interface{}) (value string) {
-	l := len(c.paramNames)
-	switch t := ion.(type) {
-	case int:
-		i := int(t)
-		if i < l {
-			value = c.paramValues[i]
-		}
-	case string:
-		n := string(t)
-		for i, name := range c.paramNames {
-			if n == name && i < l {
-				value = c.paramValues[i]
-				break
-			}
-		}
-	}
-	return
 }
 
 // QueryParam returns the query param for the provided name. It is an alias
@@ -351,14 +330,14 @@ func (c *Context) ServeContent(content io.ReadSeeker, name string, modtime time.
 // reset resets the instance of `Context`.
 func (c *Context) reset() {
 	c.goContext = context.Background()
-	c.paramNames = c.paramNames[:0]
-	for i := range c.paramValues {
-		c.paramValues[i] = ""
-	}
-	c.handler = NotFoundHandler
 	c.Request = nil
 	c.Response = nil
 	c.Path = ""
+	c.ParamNames = c.ParamNames[:0]
+	for k, _ := range c.Params {
+		delete(c.Params, k)
+	}
+	c.Handler = NotFoundHandler
 	for k, _ := range c.Data {
 		delete(c.Data, k)
 	}
