@@ -9,12 +9,14 @@ import (
 	"reflect"
 	"runtime"
 	"sync"
+
+	"golang.org/x/net/context"
 )
 
 type (
 	// Air is the top-level framework struct.
 	Air struct {
-		pool     *sync.Pool
+		pool     *pool
 		pregases []GasFunc
 		gases    []GasFunc
 
@@ -24,6 +26,16 @@ type (
 		Renderer         *Renderer
 		HTTPErrorHandler HTTPErrorHandler
 		Logger           *Logger
+	}
+
+	// pool represents the pools of `Air`.
+	pool struct {
+		context        *sync.Pool
+		request        *sync.Pool
+		response       *sync.Pool
+		requestHeader  *sync.Pool
+		responseHeader *sync.Pool
+		uri            *sync.Pool
 	}
 
 	// HandlerFunc defines a function to server HTTP requests.
@@ -146,9 +158,44 @@ var (
 // New returns a new instance of `Air`.
 func New() *Air {
 	a := &Air{}
-	a.pool = &sync.Pool{}
-	a.pool.New = func() interface{} {
-		return newContext(nil, nil, a)
+	a.pool = &pool{
+		context: &sync.Pool{
+			New: func() interface{} {
+				return &Context{
+					goContext:  context.Background(),
+					Params:     make(map[string]string),
+					Handler:    NotFoundHandler,
+					Data:       make(map[string]interface{}),
+					StatusCode: http.StatusOK,
+					Air:        a,
+				}
+			},
+		},
+		request: &sync.Pool{
+			New: func() interface{} {
+				return &Request{Logger: a.Logger}
+			},
+		},
+		response: &sync.Pool{
+			New: func() interface{} {
+				return &Response{Logger: a.Logger}
+			},
+		},
+		requestHeader: &sync.Pool{
+			New: func() interface{} {
+				return &RequestHeader{}
+			},
+		},
+		responseHeader: &sync.Pool{
+			New: func() interface{} {
+				return &ResponseHeader{}
+			},
+		},
+		uri: &sync.Pool{
+			New: func() interface{} {
+				return &URI{}
+			},
+		},
 	}
 	a.Config = NewConfig("air")
 	a.Router = NewRouter(a)
@@ -275,21 +322,18 @@ func (a *Air) BuildURI(handler HandlerFunc, params ...interface{}) string {
 
 // Run starts the HTTP server.
 func (a *Air) Run() {
-	s := NewServer(a)
-	s.Handler = a
-	s.Logger = a.Logger
-
 	a.Renderer.ParseTemplates(a.Config.TemplatesPath)
 	if a.Config.DebugMode {
 		a.Logger.Level = DEBUG
 		a.Logger.Debug("Running In Debug Mode")
 	}
+	s := NewServer(a)
 	a.Logger.Error(s.Start())
 }
 
 // ServeHTTP implements `ServerHandler#ServeHTTP()`.
 func (a *Air) ServeHTTP(req *Request, res *Response) {
-	c := a.pool.Get().(*Context)
+	c := a.pool.context.Get().(*Context)
 	c.Request = req
 	c.Response = res
 
@@ -316,7 +360,7 @@ func (a *Air) ServeHTTP(req *Request, res *Response) {
 	}
 
 	c.reset()
-	a.pool.Put(c)
+	a.pool.context.Put(c)
 }
 
 // handlerName returns the handler's func name.
