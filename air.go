@@ -295,8 +295,8 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 	a.router.routes[method+path] = r
 }
 
-// AddTemplateFunc adds the f into template func map with a name.
-func (a *Air) AddTemplateFunc(name string, f interface{}) {
+// SetTemplateFunc sets the f into template func map with a name.
+func (a *Air) SetTemplateFunc(name string, f interface{}) {
 	a.renderer.templateFuncMap[name] = f
 }
 
