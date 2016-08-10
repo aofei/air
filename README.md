@@ -55,24 +55,7 @@ then open your browser and visit `http://localhost:8080`.
 
 As we all know that the air is a mixture of gases. So the same is that this framework adopts the gas as its composition. Everyone can create new gas and use it within this framework simply.
 
-A gas is a function chained in the HTTP request-response cycle with access to `Context` which it uses to perform a specific action, for example, logging every request or recovering from panics.
-
-**Built-in Gases**
-
-Gas | Description
---- | ---
-[Logger](https://godoc.org/github.com/sheng/air/gases#Logger) | Log HTTP requests
-[Recover](https://godoc.org/github.com/sheng/air/gases#Recover) | Recover from panics
-[Gzip](https://godoc.org/github.com/sheng/air/gases#Gzip) | Send gzip HTTP response
-[JWT](https://godoc.org/github.com/sheng/air/gases#JWT) | JWT authentication
-[Secure](https://godoc.org/github.com/sheng/air/gases#Secure) | Protection against attacks
-[CORS](https://godoc.org/github.com/sheng/air/gases#CORS) | Cross-Origin Resource Sharing
-[CSRF](https://godoc.org/github.com/sheng/air/gases#CSRF) | Cross-Site Request Forgery
-[Static](https://godoc.org/github.com/sheng/air/gases#Static) | Serve static files
-
-**Add-on Gases**
-
-If you want to find other gases, or create your own gas for this framework, simply visit [here](https://github.com/air-gases).
+If you want to learn more about the gases, or create your own gas for this framework, simply visit [here](gases/README).
 
 ## Community
 
