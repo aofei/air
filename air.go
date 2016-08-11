@@ -364,15 +364,6 @@ func newPool(a *Air) *pool {
 	}
 }
 
-// handlerName returns the handler's func name.
-func handlerName(handler HandlerFunc) string {
-	t := reflect.ValueOf(handler).Type()
-	if t.Kind() == reflect.Func {
-		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
-	}
-	return t.String()
-}
-
 // NewHTTPError returns a new instance of `HTTPError`.
 func NewHTTPError(code int, msg ...string) *HTTPError {
 	he := &HTTPError{Code: code, Message: http.StatusText(code)}
@@ -385,4 +376,13 @@ func NewHTTPError(code int, msg ...string) *HTTPError {
 // Error implements `error#Error()`.
 func (he *HTTPError) Error() string {
 	return he.Message
+}
+
+// handlerName returns the handler's func name.
+func handlerName(handler HandlerFunc) string {
+	t := reflect.ValueOf(handler).Type()
+	if t.Kind() == reflect.Func {
+		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
+	}
+	return t.String()
 }
