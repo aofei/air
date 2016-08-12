@@ -28,19 +28,19 @@ type Context struct {
 	Params     map[string]string
 	Handler    HandlerFunc
 	Data       map[string]interface{}
-	Status     int
+	StatusCode int
 	Air        *Air
 }
 
 // newContext returns a new instance of `Context`.
 func newContext(a *Air) *Context {
 	return &Context{
-		goContext: context.Background(),
-		Params:    make(map[string]string),
-		Handler:   NotFoundHandler,
-		Data:      make(map[string]interface{}),
-		Status:    http.StatusOK,
-		Air:       a,
+		goContext:  context.Background(),
+		Params:     make(map[string]string),
+		Handler:    NotFoundHandler,
+		Data:       make(map[string]interface{}),
+		StatusCode: http.StatusOK,
+		Air:        a,
 	}
 }
 
@@ -150,7 +150,7 @@ func (c *Context) Render() (err error) {
 		return
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
-	c.Response.WriteHeader(c.Status)
+	c.Response.WriteHeader(c.StatusCode)
 	_, err = c.Response.Write(buf.Bytes())
 	return
 }
@@ -162,7 +162,7 @@ func (c *Context) HTML() (err error) {
 		return ErrDataHTMLNotSetted
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
-	c.Response.WriteHeader(c.Status)
+	c.Response.WriteHeader(c.StatusCode)
 	_, err = c.Response.Write([]byte(h.(string)))
 	return
 }
@@ -174,7 +174,7 @@ func (c *Context) String() (err error) {
 		return ErrDataStringNotSetted
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextPlain)
-	c.Response.WriteHeader(c.Status)
+	c.Response.WriteHeader(c.StatusCode)
 	_, err = c.Response.Write([]byte(s.(string)))
 	return
 }
@@ -198,7 +198,7 @@ func (c *Context) JSON() (err error) {
 // JSONBlob sends a JSON blob response with `Context#StatusCode`.
 func (c *Context) JSONBlob(b []byte) (err error) {
 	c.Response.Header.Set(HeaderContentType, MIMEApplicationJSON)
-	c.Response.WriteHeader(c.Status)
+	c.Response.WriteHeader(c.StatusCode)
 	_, err = c.Response.Write(b)
 	return
 }
@@ -218,7 +218,7 @@ func (c *Context) JSONP() (err error) {
 		return err
 	}
 	c.Response.Header.Set(HeaderContentType, MIMEApplicationJavaScript)
-	c.Response.WriteHeader(c.Status)
+	c.Response.WriteHeader(c.StatusCode)
 	if _, err = c.Response.Write([]byte(cb.(string) + "(")); err != nil {
 		return
 	}
@@ -248,7 +248,7 @@ func (c *Context) XML() (err error) {
 // XMLBlob sends a XML blob response with `Context#StatusCode`.
 func (c *Context) XMLBlob(b []byte) (err error) {
 	c.Response.Header.Set(HeaderContentType, MIMEApplicationXML)
-	c.Response.WriteHeader(c.Status)
+	c.Response.WriteHeader(c.StatusCode)
 	if _, err = c.Response.Write([]byte(xml.Header)); err != nil {
 		return
 	}
@@ -290,17 +290,17 @@ func (c *Context) Attachment(r io.ReadSeeker, name string) (err error) {
 
 // NoContent sends a response with no body and a `Context#StatusCode`.
 func (c *Context) NoContent() error {
-	c.Response.WriteHeader(c.Status)
+	c.Response.WriteHeader(c.StatusCode)
 	return nil
 }
 
 // Redirect redirects the request with `Context#StatusCode`.
 func (c *Context) Redirect(uri string) error {
-	if c.Status < http.StatusMultipleChoices || c.Status > http.StatusTemporaryRedirect {
+	if c.StatusCode < http.StatusMultipleChoices || c.StatusCode > http.StatusTemporaryRedirect {
 		return ErrInvalidRedirectCode
 	}
 	c.Response.Header.Set(HeaderLocation, uri)
-	c.Response.WriteHeader(c.Status)
+	c.Response.WriteHeader(c.StatusCode)
 	return nil
 }
 
@@ -314,7 +314,7 @@ func (c *Context) ServeContent(content io.ReadSeeker, name string, modtime time.
 	if t, err := time.Parse(http.TimeFormat, req.Header.Get(HeaderIfModifiedSince)); err == nil && modtime.Before(t.Add(1*time.Second)) {
 		res.Header.Del(HeaderContentType)
 		res.Header.Del(HeaderContentLength)
-		c.Status = http.StatusNotModified
+		c.StatusCode = http.StatusNotModified
 		return c.NoContent()
 	}
 
@@ -339,7 +339,7 @@ func (c *Context) reset() {
 	for k := range c.Data {
 		delete(c.Data, k)
 	}
-	c.Status = http.StatusOK
+	c.StatusCode = http.StatusOK
 }
 
 // contentTypeByExtension returns the MIME type associated with the file based

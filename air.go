@@ -180,7 +180,7 @@ func (a *Air) defaultHTTPErrorHandler(err error, c *Context) {
 	}
 	if !c.Response.Committed {
 		c.Data["string"] = msg
-		c.Status = code
+		c.StatusCode = code
 		c.String()
 	}
 	a.Logger.Error(err)

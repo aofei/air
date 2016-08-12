@@ -137,7 +137,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 				case "user_agent":
 					return w.Write([]byte(req.UserAgent()))
 				case "status":
-					n := c.Status
+					n := c.StatusCode
 					return w.Write([]byte(strconv.Itoa(n)))
 				case "latency":
 					l := stop.Sub(start).Nanoseconds() / 1000
