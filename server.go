@@ -2,26 +2,16 @@ package air
 
 import "github.com/valyala/fasthttp"
 
-type (
-	// server represents the HTTP server.
-	server struct {
-		fastServer *fasthttp.Server
-		handler    serverHandler
-		air        *Air
-	}
-
-	// serverHandler defines an interface to server HTTP requests via
-	// `ServeHTTP(*Request, *Response)`.
-	serverHandler interface {
-		serveHTTP(*Request, *Response)
-	}
-)
+// server represents the HTTP server.
+type server struct {
+	fastServer *fasthttp.Server
+	air        *Air
+}
 
 // newServer returns an new instance of `server`.
 func newServer(a *Air) *server {
 	s := &server{
 		fastServer: new(fasthttp.Server),
-		handler:    a,
 		air:        a,
 	}
 	s.fastServer.ReadTimeout = s.air.Config.ReadTimeout
@@ -57,6 +47,38 @@ func (s *server) startCustomListener() error {
 	return s.fastServer.Serve(c.Listener)
 }
 
+// serveHTTP serves the HTTP requests.
+func (s *server) serveHTTP(req *Request, res *Response) {
+	c := s.air.pool.context.Get().(*Context)
+	c.Request = req
+	c.Response = res
+
+	// Gases
+	h := func(*Context) error {
+		method := req.Method()
+		path := req.URI.Path()
+		s.air.router.find(method, path, c)
+		h := c.Handler
+		for i := len(s.air.gases) - 1; i >= 0; i-- {
+			h = s.air.gases[i](h)
+		}
+		return h(c)
+	}
+
+	// Pregases
+	for i := len(s.air.pregases) - 1; i >= 0; i-- {
+		h = s.air.pregases[i](h)
+	}
+
+	// Execute chain
+	if err := h(c); err != nil {
+		s.air.HTTPErrorHandler(err, c)
+	}
+
+	c.reset()
+	s.air.pool.context.Put(c)
+}
+
 // fastServeHTTP serves the fast HTTP request.
 func (s *server) fastServeHTTP(c *fasthttp.RequestCtx) {
 	req := s.air.pool.request.Get().(*Request)
@@ -77,7 +99,7 @@ func (s *server) fastServeHTTP(c *fasthttp.RequestCtx) {
 	res.Writer = c
 	resHdr.fastResponseHeader = &c.Response.Header
 
-	s.handler.serveHTTP(req, res)
+	s.serveHTTP(req, res)
 
 	req.reset()
 	reqHdr.reset()

@@ -296,38 +296,6 @@ func (a *Air) Run() {
 	a.Logger.Error(s.start())
 }
 
-// serveHTTP implements `serverHandler#serveHTTP()`.
-func (a *Air) serveHTTP(req *Request, res *Response) {
-	c := a.pool.context.Get().(*Context)
-	c.Request = req
-	c.Response = res
-
-	// Gases
-	h := func(*Context) error {
-		method := req.Method()
-		path := req.URI.Path()
-		a.router.find(method, path, c)
-		h := c.Handler
-		for i := len(a.gases) - 1; i >= 0; i-- {
-			h = a.gases[i](h)
-		}
-		return h(c)
-	}
-
-	// Pregases
-	for i := len(a.pregases) - 1; i >= 0; i-- {
-		h = a.pregases[i](h)
-	}
-
-	// Execute chain
-	if err := h(c); err != nil {
-		a.HTTPErrorHandler(err, c)
-	}
-
-	c.reset()
-	a.pool.context.Put(c)
-}
-
 // newPool returnes a new instance of `pool`.
 func newPool(a *Air) *pool {
 	return &pool{
@@ -373,7 +341,7 @@ func NewHTTPError(code int, msg ...string) *HTTPError {
 	return he
 }
 
-// Error implements `error#Error()`.
+// Error implements `Error#Error()`.
 func (he *HTTPError) Error() string {
 	return he.Message
 }
