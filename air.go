@@ -161,29 +161,10 @@ func New() *Air {
 	a.binder = newBinder(a)
 	a.renderer = newRenderer(a)
 	a.Config = NewConfig("air")
-	a.HTTPErrorHandler = a.defaultHTTPErrorHandler
+	a.HTTPErrorHandler = defaultHTTPErrorHandler
 	a.Logger = NewLogger(a)
 	a.Logger.Level = ERROR
 	return a
-}
-
-// defaultHTTPErrorHandler invokes the default HTTP error handler.
-func (a *Air) defaultHTTPErrorHandler(err error, c *Context) {
-	code := http.StatusInternalServerError
-	msg := http.StatusText(code)
-	if he, ok := err.(*HTTPError); ok {
-		code = he.Code
-		msg = he.Message
-	}
-	if a.Config.DebugMode {
-		msg = err.Error()
-	}
-	if !c.Response.Committed {
-		c.Data["string"] = msg
-		c.StatusCode = code
-		c.String()
-	}
-	a.Logger.Error(err)
 }
 
 // Precontain adds gases to the chain which is run before router.
@@ -296,6 +277,15 @@ func (a *Air) Run() {
 	a.Logger.Error(s.start())
 }
 
+// handlerName returns the handler's func name.
+func handlerName(handler HandlerFunc) string {
+	t := reflect.ValueOf(handler).Type()
+	if t.Kind() == reflect.Func {
+		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
+	}
+	return t.String()
+}
+
 // newPool returnes a new instance of `pool`.
 func newPool(a *Air) *pool {
 	return &pool{
@@ -346,11 +336,19 @@ func (he *HTTPError) Error() string {
 	return he.Message
 }
 
-// handlerName returns the handler's func name.
-func handlerName(handler HandlerFunc) string {
-	t := reflect.ValueOf(handler).Type()
-	if t.Kind() == reflect.Func {
-		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
+// defaultHTTPErrorHandler invokes the default HTTP error handler.
+func defaultHTTPErrorHandler(err error, c *Context) {
+	he := ErrInternalServerError
+	if che, ok := err.(*HTTPError); ok {
+		he = che
 	}
-	return t.String()
+	if c.Air.Config.DebugMode {
+		he.Message = err.Error()
+	}
+	if !c.Response.Committed {
+		c.Data["string"] = he.Message
+		c.StatusCode = he.Code
+		c.String()
+	}
+	c.Air.Logger.Error(err)
 }
