@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -143,7 +144,7 @@ func (c *Context) Bind(i interface{}) error {
 func (c *Context) Render() (err error) {
 	t, ok := c.Data["template"]
 	if !ok || reflect.ValueOf(t).Kind() != reflect.String {
-		return ErrDataTemplateNotSetted
+		return errors.New("c.Data[\"template\"] Not Setted")
 	}
 	buf := new(bytes.Buffer)
 	if err = c.Air.renderer.render(buf, t.(string), c); err != nil {
@@ -159,7 +160,7 @@ func (c *Context) Render() (err error) {
 func (c *Context) HTML() (err error) {
 	h, ok := c.Data["html"]
 	if !ok || reflect.ValueOf(h).Kind() != reflect.String {
-		return ErrDataHTMLNotSetted
+		return errors.New("c.Data[\"html\"] Not Setted")
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
 	c.Response.WriteHeader(c.StatusCode)
@@ -171,7 +172,7 @@ func (c *Context) HTML() (err error) {
 func (c *Context) String() (err error) {
 	s, ok := c.Data["string"]
 	if !ok || reflect.ValueOf(s).Kind() != reflect.String {
-		return ErrDataStringNotSetted
+		return errors.New("c.Data[\"string\"] Not Setted")
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextPlain)
 	c.Response.WriteHeader(c.StatusCode)
@@ -183,7 +184,7 @@ func (c *Context) String() (err error) {
 func (c *Context) JSON() (err error) {
 	j, ok := c.Data["json"]
 	if !ok {
-		return ErrDataJSONNotSetted
+		return errors.New("c.Data[\"json\"] Not Setted")
 	}
 	b, err := json.Marshal(j)
 	if c.Air.Config.DebugMode {
@@ -209,9 +210,9 @@ func (c *Context) JSONP() (err error) {
 	j, jok := c.Data["jsonp"]
 	cb, cbok := c.Data["callback"]
 	if !jok {
-		return ErrDataJSONPNotSetted
+		return errors.New("c.Data[\"jsonp\"] Not Setted")
 	} else if !cbok || reflect.ValueOf(cb).Kind() != reflect.String {
-		return ErrDataCallbackNotSetted
+		return errors.New("c.Data[\"callback\"] Not Setted")
 	}
 	b, err := json.Marshal(j)
 	if err != nil {
@@ -233,7 +234,7 @@ func (c *Context) JSONP() (err error) {
 func (c *Context) XML() (err error) {
 	x, ok := c.Data["xml"]
 	if !ok {
-		return ErrDataXMLNotSetted
+		return errors.New("c.Data[\"xml\"] Not Setted")
 	}
 	b, err := xml.Marshal(x)
 	if c.Air.Config.DebugMode {
