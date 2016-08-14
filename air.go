@@ -132,14 +132,6 @@ var (
 
 	ErrInvalidRedirectCode = errors.New("Invalid Redirect Status Code")
 	ErrCookieNotFound      = errors.New("Cookie Not Found")
-
-	ErrDataTemplateNotSetted = errors.New("c.Data[\"template\"] Not Setted")
-	ErrDataHTMLNotSetted     = errors.New("c.Data[\"html\"] Not Setted")
-	ErrDataStringNotSetted   = errors.New("c.Data[\"string\"] Not Setted")
-	ErrDataJSONNotSetted     = errors.New("c.Data[\"json\"] Not Setted")
-	ErrDataJSONPNotSetted    = errors.New("c.Data[\"jsonp\"] Not Setted")
-	ErrDataCallbackNotSetted = errors.New("c.Data[\"callback\"] Not Setted")
-	ErrDataXMLNotSetted      = errors.New("c.Data[\"xml\"] Not Setted")
 )
 
 // HTTP error handlers
