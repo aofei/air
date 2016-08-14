@@ -27,8 +27,8 @@ type Context struct {
 	ParamNames []string
 	Params     map[string]string
 	Handler    HandlerFunc
-	Data       map[string]interface{}
 	StatusCode int
+	Data       map[string]interface{}
 	Air        *Air
 }
 
@@ -38,8 +38,8 @@ func newContext(a *Air) *Context {
 		goContext:  context.Background(),
 		Params:     make(map[string]string),
 		Handler:    NotFoundHandler,
-		Data:       make(map[string]interface{}),
 		StatusCode: http.StatusOK,
+		Data:       make(map[string]interface{}),
 		Air:        a,
 	}
 }
@@ -336,10 +336,10 @@ func (c *Context) reset() {
 		delete(c.Params, k)
 	}
 	c.Handler = NotFoundHandler
+	c.StatusCode = http.StatusOK
 	for k := range c.Data {
 		delete(c.Data, k)
 	}
-	c.StatusCode = http.StatusOK
 }
 
 // contentTypeByExtension returns the MIME type associated with the file based
