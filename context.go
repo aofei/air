@@ -141,8 +141,8 @@ func (c *Context) Bind(i interface{}) error {
 // Render renders a template with `Context#Data` and `Context#Data["template"]`
 // and sends a "text/html" response with `Context#StatusCode`.
 func (c *Context) Render() (err error) {
-	t := c.Data["template"]
-	if t == nil || reflect.ValueOf(t).Kind() != reflect.String {
+	t, ok := c.Data["template"]
+	if !ok || reflect.ValueOf(t).Kind() != reflect.String {
 		return ErrDataTemplateNotSetted
 	}
 	buf := new(bytes.Buffer)
@@ -157,8 +157,8 @@ func (c *Context) Render() (err error) {
 
 // HTML sends an HTTP response with `Context#StatusCode` and `Context#Data["html"]`.
 func (c *Context) HTML() (err error) {
-	h := c.Data["html"]
-	if h == nil || reflect.ValueOf(h).Kind() != reflect.String {
+	h, ok := c.Data["html"]
+	if !ok || reflect.ValueOf(h).Kind() != reflect.String {
 		return ErrDataHTMLNotSetted
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
@@ -169,8 +169,8 @@ func (c *Context) HTML() (err error) {
 
 // String sends a string response with `Context#StatusCode` and `Context#Data["string"]`.
 func (c *Context) String() (err error) {
-	s := c.Data["string"]
-	if s == nil || reflect.ValueOf(s).Kind() != reflect.String {
+	s, ok := c.Data["string"]
+	if !ok || reflect.ValueOf(s).Kind() != reflect.String {
 		return ErrDataStringNotSetted
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextPlain)
@@ -181,8 +181,8 @@ func (c *Context) String() (err error) {
 
 // JSON sends a JSON response with `Context#StatusCode` and `Context#Data["json"]`.
 func (c *Context) JSON() (err error) {
-	j := c.Data["json"]
-	if j == nil {
+	j, ok := c.Data["json"]
+	if !ok {
 		return ErrDataJSONNotSetted
 	}
 	b, err := json.Marshal(j)
@@ -206,11 +206,11 @@ func (c *Context) JSONBlob(b []byte) (err error) {
 // JSONP sends a JSONP response with `Context#StatusCode` and `Context#Data["jsonp"]`.
 // It uses `Context#Data["callback"]` to construct the JSONP payload.
 func (c *Context) JSONP() (err error) {
-	j := c.Data["jsonp"]
-	cb := c.Data["callback"]
-	if j == nil {
+	j, jok := c.Data["jsonp"]
+	cb, cbok := c.Data["callback"]
+	if !jok {
 		return ErrDataJSONPNotSetted
-	} else if cb == nil || reflect.ValueOf(cb).Kind() != reflect.String {
+	} else if !cbok || reflect.ValueOf(cb).Kind() != reflect.String {
 		return ErrDataCallbackNotSetted
 	}
 	b, err := json.Marshal(j)
@@ -231,8 +231,8 @@ func (c *Context) JSONP() (err error) {
 
 // XML sends an XML response with `Context#StatusCode` and `Context#Data["xml"]`.
 func (c *Context) XML() (err error) {
-	x := c.Data["xml"]
-	if x == nil {
+	x, ok := c.Data["xml"]
+	if !ok {
 		return ErrDataXMLNotSetted
 	}
 	b, err := xml.Marshal(x)
