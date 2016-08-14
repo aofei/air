@@ -78,7 +78,7 @@ func StaticWithConfig(config StaticConfig) air.GasFunc {
 				// HTML5 mode
 				err = next(c)
 				if he, ok := err.(*air.HTTPError); ok {
-					if config.HTML5 && he.Code == http.StatusNotFound {
+					if config.HTML5 && he.Code == air.ErrNotFound.Code {
 						file = ""
 						f, err = fs.Open(file)
 					} else {
