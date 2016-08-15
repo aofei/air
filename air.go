@@ -228,11 +228,6 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 	a.router.routes[method+path] = r
 }
 
-// SetTemplateFunc sets the f into template func map with a name.
-func (a *Air) SetTemplateFunc(name string, f interface{}) {
-	a.renderer.templateFuncMap[name] = f
-}
-
 // URI returns a URI generated from handler with optional params.
 func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 	uri := new(bytes.Buffer)
@@ -256,6 +251,11 @@ func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 		}
 	}
 	return uri.String()
+}
+
+// SetTemplateFunc sets the f into template func map with a name.
+func (a *Air) SetTemplateFunc(name string, f interface{}) {
+	a.renderer.templateFuncMap[name] = f
 }
 
 // Run starts the HTTP server.
