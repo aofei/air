@@ -2,6 +2,7 @@ package air
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -13,8 +14,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // Context represents the context of the current HTTP request. It holds request and
