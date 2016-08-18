@@ -18,8 +18,8 @@ import (
 type (
 	Logger struct {
 		template   *template.Template
-		bufferPool sync.Pool
-		mutex      sync.Mutex
+		bufferPool *sync.Pool
+		mutex      *sync.Mutex
 		levels     []string
 		air        *Air
 
@@ -44,29 +44,25 @@ const (
 // NewLogger returns an new instance of `Logger`.
 func NewLogger(a *Air) *Logger {
 	l := &Logger{
-		bufferPool: sync.Pool{
+		bufferPool: &sync.Pool{
 			New: func() interface{} {
 				return bytes.NewBuffer(make([]byte, 256))
 			},
+		},
+		mutex: &sync.Mutex{},
+		levels: []string{
+			"DEBUG",
+			"INFO",
+			"WARN",
+			"ERROR",
+			"FATAL",
 		},
 		air:   a,
 		Level: INFO,
 	}
 	l.template, _ = template.New("logger").Parse(a.Config.LogFormat)
-	l.initLevels()
 	l.Output = os.Stdout
 	return l
-}
-
-// initLevels initializes the logger levels.
-func (l *Logger) initLevels() {
-	l.levels = []string{
-		"DEBUG",
-		"INFO",
-		"WARN",
-		"ERROR",
-		"FATAL",
-	}
 }
 
 // Print prints log info with provided type i.
