@@ -14,7 +14,7 @@ $ go get github.com/sheng/air
 
 done.
 
-> The only requirement is the [Go](https://golang.org/dl/), at least v1.5
+> The only requirement is the [Go](https://golang.org/dl/), at least v1.7
 
 ## Hello, 世界
 
@@ -47,9 +47,7 @@ then open your browser and visit `http://localhost:8080`.
 
 ## Documentation
 
-* English(editing...)
-* 简体中文(编辑中...)
-* [GoDoc](https://godoc.org/github.com/sheng/air)
+This framework is so concise that it only needs the [GoDoc](https://godoc.org/github.com/sheng/air) enough.
 
 ## Gases
 
