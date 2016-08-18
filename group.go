@@ -1,5 +1,7 @@
 package air
 
+import "path"
+
 // Group is a set of sub-routes for a specified route. It can be used for inner
 // routes that share a common gas or functionality that should be separate
 // from the parent `Air` instance while still inheriting from it.
@@ -58,19 +60,23 @@ func (g *Group) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 
 // Static implements `Air#Static()`.
 func (g *Group) Static(prefix, root string) {
-	g.air.Static(g.prefix+prefix, root)
+	g.Get(g.prefix+prefix+"*", func(c *Context) error {
+		return c.File(path.Join(root, c.Params[c.ParamNames[0]]))
+	})
 }
 
 // File implements `Air#File()`.
 func (g *Group) File(path, file string) {
-	g.air.File(g.prefix+path, file)
+	g.Get(g.prefix+path, func(c *Context) error {
+		return c.File(file)
+	})
 }
 
 // add implements `Air#add()`.
 func (g *Group) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
-	// Combine into a new slice, to avoid accidentally passing the same
-	// slice for multiple routes, which would lead to later add() calls overwriting
-	// the gas from earlier calls
+	// Combine into a new slice to avoid accidentally passing the same slice for
+	// multiple routes, which would lead to later add() calls overwriting the
+	// gas from earlier calls.
 	gs := []GasFunc{}
 	gs = append(gs, g.gases...)
 	gs = append(gs, gases...)
