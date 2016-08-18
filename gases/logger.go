@@ -3,7 +3,6 @@ package gases
 import (
 	"bytes"
 	"io"
-	"net"
 	"os"
 	"sync"
 	"text/template"
@@ -106,15 +105,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 
 			data := make(map[string]interface{})
 			data["time_rfc3339"] = time.Now().Format(time.RFC3339)
-			ra := req.RemoteAddress()
-			if ip := req.Header.Get(air.HeaderXRealIP); ip != "" {
-				ra = ip
-			} else if ip = req.Header.Get(air.HeaderXForwardedFor); ip != "" {
-				ra = ip
-			} else {
-				ra, _, _ = net.SplitHostPort(ra)
-			}
-			data["remote_ip"] = ra
+			data["remote_ip"] = req.RemoteIP()
 			data["host"] = req.Host()
 			data["uri"] = req.RequestURI()
 			data["method"] = req.Method()
