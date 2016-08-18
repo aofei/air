@@ -76,6 +76,28 @@ var (
 	}
 )
 
+// fill keeps all the fields of `CSRFConfig` have value.
+func (c *CSRFConfig) fill() {
+	if c.Skipper == nil {
+		c.Skipper = DefaultCSRFConfig.Skipper
+	}
+	if c.TokenLength == 0 {
+		c.TokenLength = DefaultCSRFConfig.TokenLength
+	}
+	if c.TokenLookup == "" {
+		c.TokenLookup = DefaultCSRFConfig.TokenLookup
+	}
+	if c.ContextKey == "" {
+		c.ContextKey = DefaultCSRFConfig.ContextKey
+	}
+	if c.CookieName == "" {
+		c.CookieName = DefaultCSRFConfig.CookieName
+	}
+	if c.CookieMaxAge == 0 {
+		c.CookieMaxAge = DefaultCSRFConfig.CookieMaxAge
+	}
+}
+
 // CSRF returns a Cross-Site Request Forgery (CSRF) gas.
 // See: https://en.wikipedia.org/wiki/Cross-site_request_forgery
 func CSRF() air.GasFunc {
@@ -87,24 +109,7 @@ func CSRF() air.GasFunc {
 // See `CSRF()`.
 func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 	// Defaults
-	if config.Skipper == nil {
-		config.Skipper = DefaultCSRFConfig.Skipper
-	}
-	if config.TokenLength == 0 {
-		config.TokenLength = DefaultCSRFConfig.TokenLength
-	}
-	if config.TokenLookup == "" {
-		config.TokenLookup = DefaultCSRFConfig.TokenLookup
-	}
-	if config.ContextKey == "" {
-		config.ContextKey = DefaultCSRFConfig.ContextKey
-	}
-	if config.CookieName == "" {
-		config.CookieName = DefaultCSRFConfig.CookieName
-	}
-	if config.CookieMaxAge == 0 {
-		config.CookieMaxAge = DefaultCSRFConfig.CookieMaxAge
-	}
+	config.fill()
 
 	// Initialize
 	parts := strings.Split(config.TokenLookup, ":")
@@ -134,16 +139,14 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 				token = k.Value()
 			}
 
-			switch req.Method() {
-			case air.GET:
-			default:
-				// Validate token only for requests which are not defined as 'safe' by RFC7231
+			// Validate token only for requests which are not defined as 'safe' by RFC7231
+			if req.Method() != air.GET {
 				clientToken, err := extractor(c)
 				if err != nil {
 					return err
 				}
 				if !validateCSRFToken(token, clientToken) {
-					return air.NewHTTPError(http.StatusForbidden, "csrf token is invalid")
+					return air.NewHTTPError(http.StatusForbidden, "CSRF Token Is Invalid")
 				}
 			}
 
@@ -187,7 +190,7 @@ func csrfTokenFromForm(param string) csrfTokenExtractor {
 	return func(c *air.Context) (string, error) {
 		token := c.FormValue(param)
 		if token == "" {
-			return "", errors.New("empty csrf token in form param")
+			return "", errors.New("Empty CSRF Token In Form Param")
 		}
 		return token, nil
 	}
@@ -199,7 +202,7 @@ func csrfTokenFromQuery(param string) csrfTokenExtractor {
 	return func(c *air.Context) (string, error) {
 		token := c.QueryParam(param)
 		if token == "" {
-			return "", errors.New("empty csrf token in query param")
+			return "", errors.New("Empty CSRF Token In Query Param")
 		}
 		return token, nil
 	}
