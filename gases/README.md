@@ -13,5 +13,3 @@ Gas | Description
 [Secure](https://godoc.org/github.com/sheng/air/gases#Secure) | Protection against attacks
 [CORS](https://godoc.org/github.com/sheng/air/gases#CORS) | Cross-Origin Resource Sharing
 [CSRF](https://godoc.org/github.com/sheng/air/gases#CSRF) | Cross-Site Request Forgery
-[Static](https://godoc.org/github.com/sheng/air/gases#Static) | Serve static files
-
