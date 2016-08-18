@@ -132,7 +132,7 @@ func (r *Request) MultipartForm() (*multipart.Form, error) {
 
 // Cookie returns the named cookie provided in the request.
 func (r *Request) Cookie(name string) (Cookie, error) {
-	c := new(fasthttp.Cookie)
+	c := &fasthttp.Cookie{}
 	b := r.fastCtx.Request.Header.Cookie(name)
 	if b == nil {
 		return Cookie{}, ErrCookieNotFound
@@ -146,7 +146,7 @@ func (r *Request) Cookie(name string) (Cookie, error) {
 func (r *Request) Cookies() []Cookie {
 	cookies := []Cookie{}
 	r.fastCtx.Request.Header.VisitAllCookie(func(name, value []byte) {
-		c := new(fasthttp.Cookie)
+		c := &fasthttp.Cookie{}
 		c.SetKeyBytes(name)
 		c.SetValueBytes(value)
 		cookies = append(cookies, Cookie{c})

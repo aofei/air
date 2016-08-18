@@ -230,7 +230,7 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 
 // URI returns a URI generated from handler with optional params.
 func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
-	uri := new(bytes.Buffer)
+	uri := &bytes.Buffer{}
 	ln := len(params)
 	n := 0
 	name := handlerName(handler)

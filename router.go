@@ -48,7 +48,7 @@ const (
 func newRouter(a *Air) *router {
 	return &router{
 		tree: &node{
-			methodHandler: new(methodHandler),
+			methodHandler: &methodHandler{},
 		},
 		routes: make(map[string]route),
 		air:    a,
@@ -134,7 +134,7 @@ func (r *router) insert(method, path string, h HandlerFunc, t kind, ppath string
 			cn.label = cn.prefix[0]
 			cn.prefix = cn.prefix[:l]
 			cn.children = nil
-			cn.methodHandler = new(methodHandler)
+			cn.methodHandler = &methodHandler{}
 			cn.ppath = ""
 			cn.pnames = nil
 
@@ -148,7 +148,7 @@ func (r *router) insert(method, path string, h HandlerFunc, t kind, ppath string
 				cn.pnames = pnames
 			} else {
 				// Create child node
-				n = newNode(t, search[l:], cn, nil, new(methodHandler), ppath, pnames)
+				n = newNode(t, search[l:], cn, nil, &methodHandler{}, ppath, pnames)
 				n.addHandler(method, h)
 				cn.addChild(n)
 			}
@@ -161,7 +161,7 @@ func (r *router) insert(method, path string, h HandlerFunc, t kind, ppath string
 				continue
 			}
 			// Create child node
-			n := newNode(t, search, cn, nil, new(methodHandler), ppath, pnames)
+			n := newNode(t, search, cn, nil, &methodHandler{}, ppath, pnames)
 			n.addHandler(method, h)
 			cn.addChild(n)
 		} else {

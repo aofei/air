@@ -47,7 +47,7 @@ func (r *Response) Write(b []byte) (n int, err error) {
 
 // SetCookie adds a "Set-Cookie" header in HTTP response.
 func (r *Response) SetCookie(c Cookie) {
-	cookie := new(fasthttp.Cookie)
+	cookie := &fasthttp.Cookie{}
 	cookie.SetKey(c.Name())
 	cookie.SetValue(c.Value())
 	cookie.SetPath(c.Path())
