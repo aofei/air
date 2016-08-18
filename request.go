@@ -60,6 +60,11 @@ func (r *Request) RemoteAddress() string {
 	return r.fastCtx.RemoteAddr().String()
 }
 
+// RemoteIP returns the client's network ip address.
+func (r *Request) RemoteIP() string {
+	return r.fastCtx.RemoteIP().String()
+}
+
 // Method returns the request's HTTP function.
 func (r *Request) Method() string {
 	return string(r.fastCtx.Method())
