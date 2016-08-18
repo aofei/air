@@ -15,6 +15,9 @@ import (
 type (
 	// LoggerConfig defines the config for Logger gas.
 	LoggerConfig struct {
+		template   *template.Template
+		bufferPool *sync.Pool
+
 		// Skipper defines a function to skip gas.
 		Skipper Skipper
 
@@ -43,9 +46,6 @@ type (
 		// Output is a writer where logs are written.
 		// Optional. Default value os.Stdout.
 		Output io.Writer
-
-		template   *template.Template
-		bufferPool sync.Pool
 	}
 )
 
@@ -81,7 +81,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 	}
 
 	config.template, _ = template.New("logger").Parse(config.Format)
-	config.bufferPool = sync.Pool{
+	config.bufferPool = &sync.Pool{
 		New: func() interface{} {
 			return bytes.NewBuffer(make([]byte, 256))
 		},
