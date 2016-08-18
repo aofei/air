@@ -111,33 +111,27 @@ func (b *binder) bindData(ptr interface{}, data map[string][]string) error {
 
 // setWithProperType sets the val into a structField with a proper valueKind.
 func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value) error {
+	bitSize := 0
 	switch valueKind {
-	case reflect.Int:
-		return setIntField(val, 0, structField)
-	case reflect.Int8:
-		return setIntField(val, 8, structField)
-	case reflect.Int16:
-		return setIntField(val, 16, structField)
-	case reflect.Int32:
-		return setIntField(val, 32, structField)
-	case reflect.Int64:
-		return setIntField(val, 64, structField)
-	case reflect.Uint:
-		return setUintField(val, 0, structField)
-	case reflect.Uint8:
-		return setUintField(val, 8, structField)
-	case reflect.Uint16:
-		return setUintField(val, 16, structField)
-	case reflect.Uint32:
-		return setUintField(val, 32, structField)
-	case reflect.Uint64:
-		return setUintField(val, 64, structField)
+	case reflect.Int8, reflect.Uint8:
+		bitSize = 8
+	case reflect.Int16, reflect.Uint16:
+		bitSize = 16
+	case reflect.Int32, reflect.Uint32, reflect.Float32:
+		bitSize = 32
+	case reflect.Int64, reflect.Uint64, reflect.Float64:
+		bitSize = 64
+	}
+
+	switch valueKind {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return setIntField(val, bitSize, structField)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return setUintField(val, bitSize, structField)
 	case reflect.Bool:
 		return setBoolField(val, structField)
-	case reflect.Float32:
-		return setFloatField(val, 32, structField)
-	case reflect.Float64:
-		return setFloatField(val, 64, structField)
+	case reflect.Float32, reflect.Float64:
+		return setFloatField(val, bitSize, structField)
 	case reflect.String:
 		structField.SetString(val)
 	default:
