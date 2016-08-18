@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -42,11 +43,31 @@ func (b *binder) bind(i interface{}, c *Context) (err error) {
 	switch {
 	case strings.HasPrefix(ctype, MIMEApplicationJSON):
 		if err = json.NewDecoder(req.Body()).Decode(i); err != nil {
-			err = NewHTTPError(http.StatusBadRequest, err.Error())
+			if ute, ok := err.(*json.UnmarshalTypeError); ok {
+				err = NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+					"Unmarshal Type Error: expected=%v, got=%v, offset=%v",
+					ute.Type, ute.Value, ute.Offset))
+			} else if se, ok := err.(*json.SyntaxError); ok {
+				err = NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+					"Syntax Error: offset=%v, error=%v",
+					se.Offset, se.Error()))
+			} else {
+				err = NewHTTPError(http.StatusBadRequest, err.Error())
+			}
 		}
 	case strings.HasPrefix(ctype, MIMEApplicationXML):
 		if err = xml.NewDecoder(req.Body()).Decode(i); err != nil {
-			err = NewHTTPError(http.StatusBadRequest, err.Error())
+			if ute, ok := err.(*xml.UnsupportedTypeError); ok {
+				err = NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+					"Unsupported Type Error: type=%v, error=%v",
+					ute.Type, ute.Error()))
+			} else if se, ok := err.(*xml.SyntaxError); ok {
+				err = NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+					"Syntax Error: line=%v, error=%v",
+					se.Line, se.Error()))
+			} else {
+				err = NewHTTPError(http.StatusBadRequest, err.Error())
+			}
 		}
 	case strings.HasPrefix(ctype, MIMEApplicationForm), strings.HasPrefix(ctype, MIMEMultipartForm):
 		if err = b.bindData(i, req.FormParams()); err != nil {
