@@ -11,7 +11,7 @@ type server struct {
 // newServer returns an new instance of `server`.
 func newServer(a *Air) *server {
 	s := &server{
-		fastServer: new(fasthttp.Server),
+		fastServer: &fasthttp.Server{},
 		air:        a,
 	}
 	s.fastServer.ReadTimeout = s.air.Config.ReadTimeout

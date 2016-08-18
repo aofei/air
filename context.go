@@ -145,7 +145,7 @@ func (c *Context) Render() (err error) {
 	if !ok || reflect.ValueOf(t).Kind() != reflect.String {
 		return errors.New("c.Data[\"template\"] Not Setted")
 	}
-	buf := new(bytes.Buffer)
+	buf := &bytes.Buffer{}
 	if err = c.Air.renderer.render(buf, t.(string), c); err != nil {
 		return
 	}
