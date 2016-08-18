@@ -61,11 +61,12 @@ type Config struct {
 	// *It's unit in the config file is SECONDS.*
 	WriteTimeout time.Duration
 
-	// TemplatesPath represents the path of `Renderer`'s templates.
+	// TemplatesRoot represents the root directory of the html templates.
+	// It will be parsed into `Renderer`.
 	// Default value is "templates" that means a subdirectory of the
 	// runtime directory.
-	// It's called "templates_path" in the config file.
-	TemplatesPath string
+	// It's called "templates_root" in the config file.
+	TemplatesRoot string
 }
 
 // defaultConfig is the default instance of `Config`
@@ -79,7 +80,7 @@ func init() {
 		LogFormat: `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}",` +
 			`"level":"{{.level}}","file":"{{.short_file}}","line":"{{.line}}"}`,
 		Address:       "localhost:8080",
-		TemplatesPath: "templates",
+		TemplatesRoot: "templates",
 	}
 
 	var cfn = "config.json"
@@ -130,7 +131,7 @@ func NewConfig(appName string) *Config {
 	tlskf := c.JSON["tls_key_file"]
 	rt := c.JSON["read_timeout"]
 	wt := c.JSON["write_timeout"]
-	tp := c.JSON["templates_path"]
+	tr := c.JSON["templates_root"]
 
 	if dm != nil {
 		c.DebugMode = dm.(bool)
@@ -153,8 +154,8 @@ func NewConfig(appName string) *Config {
 	if wt != nil {
 		c.WriteTimeout = time.Duration(wt.(float64)) * time.Second
 	}
-	if tp != nil {
-		c.TemplatesPath = tp.(string)
+	if tr != nil {
+		c.TemplatesRoot = tr.(string)
 	}
 	return &c
 }

@@ -51,7 +51,7 @@ func newRenderer(a *Air) *renderer {
 
 // parseTemplates parses files into templates.
 //
-// e.g. r.air.Config.TemplatesPath == "templates"
+// e.g. r.air.Config.TemplatesRoot == "templates"
 //
 // templates/
 //   index.html
@@ -68,7 +68,7 @@ func newRenderer(a *Air) *renderer {
 // "parts/header.html", "parts/footer.html".
 func (r *renderer) parseTemplates() {
 	replace := strings.NewReplacer("\\", "/")
-	tp := strings.TrimRight(replace.Replace(r.air.Config.TemplatesPath), "/")
+	tp := strings.TrimRight(replace.Replace(r.air.Config.TemplatesRoot), "/")
 	filenames, err := filepath.Glob(tp + "/*/*.html")
 	if err != nil {
 		panic(err)
