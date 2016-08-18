@@ -25,8 +25,8 @@ type Config struct {
 
 	// LogFormat represents the format of `Logger`'s output content.
 	// Default value is:
-	// `{"app_name":"${app_name}","time":"${time_rfc3339}",` +
-	// `"level":"${level}","file":"${short_file}","line":"${line}"}`
+	// `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}",` +
+	// `"level":"{{.level}}","file":"{{.short_file}}","line":"{{.line}}"}`
 	// It's called "log_format" in the config file.
 	LogFormat string
 
@@ -76,8 +76,8 @@ var configJSON map[string]interface{}
 
 func init() {
 	defaultConfig = Config{
-		LogFormat: `{"app_name":"${app_name}","time":"${time_rfc3339}",` +
-			`"level":"${level}","file":"${short_file}","line":"${line}"}`,
+		LogFormat: `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}",` +
+			`"level":"{{.level}}","file":"{{.short_file}}","line":"{{.line}}"}`,
 		Address:       "localhost:8080",
 		TemplatesPath: "templates",
 	}
