@@ -10,15 +10,14 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+	"text/template"
 	"time"
-
-	"github.com/valyala/fasttemplate"
 )
 
 // Logger is used to log information generated in runtime.
 type (
 	Logger struct {
-		template   *fasttemplate.Template
+		template   *template.Template
 		bufferPool sync.Pool
 		mutex      sync.Mutex
 		levels     []string
@@ -53,7 +52,7 @@ func NewLogger(a *Air) *Logger {
 		air:   a,
 		Level: INFO,
 	}
-	l.template = l.newTemplate(a.Config.LogFormat)
+	l.template, _ = template.New("logger").Parse(a.Config.LogFormat)
 	l.initLevels()
 	l.Output = os.Stdout
 	return l
@@ -68,16 +67,6 @@ func (l *Logger) initLevels() {
 		"ERROR",
 		"FATAL",
 	}
-}
-
-// newTemplate returns an new instance of `fasttemplate.Template`.
-func (l *Logger) newTemplate(format string) *fasttemplate.Template {
-	return fasttemplate.New(format, "${", "}")
-}
-
-// SetFormat sets log format of the logger.
-func (l *Logger) SetFormat(format string) {
-	l.template = l.newTemplate(format)
 }
 
 // Print prints log info with provided type i.
@@ -200,23 +189,14 @@ func (l *Logger) log(lvl LoggerLevel, format string, args ...interface{}) {
 			// panic(message)
 		}
 
-		_, err := l.template.ExecuteFunc(buf, func(w io.Writer, tag string) (int, error) {
-			switch tag {
-			case "app_name":
-				return w.Write([]byte(l.air.Config.AppName))
-			case "time_rfc3339":
-				return w.Write([]byte(time.Now().Format(time.RFC3339)))
-			case "level":
-				return w.Write([]byte(l.levels[lvl]))
-			case "long_file":
-				return w.Write([]byte(file))
-			case "short_file":
-				return w.Write([]byte(path.Base(file)))
-			case "line":
-				return w.Write([]byte(strconv.Itoa(line)))
-			}
-			return 0, nil
-		})
+		data := make(map[string]interface{})
+		data["app_name"] = l.air.Config.AppName
+		data["time_rfc3339"] = time.Now().Format(time.RFC3339)
+		data["level"] = l.levels[lvl]
+		data["long_file"] = file
+		data["short_file"] = path.Base(file)
+		data["line"] = strconv.Itoa(line)
+		err := l.template.Execute(buf, data)
 
 		if err == nil {
 			s := buf.String()
