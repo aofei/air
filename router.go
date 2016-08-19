@@ -59,7 +59,7 @@ func newRouter(a *Air) *router {
 func (r *router) add(method, path string, h HandlerFunc, a *Air) {
 	// Validate path
 	if path == "" {
-		a.Logger.Fatal("Path Cannot Be Empty")
+		panic("Air: Path Cannot Be Empty")
 	}
 	if path[0] != '/' {
 		path = "/" + path
@@ -98,7 +98,7 @@ func (r *router) add(method, path string, h HandlerFunc, a *Air) {
 func (r *router) insert(method, path string, h HandlerFunc, t kind, ppath string, pnames []string, a *Air) {
 	cn := r.tree // Current node as root
 	if cn == nil {
-		panic("air ⇛ invalid method")
+		panic("Air: Invalid Method")
 	}
 	search := path
 

@@ -155,7 +155,7 @@ func New() *Air {
 	a.Config = NewConfig("air")
 	a.HTTPErrorHandler = defaultHTTPErrorHandler
 	a.Logger = NewLogger(a)
-	a.Logger.Level = ERROR
+	a.Logger.Level = OFF
 	return a
 }
 
@@ -265,8 +265,11 @@ func (a *Air) Run() {
 		a.Logger.Level = DEBUG
 		a.Logger.Debug("Running In Debug Mode")
 	}
+
 	s := newServer(a)
-	a.Logger.Error(s.start())
+	if err := s.start(); err != nil {
+		panic(fmt.Sprintf("Air: %v", err))
+	}
 }
 
 // handlerName returns the handler's func name.
