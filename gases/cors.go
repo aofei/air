@@ -16,11 +16,6 @@ type (
 		// Optional. Default value []string{"*"}.
 		AllowOrigins []string `json:"allow_origins"`
 
-		// AllowMethods defines a list methods allowed when accessing the resource.
-		// This is used in response to a preflight request.
-		// Optional. Default value DefaultCORSConfig.AllowMethods.
-		AllowMethods []string `json:"allow_methods"`
-
 		// AllowHeaders defines a list of request headers that can be used when
 		// making the actual request. This in response to a preflight request.
 		// Optional. Default value []string{}.
@@ -50,7 +45,6 @@ var (
 	DefaultCORSConfig = CORSConfig{
 		Skipper:      defaultSkipper,
 		AllowOrigins: []string{"*"},
-		AllowMethods: []string{air.GET, air.POST, air.PUT, air.DELETE},
 	}
 )
 
@@ -69,9 +63,6 @@ func CORSWithConfig(config CORSConfig) air.GasFunc {
 	}
 	if len(config.AllowOrigins) == 0 {
 		config.AllowOrigins = DefaultCORSConfig.AllowOrigins
-	}
-	if len(config.AllowMethods) == 0 {
-		config.AllowMethods = DefaultCORSConfig.AllowMethods
 	}
 	exposeHeaders := strings.Join(config.ExposeHeaders, ",")
 
