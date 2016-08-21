@@ -11,54 +11,63 @@ import (
 	"github.com/sheng/air"
 )
 
-type (
-	// LoggerConfig defines the config for Logger gas.
-	LoggerConfig struct {
-		template   *template.Template
-		bufferPool *sync.Pool
+// LoggerConfig defines the config for Logger gas.
+type LoggerConfig struct {
+	template   *template.Template
+	bufferPool *sync.Pool
 
-		// Skipper defines a function to skip gas.
-		Skipper Skipper
+	// Skipper defines a function to skip gas.
+	Skipper Skipper
 
-		// Log format which can be constructed using the following tags:
-		//
-		// - time_rfc3339
-		// - id (Request ID - Not implemented)
-		// - remote_ip
-		// - uri
-		// - host
-		// - method
-		// - path
-		// - referer
-		// - user_agent
-		// - status
-		// - latency (In microseconds)
-		// - latency_human (Human readable)
-		// - bytes_in (Bytes received)
-		// - bytes_out (Bytes sent)
-		//
-		// Example "{{.remote_ip}} {{.status}}"
-		//
-		// Optional. Default value DefaultLoggerConfig.Format.
-		Format string `json:"format"`
+	// Log format which can be constructed using the following tags:
+	//
+	// - time_rfc3339
+	// - id (Request ID - Not implemented)
+	// - remote_ip
+	// - uri
+	// - host
+	// - method
+	// - path
+	// - referer
+	// - user_agent
+	// - status
+	// - latency (In microseconds)
+	// - latency_human (Human readable)
+	// - bytes_in (Bytes received)
+	// - bytes_out (Bytes sent)
+	//
+	// Example "{{.remote_ip}} {{.status}}"
+	//
+	// Optional. Default value DefaultLoggerConfig.Format.
+	Format string `json:"format"`
 
-		// Output is a writer where logs are written.
-		// Optional. Default value os.Stdout.
-		Output io.Writer
+	// Output is a writer where logs are written.
+	// Optional. Default value os.Stdout.
+	Output io.Writer
+}
+
+// DefaultLoggerConfig is the default Logger gas config.
+var DefaultLoggerConfig = LoggerConfig{
+	Skipper: defaultSkipper,
+	Format: `{"time":"{{.time_rfc3339}}","remote_ip":"{{.remote_ip}}",` +
+		`"method":"{{.method}}","uri":"{{.uri}}","status":{{.status}},` +
+		`"latency":{{.latency}},"latency_human":"{{.latency_human}}",` +
+		`"bytes_in":{{.bytes_in}},"bytes_out":{{.bytes_out}}}` + "\n",
+	Output: os.Stdout,
+}
+
+// fill keeps all the fields of `LoggerConfig` have value.
+func (c *LoggerConfig) fill() {
+	if c.Skipper == nil {
+		c.Skipper = DefaultLoggerConfig.Skipper
 	}
-)
-
-var (
-	// DefaultLoggerConfig is the default Logger gas config.
-	DefaultLoggerConfig = LoggerConfig{
-		Skipper: defaultSkipper,
-		Format: `{"time":"{{.time_rfc3339}}","remote_ip":"{{.remote_ip}}",` +
-			`"method":"{{.method}}","uri":"{{.uri}}","status":{{.status}},` +
-			`"latency":{{.latency}},"latency_human":"{{.latency_human}}",` +
-			`"bytes_in":{{.bytes_in}},"bytes_out":{{.bytes_out}}}` + "\n",
-		Output: os.Stdout,
+	if c.Format == "" {
+		c.Format = DefaultLoggerConfig.Format
 	}
-)
+	if c.Output == nil {
+		c.Output = DefaultLoggerConfig.Output
+	}
+}
 
 // Logger returns a gas that logs HTTP requests.
 func Logger() air.GasFunc {
@@ -69,15 +78,7 @@ func Logger() air.GasFunc {
 // See: `Logger()`.
 func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 	// Defaults
-	if config.Skipper == nil {
-		config.Skipper = DefaultLoggerConfig.Skipper
-	}
-	if config.Format == "" {
-		config.Format = DefaultLoggerConfig.Format
-	}
-	if config.Output == nil {
-		config.Output = DefaultLoggerConfig.Output
-	}
+	config.fill()
 
 	config.template, _ = template.New("logger").Parse(config.Format)
 	config.bufferPool = &sync.Pool{
