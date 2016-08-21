@@ -44,6 +44,7 @@ type (
 const (
 	bearer = "Bearer"
 
+	// AlgorithmHS256 is the algorithm that checks token signing method.
 	AlgorithmHS256 = "HS256"
 )
 
