@@ -8,7 +8,6 @@ import (
 	"path"
 	"reflect"
 	"runtime"
-	"sync"
 )
 
 type (
@@ -24,16 +23,6 @@ type (
 		Config           *Config
 		HTTPErrorHandler HTTPErrorHandler
 		Logger           *Logger
-	}
-
-	// pool represents the pools of `Air`.
-	pool struct {
-		context        *sync.Pool
-		request        *sync.Pool
-		response       *sync.Pool
-		requestHeader  *sync.Pool
-		responseHeader *sync.Pool
-		uri            *sync.Pool
 	}
 
 	// HandlerFunc defines a function to server HTTP requests.
@@ -279,42 +268,6 @@ func handlerName(handler HandlerFunc) string {
 		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
 	}
 	return t.String()
-}
-
-// newPool returnes a new instance of `pool`.
-func newPool(a *Air) *pool {
-	return &pool{
-		context: &sync.Pool{
-			New: func() interface{} {
-				return newContext(a)
-			},
-		},
-		request: &sync.Pool{
-			New: func() interface{} {
-				return newRequest(a)
-			},
-		},
-		response: &sync.Pool{
-			New: func() interface{} {
-				return newResponse(a)
-			},
-		},
-		requestHeader: &sync.Pool{
-			New: func() interface{} {
-				return &RequestHeader{}
-			},
-		},
-		responseHeader: &sync.Pool{
-			New: func() interface{} {
-				return &ResponseHeader{}
-			},
-		},
-		uri: &sync.Pool{
-			New: func() interface{} {
-				return &URI{}
-			},
-		},
-	}
 }
 
 // NewHTTPError returns a new instance of `HTTPError`.
