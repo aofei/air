@@ -36,6 +36,10 @@ type (
 		// - "header:<name>"
 		// - "query:<name>"
 		TokenLookup string `json:"token_lookup"`
+
+		// Claims are extendable claims data defining token content.
+		// Optional. Default value jwt.MapClaims
+		Claims jwt.Claims
 	}
 
 	jwtExtractor func(*air.Context) (string, error)
@@ -54,6 +58,7 @@ var DefaultJWTConfig = JWTConfig{
 	SigningMethod: AlgorithmHS256,
 	ContextKey:    "user",
 	TokenLookup:   "header:" + air.HeaderAuthorization,
+	Claims:        jwt.MapClaims{},
 }
 
 // fill keeps all the fields of `JWTConfig` have value.
@@ -72,6 +77,9 @@ func (c *JWTConfig) fill() {
 	}
 	if c.TokenLookup == "" {
 		c.TokenLookup = DefaultJWTConfig.TokenLookup
+	}
+	if c.Claims == nil {
+		c.Claims = DefaultJWTConfig.Claims
 	}
 }
 
@@ -112,7 +120,7 @@ func JWTWithConfig(config JWTConfig) air.GasFunc {
 			if err != nil {
 				return air.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			token, err := jwt.Parse(auth, func(t *jwt.Token) (interface{}, error) {
+			token, err := jwt.ParseWithClaims(auth, config.Claims, func(t *jwt.Token) (interface{}, error) {
 				// Check the signing method
 				if t.Method.Alg() != config.SigningMethod {
 					return nil, fmt.Errorf("Unexpected JWT Signing Method=%v", t.Header["alg"])
