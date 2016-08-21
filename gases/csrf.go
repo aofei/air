@@ -64,17 +64,15 @@ type (
 	csrfTokenExtractor func(*air.Context) (string, error)
 )
 
-var (
-	// DefaultCSRFConfig is the default CSRF gas config.
-	DefaultCSRFConfig = CSRFConfig{
-		Skipper:      defaultSkipper,
-		TokenLength:  32,
-		TokenLookup:  "header:" + air.HeaderXCSRFToken,
-		ContextKey:   "csrf",
-		CookieName:   "_csrf",
-		CookieMaxAge: 86400,
-	}
-)
+// DefaultCSRFConfig is the default CSRF gas config.
+var DefaultCSRFConfig = CSRFConfig{
+	Skipper:      defaultSkipper,
+	TokenLength:  32,
+	TokenLookup:  "header:" + air.HeaderXCSRFToken,
+	ContextKey:   "csrf",
+	CookieName:   "_csrf",
+	CookieMaxAge: 86400,
+}
 
 // fill keeps all the fields of `CSRFConfig` have value.
 func (c *CSRFConfig) fill() {
