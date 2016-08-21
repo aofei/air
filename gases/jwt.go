@@ -44,7 +44,6 @@ type (
 const (
 	bearer = "Bearer"
 
-	// Algorithims
 	AlgorithmHS256 = "HS256"
 )
 
