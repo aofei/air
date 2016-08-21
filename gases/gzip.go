@@ -28,13 +28,21 @@ type (
 	}
 )
 
-var (
-	// DefaultGzipConfig is the default Gzip gas config.
-	DefaultGzipConfig = GzipConfig{
-		Skipper: defaultSkipper,
-		Level:   -1,
+// DefaultGzipConfig is the default Gzip gas config.
+var DefaultGzipConfig = GzipConfig{
+	Skipper: defaultSkipper,
+	Level:   -1,
+}
+
+// fill keeps all the fields of `GzipConfig` have value.
+func (c *GzipConfig) fill() {
+	if c.Skipper == nil {
+		c.Skipper = DefaultGzipConfig.Skipper
 	}
-)
+	if c.Level == 0 {
+		c.Level = DefaultGzipConfig.Level
+	}
+}
 
 // Gzip returns a gas which compresses HTTP response using Gzip compression
 // scheme.
@@ -46,12 +54,7 @@ func Gzip() air.GasFunc {
 // See: `Gzip()`.
 func GzipWithConfig(config GzipConfig) air.GasFunc {
 	// Defaults
-	if config.Skipper == nil {
-		config.Skipper = DefaultGzipConfig.Skipper
-	}
-	if config.Level == 0 {
-		config.Level = DefaultGzipConfig.Level
-	}
+	config.fill()
 
 	pool := gzipPool(config)
 	scheme := "gzip"
