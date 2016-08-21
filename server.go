@@ -49,7 +49,7 @@ func (s *server) startCustomListener() error {
 
 // serveHTTP serves the HTTP requests.
 func (s *server) serveHTTP(req *Request, res *Response) {
-	c := s.air.pool.context.Get().(*Context)
+	c := s.air.pool.context()
 	c.Request = req
 	c.Response = res
 
@@ -75,18 +75,17 @@ func (s *server) serveHTTP(req *Request, res *Response) {
 		s.air.HTTPErrorHandler(err, c)
 	}
 
-	c.reset()
-	s.air.pool.context.Put(c)
+	s.air.pool.put(c)
 }
 
 // fastServeHTTP serves the fast HTTP request.
 func (s *server) fastServeHTTP(c *fasthttp.RequestCtx) {
-	req := s.air.pool.request.Get().(*Request)
-	reqHdr := s.air.pool.requestHeader.Get().(*RequestHeader)
-	reqURI := s.air.pool.uri.Get().(*URI)
+	req := s.air.pool.request()
+	reqHdr := s.air.pool.requestHeader()
+	reqURI := s.air.pool.uri()
 
-	res := s.air.pool.response.Get().(*Response)
-	resHdr := s.air.pool.responseHeader.Get().(*ResponseHeader)
+	res := s.air.pool.response()
+	resHdr := s.air.pool.responseHeader()
 
 	req.fastCtx = c
 	req.Header = reqHdr
@@ -101,17 +100,10 @@ func (s *server) fastServeHTTP(c *fasthttp.RequestCtx) {
 
 	s.serveHTTP(req, res)
 
-	req.reset()
-	reqHdr.reset()
-	reqURI.reset()
+	s.air.pool.put(req)
+	s.air.pool.put(reqHdr)
+	s.air.pool.put(reqURI)
 
-	res.reset()
-	resHdr.reset()
-
-	s.air.pool.request.Put(req)
-	s.air.pool.requestHeader.Put(reqHdr)
-	s.air.pool.uri.Put(reqURI)
-
-	s.air.pool.response.Put(res)
-	s.air.pool.responseHeader.Put(resHdr)
+	s.air.pool.put(res)
+	s.air.pool.put(resHdr)
 }
