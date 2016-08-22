@@ -104,7 +104,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 			buf.Reset()
 			defer config.bufferPool.Put(buf)
 
-			data := make(map[string]interface{})
+			data := make(air.JSONMap)
 			data["time_rfc3339"] = time.Now().Format(time.RFC3339)
 			data["remote_ip"] = req.RemoteIP()
 			data["host"] = req.Host()
