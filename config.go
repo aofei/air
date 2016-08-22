@@ -15,9 +15,6 @@ type Config struct {
 	// AppName represens the name of current `Air` instance.
 	AppName string
 
-	// JSON represents the JSON that parsing from config file.
-	JSON map[string]interface{}
-
 	// DebugMode represents the state of `Air`'s debug mode. Default
 	// value is "false".
 	// It's called "debug_mode" in the config file.
@@ -67,13 +64,16 @@ type Config struct {
 	// runtime directory.
 	// It's called "templates_root" in the config file.
 	TemplatesRoot string
+
+	// Data represents the data that parsing from config file.
+	Data JSONMap
 }
 
-// defaultConfig is the default instance of `Config`
+// defaultConfig is the default instance of `Config`.
 var defaultConfig Config
 
-// configJSON is the JSON map that parsing from config file
-var configJSON map[string]interface{}
+// configJSON is the JSON map that parsing from config file.
+var configJSON JSONMap
 
 func init() {
 	defaultConfig = Config{
@@ -115,46 +115,46 @@ func NewConfig(appName string) *Config {
 	if len(configJSON) == 1 {
 		for k, v := range configJSON {
 			c.AppName = k
-			c.JSON = v.(map[string]interface{})
+			c.Data = v.(map[string]interface{})
 		}
 	} else if configJSON[appName] == nil {
 		panic(errors.New("App \"" + appName + "\" Not Exist"))
 	} else {
 		c.AppName = appName
-		c.JSON = configJSON[appName].(map[string]interface{})
+		c.Data = configJSON[appName].(map[string]interface{})
 	}
 
-	dm := c.JSON["debug_mode"]
-	lf := c.JSON["log_format"]
-	addr := c.JSON["address"]
-	tlscf := c.JSON["tls_cert_file"]
-	tlskf := c.JSON["tls_key_file"]
-	rt := c.JSON["read_timeout"]
-	wt := c.JSON["write_timeout"]
-	tr := c.JSON["templates_root"]
+	dm, dmok := c.Data["debug_mode"]
+	lf, lfok := c.Data["log_format"]
+	addr, addrok := c.Data["address"]
+	tlscf, tlscfok := c.Data["tls_cert_file"]
+	tlskf, tlskfok := c.Data["tls_key_file"]
+	rt, rtok := c.Data["read_timeout"]
+	wt, wtok := c.Data["write_timeout"]
+	tr, trok := c.Data["templates_root"]
 
-	if dm != nil {
+	if dmok {
 		c.DebugMode = dm.(bool)
 	}
-	if lf != nil {
+	if lfok {
 		c.LogFormat = lf.(string)
 	}
-	if addr != nil {
+	if addrok {
 		c.Address = addr.(string)
 	}
-	if tlscf != nil {
+	if tlscfok {
 		c.TLSCertFile = tlscf.(string)
 	}
-	if tlskf != nil {
+	if tlskfok {
 		c.TLSKeyFile = tlskf.(string)
 	}
-	if rt != nil {
+	if rtok {
 		c.ReadTimeout = time.Duration(rt.(float64)) * time.Second
 	}
-	if wt != nil {
+	if wtok {
 		c.WriteTimeout = time.Duration(wt.(float64)) * time.Second
 	}
-	if tr != nil {
+	if trok {
 		c.TemplatesRoot = tr.(string)
 	}
 	return &c
