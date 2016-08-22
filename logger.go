@@ -33,12 +33,12 @@ type (
 
 // Logger levels
 const (
-	DEBUG LoggerLevel = iota
+	OFF LoggerLevel = iota
+	DEBUG
 	INFO
 	WARN
 	ERROR
 	FATAL
-	OFF
 )
 
 // NewLogger returns an new instance of `Logger`.
@@ -77,7 +77,7 @@ func (l *Logger) Printf(format string, args ...interface{}) {
 }
 
 // Printj prints log info with provided json map.
-func (l *Logger) Printj(j map[string]interface{}) {
+func (l *Logger) Printj(j JSONMap) {
 	json.NewEncoder(l.Output).Encode(j)
 }
 
@@ -92,7 +92,7 @@ func (l *Logger) Debugf(format string, args ...interface{}) {
 }
 
 // Debugj prints debug level log info in a format with provided json map.
-func (l *Logger) Debugj(j map[string]interface{}) {
+func (l *Logger) Debugj(j JSONMap) {
 	l.log(DEBUG, "json", j)
 }
 
@@ -107,7 +107,7 @@ func (l *Logger) Infof(format string, args ...interface{}) {
 }
 
 // Infoj prints info level log info in a format with provided json map.
-func (l *Logger) Infoj(j map[string]interface{}) {
+func (l *Logger) Infoj(j JSONMap) {
 	l.log(INFO, "json", j)
 }
 
@@ -122,7 +122,7 @@ func (l *Logger) Warnf(format string, args ...interface{}) {
 }
 
 // Warnj prints warn level log info in a format with provided json map.
-func (l *Logger) Warnj(j map[string]interface{}) {
+func (l *Logger) Warnj(j JSONMap) {
 	l.log(WARN, "json", j)
 }
 
@@ -137,7 +137,7 @@ func (l *Logger) Errorf(format string, args ...interface{}) {
 }
 
 // Errorj prints error level log info in a format with provided json map.
-func (l *Logger) Errorj(j map[string]interface{}) {
+func (l *Logger) Errorj(j JSONMap) {
 	l.log(ERROR, "json", j)
 }
 
@@ -154,7 +154,7 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 }
 
 // Fatalj prints fatal level log info in a format with provided json map.
-func (l *Logger) Fatalj(j map[string]interface{}) {
+func (l *Logger) Fatalj(j JSONMap) {
 	l.log(FATAL, "json", j)
 }
 
@@ -181,11 +181,11 @@ func (l *Logger) log(lvl LoggerLevel, format string, args ...interface{}) {
 			message = fmt.Sprintf(format, args...)
 		}
 
-		if lvl >= ERROR {
-			// panic(message)
+		if lvl > ERROR {
+			panic(message)
 		}
 
-		data := make(map[string]interface{})
+		data := make(JSONMap)
 		data["app_name"] = l.air.Config.AppName
 		data["time_rfc3339"] = time.Now().Format(time.RFC3339)
 		data["level"] = l.levels[lvl]

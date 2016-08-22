@@ -28,7 +28,7 @@ type Context struct {
 	Params     map[string]string
 	Handler    HandlerFunc
 	StatusCode int
-	Data       map[string]interface{}
+	Data       JSONMap
 	Air        *Air
 }
 
@@ -39,7 +39,7 @@ func newContext(a *Air) *Context {
 		Params:     make(map[string]string),
 		Handler:    NotFoundHandler,
 		StatusCode: http.StatusOK,
-		Data:       make(map[string]interface{}),
+		Data:       make(JSONMap),
 		Air:        a,
 	}
 }
