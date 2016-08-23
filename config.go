@@ -72,8 +72,9 @@ type Config struct {
 // defaultConfig is the default instance of `Config`.
 var defaultConfig Config
 
-// configJSON is the JSON map that parsing from config file.
-var configJSON JSONMap
+// configs is the JSON map that stored all the configs parsing from
+// config file.
+var configs JSONMap
 
 func init() {
 	defaultConfig = Config{
@@ -90,11 +91,11 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-		err = json.Unmarshal(bytes, &configJSON)
+		err = json.Unmarshal(bytes, &configs)
 		if err != nil {
 			panic(err)
 		}
-		if len(configJSON) == 0 {
+		if len(configs) == 0 {
 			panic(errors.New("Need At Least One App In The Config File " +
 				"Or Remove The Config File"))
 		}
@@ -107,54 +108,45 @@ func init() {
 // appName) if the config file or appName doesn't exist.
 func NewConfig(appName string) *Config {
 	c := defaultConfig
-	if configJSON == nil {
+	if configs == nil {
 		c.AppName = appName
 		return &c
 	}
 
-	if len(configJSON) == 1 {
-		for k, v := range configJSON {
+	if len(configs) == 1 {
+		for k, v := range configs {
 			c.AppName = k
 			c.Data = v.(map[string]interface{})
 		}
-	} else if configJSON[appName] == nil {
+	} else if configs[appName] == nil {
 		panic(errors.New("App \"" + appName + "\" Not Exist"))
 	} else {
 		c.AppName = appName
-		c.Data = configJSON[appName].(map[string]interface{})
+		c.Data = configs[appName].(map[string]interface{})
 	}
 
-	dm, dmok := c.Data["debug_mode"]
-	lf, lfok := c.Data["log_format"]
-	addr, addrok := c.Data["address"]
-	tlscf, tlscfok := c.Data["tls_cert_file"]
-	tlskf, tlskfok := c.Data["tls_key_file"]
-	rt, rtok := c.Data["read_timeout"]
-	wt, wtok := c.Data["write_timeout"]
-	tr, trok := c.Data["templates_root"]
-
-	if dmok {
+	if dm, ok := c.Data["debug_mode"]; ok {
 		c.DebugMode = dm.(bool)
 	}
-	if lfok {
+	if lf, ok := c.Data["log_format"]; ok {
 		c.LogFormat = lf.(string)
 	}
-	if addrok {
+	if addr, ok := c.Data["address"]; ok {
 		c.Address = addr.(string)
 	}
-	if tlscfok {
+	if tlscf, ok := c.Data["tls_cert_file"]; ok {
 		c.TLSCertFile = tlscf.(string)
 	}
-	if tlskfok {
+	if tlskf, ok := c.Data["tls_key_file"]; ok {
 		c.TLSKeyFile = tlskf.(string)
 	}
-	if rtok {
+	if rt, ok := c.Data["read_timeout"]; ok {
 		c.ReadTimeout = time.Duration(rt.(float64)) * time.Second
 	}
-	if wtok {
+	if wt, ok := c.Data["write_timeout"]; ok {
 		c.WriteTimeout = time.Duration(wt.(float64)) * time.Second
 	}
-	if trok {
+	if tr, ok := c.Data["templates_root"]; ok {
 		c.TemplatesRoot = tr.(string)
 	}
 	return &c
