@@ -211,7 +211,7 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 			h = gases[i](h)
 		}
 		return h(c)
-	}, a)
+	})
 	r := route{
 		method:  method,
 		path:    path,

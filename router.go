@@ -56,7 +56,7 @@ func newRouter(a *Air) *router {
 }
 
 // add registers a new route for method and path with matching handler.
-func (r *router) add(method, path string, h HandlerFunc, a *Air) {
+func (r *router) add(method, path string, h HandlerFunc) {
 	// Validate path
 	if path == "" {
 		panic("Air: Path Cannot Be Empty")
@@ -71,7 +71,7 @@ func (r *router) add(method, path string, h HandlerFunc, a *Air) {
 		if path[i] == ':' {
 			j := i + 1
 
-			r.insert(method, path[:i], nil, skind, "", nil, a)
+			r.insert(method, path[:i], nil, skind, "", nil)
 			for ; i < l && path[i] != '/'; i++ {
 			}
 
@@ -80,22 +80,22 @@ func (r *router) add(method, path string, h HandlerFunc, a *Air) {
 			i, l = j, len(path)
 
 			if i == l {
-				r.insert(method, path[:i], h, pkind, ppath, pnames, a)
+				r.insert(method, path[:i], h, pkind, ppath, pnames)
 				return
 			}
-			r.insert(method, path[:i], nil, pkind, ppath, pnames, a)
+			r.insert(method, path[:i], nil, pkind, ppath, pnames)
 		} else if path[i] == '*' {
-			r.insert(method, path[:i], nil, skind, "", nil, a)
+			r.insert(method, path[:i], nil, skind, "", nil)
 			pnames = append(pnames, "_*")
-			r.insert(method, path[:i+1], h, akind, ppath, pnames, a)
+			r.insert(method, path[:i+1], h, akind, ppath, pnames)
 			return
 		}
 	}
 
-	r.insert(method, path, h, skind, ppath, pnames, a)
+	r.insert(method, path, h, skind, ppath, pnames)
 }
 
-func (r *router) insert(method, path string, h HandlerFunc, t kind, ppath string, pnames []string, a *Air) {
+func (r *router) insert(method, path string, h HandlerFunc, t kind, ppath string, pnames []string) {
 	cn := r.tree // Current node as root
 	if cn == nil {
 		panic("Air: Invalid Method")
