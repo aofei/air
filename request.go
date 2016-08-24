@@ -136,15 +136,15 @@ func (r *Request) MultipartForm() (*multipart.Form, error) {
 }
 
 // Cookie returns the named cookie provided in the request.
-func (r *Request) Cookie(name string) (Cookie, error) {
+func (r *Request) Cookie(name string) (*Cookie, error) {
 	c := &fasthttp.Cookie{}
 	b := r.fastCtx.Request.Header.Cookie(name)
 	if b == nil {
-		return Cookie{}, ErrCookieNotFound
+		return nil, ErrCookieNotFound
 	}
 	c.SetKey(name)
 	c.SetValueBytes(b)
-	return Cookie{c}, nil
+	return &Cookie{c}, nil
 }
 
 // Cookies returns the HTTP cookies sent with the request.

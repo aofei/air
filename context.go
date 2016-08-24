@@ -116,7 +116,7 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 
 // Cookie returns the named cookie provided in the request.
 // It is an alias for `Request#Cookie()`.
-func (c *Context) Cookie(name string) (Cookie, error) {
+func (c *Context) Cookie(name string) (*Cookie, error) {
 	return c.Request.Cookie(name)
 }
 
