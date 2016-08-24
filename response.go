@@ -36,13 +36,13 @@ func (r *Response) WriteHeader(code int) {
 }
 
 // Write writes the data to the connection as part of an HTTP reply.
-func (r *Response) Write(b []byte) (n int, err error) {
+func (r *Response) Write(b []byte) (int, error) {
 	if !r.Committed {
 		r.WriteHeader(http.StatusOK)
 	}
-	n, err = r.Writer.Write(b)
+	n, err := r.Writer.Write(b)
 	r.Size += int64(n)
-	return
+	return n, err
 }
 
 // SetCookie adds a "Set-Cookie" header in HTTP response.
