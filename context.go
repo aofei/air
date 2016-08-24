@@ -140,47 +140,47 @@ func (c *Context) Bind(i interface{}) error {
 
 // Render renders a template with `Context#Data` and `Context#Data["template"]`
 // and sends a "text/html" response with `Context#StatusCode`.
-func (c *Context) Render() (err error) {
+func (c *Context) Render() error {
 	t, ok := c.Data["template"]
 	if !ok || reflect.ValueOf(t).Kind() != reflect.String {
 		return errors.New("c.Data[\"template\"] Not Setted")
 	}
 	buf := &bytes.Buffer{}
-	if err = c.Air.renderer.render(buf, t.(string), c); err != nil {
-		return
+	if err := c.Air.renderer.render(buf, t.(string), c); err != nil {
+		return err
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
 	c.Response.WriteHeader(c.StatusCode)
-	_, err = c.Response.Write(buf.Bytes())
-	return
+	_, err := c.Response.Write(buf.Bytes())
+	return err
 }
 
 // HTML sends an HTTP response with `Context#StatusCode` and `Context#Data["html"]`.
-func (c *Context) HTML() (err error) {
+func (c *Context) HTML() error {
 	h, ok := c.Data["html"]
 	if !ok || reflect.ValueOf(h).Kind() != reflect.String {
 		return errors.New("c.Data[\"html\"] Not Setted")
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
 	c.Response.WriteHeader(c.StatusCode)
-	_, err = c.Response.Write([]byte(h.(string)))
-	return
+	_, err := c.Response.Write([]byte(h.(string)))
+	return err
 }
 
 // String sends a string response with `Context#StatusCode` and `Context#Data["string"]`.
-func (c *Context) String() (err error) {
+func (c *Context) String() error {
 	s, ok := c.Data["string"]
 	if !ok || reflect.ValueOf(s).Kind() != reflect.String {
 		return errors.New("c.Data[\"string\"] Not Setted")
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextPlain)
 	c.Response.WriteHeader(c.StatusCode)
-	_, err = c.Response.Write([]byte(s.(string)))
-	return
+	_, err := c.Response.Write([]byte(s.(string)))
+	return err
 }
 
 // JSON sends a JSON response with `Context#StatusCode` and `Context#Data["json"]`.
-func (c *Context) JSON() (err error) {
+func (c *Context) JSON() error {
 	j, ok := c.Data["json"]
 	if !ok {
 		return errors.New("c.Data[\"json\"] Not Setted")
@@ -196,16 +196,16 @@ func (c *Context) JSON() (err error) {
 }
 
 // JSONBlob sends a JSON blob response with `Context#StatusCode`.
-func (c *Context) JSONBlob(b []byte) (err error) {
+func (c *Context) JSONBlob(b []byte) error {
 	c.Response.Header.Set(HeaderContentType, MIMEApplicationJSON)
 	c.Response.WriteHeader(c.StatusCode)
-	_, err = c.Response.Write(b)
-	return
+	_, err := c.Response.Write(b)
+	return err
 }
 
 // JSONP sends a JSONP response with `Context#StatusCode` and `Context#Data["jsonp"]`.
 // It uses `Context#Data["callback"]` to construct the JSONP payload.
-func (c *Context) JSONP() (err error) {
+func (c *Context) JSONP() error {
 	j, jok := c.Data["jsonp"]
 	cb, cbok := c.Data["callback"]
 	if !jok {
@@ -220,17 +220,17 @@ func (c *Context) JSONP() (err error) {
 	c.Response.Header.Set(HeaderContentType, MIMEApplicationJavaScript)
 	c.Response.WriteHeader(c.StatusCode)
 	if _, err = c.Response.Write([]byte(cb.(string) + "(")); err != nil {
-		return
+		return err
 	}
 	if _, err = c.Response.Write(b); err != nil {
-		return
+		return err
 	}
 	_, err = c.Response.Write([]byte(");"))
-	return
+	return err
 }
 
 // XML sends an XML response with `Context#StatusCode` and `Context#Data["xml"]`.
-func (c *Context) XML() (err error) {
+func (c *Context) XML() error {
 	x, ok := c.Data["xml"]
 	if !ok {
 		return errors.New("c.Data[\"xml\"] Not Setted")
@@ -246,14 +246,14 @@ func (c *Context) XML() (err error) {
 }
 
 // XMLBlob sends a XML blob response with `Context#StatusCode`.
-func (c *Context) XMLBlob(b []byte) (err error) {
+func (c *Context) XMLBlob(b []byte) error {
 	c.Response.Header.Set(HeaderContentType, MIMEApplicationXML)
 	c.Response.WriteHeader(c.StatusCode)
-	if _, err = c.Response.Write([]byte(xml.Header)); err != nil {
-		return
+	if _, err := c.Response.Write([]byte(xml.Header)); err != nil {
+		return err
 	}
-	_, err = c.Response.Write(b)
-	return
+	_, err := c.Response.Write(b)
+	return err
 }
 
 // File sends a response with the content of the file.
@@ -291,12 +291,12 @@ func (c *Context) Inline(r io.ReadSeeker, name string) error {
 }
 
 // contentDisposition sends a response from `io.ReaderSeeker` as dispositionType.
-func (c *Context) contentDisposition(r io.ReadSeeker, name, dispositionType string) (err error) {
+func (c *Context) contentDisposition(r io.ReadSeeker, name, dispositionType string) error {
 	c.Response.Header.Set(HeaderContentType, contentTypeByExtension(name))
 	c.Response.Header.Set(HeaderContentDisposition, dispositionType+"; filename="+name)
 	c.Response.WriteHeader(http.StatusOK)
-	_, err = io.Copy(c.Response, r)
-	return
+	_, err := io.Copy(c.Response, r)
+	return err
 }
 
 // NoContent sends a response with no body and a `Context#StatusCode`.
@@ -356,9 +356,10 @@ func (c *Context) reset() {
 // contentTypeByExtension returns the MIME type associated with the file based
 // on its extension. It returns "application/octet-stream" incase MIME type is
 // not found.
-func contentTypeByExtension(name string) (t string) {
-	if t = mime.TypeByExtension(filepath.Ext(name)); t == "" {
+func contentTypeByExtension(name string) string {
+	t := mime.TypeByExtension(filepath.Ext(name))
+	if t == "" {
 		t = MIMEOctetStream
 	}
-	return
+	return t
 }

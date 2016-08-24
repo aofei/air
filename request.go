@@ -101,8 +101,8 @@ func (r *Request) FormValue(name string) string {
 }
 
 // FormParams returns the form parameters.
-func (r *Request) FormParams() (params map[string][]string) {
-	params = make(map[string][]string)
+func (r *Request) FormParams() map[string][]string {
+	params := make(map[string][]string)
 	mf, err := r.fastCtx.Request.MultipartForm()
 
 	if err == fasthttp.ErrNoMultipartForm {
@@ -122,7 +122,7 @@ func (r *Request) FormParams() (params map[string][]string) {
 		}
 	}
 
-	return
+	return params
 }
 
 // FormFile returns the multipart form file for the provided name.
