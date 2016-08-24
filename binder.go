@@ -26,20 +26,20 @@ func newBinder(a *Air) *binder {
 
 // bind binds the HTTP request body into provided type i based on
 // "Content-Type" header.
-func (b *binder) bind(i interface{}, c *Context) (err error) {
+func (b *binder) bind(i interface{}, c *Context) error {
 	req := c.Request
 	if req.Method() == GET {
-		if err = b.bindData(i, c.QueryParams()); err != nil {
+		err := b.bindData(i, c.QueryParams())
+		if err != nil {
 			err = NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		return
+		return err
 	}
 	ctype := req.Header.Get(HeaderContentType)
 	if req.Body() == nil {
-		err = NewHTTPError(http.StatusBadRequest, "Request Body Can't Be Empty")
-		return
+		return NewHTTPError(http.StatusBadRequest, "Request Body Can't Be Empty")
 	}
-	err = ErrUnsupportedMediaType
+	var err error
 	switch {
 	case strings.HasPrefix(ctype, MIMEApplicationJSON):
 		if err = json.NewDecoder(req.Body()).Decode(i); err != nil {
@@ -73,8 +73,10 @@ func (b *binder) bind(i interface{}, c *Context) (err error) {
 		if err = b.bindData(i, req.FormParams()); err != nil {
 			err = NewHTTPError(http.StatusBadRequest, err.Error())
 		}
+	default:
+		err = ErrUnsupportedMediaType
 	}
-	return
+	return err
 }
 
 // bindData binds the data into a type ptr.
