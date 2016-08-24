@@ -280,9 +280,20 @@ func (c *Context) File(file string) error {
 
 // Attachment sends a response from `io.ReaderSeeker` as attachment, prompting
 // client to save the file.
-func (c *Context) Attachment(r io.ReadSeeker, name string) (err error) {
+func (c *Context) Attachment(r io.ReadSeeker, name string) error {
+	return c.contentDisposition(r, name, "attachment")
+}
+
+// Inline sends a response from `io.ReaderSeeker` as inline, opening the
+// file in the browser.
+func (c *Context) Inline(r io.ReadSeeker, name string) error {
+	return c.contentDisposition(r, name, "inline")
+}
+
+// contentDisposition sends a response from `io.ReaderSeeker` as dispositionType.
+func (c *Context) contentDisposition(r io.ReadSeeker, name, dispositionType string) (err error) {
 	c.Response.Header.Set(HeaderContentType, contentTypeByExtension(name))
-	c.Response.Header.Set(HeaderContentDisposition, "attachment; filename="+name)
+	c.Response.Header.Set(HeaderContentDisposition, dispositionType+"; filename="+name)
 	c.Response.WriteHeader(http.StatusOK)
 	_, err = io.Copy(c.Response, r)
 	return
