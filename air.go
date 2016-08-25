@@ -212,7 +212,7 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 		}
 		return h(c)
 	})
-	r := route{
+	r := &route{
 		method:  method,
 		path:    path,
 		handler: name,

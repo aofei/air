@@ -56,8 +56,8 @@ func (s *server) serveHTTP(req *Request, res *Response) {
 	// Gases
 	h := func(*Context) error {
 		method := req.Method()
-		path := req.URI.Path()
-		s.air.router.find(method, path, c)
+		path := req.URI.PathOriginal()
+		s.air.router.route(method, path, c)
 		h := c.Handler
 		for i := len(s.air.gases) - 1; i >= 0; i-- {
 			h = s.air.gases[i](h)
