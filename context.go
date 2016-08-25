@@ -21,15 +21,15 @@ import (
 type Context struct {
 	goContext context.Context
 
-	Request    *Request
-	Response   *Response
-	Path       string
-	ParamNames []string
-	Params     map[string]string
-	Handler    HandlerFunc
-	StatusCode int
-	Data       JSONMap
-	Air        *Air
+	Request      *Request
+	Response     *Response
+	PristinePath string
+	ParamNames   []string
+	Params       map[string]string
+	Handler      HandlerFunc
+	StatusCode   int
+	Data         JSONMap
+	Air          *Air
 }
 
 // newContext returns a new instance of `Context`.
@@ -341,7 +341,7 @@ func (c *Context) reset() {
 	c.goContext = context.Background()
 	c.Request = nil
 	c.Response = nil
-	c.Path = ""
+	c.PristinePath = ""
 	c.ParamNames = c.ParamNames[:0]
 	for k := range c.Params {
 		delete(c.Params, k)
