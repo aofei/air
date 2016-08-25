@@ -1,5 +1,7 @@
 package air
 
+import "fmt"
+
 type (
 	// router is the registry of all registered routes for an `Air` instance for
 	// request matching and URI path parameter parsing.
@@ -66,6 +68,20 @@ func (r *router) add(method, path string, h HandlerFunc) {
 	} else if path[0] != '/' {
 		panic("path must start with /")
 	}
+
+	// Validate route
+	for _, route := range r.routes {
+		if route.method == method {
+			if route.path == path {
+				panic(fmt.Sprintf("route [%s %s] is already registered",
+					path, method))
+			} else if pathWithoutParamNames(route.path) == pathWithoutParamNames(path) {
+				panic(fmt.Sprintf("route [%s %s] is the same as route [%s %s]",
+					method, path, route.method, route.path))
+			}
+		}
+	}
+
 	ppath := path        // Pristine path
 	pnames := []string{} // Param names
 
@@ -316,6 +332,26 @@ End:
 	}
 
 	return
+}
+
+// pathWithoutParamNames returns the path from p without param names.
+func pathWithoutParamNames(p string) string {
+	for i, l := 0, len(p); i < l; i++ {
+		if p[i] == ':' {
+			j := i + 1
+
+			for ; i < l && p[i] != '/'; i++ {
+			}
+
+			p = p[:j] + p[i:]
+			i, l = j, len(p)
+
+			if i == l {
+				break
+			}
+		}
+	}
+	return p
 }
 
 // unescape return a normal string unescaped from s.
