@@ -296,7 +296,7 @@ func (r *router) route(method, path string, context *Context) {
 	}
 
 End:
-	context.Path = cn.pristinePath
+	context.PristinePath = cn.pristinePath
 	context.ParamNames = cn.paramNames
 	context.Handler = cn.handler(method)
 
@@ -314,7 +314,7 @@ End:
 		} else {
 			context.Handler = cn.checkMethodNotAllowed()
 		}
-		context.Path = cn.pristinePath
+		context.PristinePath = cn.pristinePath
 		context.ParamNames = cn.paramNames
 		params[cn.paramNames[len(cn.paramNames)-1]] = ""
 	}
