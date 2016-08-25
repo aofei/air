@@ -28,7 +28,7 @@ func newResponse(a *Air) *Response {
 // WriteHeader sends an HTTP response header with status code.
 func (r *Response) WriteHeader(code int) {
 	if r.Committed {
-		r.air.Logger.Warn("Response Already Committed")
+		r.air.Logger.Warn("response already committed")
 		return
 	}
 	r.fastCtx.SetStatusCode(code)

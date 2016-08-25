@@ -62,10 +62,9 @@ func newRouter(a *Air) *router {
 func (r *router) add(method, path string, h HandlerFunc) {
 	// Validate path
 	if path == "" {
-		panic("Air: Path Cannot Be Empty")
-	}
-	if path[0] != '/' {
-		path = "/" + path
+		panic("path cannot be empty")
+	} else if path[0] != '/' {
+		panic("path must start with /")
 	}
 	ppath := path        // Pristine path
 	pnames := []string{} // Param names
@@ -81,7 +80,7 @@ func (r *router) add(method, path string, h HandlerFunc) {
 			pname := path[j:i]
 			for _, pn := range pnames {
 				if pn == pname {
-					panic("Air: Path Cannot Have Duplicate Param Names")
+					panic("path cannot have duplicate param names")
 				}
 			}
 
@@ -108,9 +107,6 @@ func (r *router) add(method, path string, h HandlerFunc) {
 // insert inserts a new route into the tree of r.
 func (r *router) insert(method, path string, h HandlerFunc, t nodeKind, ppath string, pnames []string) {
 	cn := r.tree // Current node as root
-	if cn == nil {
-		panic("Air: Invalid Method")
-	}
 	search := path
 
 	for {

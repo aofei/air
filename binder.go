@@ -37,7 +37,7 @@ func (b *binder) bind(i interface{}, c *Context) error {
 	}
 	ctype := req.Header.Get(HeaderContentType)
 	if req.Body() == nil {
-		return NewHTTPError(http.StatusBadRequest, "Request Body Can't Be Empty")
+		return NewHTTPError(http.StatusBadRequest, "request body can't be empty")
 	}
 	var err error
 	switch {
@@ -45,11 +45,11 @@ func (b *binder) bind(i interface{}, c *Context) error {
 		if err = json.NewDecoder(req.Body()).Decode(i); err != nil {
 			if ute, ok := err.(*json.UnmarshalTypeError); ok {
 				err = NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-					"Unmarshal Type Error: expected=%v, got=%v, offset=%v",
+					"unmarshal type error: expected=%v, got=%v, offset=%v",
 					ute.Type, ute.Value, ute.Offset))
 			} else if se, ok := err.(*json.SyntaxError); ok {
 				err = NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-					"Syntax Error: offset=%v, error=%v",
+					"syntax error: offset=%v, error=%v",
 					se.Offset, se.Error()))
 			} else {
 				err = NewHTTPError(http.StatusBadRequest, err.Error())
@@ -59,11 +59,11 @@ func (b *binder) bind(i interface{}, c *Context) error {
 		if err = xml.NewDecoder(req.Body()).Decode(i); err != nil {
 			if ute, ok := err.(*xml.UnsupportedTypeError); ok {
 				err = NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-					"Unsupported Type Error: type=%v, error=%v",
+					"unsupported type error: type=%v, error=%v",
 					ute.Type, ute.Error()))
 			} else if se, ok := err.(*xml.SyntaxError); ok {
 				err = NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-					"Syntax Error: line=%v, error=%v",
+					"syntax error: line=%v, error=%v",
 					se.Line, se.Error()))
 			} else {
 				err = NewHTTPError(http.StatusBadRequest, err.Error())
@@ -85,7 +85,7 @@ func (b *binder) bindData(ptr interface{}, data map[string][]string) error {
 	val := reflect.ValueOf(ptr).Elem()
 
 	if typ.Kind() != reflect.Struct {
-		return errors.New("Binding Element Must Be A Struct")
+		return errors.New("binding element must be a struct")
 	}
 
 	for i := 0; i < typ.NumField(); i++ {
@@ -158,7 +158,7 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 	case reflect.String:
 		structField.SetString(val)
 	default:
-		return errors.New("Unknown Type")
+		return errors.New("unknown type")
 	}
 	return nil
 }
