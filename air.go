@@ -122,8 +122,8 @@ var (
 	ErrServiceUnavailable  = NewHTTPError(http.StatusServiceUnavailable)  // 503
 	ErrGatewayTimeout      = NewHTTPError(http.StatusGatewayTimeout)      // 504
 
-	ErrInvalidRedirectCode = errors.New("Invalid Redirect Status Code")
-	ErrCookieNotFound      = errors.New("Cookie Not Found")
+	ErrInvalidRedirectCode = errors.New("invalid redirect status code")
+	ErrCookieNotFound      = errors.New("cookie not found")
 )
 
 // HTTP error handlers
@@ -255,12 +255,12 @@ func (a *Air) Run() {
 	a.renderer.parseTemplates()
 	if a.Config.DebugMode {
 		a.Logger.Level = DEBUG
-		a.Logger.Debug("Running In Debug Mode")
+		a.Logger.Debug("running in debug mode")
 	}
 
 	s := newServer(a)
 	if err := s.start(); err != nil {
-		panic(fmt.Sprintf("Air: %v", err))
+		panic(fmt.Sprintf("%v", err))
 	}
 }
 

@@ -144,7 +144,7 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 					return err
 				}
 				if !validateCSRFToken(token, clientToken) {
-					return air.NewHTTPError(http.StatusForbidden, "CSRF Token Is Invalid")
+					return air.NewHTTPError(http.StatusForbidden, "csrf ioken is invalid")
 				}
 			}
 
@@ -188,7 +188,7 @@ func csrfTokenFromForm(param string) csrfTokenExtractor {
 	return func(c *air.Context) (string, error) {
 		token := c.FormValue(param)
 		if token == "" {
-			return "", errors.New("Empty CSRF Token In Form Param")
+			return "", errors.New("empty csrf token in form param")
 		}
 		return token, nil
 	}
@@ -200,7 +200,7 @@ func csrfTokenFromQuery(param string) csrfTokenExtractor {
 	return func(c *air.Context) (string, error) {
 		token := c.QueryParam(param)
 		if token == "" {
-			return "", errors.New("Empty CSRF Token In Query Param")
+			return "", errors.New("empty csrf token in query param")
 		}
 		return token, nil
 	}

@@ -67,7 +67,7 @@ func (c *JWTConfig) fill() {
 		c.Skipper = DefaultJWTConfig.Skipper
 	}
 	if c.SigningKey == nil {
-		panic("Air: JWT Gas Requires Signing Key")
+		panic("jwt gas requires signing key")
 	}
 	if c.SigningMethod == "" {
 		c.SigningMethod = DefaultJWTConfig.SigningMethod
@@ -123,7 +123,7 @@ func JWTWithConfig(config JWTConfig) air.GasFunc {
 			token, err := jwt.ParseWithClaims(auth, config.Claims, func(t *jwt.Token) (interface{}, error) {
 				// Check the signing method
 				if t.Method.Alg() != config.SigningMethod {
-					return nil, fmt.Errorf("Unexpected JWT Signing Method=%v", t.Header["alg"])
+					return nil, fmt.Errorf("unexpected jwt signing method=%v", t.Header["alg"])
 				}
 				return config.SigningKey, nil
 
@@ -147,7 +147,7 @@ func jwtFromHeader(header string) jwtExtractor {
 		if len(auth) > l+1 && auth[:l] == bearer {
 			return auth[l+1:], nil
 		}
-		return "", errors.New("Empty Or Invalid JWT In Authorization Header")
+		return "", errors.New("empty or invalid jwt in authorization header")
 	}
 }
 
@@ -157,7 +157,7 @@ func jwtFromQuery(param string) jwtExtractor {
 	return func(c *air.Context) (string, error) {
 		token := c.QueryParam(param)
 		if token == "" {
-			return "", errors.New("Empty JWT In Query Param")
+			return "", errors.New("empty jwt in query param")
 		}
 		return token, nil
 	}

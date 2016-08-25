@@ -96,8 +96,8 @@ func init() {
 			panic(err)
 		}
 		if len(configs) == 0 {
-			panic(errors.New("Need At Least One App In The Config File " +
-				"Or Remove The Config File"))
+			panic(errors.New("need at least one app in the config file " +
+				"or remove the config file"))
 		}
 	}
 }
@@ -119,7 +119,7 @@ func NewConfig(appName string) *Config {
 			c.Data = v.(map[string]interface{})
 		}
 	} else if configs[appName] == nil {
-		panic(errors.New("App \"" + appName + "\" Not Exist"))
+		panic(errors.New("app \"" + appName + "\" not exist"))
 	} else {
 		c.AppName = appName
 		c.Data = configs[appName].(map[string]interface{})
