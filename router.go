@@ -1,6 +1,9 @@
 package air
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type (
 	// router is the registry of all registered routes for an `Air` instance for
@@ -67,6 +70,21 @@ func (r *router) add(method, path string, h HandlerFunc) {
 		panic("path cannot be empty")
 	} else if path[0] != '/' {
 		panic("path must start with /")
+	} else if strings.Count(path, ":") > 1 {
+		ps := strings.SplitAfter(path, "/")
+		for _, p := range ps {
+			if strings.Count(p, ":") > 1 {
+				panic("adjacent params in the path must be separated by /")
+			}
+		}
+	} else if strings.Contains(path, "*") {
+		if strings.Count(path, "*") > 1 {
+			panic("only one * is allowed in the path")
+		} else if path[len(path)-1] != '*' {
+			panic("* can only appear at the end of the path")
+		} else if strings.Contains(path[strings.LastIndex(path, "/"):], ":") {
+			panic("adjacent param and * in the path must be separated by /")
+		}
 	}
 
 	// Validate route
