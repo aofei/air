@@ -17,8 +17,15 @@ func (u *URI) RequestURI() string {
 	return string(u.fastURI.RequestURI())
 }
 
-// Path returns the request URI path.
+// Path returns the request URI path. The returned path is
+// always urldecoded and normalized.
 func (u *URI) Path() string {
+	return string(u.fastURI.Path())
+}
+
+// PathOriginal returns the original request URI path. The
+// returned value is valid until the next URI method call.
+func (u *URI) PathOriginal() string {
 	return string(u.fastURI.PathOriginal())
 }
 
