@@ -24,7 +24,7 @@ type LoggerConfig struct {
 	// - time_rfc3339
 	// - id (Request ID - Not implemented)
 	// - remote_ip
-	// - uri
+	// - request_uri
 	// - host
 	// - method
 	// - path
@@ -50,7 +50,7 @@ type LoggerConfig struct {
 var DefaultLoggerConfig = LoggerConfig{
 	Skipper: defaultSkipper,
 	Format: `{"time":"{{.time_rfc3339}}","remote_ip":"{{.remote_ip}}",` +
-		`"method":"{{.method}}","uri":"{{.uri}}","status":{{.status}},` +
+		`"method":"{{.method}}","path":"{{.path}}","status":{{.status}},` +
 		`"latency":{{.latency}},"latency_human":"{{.latency_human}}",` +
 		`"bytes_in":{{.bytes_in}},"bytes_out":{{.bytes_out}}}` + "\n",
 	Output: os.Stdout,
@@ -108,7 +108,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 			data["time_rfc3339"] = time.Now().Format(time.RFC3339)
 			data["remote_ip"] = req.RemoteIP()
 			data["host"] = req.Host()
-			data["uri"] = req.RequestURI()
+			data["request_uri"] = req.RequestURI()
 			data["method"] = req.Method()
 			p := req.URI.Path()
 			if p == "" {
