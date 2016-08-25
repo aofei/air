@@ -143,7 +143,7 @@ func (c *Context) Bind(i interface{}) error {
 func (c *Context) Render() error {
 	t, ok := c.Data["template"]
 	if !ok || reflect.ValueOf(t).Kind() != reflect.String {
-		return errors.New("c.Data[\"template\"] Not Setted")
+		return errors.New("c.Data[\"template\"] not setted")
 	}
 	buf := &bytes.Buffer{}
 	if err := c.Air.renderer.render(buf, t.(string), c); err != nil {
@@ -159,7 +159,7 @@ func (c *Context) Render() error {
 func (c *Context) HTML() error {
 	h, ok := c.Data["html"]
 	if !ok || reflect.ValueOf(h).Kind() != reflect.String {
-		return errors.New("c.Data[\"html\"] Not Setted")
+		return errors.New("c.Data[\"html\"] not setted")
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
 	c.Response.WriteHeader(c.StatusCode)
@@ -171,7 +171,7 @@ func (c *Context) HTML() error {
 func (c *Context) String() error {
 	s, ok := c.Data["string"]
 	if !ok || reflect.ValueOf(s).Kind() != reflect.String {
-		return errors.New("c.Data[\"string\"] Not Setted")
+		return errors.New("c.Data[\"string\"] not setted")
 	}
 	c.Response.Header.Set(HeaderContentType, MIMETextPlain)
 	c.Response.WriteHeader(c.StatusCode)
@@ -183,7 +183,7 @@ func (c *Context) String() error {
 func (c *Context) JSON() error {
 	j, ok := c.Data["json"]
 	if !ok {
-		return errors.New("c.Data[\"json\"] Not Setted")
+		return errors.New("c.Data[\"json\"] not setted")
 	}
 	b, err := json.Marshal(j)
 	if c.Air.Config.DebugMode {
@@ -209,9 +209,9 @@ func (c *Context) JSONP() error {
 	j, jok := c.Data["jsonp"]
 	cb, cbok := c.Data["callback"]
 	if !jok {
-		return errors.New("c.Data[\"jsonp\"] Not Setted")
+		return errors.New("c.Data[\"jsonp\"] not setted")
 	} else if !cbok || reflect.ValueOf(cb).Kind() != reflect.String {
-		return errors.New("c.Data[\"callback\"] Not Setted")
+		return errors.New("c.Data[\"callback\"] not setted")
 	}
 	b, err := json.Marshal(j)
 	if err != nil {
@@ -233,7 +233,7 @@ func (c *Context) JSONP() error {
 func (c *Context) XML() error {
 	x, ok := c.Data["xml"]
 	if !ok {
-		return errors.New("c.Data[\"xml\"] Not Setted")
+		return errors.New("c.Data[\"xml\"] not setted")
 	}
 	b, err := xml.Marshal(x)
 	if c.Air.Config.DebugMode {

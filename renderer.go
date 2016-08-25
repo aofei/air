@@ -116,9 +116,9 @@ const (
 
 // Template func error
 var (
-	errBadComparisonType = errors.New("Invalid Type For Comparison")
-	errBadComparison     = errors.New("Incompatible Types For Comparison")
-	errNoComparison      = errors.New("Missing Argument For Comparison")
+	errBadComparisonType = errors.New("invalid type for comparison")
+	errBadComparison     = errors.New("incompatible types for comparison")
+	errNoComparison      = errors.New("missing argument for comparison")
 )
 
 // strlen returns the number of characters in s.
@@ -231,7 +231,7 @@ func eq(arg1 interface{}, arg2 ...interface{}) (bool, error) {
 		case uintKind:
 			truth = v1.Uint() == v2.Uint()
 		default:
-			panic("Invalid Kind")
+			panic("invalid kind")
 		}
 		if truth {
 			return true, nil
@@ -275,7 +275,7 @@ func lt(arg1, arg2 interface{}) (bool, error) {
 	case uintKind:
 		truth = v1.Uint() < v2.Uint()
 	default:
-		panic("Invalid Kind")
+		panic("invalid kind")
 	}
 	return truth, nil
 }
