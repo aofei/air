@@ -74,7 +74,7 @@ func (r *router) add(method, path string, h HandlerFunc) {
 		if route.method == method {
 			if route.path == path {
 				panic(fmt.Sprintf("route [%s %s] is already registered",
-					path, method))
+					method, path))
 			} else if pathWithoutParamNames(route.path) == pathWithoutParamNames(path) {
 				panic(fmt.Sprintf("route [%s %s] is the same as route [%s %s]",
 					method, path, route.method, route.path))
