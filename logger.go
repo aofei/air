@@ -33,12 +33,12 @@ type (
 
 // Logger levels
 const (
-	OFF LoggerLevel = iota
-	DEBUG
+	DEBUG LoggerLevel = iota
 	INFO
 	WARN
 	ERROR
 	FATAL
+	OFF
 )
 
 // NewLogger returns an new instance of `Logger`.
@@ -181,7 +181,7 @@ func (l *Logger) log(lvl LoggerLevel, format string, args ...interface{}) {
 			message = fmt.Sprintf(format, args...)
 		}
 
-		if lvl > ERROR {
+		if lvl == FATAL {
 			panic(message)
 		}
 
