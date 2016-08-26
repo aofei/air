@@ -2,7 +2,7 @@ package air
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -96,8 +96,7 @@ func init() {
 			panic(err)
 		}
 		if len(configs) == 0 {
-			panic(errors.New("need at least one app in the config file " +
-				"or remove the config file"))
+			panic("need at least one app in the config file or remove the config file")
 		}
 	}
 }
@@ -119,7 +118,7 @@ func NewConfig(appName string) *Config {
 			c.Data = v.(map[string]interface{})
 		}
 	} else if configs[appName] == nil {
-		panic(errors.New("app \"" + appName + "\" not exist"))
+		panic(fmt.Sprintf("app %s does not exist in the config file", appName))
 	} else {
 		c.AppName = appName
 		c.Data = configs[appName].(map[string]interface{})

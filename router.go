@@ -71,19 +71,19 @@ func (r *router) add(method, path string, h HandlerFunc) {
 	} else if path[0] != '/' {
 		panic("path must start with /")
 	} else if strings.Count(path, ":") > 1 {
-		ps := strings.SplitAfter(path, "/")
+		ps := strings.Split(path, "/")
 		for _, p := range ps {
 			if strings.Count(p, ":") > 1 {
-				panic("adjacent params in the path must be separated by /")
+				panic("adjacent params in a path must be separated by /")
 			}
 		}
 	} else if strings.Contains(path, "*") {
 		if strings.Count(path, "*") > 1 {
-			panic("only one * is allowed in the path")
+			panic("only one * is allowed in a path")
 		} else if path[len(path)-1] != '*' {
-			panic("* can only appear at the end of the path")
+			panic("* can only appear at the end of a path")
 		} else if strings.Contains(path[strings.LastIndex(path, "/"):], ":") {
-			panic("adjacent param and * in the path must be separated by /")
+			panic("adjacent param and * in a path must be separated by /")
 		}
 	}
 
@@ -94,7 +94,7 @@ func (r *router) add(method, path string, h HandlerFunc) {
 				panic(fmt.Sprintf("route [%s %s] is already registered",
 					method, path))
 			} else if pathWithoutParamNames(route.path) == pathWithoutParamNames(path) {
-				panic(fmt.Sprintf("route [%s %s] is the same as route [%s %s]",
+				panic(fmt.Sprintf("route [%s %s] and [%s %s] are ambiguous",
 					method, path, route.method, route.path))
 			}
 		}
@@ -114,7 +114,7 @@ func (r *router) add(method, path string, h HandlerFunc) {
 			pname := path[j:i]
 			for _, pn := range pnames {
 				if pn == pname {
-					panic("path cannot have duplicate param names")
+					panic("a path cannot have duplicate param names")
 				}
 			}
 

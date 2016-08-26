@@ -260,7 +260,7 @@ func (a *Air) Run() {
 
 	s := newServer(a)
 	if err := s.start(); err != nil {
-		panic(fmt.Sprintf("%v", err))
+		panic(err)
 	}
 }
 
