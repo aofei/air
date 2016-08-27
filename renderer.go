@@ -1,14 +1,11 @@
 package air
 
 import (
-	"errors"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
-	"regexp"
-	"strings"
 	"time"
 )
 
@@ -28,9 +25,7 @@ func init() {
 
 	tfm["strlen"] = strlen
 	tfm["substr"] = substr
-	tfm["str2html"] = str2html
-	tfm["html2str"] = html2str
-	tfm["datefmt"] = datefmt
+	tfm["timefmt"] = timefmt
 	tfm["eq"] = eq
 	tfm["ne"] = ne
 	tfm["lt"] = lt
@@ -97,216 +92,77 @@ func (r *renderer) parseTemplates() {
 	}
 }
 
-// render renders a "text/html" response by using `template.Template`
+// render renders a "text/html" response by using `template.Template`.
 func (r *renderer) render(wr io.Writer, templateName string, c *Context) error {
 	return r.goTemplate.ExecuteTemplate(wr, templateName, c.Data)
 }
 
-// Basic type kind
-type typeKind int
-
-const (
-	invalidKind typeKind = iota
-	intKind
-	uintKind
-	floatKind
-	complexKind
-	boolKind
-	stringKind
-)
-
-// Template func error
-var (
-	errBadComparisonType = errors.New("invalid type for comparison")
-	errBadComparison     = errors.New("incompatible types for comparison")
-	errNoComparison      = errors.New("missing argument for comparison")
-)
-
-// strlen returns the number of characters in s.
+// strlen returns the number of char in the s.
 func strlen(s string) int {
 	return len([]rune(s))
 }
 
-// substr returns the substring from start to length.
-func substr(s string, start, length int) string {
-	bt := []rune(s)
-	if start < 0 {
-		start = 0
-	}
-	if start > len(bt) {
-		start = start % len(bt)
-	}
-	var end int
-	if (start + length) > (len(bt) - 1) {
-		end = len(bt)
-	} else {
-		end = start + length
-	}
-	return string(bt[start:end])
+// substr returns the substring consisting of the chars of the s starting
+// at index i and continuing up to, but not including, the char at index j.
+func substr(s string, i, j int) string {
+	rs := []rune(s)
+	return string(rs[i:j])
 }
 
-// html2str returns escaping text convert from html.
-func html2str(html string) string {
-	src := string(html)
-
-	re, _ := regexp.Compile("\\<[\\S\\s]+?\\>")
-	src = re.ReplaceAllStringFunc(src, strings.ToLower)
-
-	//remove STYLE
-	re, _ = regexp.Compile("\\<style[\\S\\s]+?\\</style\\>")
-	src = re.ReplaceAllString(src, "")
-
-	//remove SCRIPT
-	re, _ = regexp.Compile("\\<script[\\S\\s]+?\\</script\\>")
-	src = re.ReplaceAllString(src, "")
-
-	re, _ = regexp.Compile("\\<[\\S\\s]+?\\>")
-	src = re.ReplaceAllString(src, "\n")
-
-	re, _ = regexp.Compile("\\s{2,}")
-	src = re.ReplaceAllString(src, "\n")
-
-	return strings.TrimSpace(src)
-}
-
-// str2html returns the `template.HTML` convert from raw.
-func str2html(raw string) template.HTML {
-	return template.HTML(raw)
-}
-
-// datefmt takes a time and a layout string and returns a string with the formatted date.
-func datefmt(t time.Time, layout string) string {
+// timefmt returns a textual representation of the time value formatted
+// according to layout.
+func timefmt(t time.Time, layout string) string {
 	return t.Format(layout)
 }
 
-// basicKind returns a basic type kind with a provided `reflect.Value`.
-func basicKind(v reflect.Value) (typeKind, error) {
-	switch v.Kind() {
-	case reflect.Bool:
-		return boolKind, nil
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return intKind, nil
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return uintKind, nil
-	case reflect.Float32, reflect.Float64:
-		return floatKind, nil
-	case reflect.Complex64, reflect.Complex128:
-		return complexKind, nil
-	case reflect.String:
-		return stringKind, nil
+// eq reports whether the v is equal to one of the ovs.
+// It means v == v1 || v == v2 || ...
+func eq(v interface{}, ovs ...interface{}) bool {
+	for _, ov := range ovs {
+		if ov == v {
+			return true
+		}
 	}
-	return invalidKind, errBadComparisonType
+	return false
 }
 
-// eq evaluates the comparison a == b || a == c || ...
-func eq(arg1 interface{}, arg2 ...interface{}) (bool, error) {
-	v1 := reflect.ValueOf(arg1)
-	k1, err := basicKind(v1)
-	if err != nil {
-		return false, err
-	}
-	if len(arg2) == 0 {
-		return false, errNoComparison
-	}
-	for _, arg := range arg2 {
-		v2 := reflect.ValueOf(arg)
-		k2, err := basicKind(v2)
-		if err != nil {
-			return false, err
-		}
-		if k1 != k2 {
-			return false, errBadComparison
-		}
-		truth := false
-		switch k1 {
-		case boolKind:
-			truth = v1.Bool() == v2.Bool()
-		case complexKind:
-			truth = v1.Complex() == v2.Complex()
-		case floatKind:
-			truth = v1.Float() == v2.Float()
-		case intKind:
-			truth = v1.Int() == v2.Int()
-		case stringKind:
-			truth = v1.String() == v2.String()
-		case uintKind:
-			truth = v1.Uint() == v2.Uint()
-		default:
-			panic("invalid kind")
-		}
-		if truth {
-			return true, nil
-		}
-	}
-	return false, nil
+// ne reports whether the v is not equal to any of the ovs.
+// It means v != v1 && v != v2 && ...
+func ne(v interface{}, ovs ...interface{}) bool {
+	return !eq(v, ovs...)
 }
 
-// ne evaluates the comparison a != b && a != c && ...
-func ne(arg1 interface{}, arg2 ...interface{}) (bool, error) {
-	// != is the inverse of ==.
-	equal, err := eq(arg1, arg2)
-	return !equal, err
-}
-
-// lt evaluates the comparison a < b.
-func lt(arg1, arg2 interface{}) (bool, error) {
-	v1 := reflect.ValueOf(arg1)
-	k1, err := basicKind(v1)
-	if err != nil {
-		return false, err
-	}
-	v2 := reflect.ValueOf(arg2)
-	k2, err := basicKind(v2)
-	if err != nil {
-		return false, err
-	}
-	if k1 != k2 {
-		return false, errBadComparison
-	}
-	truth := false
-	switch k1 {
-	case boolKind, complexKind:
-		return false, errBadComparisonType
-	case floatKind:
-		truth = v1.Float() < v2.Float()
-	case intKind:
-		truth = v1.Int() < v2.Int()
-	case stringKind:
-		truth = v1.String() < v2.String()
-	case uintKind:
-		truth = v1.Uint() < v2.Uint()
+// lt reports whether the a is less than the b.
+// It means a < b.
+func lt(a, b interface{}) bool {
+	switch a.(type) {
+	case int, int8, int16, int32, int64:
+		return reflect.ValueOf(a).Int() < reflect.ValueOf(b).Int()
+	case uint, uint8, uint16, uint32, uint64, uintptr:
+		return reflect.ValueOf(a).Uint() < reflect.ValueOf(b).Uint()
+	case float32, float64:
+		return reflect.ValueOf(a).Float() < reflect.ValueOf(b).Float()
+	case string:
+		return a.(string) < b.(string)
 	default:
 		panic("invalid kind")
 	}
-	return truth, nil
 }
 
-// le evaluates the comparison <= b.
-func le(arg1, arg2 interface{}) (bool, error) {
-	// <= is < or ==.
-	lessThan, err := lt(arg1, arg2)
-	if lessThan || err != nil {
-		return lessThan, err
-	}
-	return eq(arg1, arg2)
+// le reports whether the a is less than or equal to the b.
+// It means a <= b.
+func le(a, b interface{}) bool {
+	return lt(a, b) || eq(a, b)
 }
 
-// gt evaluates the comparison a > b.
-func gt(arg1, arg2 interface{}) (bool, error) {
-	// > is the inverse of <=.
-	lessOrEqual, err := le(arg1, arg2)
-	if err != nil {
-		return false, err
-	}
-	return !lessOrEqual, nil
+// gt reports whether the a is greater than the b.
+// It means a > b.
+func gt(a, b interface{}) bool {
+	return !le(a, b)
 }
 
-// ge evaluates the comparison a >= b.
-func ge(arg1, arg2 interface{}) (bool, error) {
-	// >= is the inverse of <.
-	lessThan, err := lt(arg1, arg2)
-	if err != nil {
-		return false, err
-	}
-	return !lessThan, nil
+// ge reports whether the a is greater than or equal to the b.
+// It means a >= b.
+func ge(a, b interface{}) bool {
+	return lt(a, b)
 }
