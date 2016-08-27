@@ -67,9 +67,8 @@ func newRenderer(a *Air) *renderer {
 // "index.html", "login.html", "register.html",
 // "parts/header.html", "parts/footer.html".
 func (r *renderer) parseTemplates() {
-	replace := strings.NewReplacer("\\", "/")
-	tp := strings.TrimRight(replace.Replace(r.air.Config.TemplatesRoot), "/")
-	filenames, err := filepath.Glob(tp + "/*/*.html")
+	tr := filepath.Clean(r.air.Config.TemplatesRoot)
+	filenames, err := filepath.Glob(tr + "/*/*.html")
 	if err != nil {
 		panic(err)
 	}
@@ -78,8 +77,10 @@ func (r *renderer) parseTemplates() {
 		if err != nil {
 			panic(err)
 		}
-		s := string(b)
-		name := filename[len(tp)+1:]
+		name := filepath.ToSlash(filename[len(tr):])
+		if name[0] == '/' {
+			name = name[1:]
+		}
 		var tmpl *template.Template
 		if r.goTemplate == nil {
 			r.goTemplate = template.New(name).Funcs(r.templateFuncMap)
@@ -89,7 +90,7 @@ func (r *renderer) parseTemplates() {
 		} else {
 			tmpl = r.goTemplate.New(name)
 		}
-		_, err = tmpl.Parse(s)
+		_, err = tmpl.Parse(string(b))
 		if err != nil {
 			panic(err)
 		}
