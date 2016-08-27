@@ -107,23 +107,29 @@ func init() {
 // appName) if the config file or appName doesn't exist.
 func NewConfig(appName string) *Config {
 	c := defaultConfig
-	if configs == nil {
+	switch {
+	case configs == nil:
 		c.AppName = appName
-		return &c
-	}
-
-	if len(configs) == 1 {
+	case len(configs) == 1:
 		for k, v := range configs {
 			c.AppName = k
 			c.Data = v.(map[string]interface{})
+			c.fill()
 		}
-	} else if configs[appName] == nil {
+	case configs[appName] == nil:
 		panic(fmt.Sprintf("app %s does not exist in the config file", appName))
-	} else {
+	default:
 		c.AppName = appName
 		c.Data = configs[appName].(map[string]interface{})
+		c.fill()
 	}
+	return &c
+}
 
+// fill fills field's value from field `Data` of c. It fills field's
+// value from defaultConfig if target value in `Data` of c does not
+// exist.
+func (c *Config) fill() {
 	if dm, ok := c.Data["debug_mode"]; ok {
 		c.DebugMode = dm.(bool)
 	}
@@ -148,5 +154,4 @@ func NewConfig(appName string) *Config {
 	if tr, ok := c.Data["templates_root"]; ok {
 		c.TemplatesRoot = tr.(string)
 	}
-	return &c
 }
