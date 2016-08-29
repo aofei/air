@@ -29,17 +29,18 @@ type (
 		// Optional. Default value "user".
 		ContextKey string `json:"context_key"`
 
+		// Claims are extendable claims data defining token content.
+		// Optional. Default value jwt.MapClaims
+		Claims jwt.Claims
+
 		// TokenLookup is a string in the form of "<source>:<name>" that is used
 		// to extract token from the request.
 		// Optional. Default value "header:Authorization".
 		// Possible values:
 		// - "header:<name>"
 		// - "query:<name>"
+		// - "cookie:<name>"
 		TokenLookup string `json:"token_lookup"`
-
-		// Claims are extendable claims data defining token content.
-		// Optional. Default value jwt.MapClaims
-		Claims jwt.Claims
 	}
 
 	jwtExtractor func(*air.Context) (string, error)
@@ -57,8 +58,8 @@ var DefaultJWTConfig = JWTConfig{
 	Skipper:       defaultSkipper,
 	SigningMethod: AlgorithmHS256,
 	ContextKey:    "user",
-	TokenLookup:   "header:" + air.HeaderAuthorization,
 	Claims:        jwt.MapClaims{},
+	TokenLookup:   "header:" + air.HeaderAuthorization,
 }
 
 // fill keeps all the fields of `JWTConfig` have value.
@@ -75,21 +76,22 @@ func (c *JWTConfig) fill() {
 	if c.ContextKey == "" {
 		c.ContextKey = DefaultJWTConfig.ContextKey
 	}
-	if c.TokenLookup == "" {
-		c.TokenLookup = DefaultJWTConfig.TokenLookup
-	}
 	if c.Claims == nil {
 		c.Claims = DefaultJWTConfig.Claims
+	}
+	if c.TokenLookup == "" {
+		c.TokenLookup = DefaultJWTConfig.TokenLookup
 	}
 }
 
 // JWT returns a JSON Web Token (JWT) auth gas.
 //
 // For valid token, it sets the user in context and calls next handler.
-// For invalid token, it sends "401 - Unauthorized" response.
-// For empty or invalid `Authorization` header, it sends "400 - Bad Request".
+// For invalid token, it returns "401 - Unauthorized" error.
+// For empty token, it returns "400 - Bad Request" error.
 //
 // See: https://jwt.io/introduction
+// See `JWTConfig.TokenLookup`
 func JWT(key []byte) air.GasFunc {
 	c := DefaultJWTConfig
 	c.SigningKey = key
@@ -108,6 +110,8 @@ func JWTWithConfig(config JWTConfig) air.GasFunc {
 	switch parts[0] {
 	case "query":
 		extractor = jwtFromQuery(parts[1])
+	case "cookie":
+		extractor = jwtFromCookie(parts[1])
 	}
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
@@ -138,8 +142,7 @@ func JWTWithConfig(config JWTConfig) air.GasFunc {
 	}
 }
 
-// jwtFromHeader returns a `jwtExtractor` that extracts token from the provided
-// request header.
+// jwtFromHeader returns a `jwtExtractor` that extracts token from request header.
 func jwtFromHeader(header string) jwtExtractor {
 	return func(c *air.Context) (string, error) {
 		auth := c.Request.Header.Get(header)
@@ -147,18 +150,28 @@ func jwtFromHeader(header string) jwtExtractor {
 		if len(auth) > l+1 && auth[:l] == bearer {
 			return auth[l+1:], nil
 		}
-		return "", errors.New("empty or invalid jwt in authorization header")
+		return "", errors.New("empty or invalid jwt in request header")
 	}
 }
 
-// jwtFromQuery returns a `jwtExtractor` that extracts token from the provided query
-// parameter.
+// jwtFromQuery returns a `jwtExtractor` that extracts token from query string.
 func jwtFromQuery(param string) jwtExtractor {
 	return func(c *air.Context) (string, error) {
 		token := c.QueryParam(param)
 		if token == "" {
-			return "", errors.New("empty jwt in query param")
+			return "", errors.New("empty jwt in query string")
 		}
 		return token, nil
+	}
+}
+
+// jwtFromCookie returns a `jwtExtractor` that extracts token from named cookie.
+func jwtFromCookie(name string) jwtExtractor {
+	return func(c *air.Context) (string, error) {
+		cookie, err := c.Cookie(name)
+		if err != nil {
+			return "", errors.New("empty jwt in cookie")
+		}
+		return cookie.Value(), nil
 	}
 }
