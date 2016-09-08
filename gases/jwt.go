@@ -77,7 +77,7 @@ func (c *JWTConfig) fill() {
 		c.ContextKey = DefaultJWTConfig.ContextKey
 	}
 	if c.Claims == nil {
-		c.Claims = DefaultJWTConfig.Claims
+		c.Claims = jwt.MapClaims{}
 	}
 	if c.TokenLookup == "" {
 		c.TokenLookup = DefaultJWTConfig.TokenLookup
@@ -95,6 +95,7 @@ func (c *JWTConfig) fill() {
 func JWT(key []byte) air.GasFunc {
 	c := DefaultJWTConfig
 	c.SigningKey = key
+	c.Claims = jwt.MapClaims{}
 	return JWTWithConfig(c)
 }
 
