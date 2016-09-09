@@ -130,8 +130,9 @@ func init() {
 
 // NewConfig returns a new instance of `Config` with a appName by parsing
 // the config file that in the rumtime directory named "config.json".
+//
 // NewConfig returns the defaultConfig(field "AppName" be setted to provided
-// appName) if the config file or appName doesn't exist.
+// appName) if the config file doesn't exist.
 func NewConfig(appName string) *Config {
 	c := defaultConfig
 	switch {
@@ -141,22 +142,20 @@ func NewConfig(appName string) *Config {
 		for k, v := range configs {
 			c.AppName = k
 			c.Data = v.(map[string]interface{})
-			c.fill()
+			c.fillData()
 		}
 	case configs[appName] == nil:
 		panic(fmt.Sprintf("app %s does not exist in the config file", appName))
 	default:
 		c.AppName = appName
 		c.Data = configs[appName].(map[string]interface{})
-		c.fill()
+		c.fillData()
 	}
 	return &c
 }
 
-// fill fills field's value from field `Data` of c. It fills field's
-// value from defaultConfig if target value in `Data` of c does not
-// exist.
-func (c *Config) fill() {
+// fillData fills field's value from field `Data` of c.
+func (c *Config) fillData() {
 	if dm, ok := c.Data["debug_mode"]; ok {
 		c.DebugMode = dm.(bool)
 	}
