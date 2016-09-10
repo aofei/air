@@ -197,35 +197,39 @@ func (c *Context) JSON() error {
 
 // JSONBlob sends a JSON blob response with `Context#StatusCode`.
 func (c *Context) JSONBlob(b []byte) error {
-	c.Response.Header.Set(HeaderContentType, MIMEApplicationJSON)
-	c.Response.WriteHeader(c.StatusCode)
-	_, err := c.Response.Write(b)
-	return err
+	return c.Blob(MIMEApplicationJSON, b)
 }
 
 // JSONP sends a JSONP response with `Context#StatusCode` and `Context#Data["jsonp"]`.
 // It uses `Context#Data["callback"]` to construct the JSONP payload.
 func (c *Context) JSONP() error {
 	j, jok := c.Data["jsonp"]
-	cb, cbok := c.Data["callback"]
 	if !jok {
 		return errors.New("c.Data[\"jsonp\"] not setted")
-	} else if !cbok || reflect.ValueOf(cb).Kind() != reflect.String {
-		return errors.New("c.Data[\"callback\"] not setted")
 	}
 	b, err := json.Marshal(j)
 	if err != nil {
 		return err
 	}
+	return c.JSONPBlob(b)
+}
+
+// JSONPBlob sends a JSONP blob response with `Context#StatusCode`. It uses
+// `Context#Data["callback"]` to construct the JSONP payload.
+func (c *Context) JSONPBlob(b []byte) error {
+	cb, cbok := c.Data["callback"]
+	if !cbok || reflect.ValueOf(cb).Kind() != reflect.String {
+		return errors.New("c.Data[\"callback\"] not setted")
+	}
 	c.Response.Header.Set(HeaderContentType, MIMEApplicationJavaScript)
 	c.Response.WriteHeader(c.StatusCode)
-	if _, err = c.Response.Write([]byte(cb.(string) + "(")); err != nil {
+	if _, err := c.Response.Write([]byte(cb.(string) + "(")); err != nil {
 		return err
 	}
-	if _, err = c.Response.Write(b); err != nil {
+	if _, err := c.Response.Write(b); err != nil {
 		return err
 	}
-	_, err = c.Response.Write([]byte(");"))
+	_, err := c.Response.Write([]byte(");"))
 	return err
 }
 
@@ -247,12 +251,25 @@ func (c *Context) XML() error {
 
 // XMLBlob sends a XML blob response with `Context#StatusCode`.
 func (c *Context) XMLBlob(b []byte) error {
-	c.Response.Header.Set(HeaderContentType, MIMEApplicationXML)
-	c.Response.WriteHeader(c.StatusCode)
 	if _, err := c.Response.Write([]byte(xml.Header)); err != nil {
 		return err
 	}
+	return c.Blob(MIMEApplicationXML, b)
+}
+
+// Blob sends a blob response with `Context#StatusCode` and contentType.
+func (c *Context) Blob(contentType string, b []byte) error {
+	c.Response.Header.Set(HeaderContentType, contentType)
+	c.Response.WriteHeader(c.StatusCode)
 	_, err := c.Response.Write(b)
+	return err
+}
+
+// Stream sends a streaming response with `Context#StatusCode` and contentType.
+func (c *Context) Stream(contentType string, r io.Reader) error {
+	c.Response.Header.Set(HeaderContentType, contentType)
+	c.Response.WriteHeader(c.StatusCode)
+	_, err := io.Copy(c.Response, r)
 	return err
 }
 
