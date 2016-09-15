@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/sheng/air"
@@ -41,6 +42,8 @@ type (
 		// - "query:<name>"
 		// - "cookie:<name>"
 		TokenLookup string `json:"token_lookup"`
+
+		keyFunc jwt.Keyfunc
 	}
 
 	jwtExtractor func(*air.Context) (string, error)
@@ -77,10 +80,18 @@ func (c *JWTConfig) fill() {
 		c.ContextKey = DefaultJWTConfig.ContextKey
 	}
 	if c.Claims == nil {
-		c.Claims = jwt.MapClaims{}
+		c.Claims = DefaultJWTConfig.Claims
 	}
 	if c.TokenLookup == "" {
 		c.TokenLookup = DefaultJWTConfig.TokenLookup
+	}
+
+	c.keyFunc = func(t *jwt.Token) (interface{}, error) {
+		// Check the signing method
+		if t.Method.Alg() != c.SigningMethod {
+			return nil, fmt.Errorf("unexpected jwt signing method=%v", t.Header["alg"])
+		}
+		return c.SigningKey, nil
 	}
 }
 
@@ -95,7 +106,6 @@ func (c *JWTConfig) fill() {
 func JWT(key []byte) air.GasFunc {
 	c := DefaultJWTConfig
 	c.SigningKey = key
-	c.Claims = jwt.MapClaims{}
 	return JWTWithConfig(c)
 }
 
@@ -125,19 +135,20 @@ func JWTWithConfig(config JWTConfig) air.GasFunc {
 			if err != nil {
 				return air.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			token, err := jwt.ParseWithClaims(auth, config.Claims, func(t *jwt.Token) (interface{}, error) {
-				// Check the signing method
-				if t.Method.Alg() != config.SigningMethod {
-					return nil, fmt.Errorf("unexpected jwt signing method=%v", t.Header["alg"])
-				}
-				return config.SigningKey, nil
 
-			})
+			token := new(jwt.Token)
+			if _, ok := config.Claims.(jwt.MapClaims); ok {
+				token, err = jwt.Parse(auth, config.keyFunc)
+			} else {
+				claims := reflect.ValueOf(config.Claims).Interface().(jwt.Claims)
+				token, err = jwt.ParseWithClaims(auth, claims, config.keyFunc)
+			}
 			if err == nil && token.Valid {
 				// Store user information from token into context.
 				c.SetValue(config.ContextKey, token)
 				return next(c)
 			}
+
 			return air.ErrUnauthorized
 		}
 	}
