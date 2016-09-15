@@ -9,6 +9,7 @@ Gas | Description
 [Logger](https://godoc.org/github.com/sheng/air/gases#Logger) | Log HTTP requests
 [Recover](https://godoc.org/github.com/sheng/air/gases#Recover) | Recover from panics
 [Gzip](https://godoc.org/github.com/sheng/air/gases#Gzip) | Send gzip HTTP response
+[BasicAuth](https://godoc.org/github.com/sheng/air/gases#BasicAuth) | HTTP basic authentication
 [JWT](https://godoc.org/github.com/sheng/air/gases#JWT) | JWT authentication
 [Secure](https://godoc.org/github.com/sheng/air/gases#Secure) | Protection against attacks
 [CORS](https://godoc.org/github.com/sheng/air/gases#CORS) | Cross-Origin Resource Sharing
