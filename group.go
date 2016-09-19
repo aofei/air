@@ -58,6 +58,13 @@ func (g *Group) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(DELETE, path, handler, gases...)
 }
 
+// Any implements `Air#Any()` for sub-routes within the Group.
+func (g *Group) Any(path string, handler HandlerFunc, gases ...GasFunc) {
+	for _, m := range methods {
+		g.add(m, path, handler, gases...)
+	}
+}
+
 // Static implements `Air#Static()`.
 func (g *Group) Static(prefix, root string) {
 	g.Get(g.prefix+prefix+"*", func(c *Context) error {
