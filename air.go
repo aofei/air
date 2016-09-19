@@ -185,6 +185,14 @@ func (a *Air) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(DELETE, path, handler, gases...)
 }
 
+// Any registers a new route for all RESTful HTTP methods and path with matching
+// handler in the router with optional route-level gases.
+func (a *Air) Any(path string, handler HandlerFunc, gases ...GasFunc) {
+	for _, m := range methods {
+		a.add(m, path, handler, gases...)
+	}
+}
+
 // Static registers a new route with path prefix to serve static files from
 // the provided root directory.
 func (a *Air) Static(prefix, root string) {
