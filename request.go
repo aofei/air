@@ -40,6 +40,11 @@ func (r *Request) Host() string {
 	return string(r.fastCtx.Request.Host())
 }
 
+// SetHost sets the host of the request.
+func (r *Request) SetHost(host string) {
+	r.fastCtx.Request.SetHost(host)
+}
+
 // Referer returns the referring URI, if sent in the request.
 func (r *Request) Referer() string {
 	return string(r.fastCtx.Request.Header.Referer())
