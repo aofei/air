@@ -20,7 +20,9 @@ type Request struct {
 // newRequest returns a new instance of `Request`.
 func newRequest(a *Air) *Request {
 	return &Request{
-		air: a,
+		air:    a,
+		Header: newRequestHeader(),
+		URI:    newURI(),
 	}
 }
 

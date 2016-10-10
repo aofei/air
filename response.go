@@ -21,7 +21,8 @@ type Response struct {
 // newResponse returns a new instance of `Response`.
 func newResponse(a *Air) *Response {
 	return &Response{
-		air: a,
+		air:    a,
+		Header: newResponseHeader(),
 	}
 }
 

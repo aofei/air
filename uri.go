@@ -7,6 +7,11 @@ type URI struct {
 	fastURI *fasthttp.URI
 }
 
+// newURI returns a new instance of `URI`.
+func newURI() *URI {
+	return &URI{}
+}
+
 // FullURI returns the full request URI.
 func (u *URI) FullURI() string {
 	return string(u.fastURI.FullURI())

@@ -10,6 +10,7 @@ type pool struct {
 	requestHeaderPool  *sync.Pool
 	responseHeaderPool *sync.Pool
 	uriPool            *sync.Pool
+	cookiePool         *sync.Pool
 }
 
 // newPool returnes a new instance of `pool`.
@@ -32,17 +33,22 @@ func newPool(a *Air) *pool {
 		},
 		requestHeaderPool: &sync.Pool{
 			New: func() interface{} {
-				return &RequestHeader{}
+				return newRequestHeader()
 			},
 		},
 		responseHeaderPool: &sync.Pool{
 			New: func() interface{} {
-				return &ResponseHeader{}
+				return newResponseHeader()
 			},
 		},
 		uriPool: &sync.Pool{
 			New: func() interface{} {
-				return &URI{}
+				return newURI()
+			},
+		},
+		cookiePool: &sync.Pool{
+			New: func() interface{} {
+				return newCookie()
 			},
 		},
 	}
@@ -78,6 +84,11 @@ func (p *pool) uri() *URI {
 	return p.uriPool.Get().(*URI)
 }
 
+// cookie returns an instance of `Cookie` from p.
+func (p *pool) cookie() *Cookie {
+	return p.cookiePool.Get().(*Cookie)
+}
+
 // put puts x back to p.
 func (p *pool) put(x interface{}) {
 	switch v := x.(type) {
@@ -99,5 +110,8 @@ func (p *pool) put(x interface{}) {
 	case *URI:
 		v.reset()
 		p.uriPool.Put(v)
+	case *Cookie:
+		v.reset()
+		p.cookiePool.Put(v)
 	}
 }

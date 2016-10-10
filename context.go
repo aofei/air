@@ -36,6 +36,8 @@ type Context struct {
 func newContext(a *Air) *Context {
 	return &Context{
 		goContext:  context.Background(),
+		Request:    newRequest(a),
+		Response:   newResponse(a),
 		Params:     make(map[string]string),
 		Handler:    NotFoundHandler,
 		StatusCode: http.StatusOK,
