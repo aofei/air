@@ -61,7 +61,7 @@ func (r *Response) SetCookie(c Cookie) {
 // reset resets the instance of `Response`.
 func (r *Response) reset() {
 	r.fastCtx = nil
-	r.Header = nil
+	r.Header.reset()
 	r.Size = 0
 	r.Committed = false
 	r.Writer = nil

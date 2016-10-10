@@ -356,8 +356,8 @@ func (c *Context) ServeContent(content io.ReadSeeker, name string, modtime time.
 // reset resets the instance of `Context`.
 func (c *Context) reset() {
 	c.goContext = context.Background()
-	c.Request = nil
-	c.Response = nil
+	c.Request.reset()
+	c.Response.reset()
 	c.PristinePath = ""
 	c.ParamNames = c.ParamNames[:0]
 	for k := range c.Params {
