@@ -129,7 +129,7 @@ func (r *router) add(method, path string, h HandlerFunc) {
 			r.insert(method, path[:i], nil, paramKind, ppath, pnames)
 		} else if path[i] == '*' {
 			r.insert(method, path[:i], nil, staticKind, "", nil)
-			pnames = append(pnames, "_*")
+			pnames = append(pnames, "*")
 			r.insert(method, path[:i+1], h, anyKind, ppath, pnames)
 			return
 		}
@@ -321,7 +321,7 @@ func (r *router) route(method, path string, context *Context) {
 			// Not found
 			return
 		}
-		params[cn.paramNames[len(cn.paramNames)-1]] = unescape(search)
+		params["*"] = unescape(search)
 		goto End
 	}
 
@@ -346,7 +346,7 @@ End:
 		}
 		context.PristinePath = cn.pristinePath
 		context.ParamNames = cn.paramNames
-		params[cn.paramNames[len(cn.paramNames)-1]] = ""
+		params["*"] = ""
 	}
 
 	return
