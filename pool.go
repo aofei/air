@@ -2,8 +2,8 @@ package air
 
 import "sync"
 
-// pool represents the pools of `Air`.
-type pool struct {
+// Pool represents the pools of `Air`.
+type Pool struct {
 	contextPool        *sync.Pool
 	requestPool        *sync.Pool
 	responsePool       *sync.Pool
@@ -13,9 +13,9 @@ type pool struct {
 	cookiePool         *sync.Pool
 }
 
-// newPool returnes a new instance of `pool`.
-func newPool(a *Air) *pool {
-	return &pool{
+// newPool returnes a new instance of `Pool`.
+func newPool(a *Air) *Pool {
+	return &Pool{
 		contextPool: &sync.Pool{
 			New: func() interface{} {
 				return newContext(a)
@@ -54,43 +54,43 @@ func newPool(a *Air) *pool {
 	}
 }
 
-// context returns an instance of `Context` from p.
-func (p *pool) context() *Context {
+// Context returns an empty instance of `Context` from p.
+func (p *Pool) Context() *Context {
 	return p.contextPool.Get().(*Context)
 }
 
-// request returns an instance of `Request` from p.
-func (p *pool) request() *Request {
+// Request returns an empty instance of `Request` from p.
+func (p *Pool) Request() *Request {
 	return p.requestPool.Get().(*Request)
 }
 
-// response returns an instance of `Response` from p.
-func (p *pool) response() *Response {
+// Response returns an empty instance of `Response` from p.
+func (p *Pool) Response() *Response {
 	return p.responsePool.Get().(*Response)
 }
 
-// requestHeader returns an instance of `RequestHeader` from p.
-func (p *pool) requestHeader() *RequestHeader {
+// RequestHeader returns an empty instance of `RequestHeader` from p.
+func (p *Pool) RequestHeader() *RequestHeader {
 	return p.requestHeaderPool.Get().(*RequestHeader)
 }
 
-// responseHeader returns an instance of `ResponseHeader` from p.
-func (p *pool) responseHeader() *ResponseHeader {
+// ResponseHeader returns an empty instance of `ResponseHeader` from p.
+func (p *Pool) ResponseHeader() *ResponseHeader {
 	return p.responseHeaderPool.Get().(*ResponseHeader)
 }
 
-// uri returns an instance of `URI` from p.
-func (p *pool) uri() *URI {
+// URI returns an empty instance of `URI` from p.
+func (p *Pool) URI() *URI {
 	return p.uriPool.Get().(*URI)
 }
 
-// cookie returns an instance of `Cookie` from p.
-func (p *pool) cookie() *Cookie {
+// Cookie returns an empty instance of `Cookie` from p.
+func (p *Pool) Cookie() *Cookie {
 	return p.cookiePool.Get().(*Cookie)
 }
 
-// put puts x back to p.
-func (p *pool) put(x interface{}) {
+// Put puts x back to p.
+func (p *Pool) Put(x interface{}) {
 	switch v := x.(type) {
 	case *Context:
 		v.reset()
