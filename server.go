@@ -16,7 +16,7 @@ func newServer(a *Air) *server {
 	}
 	s.fastServer.ReadTimeout = s.air.Config.ReadTimeout
 	s.fastServer.WriteTimeout = s.air.Config.WriteTimeout
-	s.fastServer.Handler = s.fastServeHTTP
+	s.fastServer.Handler = s.serveHTTP
 	return s
 }
 
@@ -48,15 +48,23 @@ func (s *server) startCustomListener() error {
 }
 
 // serveHTTP serves the HTTP requests.
-func (s *server) serveHTTP(req *Request, res *Response) {
+func (s *server) serveHTTP(fastCtx *fasthttp.RequestCtx) {
 	c := s.air.pool.context()
-	c.Request = req
-	c.Response = res
+
+	// Request
+	c.Request.fastCtx = fastCtx
+	c.Request.Header.fastRequestHeader = &fastCtx.Request.Header
+	c.Request.URI.fastURI = fastCtx.URI()
+
+	// Response
+	c.Response.fastCtx = fastCtx
+	c.Response.Header.fastResponseHeader = &fastCtx.Response.Header
+	c.Response.Writer = fastCtx
 
 	// Gases
 	h := func(*Context) error {
-		method := req.Method()
-		path := req.URI.PathOriginal()
+		method := c.Request.Method()
+		path := c.Request.URI.PathOriginal()
 		s.air.router.route(method, path, c)
 		h := c.Handler
 		for i := len(s.air.gases) - 1; i >= 0; i-- {
@@ -76,34 +84,4 @@ func (s *server) serveHTTP(req *Request, res *Response) {
 	}
 
 	s.air.pool.put(c)
-}
-
-// fastServeHTTP serves the fast HTTP request.
-func (s *server) fastServeHTTP(c *fasthttp.RequestCtx) {
-	req := s.air.pool.request()
-	reqHdr := s.air.pool.requestHeader()
-	reqURI := s.air.pool.uri()
-
-	res := s.air.pool.response()
-	resHdr := s.air.pool.responseHeader()
-
-	req.fastCtx = c
-	req.Header = reqHdr
-	req.URI = reqURI
-	reqHdr.fastRequestHeader = &c.Request.Header
-	reqURI.fastURI = c.URI()
-
-	res.fastCtx = c
-	res.Header = resHdr
-	res.Writer = c
-	resHdr.fastResponseHeader = &c.Response.Header
-
-	s.serveHTTP(req, res)
-
-	s.air.pool.put(req)
-	s.air.pool.put(reqHdr)
-	s.air.pool.put(reqURI)
-
-	s.air.pool.put(res)
-	s.air.pool.put(resHdr)
 }
