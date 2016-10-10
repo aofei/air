@@ -11,6 +11,13 @@ type Cookie struct {
 	fastCookie *fasthttp.Cookie
 }
 
+// newCookie returns a new instance of `Cookie`.
+func newCookie() *Cookie {
+	return &Cookie{
+		fastCookie: &fasthttp.Cookie{},
+	}
+}
+
 // Name returns the name of the cookie.
 func (c *Cookie) Name() string {
 	return string(c.fastCookie.Key())
@@ -79,4 +86,9 @@ func (c *Cookie) HTTPOnly() bool {
 // SetHTTPOnly sets the cookie as HTTPOnly.
 func (c *Cookie) SetHTTPOnly(httpOnly bool) {
 	c.fastCookie.SetHTTPOnly(httpOnly)
+}
+
+// reset resets the instance of `Cookie`.
+func (c *Cookie) reset() {
+	c.fastCookie.Reset()
 }

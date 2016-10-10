@@ -14,6 +14,16 @@ type (
 	}
 )
 
+// newRequestHeader returns a new instance of `RequestHeader`.
+func newRequestHeader() *RequestHeader {
+	return &RequestHeader{}
+}
+
+// newResponseHeader returns a new instance of `ResponseHeader`.
+func newResponseHeader() *ResponseHeader {
+	return &ResponseHeader{}
+}
+
 // Add adds the key, value pair to the header. It appends to any existing values
 // associated with key.
 func (h *RequestHeader) Add(key, val string) {
