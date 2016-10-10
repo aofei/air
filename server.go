@@ -49,7 +49,7 @@ func (s *server) startCustomListener() error {
 
 // serveHTTP serves the HTTP requests.
 func (s *server) serveHTTP(fastCtx *fasthttp.RequestCtx) {
-	c := s.air.pool.context()
+	c := s.air.Pool.Context()
 
 	// Request
 	c.Request.fastCtx = fastCtx
@@ -83,5 +83,5 @@ func (s *server) serveHTTP(fastCtx *fasthttp.RequestCtx) {
 		s.air.HTTPErrorHandler(err, c)
 	}
 
-	s.air.pool.put(c)
+	s.air.Pool.Put(c)
 }
