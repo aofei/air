@@ -167,6 +167,6 @@ func (r *Request) Cookies() []Cookie {
 // reset resets the instacne of `Request`.
 func (r *Request) reset() {
 	r.fastCtx = nil
-	r.Header = nil
-	r.URI = nil
+	r.Header.reset()
+	r.URI.reset()
 }
