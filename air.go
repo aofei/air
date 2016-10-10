@@ -13,13 +13,13 @@ import (
 type (
 	// Air is the top-level framework struct.
 	Air struct {
-		pool     *pool
 		pregases []GasFunc
 		gases    []GasFunc
 		router   *router
 		binder   *binder
 		renderer *renderer
 
+		Pool             *Pool
 		Config           *Config
 		HTTPErrorHandler HTTPErrorHandler
 		Logger           *Logger
@@ -140,10 +140,10 @@ var (
 // New returns a new instance of `Air`.
 func New() *Air {
 	a := &Air{}
-	a.pool = newPool(a)
 	a.router = newRouter(a)
 	a.binder = newBinder(a)
 	a.renderer = newRenderer(a)
+	a.Pool = newPool(a)
 	a.Config = NewConfig("air")
 	a.HTTPErrorHandler = defaultHTTPErrorHandler
 	a.Logger = NewLogger(a)
