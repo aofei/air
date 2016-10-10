@@ -25,6 +25,7 @@ type Context struct {
 	Response     *Response
 	PristinePath string
 	ParamNames   []string
+	ParamValues  []string
 	Params       map[string]string
 	Handler      HandlerFunc
 	StatusCode   int
@@ -362,6 +363,7 @@ func (c *Context) reset() {
 	c.Response.reset()
 	c.PristinePath = ""
 	c.ParamNames = c.ParamNames[:0]
+	c.ParamValues = c.ParamValues[:0]
 	for k := range c.Params {
 		delete(c.Params, k)
 	}
