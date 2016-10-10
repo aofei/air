@@ -218,18 +218,16 @@ func (r *router) insert(method, path string, h HandlerFunc, t nodeKind, ppath st
 }
 
 // route routes a handler registed for method and path. It also parses URI for path
-// parameters and load them into context.
-func (r *router) route(method, path string, context *Context) {
+// parameters and load them into ctx.
+func (r *router) route(method, path string, ctx *Context) {
 	cn := r.tree // Current node as root
 
 	var (
 		search = path
 		c      *node    // Child node
-		n      int      // Param counter
 		nk     nodeKind // Next kind
 		nn     *node    // Next node
 		ns     string   // Next search
-		params = context.Params
 	)
 
 	// Search order: static > param > any
@@ -299,8 +297,7 @@ func (r *router) route(method, path string, context *Context) {
 			i, l := 0, len(search)
 			for ; i < l && search[i] != '/'; i++ {
 			}
-			params[cn.paramNames[n]] = unescape(search[:i])
-			n++
+			ctx.ParamValues = append(ctx.ParamValues, search[:i])
 			search = search[i:]
 			continue
 		}
@@ -321,18 +318,18 @@ func (r *router) route(method, path string, context *Context) {
 			// Not found
 			return
 		}
-		params["*"] = unescape(search)
+		ctx.ParamValues = append(ctx.ParamValues, search)
 		goto End
 	}
 
 End:
-	context.PristinePath = cn.pristinePath
-	context.ParamNames = cn.paramNames
-	context.Handler = cn.handler(method)
+	ctx.PristinePath = cn.pristinePath
+	ctx.ParamNames = cn.paramNames
+	ctx.Handler = cn.handler(method)
 
 	// NOTE: Slow zone...
-	if context.Handler == nil {
-		context.Handler = cn.checkMethodNotAllowed()
+	if ctx.Handler == nil {
+		ctx.Handler = cn.checkMethodNotAllowed()
 
 		// Dig further for any, might have an empty value for *, e.g.
 		// serving a directory. Issue #207.
@@ -340,13 +337,17 @@ End:
 			return
 		}
 		if h := cn.handler(method); h != nil {
-			context.Handler = h
+			ctx.Handler = h
 		} else {
-			context.Handler = cn.checkMethodNotAllowed()
+			ctx.Handler = cn.checkMethodNotAllowed()
 		}
-		context.PristinePath = cn.pristinePath
-		context.ParamNames = cn.paramNames
-		params["*"] = ""
+		ctx.PristinePath = cn.pristinePath
+		ctx.ParamNames = cn.paramNames
+		ctx.ParamValues = append(ctx.ParamValues, search)
+	}
+
+	for i, v := range ctx.ParamValues {
+		ctx.Params[ctx.ParamNames[i]] = v
 	}
 
 	return
