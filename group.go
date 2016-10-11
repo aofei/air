@@ -15,6 +15,11 @@ type Group struct {
 func NewGroup(prefix string, a *Air, gases ...GasFunc) *Group {
 	g := &Group{prefix: prefix, air: a}
 	g.Contain(gases...)
+	// Allow all requests to reach the group as they might get dropped if router
+	// doesn't find a match, making none of the group gas process.
+	g.air.Any(g.prefix+"*", func(c *Context) error {
+		return ErrNotFound
+	}, g.gases...)
 	return g
 }
 
@@ -29,13 +34,6 @@ func (g *Group) NewSubGroup(prefix string, gases ...GasFunc) *Group {
 // Contain implements `Air#Contain()`.
 func (g *Group) Contain(gases ...GasFunc) {
 	g.gases = append(g.gases, gases...)
-	// Allow all requests to reach the group as they might get dropped if router
-	// doesn't find a match, making none of the group gas process.
-	for _, m := range methods {
-		g.air.add(m, g.prefix+"*", func(c *Context) error {
-			return ErrNotFound
-		}, g.gases...)
-	}
 }
 
 // Get implements `Air#Get()`.
