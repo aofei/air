@@ -281,6 +281,18 @@ func handlerName(handler HandlerFunc) string {
 	return t.String()
 }
 
+// WrapGas wraps `HandlerFunc` into `GasFunc`.
+func WrapGas(handler HandlerFunc) GasFunc {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(c *Context) error {
+			if err := handler(c); err != nil {
+				return err
+			}
+			return next(c)
+		}
+	}
+}
+
 // NewHTTPError returns a new instance of `HTTPError`.
 func NewHTTPError(code int, msg ...string) *HTTPError {
 	he := &HTTPError{Code: code, Message: http.StatusText(code)}
