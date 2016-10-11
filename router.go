@@ -318,7 +318,11 @@ func (r *router) route(method, path string, ctx *Context) {
 			// Not found
 			return
 		}
-		ctx.ParamValues = append(ctx.ParamValues, search)
+		if len(ctx.ParamValues) == len(cn.paramNames) {
+			ctx.ParamValues[len(ctx.ParamValues)-1] = search
+		} else {
+			ctx.ParamValues = append(ctx.ParamValues, search)
+		}
 		goto End
 	}
 
@@ -332,7 +336,7 @@ End:
 		ctx.Handler = cn.checkMethodNotAllowed()
 
 		// Dig further for any, might have an empty value for *, e.g.
-		// serving a directory. Issue #207.
+		// serving a directory.
 		if cn = cn.childByKind(anyKind); cn == nil {
 			return
 		}
@@ -343,7 +347,11 @@ End:
 		}
 		ctx.PristinePath = cn.pristinePath
 		ctx.ParamNames = cn.paramNames
-		ctx.ParamValues = append(ctx.ParamValues, search)
+		if len(ctx.ParamValues) == len(cn.paramNames) {
+			ctx.ParamValues[len(ctx.ParamValues)-1] = ""
+		} else {
+			ctx.ParamValues = append(ctx.ParamValues, "")
+		}
 	}
 
 	for i, v := range ctx.ParamValues {
