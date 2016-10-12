@@ -144,7 +144,7 @@ func New() *Air {
 	a.binder = newBinder(a)
 	a.renderer = newRenderer(a)
 	a.Pool = newPool(a)
-	a.Config = NewConfig("air")
+	a.Config = newConfig()
 	a.HTTPErrorHandler = defaultHTTPErrorHandler
 	a.Logger = newLogger(a)
 	a.Logger.Level = OFF
