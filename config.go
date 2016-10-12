@@ -2,6 +2,7 @@ package air
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -112,23 +113,30 @@ var defaultConfig = Config{
 // in the rumtime directory named "config.json". It returns the defaultConfig
 // if the config file doesn't exist.
 func newConfig() *Config {
-	cfn := "config.json"
 	c := defaultConfig
+	cfn := "config.json"
+	if _, err := os.Stat(cfn); err == nil || os.IsExist(err) {
+		c.Parse(cfn)
+	}
+	return &c
+}
 
-	_, err := os.Stat(cfn)
-	if err == nil || os.IsExist(err) {
-		bytes, err := ioutil.ReadFile(cfn)
-		if err != nil {
-			panic(err)
-		}
-		err = json.Unmarshal(bytes, &c.Data)
-		if err != nil {
-			panic(err)
-		}
-		c.fillData()
+// Parse parses the config file found in the filename path.
+func (c *Config) Parse(filename string) {
+	if _, err := os.Stat(filename); err != nil && !os.IsExist(err) {
+		panic(fmt.Sprintf("config file %s does not exist", filename))
 	}
 
-	return &c
+	bytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	err = json.Unmarshal(bytes, &c.Data)
+	if err != nil {
+		panic(err)
+	}
+
+	c.fillData()
 }
 
 // fillData fills field's value from field `Data` of c.
