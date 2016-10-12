@@ -146,7 +146,7 @@ func New() *Air {
 	a.Pool = newPool(a)
 	a.Config = NewConfig("air")
 	a.HTTPErrorHandler = defaultHTTPErrorHandler
-	a.Logger = NewLogger(a)
+	a.Logger = newLogger(a)
 	a.Logger.Level = OFF
 	return a
 }
