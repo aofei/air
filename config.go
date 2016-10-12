@@ -2,7 +2,6 @@ package air
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -13,6 +12,10 @@ import (
 // for customization.
 type Config struct {
 	// AppName represens the name of current `Air` instance.
+	//
+	// Default Value is "air".
+	//
+	// It's called "app_name" in the config file.
 	AppName string
 
 	// DebugMode represents the state of `Air`'s debug mode.
@@ -97,65 +100,42 @@ type Config struct {
 }
 
 // defaultConfig is the default instance of `Config`.
-var defaultConfig Config
+var defaultConfig = Config{
+	AppName: "air",
+	LogFormat: `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}",` +
+		`"level":"{{.level}}","file":"{{.short_file}}","line":"{{.line}}"}`,
+	Address:       "localhost:8080",
+	TemplatesRoot: "templates",
+}
 
-// configs is the JSON map that stored all the configs parsing from
-// config file.
-var configs JSONMap
+// newConfig returns a new instance of `Config` by parsing the config file that
+// in the rumtime directory named "config.json". It returns the defaultConfig
+// if the config file doesn't exist.
+func newConfig() *Config {
+	cfn := "config.json"
+	c := defaultConfig
 
-func init() {
-	defaultConfig = Config{
-		LogFormat: `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}",` +
-			`"level":"{{.level}}","file":"{{.short_file}}","line":"{{.line}}"}`,
-		Address:       "localhost:8080",
-		TemplatesRoot: "templates",
-	}
-
-	var cfn = "config.json"
 	_, err := os.Stat(cfn)
 	if err == nil || os.IsExist(err) {
 		bytes, err := ioutil.ReadFile(cfn)
 		if err != nil {
 			panic(err)
 		}
-		err = json.Unmarshal(bytes, &configs)
+		err = json.Unmarshal(bytes, &c.Data)
 		if err != nil {
 			panic(err)
 		}
-		if len(configs) == 0 {
-			panic("need at least one app in the config file or remove the config file")
-		}
-	}
-}
-
-// NewConfig returns a new instance of `Config` with a appName by parsing
-// the config file that in the rumtime directory named "config.json".
-//
-// NewConfig returns the defaultConfig(field "AppName" be setted to provided
-// appName) if the config file doesn't exist.
-func NewConfig(appName string) *Config {
-	c := defaultConfig
-	switch {
-	case configs == nil:
-		c.AppName = appName
-	case len(configs) == 1:
-		for k, v := range configs {
-			c.AppName = k
-			c.Data = v.(map[string]interface{})
-			c.fillData()
-		}
-	case configs[appName] == nil:
-		panic(fmt.Sprintf("app %s does not exist in the config file", appName))
-	default:
-		c.AppName = appName
-		c.Data = configs[appName].(map[string]interface{})
 		c.fillData()
 	}
+
 	return &c
 }
 
 // fillData fills field's value from field `Data` of c.
 func (c *Config) fillData() {
+	if an, ok := c.Data["app_name"]; ok {
+		c.AppName = an.(string)
+	}
 	if dm, ok := c.Data["debug_mode"]; ok {
 		c.DebugMode = dm.(bool)
 	}
