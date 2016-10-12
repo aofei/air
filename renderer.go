@@ -18,22 +18,16 @@ type renderer struct {
 }
 
 // defaultTemplateFuncMap is a default template func map of `renderer`
-var defaultTemplateFuncMap template.FuncMap
-
-func init() {
-	tfm := make(template.FuncMap)
-
-	tfm["strlen"] = strlen
-	tfm["substr"] = substr
-	tfm["timefmt"] = timefmt
-	tfm["eq"] = eq
-	tfm["ne"] = ne
-	tfm["lt"] = lt
-	tfm["le"] = le
-	tfm["gt"] = gt
-	tfm["ge"] = ge
-
-	defaultTemplateFuncMap = tfm
+var defaultTemplateFuncMap = template.FuncMap{
+	"strlen":  strlen,
+	"substr":  substr,
+	"timefmt": timefmt,
+	"eq":      eq,
+	"ne":      ne,
+	"lt":      lt,
+	"le":      le,
+	"gt":      gt,
+	"ge":      ge,
 }
 
 // newRenderer returns a new instance of `Renderer`.
