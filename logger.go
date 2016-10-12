@@ -41,8 +41,8 @@ const (
 	OFF
 )
 
-// NewLogger returns an new instance of `Logger`.
-func NewLogger(a *Air) *Logger {
+// newLogger returns a new instance of `Logger`.
+func newLogger(a *Air) *Logger {
 	l := &Logger{
 		bufferPool: &sync.Pool{
 			New: func() interface{} {

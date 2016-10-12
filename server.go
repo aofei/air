@@ -8,7 +8,7 @@ type server struct {
 	air        *Air
 }
 
-// newServer returns an new instance of `server`.
+// newServer returns a new instance of `server`.
 func newServer(a *Air) *server {
 	s := &server{
 		fastServer: &fasthttp.Server{},
