@@ -274,7 +274,7 @@ func (r *router) route(method, path string, ctx *Context) {
 		// Static node
 		if c = cn.child(search[0], staticKind); c != nil {
 			// Save next
-			if cn.label == '/' {
+			if cn.prefix[len(cn.prefix)-1] == '/' {
 				nk = paramKind
 				nn = cn
 				ns = search
@@ -287,7 +287,7 @@ func (r *router) route(method, path string, ctx *Context) {
 	Param:
 		if c = cn.childByKind(paramKind); c != nil {
 			// Save next
-			if cn.label == '/' {
+			if cn.prefix[len(cn.prefix)-1] == '/' {
 				nk = anyKind
 				nn = cn
 				ns = search
