@@ -62,7 +62,7 @@ func (s *server) serveHTTP(fastCtx *fasthttp.RequestCtx) {
 	c.Response.Writer = fastCtx
 
 	// Gases
-	h := func(*Context) error {
+	h := func(c *Context) error {
 		method := c.Request.Method()
 		path := c.Request.URI.PathOriginal()
 		s.air.router.route(method, path, c)
