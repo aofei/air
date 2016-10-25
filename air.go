@@ -21,8 +21,8 @@ type (
 
 		Pool             *Pool
 		Config           *Config
-		HTTPErrorHandler HTTPErrorHandler
 		Logger           *Logger
+		HTTPErrorHandler HTTPErrorHandler
 	}
 
 	// HandlerFunc defines a function to server HTTP requests.
@@ -145,9 +145,8 @@ func New() *Air {
 	a.renderer = newRenderer(a)
 	a.Pool = newPool(a)
 	a.Config = newConfig()
-	a.HTTPErrorHandler = defaultHTTPErrorHandler
 	a.Logger = newLogger(a)
-	a.Logger.Level = OFF
+	a.HTTPErrorHandler = defaultHTTPErrorHandler
 	return a
 }
 
