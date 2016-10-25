@@ -58,7 +58,7 @@ func newLogger(a *Air) *Logger {
 			"FATAL",
 		},
 		air:   a,
-		Level: INFO,
+		Level: OFF,
 	}
 	l.template, _ = template.New("logger").Parse(a.Config.LogFormat)
 	l.Output = os.Stdout
