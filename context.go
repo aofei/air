@@ -291,6 +291,7 @@ func (c *Context) File(file string) error {
 		if err != nil {
 			return ErrNotFound
 		}
+		defer f.Close()
 		if fi, err = f.Stat(); err != nil {
 			return err
 		}
