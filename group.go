@@ -2,8 +2,7 @@ package air
 
 import "path"
 
-// Group is a set of sub-routes for a specified route. It can be used for inner
-// routes that share a common gas or functionality that should be separate
+// Group is a set of sub-routes for a specified route. It can be used for inner // routes that share a common gas or functionality that should be separate
 // from the parent `Air` instance while still inheriting from it.
 type Group struct {
 	prefix string
@@ -17,9 +16,11 @@ func NewGroup(prefix string, a *Air, gases ...GasFunc) *Group {
 	g.Contain(gases...)
 	// Allow all requests to reach the group as they might get dropped if router
 	// doesn't find a match, making none of the group gas process.
-	g.air.Any(g.prefix+"*", func(c *Context) error {
-		return ErrNotFound
-	}, g.gases...)
+	path := g.prefix + "*"
+	handler := func(c *Context) error { return ErrNotFound }
+	for _, m := range methods {
+		g.air.add(m, path, handler, g.gases...)
+	}
 	return g
 }
 
@@ -54,13 +55,6 @@ func (g *Group) Put(path string, handler HandlerFunc, gases ...GasFunc) {
 // Delete implements `Air#Delete()`.
 func (g *Group) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(DELETE, path, handler, gases...)
-}
-
-// Any implements `Air#Any()` for sub-routes within the Group.
-func (g *Group) Any(path string, handler HandlerFunc, gases ...GasFunc) {
-	for _, m := range methods {
-		g.add(m, path, handler, gases...)
-	}
 }
 
 // Static implements `Air#Static()`.

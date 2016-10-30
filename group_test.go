@@ -16,9 +16,7 @@ func TestGroupRESTfulMethods(t *testing.T) {
 func TestGroupOtherMethods(t *testing.T) {
 	a := New()
 	g := NewGroup("/group", a)
-	h := func(*Context) error { return nil }
 
-	g.Any("/", h)
 	g.Static("/static", "./")
 	g.File("/file", "README.md")
 }
