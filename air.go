@@ -285,10 +285,10 @@ func WrapGas(handler HandlerFunc) GasFunc {
 }
 
 // NewHTTPError returns a new instance of `HTTPError`.
-func NewHTTPError(code int, msg ...string) *HTTPError {
+func NewHTTPError(code int, msg ...interface{}) *HTTPError {
 	he := &HTTPError{Code: code, Message: http.StatusText(code)}
 	if len(msg) > 0 {
-		he.Message = msg[0]
+		he.Message = fmt.Sprint(msg...)
 	}
 	return he
 }
