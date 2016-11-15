@@ -12,7 +12,8 @@ type CORSConfig struct {
 	Skipper Skipper
 
 	// AllowOrigin defines a list of origins that may access the resource.
-	// Optional. Default value []string{"*"}.
+	// Optional. If request header `Origin` is set, value is
+	// []string{"<Origin>"} else []string{"*"}.
 	AllowOrigins []string `json:"allow_origins"`
 
 	// AllowHeaders defines a list of request headers that can be used when
@@ -40,17 +41,13 @@ type CORSConfig struct {
 
 // DefaultCORSConfig is the default CORS gas config.
 var DefaultCORSConfig = CORSConfig{
-	Skipper:      defaultSkipper,
-	AllowOrigins: []string{"*"},
+	Skipper: defaultSkipper,
 }
 
 // fill keeps all the fields of `CORSConfig` have value.
 func (c *CORSConfig) fill() {
 	if c.Skipper == nil {
 		c.Skipper = DefaultCORSConfig.Skipper
-	}
-	if len(c.AllowOrigins) == 0 {
-		c.AllowOrigins = DefaultCORSConfig.AllowOrigins
 	}
 }
 
@@ -65,6 +62,8 @@ func CORS() air.GasFunc {
 func CORSWithConfig(config CORSConfig) air.GasFunc {
 	// Defaults
 	config.fill()
+
+	allowedOrigins := strings.Join(config.AllowOrigins, ",")
 	exposeHeaders := strings.Join(config.ExposeHeaders, ",")
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
@@ -76,22 +75,19 @@ func CORSWithConfig(config CORSConfig) air.GasFunc {
 			req := c.Request
 			res := c.Response
 			origin := req.Header.Get(air.HeaderOrigin)
-			originSet := req.Header.Contains(air.HeaderOrigin) // Issue #517
 
-			// Check allowed origins
-			allowedOrigin := ""
-			for _, o := range config.AllowOrigins {
-				if o == "*" || o == origin {
-					allowedOrigin = o
-					break
+			if allowedOrigins == "" {
+				if origin != "" {
+					allowedOrigins = origin
+				} else {
+					if !config.AllowCredentials {
+						allowedOrigins = "*"
+					}
 				}
 			}
 
 			res.Header.Add(air.HeaderVary, air.HeaderOrigin)
-			if !originSet || allowedOrigin == "" {
-				return next(c)
-			}
-			res.Header.Set(air.HeaderAccessControlAllowOrigin, allowedOrigin)
+			res.Header.Set(air.HeaderAccessControlAllowOrigin, allowedOrigins)
 			if config.AllowCredentials {
 				res.Header.Set(air.HeaderAccessControlAllowCredentials, "true")
 			}
