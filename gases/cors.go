@@ -73,7 +73,6 @@ func CORSWithConfig(config CORSConfig) air.GasFunc {
 			}
 
 			req := c.Request
-			res := c.Response
 			origin := req.Header.Get(air.HeaderOrigin)
 
 			if allowedOrigins == "" {
@@ -86,13 +85,13 @@ func CORSWithConfig(config CORSConfig) air.GasFunc {
 				}
 			}
 
-			res.Header.Add(air.HeaderVary, air.HeaderOrigin)
-			res.Header.Set(air.HeaderAccessControlAllowOrigin, allowedOrigins)
+			c.Header().Add(air.HeaderVary, air.HeaderOrigin)
+			c.Header().Set(air.HeaderAccessControlAllowOrigin, allowedOrigins)
 			if config.AllowCredentials {
-				res.Header.Set(air.HeaderAccessControlAllowCredentials, "true")
+				c.Header().Set(air.HeaderAccessControlAllowCredentials, "true")
 			}
 			if exposeHeaders != "" {
-				res.Header.Set(air.HeaderAccessControlExposeHeaders, exposeHeaders)
+				c.Header().Set(air.HeaderAccessControlExposeHeaders, exposeHeaders)
 			}
 			return next(c)
 		}

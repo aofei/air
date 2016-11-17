@@ -80,7 +80,7 @@ func BasicAuthWithConfig(config BasicAuthConfig) air.GasFunc {
 				}
 			}
 			// Need to return `401` for browsers to pop-up login box.
-			c.Response.Header.Set(air.HeaderWWWAuthenticate, basic+" realm=Restricted")
+			c.Header().Set(air.HeaderWWWAuthenticate, basic+" realm=Restricted")
 			return air.ErrUnauthorized
 		}
 	}

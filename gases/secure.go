@@ -90,26 +90,25 @@ func SecureWithConfig(config SecureConfig) air.GasFunc {
 			}
 
 			req := c.Request
-			res := c.Response
 
 			if config.XSSProtection != "" {
-				res.Header.Set(air.HeaderXXSSProtection, config.XSSProtection)
+				c.Header().Set(air.HeaderXXSSProtection, config.XSSProtection)
 			}
 			if config.ContentTypeNosniff != "" {
-				res.Header.Set(air.HeaderXContentTypeOptions, config.ContentTypeNosniff)
+				c.Header().Set(air.HeaderXContentTypeOptions, config.ContentTypeNosniff)
 			}
 			if config.XFrameOptions != "" {
-				res.Header.Set(air.HeaderXFrameOptions, config.XFrameOptions)
+				c.Header().Set(air.HeaderXFrameOptions, config.XFrameOptions)
 			}
-			if (req.IsTLS() || (req.Header.Get(air.HeaderXForwardedProto) == "https")) && config.HSTSMaxAge != 0 {
+			if (req.TLS != nil || (req.Header.Get(air.HeaderXForwardedProto) == "https")) && config.HSTSMaxAge != 0 {
 				subdomains := ""
 				if !config.HSTSExcludeSubdomains {
 					subdomains = "; includeSubdomains"
 				}
-				res.Header.Set(air.HeaderStrictTransportSecurity, fmt.Sprintf("max-age=%d%s", config.HSTSMaxAge, subdomains))
+				c.Header().Set(air.HeaderStrictTransportSecurity, fmt.Sprintf("max-age=%d%s", config.HSTSMaxAge, subdomains))
 			}
 			if config.ContentSecurityPolicy != "" {
-				res.Header.Set(air.HeaderContentSecurityPolicy, config.ContentSecurityPolicy)
+				c.Header().Set(air.HeaderContentSecurityPolicy, config.ContentSecurityPolicy)
 			}
 			return next(c)
 		}

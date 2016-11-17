@@ -21,6 +21,7 @@ type Context struct {
 	context.Context
 
 	responseWriter http.ResponseWriter
+	statusCode     int
 
 	Request      *http.Request
 	PristinePath string
@@ -29,8 +30,7 @@ type Context struct {
 	Params       map[string]string
 	Handler      HandlerFunc
 	Data         JSONMap
-	Header       http.Header
-	Size         int64
+	Size         int
 	Written      bool
 	Air          *Air
 }
@@ -46,10 +46,9 @@ func newContext(a *Air) *Context {
 	}
 }
 
-// SetCookie adds a "Set-Cookie" header in HTTP response. The provided cookie
-// must have a valid `Name`. Invalid cookies may be silently dropped.
-func (c *Context) SetCookie(cookie *http.Cookie) {
-	http.SetCookie(c.responseWriter, cookie)
+// Header implements `http.ResponseWriter#Header()`.
+func (c *Context) Header() http.Header {
+	return c.responseWriter.Header()
 }
 
 // Write implements `http.ResponseWriter#Write()`.
@@ -58,7 +57,7 @@ func (c *Context) Write(bs []byte) (int, error) {
 		c.WriteHeader(http.StatusOK)
 	}
 	n, err := c.responseWriter.Write(bs)
-	c.Size += int64(n)
+	c.Size += n
 	return n, err
 }
 
@@ -68,8 +67,25 @@ func (c *Context) WriteHeader(code int) {
 		c.Air.Logger.Warn("response already committed")
 		return
 	}
+	c.statusCode = code
 	c.responseWriter.WriteHeader(code)
 	c.Written = true
+}
+
+// StatusCode returns the HTTP status code.
+func (c *Context) StatusCode() int {
+	return c.statusCode
+}
+
+// SetWriter sets the w to the c.
+func (c *Context) SetWriter(w http.ResponseWriter) {
+	c.responseWriter = w
+}
+
+// SetCookie adds a "Set-Cookie" header in HTTP response. The provided cookie
+// must have a valid `Name`. Invalid cookies may be silently dropped.
+func (c *Context) SetCookie(cookie *http.Cookie) {
+	http.SetCookie(c.responseWriter, cookie)
 }
 
 // Bind binds the request body into provided type i. The default binder does it
@@ -89,7 +105,7 @@ func (c *Context) Render() error {
 	if err := c.Air.renderer.render(buf, t.(string), c); err != nil {
 		return err
 	}
-	c.Header.Set(HeaderContentType, MIMETextHTML)
+	c.Header().Set(HeaderContentType, MIMETextHTML)
 	_, err := c.Write(buf.Bytes())
 	return err
 }
@@ -100,7 +116,7 @@ func (c *Context) HTML() error {
 	if !ok || reflect.ValueOf(h).Kind() != reflect.String {
 		return errors.New("c.Data[\"html\"] not setted")
 	}
-	c.Header.Set(HeaderContentType, MIMETextHTML)
+	c.Header().Set(HeaderContentType, MIMETextHTML)
 	_, err := c.Write([]byte(h.(string)))
 	return err
 }
@@ -112,7 +128,7 @@ func (c *Context) String() error {
 	if !ok || reflect.ValueOf(s).Kind() != reflect.String {
 		return errors.New("c.Data[\"string\"] not setted")
 	}
-	c.Header.Set(HeaderContentType, MIMETextPlain)
+	c.Header().Set(HeaderContentType, MIMETextPlain)
 	_, err := c.Write([]byte(s.(string)))
 	return err
 }
@@ -159,7 +175,7 @@ func (c *Context) JSONPBlob(bs []byte) error {
 	if !cbok || reflect.ValueOf(cb).Kind() != reflect.String {
 		return errors.New("c.Data[\"callback\"] not setted")
 	}
-	c.Header.Set(HeaderContentType, MIMEApplicationJavaScript)
+	c.Header().Set(HeaderContentType, MIMEApplicationJavaScript)
 	if _, err := c.Write([]byte(cb.(string) + "(")); err != nil {
 		return err
 	}
@@ -196,14 +212,14 @@ func (c *Context) XMLBlob(bs []byte) error {
 
 // Blob sends a blob response with `StatusCode` of the c and contentType.
 func (c *Context) Blob(contentType string, bs []byte) error {
-	c.Header.Set(HeaderContentType, contentType)
+	c.Header().Set(HeaderContentType, contentType)
 	_, err := c.Write(bs)
 	return err
 }
 
 // Stream sends a streaming response with `StatusCode` of the c and contentType.
 func (c *Context) Stream(contentType string, r io.Reader) error {
-	c.Header.Set(HeaderContentType, contentType)
+	c.Header().Set(HeaderContentType, contentType)
 	_, err := io.Copy(c.responseWriter, r)
 	return err
 }
@@ -244,7 +260,7 @@ func (c *Context) Inline(file, name string) error {
 
 // contentDisposition sends a response as the dispositionType.
 func (c *Context) contentDisposition(file, name, dispositionType string) error {
-	c.Header.Set(HeaderContentDisposition,
+	c.Header().Set(HeaderContentDisposition,
 		fmt.Sprintf("%s; filename=%s", dispositionType, name))
 	return c.File(file)
 }
@@ -258,12 +274,12 @@ func (c *Context) Redirect(code int, url string) error {
 		code > http.StatusTemporaryRedirect {
 		return ErrInvalidRedirectCode
 	}
-	c.Header.Set(HeaderLocation, url)
+	c.Header().Set(HeaderLocation, url)
 	c.WriteHeader(code)
 	return nil
 }
 
-// reset resets the instance of `Context`.
+// reset resets all fields in the c.
 func (c *Context) reset() {
 	c.Context = context.Background()
 	c.PristinePath = ""
@@ -276,6 +292,6 @@ func (c *Context) reset() {
 	for k := range c.Data {
 		delete(c.Data, k)
 	}
-	c.Written = false
 	c.Size = 0
+	c.Written = false
 }

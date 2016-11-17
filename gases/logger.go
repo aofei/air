@@ -94,7 +94,6 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 			}
 
 			req := c.Request
-			res := c.Response
 			start := time.Now()
 			if err = next(c); err != nil {
 				c.Air.HTTPErrorHandler(err, c)
@@ -106,18 +105,18 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 
 			data := make(air.JSONMap)
 			data["time_rfc3339"] = time.Now().Format(time.RFC3339)
-			data["remote_ip"] = req.RemoteIP()
-			data["host"] = req.Host()
-			data["request_uri"] = req.RequestURI()
-			data["method"] = req.Method()
-			p := req.URI.Path()
+			data["remote_ip"] = req.RemoteAddr
+			data["host"] = req.Host
+			data["request_uri"] = req.RequestURI
+			data["method"] = req.Method
+			p := req.URL.Path
 			if p == "" {
 				p = "/"
 			}
 			data["path"] = p
 			data["referer"] = req.Referer()
 			data["user_agent"] = req.UserAgent()
-			data["status"] = c.StatusCode
+			data["status"] = c.StatusCode()
 			data["latency"] = stop.Sub(start).Nanoseconds() / 1000
 			data["latency_human"] = stop.Sub(start).String()
 			b := req.Header.Get(air.HeaderContentLength)
@@ -125,7 +124,7 @@ func LoggerWithConfig(config LoggerConfig) air.GasFunc {
 				b = "0"
 			}
 			data["bytes_in"] = b
-			data["bytes_out"] = res.Size
+			data["bytes_out"] = c.Size
 			err = config.template.Execute(buf, data)
 			if err == nil {
 				config.Output.Write(buf.Bytes())
