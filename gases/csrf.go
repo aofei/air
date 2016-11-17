@@ -1,6 +1,7 @@
 package gases
 
 import (
+	"context"
 	"crypto/subtle"
 	"errors"
 	"math/rand"
@@ -126,7 +127,7 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 			}
 
 			req := c.Request
-			k, err := c.Cookie(config.CookieName)
+			k, err := req.Cookie(config.CookieName)
 			token := ""
 
 			if err != nil {
@@ -134,11 +135,11 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 				token = randomString(config.TokenLength)
 			} else {
 				// Reuse token
-				token = k.Value()
+				token = k.Value
 			}
 
 			// Validate token only for requests which are not defined as 'safe' by RFC7231
-			if req.Method() != air.GET {
+			if req.Method != air.GET {
 				clientToken, err := extractor(c)
 				if err != nil {
 					return err
@@ -149,25 +150,25 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 			}
 
 			// Set CSRF cookie
-			cookie := air.Cookie{}
-			cookie.SetName(config.CookieName)
-			cookie.SetValue(token)
+			cookie := &http.Cookie{}
+			cookie.Name = config.CookieName
+			cookie.Value = token
 			if config.CookiePath != "" {
-				cookie.SetPath(config.CookiePath)
+				cookie.Path = config.CookiePath
 			}
 			if config.CookieDomain != "" {
-				cookie.SetDomain(config.CookieDomain)
+				cookie.Domain = config.CookieDomain
 			}
-			cookie.SetExpires(time.Now().Add(time.Duration(config.CookieMaxAge) * time.Second))
-			cookie.SetSecure(config.CookieSecure)
-			cookie.SetHTTPOnly(config.CookieHTTPOnly)
+			cookie.Expires = time.Now().Add(time.Duration(config.CookieMaxAge) * time.Second)
+			cookie.Secure = config.CookieSecure
+			cookie.HttpOnly = config.CookieHTTPOnly
 			c.SetCookie(cookie)
 
 			// Store token in the context
-			c.SetValue(config.ContextKey, token)
+			c.Context = context.WithValue(c.Context, config.ContextKey, token)
 
 			// Protect clients from caching the response
-			c.Response.Header.Add(air.HeaderVary, air.HeaderCookie)
+			c.Header().Add(air.HeaderVary, air.HeaderCookie)
 
 			return next(c)
 		}
@@ -186,7 +187,7 @@ func csrfTokenFromHeader(header string) csrfTokenExtractor {
 // provided form parameter.
 func csrfTokenFromForm(param string) csrfTokenExtractor {
 	return func(c *air.Context) (string, error) {
-		token := c.FormValue(param)
+		token := c.Request.FormValue(param)
 		if token == "" {
 			return "", errors.New("empty csrf token in form param")
 		}
@@ -198,7 +199,7 @@ func csrfTokenFromForm(param string) csrfTokenExtractor {
 // provided query parameter.
 func csrfTokenFromQuery(param string) csrfTokenExtractor {
 	return func(c *air.Context) (string, error) {
-		token := c.QueryParam(param)
+		token := c.Request.URL.Query().Get(param)
 		if token == "" {
 			return "", errors.New("empty csrf token in query param")
 		}
@@ -210,7 +211,9 @@ func validateCSRFToken(token, clientToken string) bool {
 	return subtle.ConstantTimeCompare([]byte(token), []byte(clientToken)) == 1
 }
 
-const alphanumeric = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const alphanumeric = "abcdefghijklmnopqrstuvwxyz" +
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+	"0123456789"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -219,7 +222,7 @@ func init() {
 func randomString(length uint8) string {
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = alphanumeric[rand.Int63()%int64(62)]
+		b[i] = alphanumeric[rand.Int63()%int64(len(alphanumeric))]
 	}
 	return string(b)
 }

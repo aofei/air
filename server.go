@@ -63,7 +63,6 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	c := s.air.Pool.Context()
 
 	c.responseWriter = rw
-	c.Header = rw.Header()
 	c.Request = req
 
 	// Gases
