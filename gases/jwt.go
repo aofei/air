@@ -1,7 +1,6 @@
 package gases
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -146,7 +145,7 @@ func JWTWithConfig(config JWTConfig) air.GasFunc {
 			}
 			if err == nil && token.Valid {
 				// Store user information from token into context.
-				context.WithValue(c.Context, config.ContextKey, token)
+				c.SetValue(config.ContextKey, token)
 				return next(c)
 			}
 

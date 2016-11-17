@@ -13,14 +13,14 @@ import (
 	"path/filepath"
 	"reflect"
 	"sync"
+	"time"
 )
 
 // Context represents the context of the current HTTP request. It holds request
 // and response writer objects, path, path parameters, data and registered
 // handler.
 type Context struct {
-	context.Context
-
+	goContext      context.Context
 	responseWriter http.ResponseWriter
 	statusCode     int
 
@@ -41,12 +41,46 @@ var contextPool *sync.Pool
 // newContext returns a new instance of `Context`.
 func newContext(a *Air) *Context {
 	return &Context{
-		Context: context.Background(),
-		Params:  make(map[string]string),
-		Handler: NotFoundHandler,
-		Data:    make(JSONMap),
-		Air:     a,
+		goContext: context.Background(),
+		Params:    make(map[string]string),
+		Handler:   NotFoundHandler,
+		Data:      make(JSONMap),
+		Air:       a,
 	}
+}
+
+// Deadline returns the time when work done on behalf of this context
+// should be canceled. Deadline returns ok==false when no deadline is
+// set. Successive calls to Deadline return the same results.
+func (c *Context) Deadline() (deadline time.Time, ok bool) {
+	return c.goContext.Deadline()
+}
+
+// Done returns a channel that's closed when work done on behalf of this
+// context should be canceled. Done may return nil if this context can
+// never be canceled. Successive calls to Done return the same value.
+func (c *Context) Done() <-chan struct{} {
+	return c.goContext.Done()
+}
+
+// Err returns a non-nil error value after Done is closed. Err returns
+// Canceled if the context was canceled or DeadlineExceeded if the
+// context's deadline passed. No other values for Err are defined.
+// After Done is closed, successive calls to Err return the same value.
+func (c *Context) Err() error {
+	return c.goContext.Err()
+}
+
+// Value returns the value associated with this context for key, or nil
+// if no value is associated with key. Successive calls to Value with
+// the same key returns the same result.
+func (c *Context) Value(key interface{}) interface{} {
+	return c.goContext.Value(key)
+}
+
+// SetValue sets request-scoped value into the context.
+func (c *Context) SetValue(key interface{}, val interface{}) {
+	c.goContext = context.WithValue(c.goContext, key, val)
 }
 
 // Header implements `http.ResponseWriter#Header()`.
@@ -284,7 +318,7 @@ func (c *Context) Redirect(code int, url string) error {
 
 // reset resets all fields in the c.
 func (c *Context) reset() {
-	c.Context = context.Background()
+	c.goContext = context.Background()
 	c.responseWriter = nil
 	c.statusCode = 0
 	c.Request = nil
