@@ -48,7 +48,7 @@ func (g *Group) POST(path string, handler HandlerFunc, gases ...GasFunc) {
 }
 
 // PUT implements `Air#PUT()`.
-func (g *Group) Put(path string, handler HandlerFunc, gases ...GasFunc) {
+func (g *Group) PUT(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(PUT, path, handler, gases...)
 }
 
