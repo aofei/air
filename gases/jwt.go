@@ -1,6 +1,7 @@
 package gases
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -145,7 +146,7 @@ func JWTWithConfig(config JWTConfig) air.GasFunc {
 			}
 			if err == nil && token.Valid {
 				// Store user information from token into context.
-				c.SetValue(config.ContextKey, token)
+				context.WithValue(c.Context, config.ContextKey, token)
 				return next(c)
 			}
 
@@ -169,7 +170,7 @@ func jwtFromHeader(header string) jwtExtractor {
 // jwtFromQuery returns a `jwtExtractor` that extracts token from query string.
 func jwtFromQuery(param string) jwtExtractor {
 	return func(c *air.Context) (string, error) {
-		token := c.QueryParam(param)
+		token := c.Request.URL.Query().Get(param)
 		if token == "" {
 			return "", errors.New("empty jwt in query string")
 		}
@@ -180,10 +181,10 @@ func jwtFromQuery(param string) jwtExtractor {
 // jwtFromCookie returns a `jwtExtractor` that extracts token from named cookie.
 func jwtFromCookie(name string) jwtExtractor {
 	return func(c *air.Context) (string, error) {
-		cookie, err := c.Cookie(name)
+		cookie, err := c.Request.Cookie(name)
 		if err != nil {
 			return "", errors.New("empty jwt in cookie")
 		}
-		return cookie.Value(), nil
+		return cookie.Value, nil
 	}
 }
