@@ -9,7 +9,7 @@ import (
 func TestRouterMatchStatic(t *testing.T) {
 	a := New()
 	r := a.router
-	c := a.Pool.Context()
+	c := contextPool.Get().(*Context)
 
 	path := "/foo/bar.jpg"
 	r.add(GET, path, func(c *Context) error {
@@ -24,7 +24,7 @@ func TestRouterMatchStatic(t *testing.T) {
 func TestRouterMatchParam(t *testing.T) {
 	a := New()
 	r := a.router
-	c := a.Pool.Context()
+	c := contextPool.Get().(*Context)
 
 	r.add(GET, "/users/:id", func(c *Context) error {
 		return nil
@@ -54,7 +54,7 @@ func TestRouterMatchParam(t *testing.T) {
 func TestRouterMatchAny(t *testing.T) {
 	a := New()
 	r := a.router
-	c := a.Pool.Context()
+	c := contextPool.Get().(*Context)
 
 	r.add(GET, "/*", func(*Context) error {
 		return nil
@@ -77,7 +77,7 @@ func TestRouterMatchAny(t *testing.T) {
 func TestRouterMixMatchParamAndAny(t *testing.T) {
 	a := New()
 	r := a.router
-	c := a.Pool.Context()
+	c := contextPool.Get().(*Context)
 
 	r.add(GET, "/users/:id/*", func(c *Context) error {
 		return nil
@@ -95,7 +95,7 @@ func TestRouterMixMatchParamAndAny(t *testing.T) {
 func TestRouterMatchingPriority(t *testing.T) {
 	a := New()
 	r := a.router
-	c := a.Pool.Context()
+	c := contextPool.Get().(*Context)
 
 	r.add(GET, "/users", func(c *Context) error {
 		c.SetValue("a", 1)
