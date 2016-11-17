@@ -7,10 +7,10 @@ func TestGroupRESTfulMethods(t *testing.T) {
 	g := NewGroup("/group", a)
 	h := func(*Context) error { return nil }
 
-	g.Get("/", h)
-	g.Post("/", h)
-	g.Put("/", h)
-	g.Delete("/", h)
+	g.GET("/", h)
+	g.POST("/", h)
+	g.PUT("/", h)
+	g.DELETE("/", h)
 }
 
 func TestGroupOtherMethods(t *testing.T) {
