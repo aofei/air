@@ -27,7 +27,7 @@ import "github.com/sheng/air"
 
 func main() {
 	a := air.New()
-	a.Get("/", homeHandler)
+	a.GET("/", homeHandler)
 	a.Run()
 }
 
