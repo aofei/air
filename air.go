@@ -14,6 +14,7 @@ import (
 type (
 	// Air is the top-level framework struct.
 	Air struct {
+		server   *server
 		pregases []GasFunc
 		gases    []GasFunc
 		router   *router
@@ -261,10 +262,15 @@ func (a *Air) Run() {
 		a.Logger.Debug("running in debug mode")
 	}
 
-	s := newServer(a)
-	if err := s.start(); err != nil {
+	a.server = newServer(a)
+	if err := a.server.start(); err != nil {
 		panic(err)
 	}
+}
+
+// Stop stops the HTTP server.
+func (a *Air) Stop() error {
+	return a.server.stop()
 }
 
 // handlerName returns the handler's func name.
