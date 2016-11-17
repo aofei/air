@@ -60,7 +60,7 @@ func (s *server) stop() error {
 
 // ServeHTTP implements `http.Handler`.
 func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	c := s.air.Pool.Context()
+	c := contextPool.Get().(*Context)
 
 	c.responseWriter = rw
 	c.Request = req
@@ -87,7 +87,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		s.air.HTTPErrorHandler(err, c)
 	}
 
-	s.air.Pool.Put(c)
+	c.reset()
+	contextPool.Put(c)
 }
 
 // tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
