@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 )
 
 // Context represents the context of the current HTTP request. It holds request
@@ -34,6 +35,8 @@ type Context struct {
 	Written      bool
 	Air          *Air
 }
+
+var contextPool *sync.Pool
 
 // newContext returns a new instance of `Context`.
 func newContext(a *Air) *Context {
@@ -282,6 +285,9 @@ func (c *Context) Redirect(code int, url string) error {
 // reset resets all fields in the c.
 func (c *Context) reset() {
 	c.Context = context.Background()
+	c.responseWriter = nil
+	c.statusCode = 0
+	c.Request = nil
 	c.PristinePath = ""
 	c.ParamNames = c.ParamNames[:0]
 	c.ParamValues = c.ParamValues[:0]
