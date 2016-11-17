@@ -37,36 +37,36 @@ func (g *Group) Contain(gases ...GasFunc) {
 	g.gases = append(g.gases, gases...)
 }
 
-// Get implements `Air#Get()`.
-func (g *Group) Get(path string, handler HandlerFunc, gases ...GasFunc) {
+// GET implements `Air#GET()`.
+func (g *Group) GET(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(GET, path, handler, gases...)
 }
 
-// Post implements `Air#Post()`.
-func (g *Group) Post(path string, handler HandlerFunc, gases ...GasFunc) {
+// POST implements `Air#POST()`.
+func (g *Group) POST(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(POST, path, handler, gases...)
 }
 
-// Put implements `Air#Put()`.
+// PUT implements `Air#PUT()`.
 func (g *Group) Put(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(PUT, path, handler, gases...)
 }
 
-// Delete implements `Air#Delete()`.
-func (g *Group) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
+// DELETE implements `Air#DELETE()`.
+func (g *Group) DELETE(path string, handler HandlerFunc, gases ...GasFunc) {
 	g.add(DELETE, path, handler, gases...)
 }
 
 // Static implements `Air#Static()`.
 func (g *Group) Static(prefix, root string) {
-	g.Get(prefix+"*", func(c *Context) error {
+	g.GET(prefix+"*", func(c *Context) error {
 		return c.File(path.Join(root, c.Params[c.ParamNames[0]]))
 	})
 }
 
 // File implements `Air#File()`.
 func (g *Group) File(path, file string) {
-	g.Get(path, func(c *Context) error {
+	g.GET(path, func(c *Context) error {
 		return c.File(file)
 	})
 }

@@ -160,41 +160,41 @@ func (a *Air) Contain(gases ...GasFunc) {
 	a.gases = append(a.gases, gases...)
 }
 
-// Get registers a new GET route for a path with matching handler in the router
+// GET registers a new GET route for a path with matching handler in the router
 // with optional route-level gases.
-func (a *Air) Get(path string, handler HandlerFunc, gases ...GasFunc) {
+func (a *Air) GET(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(GET, path, handler, gases...)
 }
 
-// Post registers a new POST route for a path with matching handler in the
+// POST registers a new POST route for a path with matching handler in the
 // router with optional route-level gases.
-func (a *Air) Post(path string, handler HandlerFunc, gases ...GasFunc) {
+func (a *Air) POST(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(POST, path, handler, gases...)
 }
 
-// Put registers a new PUT route for a path with matching handler in the
+// PUT registers a new PUT route for a path with matching handler in the
 // router with optional route-level gases.
-func (a *Air) Put(path string, handler HandlerFunc, gases ...GasFunc) {
+func (a *Air) PUT(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(PUT, path, handler, gases...)
 }
 
-// Delete registers a new DELETE route for a path with matching handler in
+// DELETE registers a new DELETE route for a path with matching handler in
 // the router with optional route-level gases.
-func (a *Air) Delete(path string, handler HandlerFunc, gases ...GasFunc) {
+func (a *Air) DELETE(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(DELETE, path, handler, gases...)
 }
 
 // Static registers a new route with path prefix to serve static files from
 // the provided root directory.
 func (a *Air) Static(prefix, root string) {
-	a.Get(prefix+"*", func(c *Context) error {
+	a.GET(prefix+"*", func(c *Context) error {
 		return c.File(path.Join(root, c.Params[c.ParamNames[0]]))
 	})
 }
 
 // File registers a new route with path to serve a static file.
 func (a *Air) File(path, file string) {
-	a.Get(path, func(c *Context) error {
+	a.GET(path, func(c *Context) error {
 		return c.File(file)
 	})
 }
