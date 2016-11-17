@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -28,21 +29,21 @@ func newBinder(a *Air) *binder {
 // "Content-Type" header.
 func (b *binder) bind(i interface{}, c *Context) error {
 	req := c.Request
-	if req.Method() == GET {
-		err := b.bindData(i, c.QueryParams())
+	if req.Method == GET {
+		err := b.bindData(i, req.URL.Query())
 		if err != nil {
 			err = NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		return err
 	}
 	ctype := req.Header.Get(HeaderContentType)
-	if req.Body() == nil {
+	if req.Body == nil {
 		return NewHTTPError(http.StatusBadRequest, "request body can't be empty")
 	}
 	var err error
 	switch {
 	case strings.HasPrefix(ctype, MIMEApplicationJSON):
-		if err = json.NewDecoder(req.Body()).Decode(i); err != nil {
+		if err = json.NewDecoder(req.Body).Decode(i); err != nil {
 			if ute, ok := err.(*json.UnmarshalTypeError); ok {
 				err = NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
 					"unmarshal type error: expected=%v, got=%v, offset=%v",
@@ -56,7 +57,7 @@ func (b *binder) bind(i interface{}, c *Context) error {
 			}
 		}
 	case strings.HasPrefix(ctype, MIMEApplicationXML):
-		if err = xml.NewDecoder(req.Body()).Decode(i); err != nil {
+		if err = xml.NewDecoder(req.Body).Decode(i); err != nil {
 			if ute, ok := err.(*xml.UnsupportedTypeError); ok {
 				err = NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
 					"unsupported type error: type=%v, error=%v",
@@ -70,8 +71,10 @@ func (b *binder) bind(i interface{}, c *Context) error {
 			}
 		}
 	case strings.HasPrefix(ctype, MIMEApplicationForm), strings.HasPrefix(ctype, MIMEMultipartForm):
-		if err = b.bindData(i, req.FormParams()); err != nil {
-			err = NewHTTPError(http.StatusBadRequest, err.Error())
+		if err = req.ParseForm(); err == nil {
+			if err = b.bindData(i, req.Form); err != nil {
+				err = NewHTTPError(http.StatusBadRequest, err.Error())
+			}
 		}
 	default:
 		err = ErrUnsupportedMediaType
@@ -80,7 +83,7 @@ func (b *binder) bind(i interface{}, c *Context) error {
 }
 
 // bindData binds the data into a type ptr.
-func (b *binder) bindData(ptr interface{}, data map[string][]string) error {
+func (b *binder) bindData(ptr interface{}, data url.Values) error {
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
 
