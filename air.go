@@ -8,6 +8,7 @@ import (
 	"path"
 	"reflect"
 	"runtime"
+	"sync"
 )
 
 type (
@@ -19,7 +20,6 @@ type (
 		binder   *binder
 		renderer *renderer
 
-		Pool             *Pool
 		Config           *Config
 		Logger           *Logger
 		HTTPErrorHandler HTTPErrorHandler
@@ -143,10 +143,14 @@ func New() *Air {
 	a.router = newRouter(a)
 	a.binder = newBinder(a)
 	a.renderer = newRenderer(a)
-	a.Pool = newPool(a)
 	a.Config = newConfig()
 	a.Logger = newLogger(a)
 	a.HTTPErrorHandler = defaultHTTPErrorHandler
+	contextPool = &sync.Pool{
+		New: func() interface{} {
+			return newContext(a)
+		},
+	}
 	return a
 }
 
