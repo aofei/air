@@ -63,9 +63,8 @@ func newRouter(a *Air) *router {
 	}
 }
 
-// add registers a new route for method and path with matching handler.
-func (r *router) add(method, path string, h HandlerFunc) {
-	// Validate path
+// checkPath checks whether the path is valid.
+func (r *router) checkPath(path string) {
 	if path == "" {
 		panic("path cannot be empty")
 	} else if path[0] != '/' {
@@ -86,8 +85,10 @@ func (r *router) add(method, path string, h HandlerFunc) {
 			panic("adjacent param and * in a path must be separated by /")
 		}
 	}
+}
 
-	// Validate route
+// checkRoute checks whether the [method path] route is valid.
+func (r *router) checkRoute(method, path string) {
 	for _, route := range r.routes {
 		if route.method == method {
 			if route.path == path {
@@ -99,6 +100,13 @@ func (r *router) add(method, path string, h HandlerFunc) {
 			}
 		}
 	}
+}
+
+// add registers a new route for method and path with matching handler.
+func (r *router) add(method, path string, h HandlerFunc) {
+	// Checks
+	r.checkPath(path)
+	r.checkRoute(method, path)
 
 	ppath := path        // Pristine path
 	pnames := []string{} // Param names
