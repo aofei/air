@@ -1,7 +1,6 @@
 package gases
 
 import (
-	"context"
 	"crypto/subtle"
 	"errors"
 	"math/rand"
@@ -165,7 +164,7 @@ func CSRFWithConfig(config CSRFConfig) air.GasFunc {
 			c.SetCookie(cookie)
 
 			// Store token in the context
-			c.Context = context.WithValue(c.Context, config.ContextKey, token)
+			c.SetValue(config.ContextKey, token)
 
 			// Protect clients from caching the response
 			c.Header().Add(air.HeaderVary, air.HeaderCookie)
