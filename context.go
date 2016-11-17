@@ -6,143 +6,80 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
-	"mime"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
-	"time"
 )
 
-// Context represents the context of the current HTTP request. It holds request and
-// response objects, path, path parameters, data and registered handler.
+// Context represents the context of the current HTTP request. It holds request
+// and response writer objects, path, path parameters, data and registered
+// handler.
 type Context struct {
-	goContext context.Context
+	context.Context
 
-	Request      *Request
-	Response     *Response
+	responseWriter http.ResponseWriter
+
+	Request      *http.Request
 	PristinePath string
 	ParamNames   []string
 	ParamValues  []string
 	Params       map[string]string
 	Handler      HandlerFunc
-	StatusCode   int
 	Data         JSONMap
+	Header       http.Header
+	Size         int64
+	Written      bool
 	Air          *Air
 }
 
 // newContext returns a new instance of `Context`.
 func newContext(a *Air) *Context {
 	return &Context{
-		goContext:  context.Background(),
-		Request:    newRequest(a),
-		Response:   newResponse(a),
-		Params:     make(map[string]string),
-		Handler:    NotFoundHandler,
-		StatusCode: http.StatusOK,
-		Data:       make(JSONMap),
-		Air:        a,
+		Context: context.Background(),
+		Params:  make(map[string]string),
+		Handler: NotFoundHandler,
+		Data:    make(JSONMap),
+		Air:     a,
 	}
 }
 
-// Deadline returns the time when work done on behalf of this context
-// should be canceled. Deadline returns ok==false when no deadline is
-// set. Successive calls to Deadline return the same results.
-func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	return c.goContext.Deadline()
+// SetCookie adds a "Set-Cookie" header in HTTP response. The provided cookie
+// must have a valid `Name`. Invalid cookies may be silently dropped.
+func (c *Context) SetCookie(cookie *http.Cookie) {
+	http.SetCookie(c.responseWriter, cookie)
 }
 
-// Done returns a channel that's closed when work done on behalf of this
-// context should be canceled. Done may return nil if this context can
-// never be canceled. Successive calls to Done return the same value.
-func (c *Context) Done() <-chan struct{} {
-	return c.goContext.Done()
+// Write implements `http.ResponseWriter#Write()`.
+func (c *Context) Write(bs []byte) (int, error) {
+	if !c.Written {
+		c.WriteHeader(http.StatusOK)
+	}
+	n, err := c.responseWriter.Write(bs)
+	c.Size += int64(n)
+	return n, err
 }
 
-// Err returns a non-nil error value after Done is closed. Err returns
-// Canceled if the context was canceled or DeadlineExceeded if the
-// context's deadline passed. No other values for Err are defined.
-// After Done is closed, successive calls to Err return the same value.
-func (c *Context) Err() error {
-	return c.goContext.Err()
+// WriteHeader implements `http.ResponseWriter#WriteHeader()`.
+func (c *Context) WriteHeader(code int) {
+	if c.Written {
+		c.Air.Logger.Warn("response already committed")
+		return
+	}
+	c.responseWriter.WriteHeader(code)
+	c.Written = true
 }
 
-// Value returns the value associated with this context for key, or nil
-// if no value is associated with key. Successive calls to Value with
-// the same key returns the same result.
-func (c *Context) Value(key interface{}) interface{} {
-	return c.goContext.Value(key)
-}
-
-// SetValue sets request-scoped value into the context.
-func (c *Context) SetValue(key interface{}, val interface{}) {
-	c.goContext = context.WithValue(c.goContext, key, val)
-}
-
-// QueryParam returns the query param for the provided name. It is an alias
-// for `URI#QueryParam()`.
-func (c *Context) QueryParam(name string) string {
-	return c.Request.URI.QueryParam(name)
-}
-
-// QueryParams returns the query parameters as map. It is an alias for
-// `URI#QueryParams()`.
-func (c *Context) QueryParams() map[string][]string {
-	return c.Request.URI.QueryParams()
-}
-
-// FormValue returns the form field value for the provided name. It is an
-// alias for `Request#FormValue()`.
-func (c *Context) FormValue(name string) string {
-	return c.Request.FormValue(name)
-}
-
-// FormParams returns the form parameters as map.
-// It is an alias for `Request#FormParams()`.
-func (c *Context) FormParams() map[string][]string {
-	return c.Request.FormParams()
-}
-
-// FormFile returns the multipart form file for the provided name. It is an
-// alias for `Request#FormFile()`.
-func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
-	return c.Request.FormFile(name)
-}
-
-// MultipartForm returns the multipart form.
-// It is an alias for `Request#MultipartForm()`.
-func (c *Context) MultipartForm() (*multipart.Form, error) {
-	return c.Request.MultipartForm()
-}
-
-// Cookie returns the named cookie provided in the request.
-// It is an alias for `Request#Cookie()`.
-func (c *Context) Cookie(name string) (*Cookie, error) {
-	return c.Request.Cookie(name)
-}
-
-// SetCookie adds a "Set-Cookie" header in HTTP response.
-// It is an alias for `Response#SetCookie()`.
-func (c *Context) SetCookie(cookie Cookie) {
-	c.Response.SetCookie(cookie)
-}
-
-// Cookies returns the HTTP cookies sent with the request. It is an alias
-// for `Request#Cookies()`.
-func (c *Context) Cookies() []Cookie {
-	return c.Request.Cookies()
-}
-
-// Bind binds the request body into provided type i. The default binder doe
-// it based on "Content-Type" header.
+// Bind binds the request body into provided type i. The default binder does it
+// based on "Content-Type" header.
 func (c *Context) Bind(i interface{}) error {
 	return c.Air.binder.bind(i, c)
 }
 
-// Render renders a template with `Context#Data` and `Context#Data["template"]`
-// and sends a "text/html" response with `Context#StatusCode`.
+// Render renders a template with `Data` and `Data["template"]` of the c and
+// sends a "text/html" response with `StatusCode` of the c.
 func (c *Context) Render() error {
 	t, ok := c.Data["template"]
 	if !ok || reflect.ValueOf(t).Kind() != reflect.String {
@@ -152,127 +89,122 @@ func (c *Context) Render() error {
 	if err := c.Air.renderer.render(buf, t.(string), c); err != nil {
 		return err
 	}
-	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
-	c.Response.WriteHeader(c.StatusCode)
-	_, err := c.Response.Write(buf.Bytes())
+	c.Header.Set(HeaderContentType, MIMETextHTML)
+	_, err := c.Write(buf.Bytes())
 	return err
 }
 
-// HTML sends an HTTP response with `Context#StatusCode` and `Context#Data["html"]`.
+// HTML sends an HTTP response with `StatusCode` and `Data["html"]` of the c.
 func (c *Context) HTML() error {
 	h, ok := c.Data["html"]
 	if !ok || reflect.ValueOf(h).Kind() != reflect.String {
 		return errors.New("c.Data[\"html\"] not setted")
 	}
-	c.Response.Header.Set(HeaderContentType, MIMETextHTML)
-	c.Response.WriteHeader(c.StatusCode)
-	_, err := c.Response.Write([]byte(h.(string)))
+	c.Header.Set(HeaderContentType, MIMETextHTML)
+	_, err := c.Write([]byte(h.(string)))
 	return err
 }
 
-// String sends a string response with `Context#StatusCode` and `Context#Data["string"]`.
+// String sends a string response with `StatusCode` and `Data["string"]` of the
+// c.
 func (c *Context) String() error {
 	s, ok := c.Data["string"]
 	if !ok || reflect.ValueOf(s).Kind() != reflect.String {
 		return errors.New("c.Data[\"string\"] not setted")
 	}
-	c.Response.Header.Set(HeaderContentType, MIMETextPlain)
-	c.Response.WriteHeader(c.StatusCode)
-	_, err := c.Response.Write([]byte(s.(string)))
+	c.Header.Set(HeaderContentType, MIMETextPlain)
+	_, err := c.Write([]byte(s.(string)))
 	return err
 }
 
-// JSON sends a JSON response with `Context#StatusCode` and `Context#Data["json"]`.
+// JSON sends a JSON response with `StatusCode` and `Data["json"]` of the c.
 func (c *Context) JSON() error {
 	j, ok := c.Data["json"]
 	if !ok {
 		return errors.New("c.Data[\"json\"] not setted")
 	}
-	b, err := json.Marshal(j)
+	bs, err := json.Marshal(j)
 	if c.Air.Config.DebugMode {
-		b, err = json.MarshalIndent(j, "", "\t")
+		bs, err = json.MarshalIndent(j, "", "\t")
 	}
 	if err != nil {
 		return err
 	}
-	return c.JSONBlob(b)
+	return c.JSONBlob(bs)
 }
 
-// JSONBlob sends a JSON blob response with `Context#StatusCode`.
-func (c *Context) JSONBlob(b []byte) error {
-	return c.Blob(MIMEApplicationJSON, b)
+// JSONBlob sends a JSON blob response with `StatusCode` of the c.
+func (c *Context) JSONBlob(bs []byte) error {
+	return c.Blob(MIMEApplicationJSON, bs)
 }
 
-// JSONP sends a JSONP response with `Context#StatusCode` and `Context#Data["jsonp"]`.
-// It uses `Context#Data["callback"]` to construct the JSONP payload.
+// JSONP sends a JSONP response with `StatusCode` and `Data["jsonp"]` of the c.
+// It uses `Data["callback"]` of the c to construct the JSONP payload.
 func (c *Context) JSONP() error {
 	j, jok := c.Data["jsonp"]
 	if !jok {
 		return errors.New("c.Data[\"jsonp\"] not setted")
 	}
-	b, err := json.Marshal(j)
+	bs, err := json.Marshal(j)
 	if err != nil {
 		return err
 	}
-	return c.JSONPBlob(b)
+	return c.JSONPBlob(bs)
 }
 
-// JSONPBlob sends a JSONP blob response with `Context#StatusCode`. It uses
-// `Context#Data["callback"]` to construct the JSONP payload.
-func (c *Context) JSONPBlob(b []byte) error {
+// JSONPBlob sends a JSONP blob response with `StatusCode` of the c. It uses
+// `Data["callback"]` of the c to construct the JSONP payload.
+func (c *Context) JSONPBlob(bs []byte) error {
 	cb, cbok := c.Data["callback"]
 	if !cbok || reflect.ValueOf(cb).Kind() != reflect.String {
 		return errors.New("c.Data[\"callback\"] not setted")
 	}
-	c.Response.Header.Set(HeaderContentType, MIMEApplicationJavaScript)
-	c.Response.WriteHeader(c.StatusCode)
-	if _, err := c.Response.Write([]byte(cb.(string) + "(")); err != nil {
+	c.Header.Set(HeaderContentType, MIMEApplicationJavaScript)
+	if _, err := c.Write([]byte(cb.(string) + "(")); err != nil {
 		return err
 	}
-	if _, err := c.Response.Write(b); err != nil {
+	if _, err := c.Write(bs); err != nil {
 		return err
 	}
-	_, err := c.Response.Write([]byte(");"))
+	_, err := c.Write([]byte(");"))
 	return err
 }
 
-// XML sends an XML response with `Context#StatusCode` and `Context#Data["xml"]`.
+// XML sends an XML response with `StatusCode` and `Data["xml"]` of the c.
 func (c *Context) XML() error {
 	x, ok := c.Data["xml"]
 	if !ok {
 		return errors.New("c.Data[\"xml\"] not setted")
 	}
-	b, err := xml.Marshal(x)
+	bs, err := xml.Marshal(x)
 	if c.Air.Config.DebugMode {
-		b, err = xml.MarshalIndent(x, "", "\t")
+		bs, err = xml.MarshalIndent(x, "", "\t")
 	}
 	if err != nil {
 		return err
 	}
-	return c.XMLBlob(b)
+	return c.XMLBlob(bs)
 }
 
-// XMLBlob sends a XML blob response with `Context#StatusCode`.
-func (c *Context) XMLBlob(b []byte) error {
-	if _, err := c.Response.Write([]byte(xml.Header)); err != nil {
+// XMLBlob sends a XML blob response with `StatusCode` of the c.
+func (c *Context) XMLBlob(bs []byte) error {
+	if _, err := c.Write([]byte(xml.Header)); err != nil {
 		return err
 	}
-	return c.Blob(MIMEApplicationXML, b)
+	return c.Blob(MIMEApplicationXML, bs)
 }
 
-// Blob sends a blob response with `Context#StatusCode` and contentType.
-func (c *Context) Blob(contentType string, b []byte) error {
-	c.Response.Header.Set(HeaderContentType, contentType)
-	c.Response.WriteHeader(c.StatusCode)
-	_, err := c.Response.Write(b)
+// Blob sends a blob response with `StatusCode` of the c and contentType.
+func (c *Context) Blob(contentType string, bs []byte) error {
+	c.Header.Set(HeaderContentType, contentType)
+	_, err := c.Write(bs)
 	return err
 }
 
-// Stream sends a streaming response with `Context#StatusCode` and contentType.
+// Stream sends a streaming response with `StatusCode` of the c and contentType.
 func (c *Context) Stream(contentType string, r io.Reader) error {
-	c.Response.Header.Set(HeaderContentType, contentType)
-	c.Response.WriteHeader(c.StatusCode)
-	_, err := io.Copy(c.Response, r)
+	c.Header.Set(HeaderContentType, contentType)
+	_, err := io.Copy(c.responseWriter, r)
 	return err
 }
 
@@ -296,72 +228,44 @@ func (c *Context) File(file string) error {
 			return err
 		}
 	}
-	return c.ServeContent(f, fi.Name(), fi.ModTime())
-}
-
-// Attachment sends a response from `io.ReaderSeeker` as attachment, prompting
-// client to save the file.
-func (c *Context) Attachment(r io.ReadSeeker, name string) error {
-	return c.contentDisposition(r, name, "attachment")
-}
-
-// Inline sends a response from `io.ReaderSeeker` as inline, opening the
-// file in the browser.
-func (c *Context) Inline(r io.ReadSeeker, name string) error {
-	return c.contentDisposition(r, name, "inline")
-}
-
-// contentDisposition sends a response from `io.ReaderSeeker` as dispositionType.
-func (c *Context) contentDisposition(r io.ReadSeeker, name, dispositionType string) error {
-	c.Response.Header.Set(HeaderContentType, contentTypeByExtension(name))
-	c.Response.Header.Set(HeaderContentDisposition, dispositionType+"; filename="+name)
-	c.Response.WriteHeader(http.StatusOK)
-	_, err := io.Copy(c.Response, r)
-	return err
-}
-
-// NoContent sends a response with no body and a `Context#StatusCode`.
-func (c *Context) NoContent() error {
-	c.Response.WriteHeader(c.StatusCode)
+	http.ServeContent(c.responseWriter, c.Request, fi.Name(), fi.ModTime(), f)
 	return nil
 }
 
-// Redirect redirects the request with `Context#StatusCode`.
-func (c *Context) Redirect(uri string) error {
-	if c.StatusCode < http.StatusMultipleChoices || c.StatusCode > http.StatusTemporaryRedirect {
+// Attachment sends a response as attachment, prompting client to save the file.
+func (c *Context) Attachment(file, name string) error {
+	return c.contentDisposition(file, name, "attachment")
+}
+
+// Inline sends a response as inline, opening the file in the browser.
+func (c *Context) Inline(file, name string) error {
+	return c.contentDisposition(file, name, "inline")
+}
+
+// contentDisposition sends a response as the dispositionType.
+func (c *Context) contentDisposition(file, name, dispositionType string) error {
+	c.Header.Set(HeaderContentDisposition,
+		fmt.Sprintf("%s; filename=%s", dispositionType, name))
+	return c.File(file)
+}
+
+// NoContent sends a response with no body.
+func (c *Context) NoContent() error { return nil }
+
+// Redirect redirects the request with status code.
+func (c *Context) Redirect(code int, url string) error {
+	if code < http.StatusMultipleChoices ||
+		code > http.StatusTemporaryRedirect {
 		return ErrInvalidRedirectCode
 	}
-	c.Response.Header.Set(HeaderLocation, uri)
-	c.Response.WriteHeader(c.StatusCode)
+	c.Header.Set(HeaderLocation, url)
+	c.WriteHeader(code)
 	return nil
-}
-
-// ServeContent sends static content from `io.Reader` and handles caching
-// via "If-Modified-Since" request header. It automatically sets "Content-Type"
-// and "Last-Modified" response headers.
-func (c *Context) ServeContent(content io.ReadSeeker, name string, modtime time.Time) error {
-	req := c.Request
-	res := c.Response
-
-	if t, err := time.Parse(http.TimeFormat, req.Header.Get(HeaderIfModifiedSince)); err == nil && modtime.Before(t.Add(1*time.Second)) {
-		res.Header.Del(HeaderContentType)
-		res.Header.Del(HeaderContentLength)
-		c.StatusCode = http.StatusNotModified
-		return c.NoContent()
-	}
-
-	res.Header.Set(HeaderContentType, contentTypeByExtension(name))
-	res.Header.Set(HeaderLastModified, modtime.UTC().Format(http.TimeFormat))
-	res.WriteHeader(http.StatusOK)
-	_, err := io.Copy(res, content)
-	return err
 }
 
 // reset resets the instance of `Context`.
 func (c *Context) reset() {
-	c.goContext = context.Background()
-	c.Request.reset()
-	c.Response.reset()
+	c.Context = context.Background()
 	c.PristinePath = ""
 	c.ParamNames = c.ParamNames[:0]
 	c.ParamValues = c.ParamValues[:0]
@@ -369,19 +273,9 @@ func (c *Context) reset() {
 		delete(c.Params, k)
 	}
 	c.Handler = NotFoundHandler
-	c.StatusCode = http.StatusOK
 	for k := range c.Data {
 		delete(c.Data, k)
 	}
-}
-
-// contentTypeByExtension returns the MIME type associated with the file based
-// on its extension. It returns "application/octet-stream" incase MIME type is
-// not found.
-func contentTypeByExtension(name string) string {
-	t := mime.TypeByExtension(filepath.Ext(name))
-	if t == "" {
-		t = MIMEOctetStream
-	}
-	return t
+	c.Written = false
+	c.Size = 0
 }

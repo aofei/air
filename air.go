@@ -219,9 +219,9 @@ func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 	a.router.routes[method+path] = r
 }
 
-// URI returns a URI generated from handler with optional params.
-func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
-	uri := &bytes.Buffer{}
+// URL returns a URL generated from handler with optional params.
+func (a *Air) URL(handler HandlerFunc, params ...interface{}) string {
+	url := &bytes.Buffer{}
 	ln := len(params)
 	n := 0
 	name := handlerName(handler)
@@ -231,17 +231,17 @@ func (a *Air) URI(handler HandlerFunc, params ...interface{}) string {
 				if r.path[i] == ':' && n < ln {
 					for ; i < l && r.path[i] != '/'; i++ {
 					}
-					uri.WriteString(fmt.Sprintf("%v", params[n]))
+					url.WriteString(fmt.Sprintf("%v", params[n]))
 					n++
 				}
 				if i < l {
-					uri.WriteByte(r.path[i])
+					url.WriteByte(r.path[i])
 				}
 			}
 			break
 		}
 	}
-	return uri.String()
+	return url.String()
 }
 
 // SetTemplateFunc sets the f into template func map with a name.
@@ -307,9 +307,9 @@ func defaultHTTPErrorHandler(err error, c *Context) {
 	if c.Air.Config.DebugMode {
 		he.Message = err.Error()
 	}
-	if !c.Response.Committed {
+	if !c.Written {
 		c.Data["string"] = he.Message
-		c.StatusCode = he.Code
+		c.WriteHeader(he.Code)
 		c.String()
 	}
 	c.Air.Logger.Error(err)

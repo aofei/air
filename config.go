@@ -49,6 +49,13 @@ type Config struct {
 	// Default value is nil.
 	Listener net.Listener
 
+	// DisableHTTP2 represens the state of `Air`'s HTTP/2 enabled.
+	//
+	// Default value is false.
+	//
+	// I'ts called "disable_http2" in the config file.
+	DisableHTTP2 bool
+
 	// TLSCertFile represents the TLS certificate file path.
 	//
 	// Default value is "".
@@ -152,6 +159,9 @@ func (c *Config) fillData() {
 	}
 	if addr, ok := c.Data["address"]; ok {
 		c.Address = addr.(string)
+	}
+	if dh, ok := c.Data["disable_http2"]; ok {
+		c.DisableHTTP2 = dh.(bool)
 	}
 	if tlscf, ok := c.Data["tls_cert_file"]; ok {
 		c.TLSCertFile = tlscf.(string)
