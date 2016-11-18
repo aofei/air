@@ -1,11 +1,13 @@
 package gases
 
 import (
+	"bufio"
 	"compress/gzip"
+	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/sheng/air"
 )
@@ -22,6 +24,7 @@ type (
 	}
 
 	gzipResponseWriter struct {
+		io.Writer
 		http.ResponseWriter
 	}
 )
@@ -54,7 +57,6 @@ func GzipWithConfig(config GzipConfig) air.GasFunc {
 	// Defaults
 	config.fill()
 
-	pool := gzipPool(config)
 	scheme := "gzip"
 
 	return func(next air.HandlerFunc) air.HandlerFunc {
@@ -65,42 +67,43 @@ func GzipWithConfig(config GzipConfig) air.GasFunc {
 
 			c.Header().Add(air.HeaderVary, air.HeaderAcceptEncoding)
 			if strings.Contains(c.Request.Header.Get(air.HeaderAcceptEncoding), scheme) {
-				rw := c
-				gw := pool.Get().(*gzip.Writer)
-				gw.Reset(rw)
+				rw := c.ResponseWriter
+				w, err := gzip.NewWriterLevel(rw, config.Level)
+				if err != nil {
+					return err
+				}
 				defer func() {
 					if c.Size == 0 {
-						// We have to reset response to it's pristine state when
-						// nothing is written to body or error is returned.
-						// See issue #424, #407.
-						c.SetWriter(rw)
+						c.ResponseWriter = rw
 						c.Header().Del(air.HeaderContentEncoding)
-						gw.Reset(ioutil.Discard)
+						w.Reset(ioutil.Discard)
 					}
-					gw.Close()
-					pool.Put(gw)
+					w.Close()
 				}()
-				g := gzipResponseWriter{ResponseWriter: c}
+				grw := &gzipResponseWriter{Writer: w, ResponseWriter: rw}
 				c.Header().Set(air.HeaderContentEncoding, scheme)
-				c.SetWriter(g)
+				c.ResponseWriter = grw
 			}
 			return next(c)
 		}
 	}
 }
 
-func (g gzipResponseWriter) Write(b []byte) (int, error) {
-	if g.Header().Get(air.HeaderContentType) == "" {
-		g.Header().Set(air.HeaderContentType, http.DetectContentType(b))
+func (grw *gzipResponseWriter) Write(b []byte) (int, error) {
+	if grw.Header().Get(air.HeaderContentType) == "" {
+		grw.Header().Set(air.HeaderContentType, http.DetectContentType(b))
 	}
-	return g.Write(b)
+	return grw.Writer.Write(b)
 }
 
-func gzipPool(config GzipConfig) sync.Pool {
-	return sync.Pool{
-		New: func() interface{} {
-			w, _ := gzip.NewWriterLevel(ioutil.Discard, config.Level)
-			return w
-		},
-	}
+func (grw *gzipResponseWriter) Flush() error {
+	return grw.Writer.(*gzip.Writer).Flush()
+}
+
+func (grw *gzipResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return grw.ResponseWriter.(http.Hijacker).Hijack()
+}
+
+func (grw *gzipResponseWriter) CloseNotify() <-chan bool {
+	return grw.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }

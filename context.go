@@ -13,16 +13,16 @@ import (
 	"path/filepath"
 	"reflect"
 	"sync"
-	"time"
 )
 
 // Context represents the context of the current HTTP request. It holds request
 // and response writer objects, path, path parameters, data and registered
 // handler.
 type Context struct {
-	goContext      context.Context
-	responseWriter http.ResponseWriter
-	statusCode     int
+	context.Context
+	http.ResponseWriter
+
+	statusCode int
 
 	Request      *http.Request
 	PristinePath string
@@ -41,51 +41,17 @@ var contextPool *sync.Pool
 // newContext returns a new instance of `Context`.
 func newContext(a *Air) *Context {
 	return &Context{
-		goContext: context.Background(),
-		Params:    make(map[string]string),
-		Handler:   NotFoundHandler,
-		Data:      make(JSONMap),
-		Air:       a,
+		Context: context.Background(),
+		Params:  make(map[string]string),
+		Handler: NotFoundHandler,
+		Data:    make(JSONMap),
+		Air:     a,
 	}
 }
 
-// Deadline returns the time when work done on behalf of this context
-// should be canceled. Deadline returns ok==false when no deadline is
-// set. Successive calls to Deadline return the same results.
-func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	return c.goContext.Deadline()
-}
-
-// Done returns a channel that's closed when work done on behalf of this
-// context should be canceled. Done may return nil if this context can
-// never be canceled. Successive calls to Done return the same value.
-func (c *Context) Done() <-chan struct{} {
-	return c.goContext.Done()
-}
-
-// Err returns a non-nil error value after Done is closed. Err returns
-// Canceled if the context was canceled or DeadlineExceeded if the
-// context's deadline passed. No other values for Err are defined.
-// After Done is closed, successive calls to Err return the same value.
-func (c *Context) Err() error {
-	return c.goContext.Err()
-}
-
-// Value returns the value associated with this context for key, or nil
-// if no value is associated with key. Successive calls to Value with
-// the same key returns the same result.
-func (c *Context) Value(key interface{}) interface{} {
-	return c.goContext.Value(key)
-}
-
-// SetValue sets request-scoped value into the context.
+// SetValue sets request-scoped value into the `Context` of the c.
 func (c *Context) SetValue(key interface{}, val interface{}) {
-	c.goContext = context.WithValue(c.goContext, key, val)
-}
-
-// Header implements `http.ResponseWriter#Header()`.
-func (c *Context) Header() http.Header {
-	return c.responseWriter.Header()
+	c.Context = context.WithValue(c.Context, key, val)
 }
 
 // Write implements `http.ResponseWriter#Write()`.
@@ -93,7 +59,7 @@ func (c *Context) Write(bs []byte) (int, error) {
 	if !c.Written {
 		c.WriteHeader(http.StatusOK)
 	}
-	n, err := c.responseWriter.Write(bs)
+	n, err := c.ResponseWriter.Write(bs)
 	c.Size += n
 	return n, err
 }
@@ -105,7 +71,7 @@ func (c *Context) WriteHeader(code int) {
 		return
 	}
 	c.statusCode = code
-	c.responseWriter.WriteHeader(code)
+	c.ResponseWriter.WriteHeader(code)
 	c.Written = true
 }
 
@@ -114,15 +80,10 @@ func (c *Context) StatusCode() int {
 	return c.statusCode
 }
 
-// SetWriter sets the w to the c.
-func (c *Context) SetWriter(w http.ResponseWriter) {
-	c.responseWriter = w
-}
-
 // SetCookie adds a "Set-Cookie" header in HTTP response. The provided cookie
 // must have a valid `Name`. Invalid cookies may be silently dropped.
 func (c *Context) SetCookie(cookie *http.Cookie) {
-	http.SetCookie(c.responseWriter, cookie)
+	http.SetCookie(c.ResponseWriter, cookie)
 }
 
 // Bind binds the request body into provided type i. The default binder does it
@@ -257,7 +218,7 @@ func (c *Context) Blob(contentType string, bs []byte) error {
 // Stream sends a streaming response with `StatusCode` of the c and contentType.
 func (c *Context) Stream(contentType string, r io.Reader) error {
 	c.Header().Set(HeaderContentType, contentType)
-	_, err := io.Copy(c.responseWriter, r)
+	_, err := io.Copy(c, r)
 	return err
 }
 
@@ -281,7 +242,7 @@ func (c *Context) File(file string) error {
 			return err
 		}
 	}
-	http.ServeContent(c.responseWriter, c.Request, fi.Name(), fi.ModTime(), f)
+	http.ServeContent(c, c.Request, fi.Name(), fi.ModTime(), f)
 	return nil
 }
 
@@ -318,8 +279,8 @@ func (c *Context) Redirect(code int, url string) error {
 
 // reset resets all fields in the c.
 func (c *Context) reset() {
-	c.goContext = context.Background()
-	c.responseWriter = nil
+	c.Context = context.Background()
+	c.ResponseWriter = nil
 	c.statusCode = 0
 	c.Request = nil
 	c.PristinePath = ""
