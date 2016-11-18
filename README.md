@@ -53,7 +53,7 @@ This framework is so concise that it only needs the [GoDoc](https://godoc.org/gi
 
 As we all know that the air is a mixture of gases. So the same is that this framework adopts the gas as its composition. Everyone can create new gas and use it within this framework simply.
 
-If you want to learn more about the gases, or create your own gas for this framework, simply visit [here](gases).
+If you want to learn more about the gases, or create your own gas for this framework, simply visit [here](https://github.com/sheng/gases).
 
 ## Community
 
