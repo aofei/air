@@ -62,7 +62,7 @@ func (s *server) stop() error {
 func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	c := contextPool.Get().(*Context)
 
-	c.responseWriter = rw
+	c.ResponseWriter = rw
 	c.Request = req
 
 	// Gases
