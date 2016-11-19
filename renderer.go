@@ -1,12 +1,16 @@
 package air
 
 import (
+	"bytes"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
 	"time"
+
+	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/html"
 )
 
 // renderer is used to provide a `render()` method for an `Air` instance
@@ -61,28 +65,47 @@ func (r *renderer) parseTemplates() {
 	if err != nil {
 		panic(err)
 	}
+
+	m := minify.New()
+	m.Add("text/html", &html.Minifier{
+		KeepDefaultAttrVals: true,
+		KeepDocumentTags:    true,
+	})
+	buf := &bytes.Buffer{}
+
 	for _, filename := range filenames {
 		b, err := ioutil.ReadFile(filename)
 		if err != nil {
 			panic(err)
 		}
+
 		name := filepath.ToSlash(filename[len(tr):])
 		if name[0] == '/' {
 			name = name[1:]
 		}
-		var tmpl *template.Template
+
 		if r.goTemplate == nil {
 			r.goTemplate = template.New(name).Funcs(r.templateFuncMap)
 		}
+
+		var tmpl *template.Template
 		if name == r.goTemplate.Name() {
 			tmpl = r.goTemplate
 		} else {
 			tmpl = r.goTemplate.New(name)
 		}
-		_, err = tmpl.Parse(string(b))
+
+		err = m.Minify("text/html", buf, bytes.NewReader(b))
 		if err != nil {
 			panic(err)
 		}
+
+		_, err = tmpl.Parse(buf.String())
+		if err != nil {
+			panic(err)
+		}
+
+		buf.Reset()
 	}
 }
 
