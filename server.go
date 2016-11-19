@@ -28,32 +28,40 @@ func newServer(a *Air) *server {
 
 // start starts the HTTP server.
 func (s *server) start() error {
-	if s.air.Config.Listener == nil {
-		ln, err := net.Listen("tcp", s.air.Config.Address)
+	cl := s.air.Config.Listener
+	if cl != nil {
+		return s.Serve(cl)
+	}
+
+	ln, err := net.Listen("tcp", s.air.Config.Address)
+	if err != nil {
+		return err
+	}
+
+	ctcf := s.air.Config.TLSCertFile
+	ctkf := s.air.Config.TLSKeyFile
+	if ctcf != "" && ctkf != "" {
+		tlscfg := &tls.Config{}
+		if !s.air.Config.DisableHTTP2 {
+			tlscfg.NextProtos = append(tlscfg.NextProtos, "h2")
+		}
+		tlscfg.Certificates = make([]tls.Certificate, 1)
+		tlscfg.Certificates[0], err = tls.LoadX509KeyPair(ctcf, ctkf)
 		if err != nil {
 			return err
 		}
-
-		if s.air.Config.TLSCertFile != "" &&
-			s.air.Config.TLSKeyFile != "" {
-			config := &tls.Config{}
-			if !s.air.Config.DisableHTTP2 {
-				config.NextProtos = append(config.NextProtos, "h2")
-			}
-			config.Certificates = make([]tls.Certificate, 1)
-			config.Certificates[0], err = tls.LoadX509KeyPair(s.air.Config.TLSCertFile,
-				s.air.Config.TLSKeyFile)
-			if err != nil {
-				return err
-			}
-			s.air.Config.Listener = tls.NewListener(tcpKeepAliveListener{ln.(*net.TCPListener)}, config)
-		} else {
-			s.air.Config.Listener = tcpKeepAliveListener{ln.(*net.TCPListener)}
-		}
+		cl = tls.NewListener(
+			tcpKeepAliveListener{ln.(*net.TCPListener)},
+			tlscfg,
+		)
+	} else {
+		cl = tcpKeepAliveListener{ln.(*net.TCPListener)}
 	}
-	return s.Serve(s.air.Config.Listener)
+
+	return s.Serve(cl)
 }
 
+// stop stops the HTTP server.
 func (s *server) stop() error {
 	return s.air.Config.Listener.Close()
 }
@@ -91,14 +99,14 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	contextPool.Put(c)
 }
 
-// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
-// connections. It's used by ListenAndServe and ListenAndServeTLS so
-// dead TCP connections (e.g. closing laptop mid-download) eventually
-// go away.
+// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted connections.
+// It's used by ListenAndServe and ListenAndServeTLS so dead TCP connections
+// (e.g. closing laptop mid-download) eventually go away.
 type tcpKeepAliveListener struct {
 	*net.TCPListener
 }
 
+// Accept implements `net.TCPListener#Accept()`.
 func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
 	tc, err := ln.AcceptTCP()
 	if err != nil {
