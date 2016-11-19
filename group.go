@@ -2,7 +2,8 @@ package air
 
 import "path"
 
-// Group is a set of sub-routes for a specified route. It can be used for inner // routes that share a common gas or functionality that should be separate
+// Group is a set of sub-routes for a specified route. It can be used for inner
+// routes that share a common gas or functionality that should be separate
 // from the parent `Air` instance while still inheriting from it.
 type Group struct {
 	prefix string
