@@ -55,11 +55,11 @@ func (c *Context) SetValue(key interface{}, val interface{}) {
 }
 
 // Write implements `http.ResponseWriter#Write()`.
-func (c *Context) Write(bs []byte) (int, error) {
+func (c *Context) Write(b []byte) (int, error) {
 	if !c.Written {
 		c.WriteHeader(http.StatusOK)
 	}
-	n, err := c.ResponseWriter.Write(bs)
+	n, err := c.ResponseWriter.Write(b)
 	c.size += n
 	return n, err
 }
@@ -142,19 +142,19 @@ func (c *Context) JSON() error {
 	if !ok {
 		return errors.New("c.Data[\"json\"] not setted")
 	}
-	bs, err := json.Marshal(j)
+	b, err := json.Marshal(j)
 	if c.Air.Config.DebugMode {
-		bs, err = json.MarshalIndent(j, "", "\t")
+		b, err = json.MarshalIndent(j, "", "\t")
 	}
 	if err != nil {
 		return err
 	}
-	return c.JSONBlob(bs)
+	return c.JSONBlob(b)
 }
 
 // JSONBlob sends a JSON blob response with `StatusCode` of the c.
-func (c *Context) JSONBlob(bs []byte) error {
-	return c.Blob(MIMEApplicationJSON, bs)
+func (c *Context) JSONBlob(b []byte) error {
+	return c.Blob(MIMEApplicationJSON, b)
 }
 
 // JSONP sends a JSONP response with `StatusCode` and `Data["jsonp"]` of the c.
@@ -164,16 +164,16 @@ func (c *Context) JSONP() error {
 	if !jok {
 		return errors.New("c.Data[\"jsonp\"] not setted")
 	}
-	bs, err := json.Marshal(j)
+	b, err := json.Marshal(j)
 	if err != nil {
 		return err
 	}
-	return c.JSONPBlob(bs)
+	return c.JSONPBlob(b)
 }
 
 // JSONPBlob sends a JSONP blob response with `StatusCode` of the c. It uses
 // `Data["callback"]` of the c to construct the JSONP payload.
-func (c *Context) JSONPBlob(bs []byte) error {
+func (c *Context) JSONPBlob(b []byte) error {
 	cb, cbok := c.Data["callback"]
 	if !cbok || reflect.ValueOf(cb).Kind() != reflect.String {
 		return errors.New("c.Data[\"callback\"] not setted")
@@ -182,7 +182,7 @@ func (c *Context) JSONPBlob(bs []byte) error {
 	if _, err := c.Write([]byte(cb.(string) + "(")); err != nil {
 		return err
 	}
-	if _, err := c.Write(bs); err != nil {
+	if _, err := c.Write(b); err != nil {
 		return err
 	}
 	_, err := c.Write([]byte(");"))
@@ -195,28 +195,28 @@ func (c *Context) XML() error {
 	if !ok {
 		return errors.New("c.Data[\"xml\"] not setted")
 	}
-	bs, err := xml.Marshal(x)
+	b, err := xml.Marshal(x)
 	if c.Air.Config.DebugMode {
-		bs, err = xml.MarshalIndent(x, "", "\t")
+		b, err = xml.MarshalIndent(x, "", "\t")
 	}
 	if err != nil {
 		return err
 	}
-	return c.XMLBlob(bs)
+	return c.XMLBlob(b)
 }
 
 // XMLBlob sends a XML blob response with `StatusCode` of the c.
-func (c *Context) XMLBlob(bs []byte) error {
+func (c *Context) XMLBlob(b []byte) error {
 	if _, err := c.Write([]byte(xml.Header)); err != nil {
 		return err
 	}
-	return c.Blob(MIMEApplicationXML, bs)
+	return c.Blob(MIMEApplicationXML, b)
 }
 
 // Blob sends a blob response with `StatusCode` of the c and contentType.
-func (c *Context) Blob(contentType string, bs []byte) error {
+func (c *Context) Blob(contentType string, b []byte) error {
 	c.Header().Set(HeaderContentType, contentType)
-	_, err := c.Write(bs)
+	_, err := c.Write(b)
 	return err
 }
 
