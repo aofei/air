@@ -41,7 +41,7 @@ type (
 	// HTTPErrorHandler is a centralized HTTP error handler.
 	HTTPErrorHandler func(error, *Context)
 
-	// JSONMap is a map that stores data in JSON format.
+	// JSONMap is a map that organizes data in JSON format.
 	JSONMap map[string]interface{}
 )
 
