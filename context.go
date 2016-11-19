@@ -23,6 +23,7 @@ type Context struct {
 	http.ResponseWriter
 
 	statusCode int
+	size       int
 
 	Request      *http.Request
 	PristinePath string
@@ -31,7 +32,6 @@ type Context struct {
 	Params       map[string]string
 	Handler      HandlerFunc
 	Data         JSONMap
-	Size         int
 	Written      bool
 	Air          *Air
 }
@@ -60,7 +60,7 @@ func (c *Context) Write(bs []byte) (int, error) {
 		c.WriteHeader(http.StatusOK)
 	}
 	n, err := c.ResponseWriter.Write(bs)
-	c.Size += n
+	c.size += n
 	return n, err
 }
 
@@ -78,6 +78,11 @@ func (c *Context) WriteHeader(code int) {
 // StatusCode returns the HTTP status code.
 func (c *Context) StatusCode() int {
 	return c.statusCode
+}
+
+// Size returns the number of bytes already written into the response HTTP body.
+func (c *Context) Size() int {
+	return c.size
 }
 
 // SetCookie adds a "Set-Cookie" header in HTTP response. The provided cookie
@@ -282,6 +287,7 @@ func (c *Context) reset() {
 	c.Context = context.Background()
 	c.ResponseWriter = nil
 	c.statusCode = 0
+	c.size = 0
 	c.Request = nil
 	c.PristinePath = ""
 	c.ParamNames = c.ParamNames[:0]
@@ -293,6 +299,5 @@ func (c *Context) reset() {
 	for k := range c.Data {
 		delete(c.Data, k)
 	}
-	c.Size = 0
 	c.Written = false
 }
