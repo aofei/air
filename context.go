@@ -106,7 +106,22 @@ func (c *Context) FormFile(key string) (multipart.File, *multipart.FileHeader,
 	return c.Request.FormFile(key)
 }
 
+// Cookie is an alias for the `Request#Cookie()` of the c.
+func (c *Context) Cookie(name string) (*http.Cookie, error) {
+	return c.Request.Cookie(name)
+}
+
+// Cookies is an alias for the `Request#Cookies()` of the c.
+func (c *Context) Cookies() []*http.Cookie {
+	return c.Request.Cookies()
+}
+
 // MARK: Alias methods for the `Context#Response`.
+
+// SetCookie is an alias for the `Response#SetCookie()` of the c.
+func (c *Context) SetCookie(cookie *http.Cookie) {
+	c.Response.SetCookie(cookie)
+}
 
 // Render is an alias for the `Response#Render()` of the c.
 func (c *Context) Render() error {
