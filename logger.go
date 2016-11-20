@@ -41,7 +41,7 @@ const (
 	OFF
 )
 
-// newLogger returns a new instance of `Logger`.
+// newLogger returns a pointer of a new instance of `Logger`.
 func newLogger(a *Air) *Logger {
 	l := &Logger{
 		bufferPool: &sync.Pool{

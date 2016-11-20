@@ -116,9 +116,9 @@ var defaultConfig = Config{
 	TemplatesRoot: "templates",
 }
 
-// newConfig returns a new instance of `Config` by parsing the config file that
-// in the rumtime directory named "config.json". It returns the defaultConfig
-// if the config file doesn't exist.
+// newConfig returns a pointer of a new instance of `Config` by parsing the
+// config file that in the rumtime directory named "config.json". It returns
+// the defaultConfig if the config file doesn't exist.
 func newConfig() *Config {
 	c := defaultConfig
 	cfn := "config.json"

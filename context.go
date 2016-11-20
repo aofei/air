@@ -1,52 +1,49 @@
 package air
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"encoding/xml"
-	"errors"
-	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
-	"reflect"
+	"net/url"
 	"sync"
 )
 
-// Context represents the context of the current HTTP request. It holds request
-// and response writer objects, path, path parameters, data and registered
-// handler.
+// Context represents the context of the current HTTP request.
+// It's embedded with `context.Context`.
 type Context struct {
 	context.Context
-	http.ResponseWriter
 
-	statusCode int
-	size       int
+	Request  *Request
+	Response *Response
 
-	Request      *http.Request
 	PristinePath string
 	ParamNames   []string
 	ParamValues  []string
 	Params       map[string]string
 	Handler      HandlerFunc
-	Data         JSONMap
-	Written      bool
-	Air          *Air
+
+	Air *Air
+
+	// MARK: Alias fields for `Response`.
+
+	// Data is an alias for `Response#Data`.
+	Data JSONMap
 }
 
 var contextPool *sync.Pool
 
-// newContext returns a new instance of `Context`.
+// newContext returns a pointer of a new instance of `Context`.
 func newContext(a *Air) *Context {
-	return &Context{
-		Context: context.Background(),
-		Params:  make(map[string]string),
-		Handler: NotFoundHandler,
-		Data:    make(JSONMap),
-		Air:     a,
-	}
+	c := &Context{}
+	c.Context = context.Background()
+	c.Request = newRequest(c)
+	c.Response = newResponse(c)
+	c.Params = make(map[string]string)
+	c.Handler = NotFoundHandler
+	c.Air = a
+	c.Data = c.Response.Data
+	return c
 }
 
 // SetValue sets request-scoped value into the `Context` of the c.
@@ -54,241 +51,18 @@ func (c *Context) SetValue(key interface{}, val interface{}) {
 	c.Context = context.WithValue(c.Context, key, val)
 }
 
-// Write implements `http.ResponseWriter#Write()`.
-func (c *Context) Write(b []byte) (int, error) {
-	if !c.Written {
-		c.WriteHeader(http.StatusOK)
-	}
-	n, err := c.ResponseWriter.Write(b)
-	c.size += n
-	return n, err
-}
-
-// WriteHeader implements `http.ResponseWriter#WriteHeader()`.
-func (c *Context) WriteHeader(code int) {
-	if c.Written {
-		c.Air.Logger.Warn("response already committed")
-		return
-	}
-	c.statusCode = code
-	c.ResponseWriter.WriteHeader(code)
-	c.Written = true
-}
-
-// StatusCode returns the HTTP status code.
-func (c *Context) StatusCode() int {
-	return c.statusCode
-}
-
-// Size returns the number of bytes already written into the response HTTP body.
-func (c *Context) Size() int {
-	return c.size
-}
-
-// SetCookie adds a "Set-Cookie" header in HTTP response. The provided cookie
-// must have a valid `Name`. Invalid cookies may be silently dropped.
-func (c *Context) SetCookie(cookie *http.Cookie) {
-	http.SetCookie(c.ResponseWriter, cookie)
-}
-
-// Bind binds the request body into provided type i. The default binder does it
-// based on "Content-Type" header.
-func (c *Context) Bind(i interface{}) error {
-	return c.Air.binder.bind(i, c)
-}
-
-// Render renders a template with `Data` and `Data["template"]` of the c and
-// sends a "text/html" response with `StatusCode` of the c.
-func (c *Context) Render() error {
-	t, ok := c.Data["template"]
-	if !ok || reflect.ValueOf(t).Kind() != reflect.String {
-		return errors.New("c.Data[\"template\"] not setted")
-	}
-	buf := &bytes.Buffer{}
-	if err := c.Air.renderer.render(buf, t.(string), c); err != nil {
-		return err
-	}
-	c.Header().Set(HeaderContentType, MIMETextHTML)
-	_, err := c.Write(buf.Bytes())
-	return err
-}
-
-// HTML sends an HTTP response with `StatusCode` and `Data["html"]` of the c.
-func (c *Context) HTML() error {
-	h, ok := c.Data["html"]
-	if !ok || reflect.ValueOf(h).Kind() != reflect.String {
-		return errors.New("c.Data[\"html\"] not setted")
-	}
-	c.Header().Set(HeaderContentType, MIMETextHTML)
-	_, err := c.Write([]byte(h.(string)))
-	return err
-}
-
-// String sends a string response with `StatusCode` and `Data["string"]` of the
-// c.
-func (c *Context) String() error {
-	s, ok := c.Data["string"]
-	if !ok || reflect.ValueOf(s).Kind() != reflect.String {
-		return errors.New("c.Data[\"string\"] not setted")
-	}
-	c.Header().Set(HeaderContentType, MIMETextPlain)
-	_, err := c.Write([]byte(s.(string)))
-	return err
-}
-
-// JSON sends a JSON response with `StatusCode` and `Data["json"]` of the c.
-func (c *Context) JSON() error {
-	j, ok := c.Data["json"]
-	if !ok {
-		return errors.New("c.Data[\"json\"] not setted")
-	}
-	b, err := json.Marshal(j)
-	if c.Air.Config.DebugMode {
-		b, err = json.MarshalIndent(j, "", "\t")
-	}
-	if err != nil {
-		return err
-	}
-	return c.JSONBlob(b)
-}
-
-// JSONBlob sends a JSON blob response with `StatusCode` of the c.
-func (c *Context) JSONBlob(b []byte) error {
-	return c.Blob(MIMEApplicationJSON, b)
-}
-
-// JSONP sends a JSONP response with `StatusCode` and `Data["jsonp"]` of the c.
-// It uses `Data["callback"]` of the c to construct the JSONP payload.
-func (c *Context) JSONP() error {
-	j, jok := c.Data["jsonp"]
-	if !jok {
-		return errors.New("c.Data[\"jsonp\"] not setted")
-	}
-	b, err := json.Marshal(j)
-	if err != nil {
-		return err
-	}
-	return c.JSONPBlob(b)
-}
-
-// JSONPBlob sends a JSONP blob response with `StatusCode` of the c. It uses
-// `Data["callback"]` of the c to construct the JSONP payload.
-func (c *Context) JSONPBlob(b []byte) error {
-	cb, cbok := c.Data["callback"]
-	if !cbok || reflect.ValueOf(cb).Kind() != reflect.String {
-		return errors.New("c.Data[\"callback\"] not setted")
-	}
-	c.Header().Set(HeaderContentType, MIMEApplicationJavaScript)
-	if _, err := c.Write([]byte(cb.(string) + "(")); err != nil {
-		return err
-	}
-	if _, err := c.Write(b); err != nil {
-		return err
-	}
-	_, err := c.Write([]byte(");"))
-	return err
-}
-
-// XML sends an XML response with `StatusCode` and `Data["xml"]` of the c.
-func (c *Context) XML() error {
-	x, ok := c.Data["xml"]
-	if !ok {
-		return errors.New("c.Data[\"xml\"] not setted")
-	}
-	b, err := xml.Marshal(x)
-	if c.Air.Config.DebugMode {
-		b, err = xml.MarshalIndent(x, "", "\t")
-	}
-	if err != nil {
-		return err
-	}
-	return c.XMLBlob(b)
-}
-
-// XMLBlob sends a XML blob response with `StatusCode` of the c.
-func (c *Context) XMLBlob(b []byte) error {
-	if _, err := c.Write([]byte(xml.Header)); err != nil {
-		return err
-	}
-	return c.Blob(MIMEApplicationXML, b)
-}
-
-// Blob sends a blob response with `StatusCode` of the c and contentType.
-func (c *Context) Blob(contentType string, b []byte) error {
-	c.Header().Set(HeaderContentType, contentType)
-	_, err := c.Write(b)
-	return err
-}
-
-// Stream sends a streaming response with `StatusCode` of the c and contentType.
-func (c *Context) Stream(contentType string, r io.Reader) error {
-	c.Header().Set(HeaderContentType, contentType)
-	_, err := io.Copy(c, r)
-	return err
-}
-
-// File sends a response with the content of the file.
-func (c *Context) File(file string) error {
-	f, err := os.Open(file)
-	if err != nil {
-		return ErrNotFound
-	}
-	defer f.Close()
-
-	fi, _ := f.Stat()
-	if fi.IsDir() {
-		file = filepath.Join(file, "index.html")
-		f, err = os.Open(file)
-		if err != nil {
-			return ErrNotFound
-		}
-		defer f.Close()
-		if fi, err = f.Stat(); err != nil {
-			return err
-		}
-	}
-	http.ServeContent(c, c.Request, fi.Name(), fi.ModTime(), f)
-	return nil
-}
-
-// Attachment sends a response as attachment, prompting client to save the file.
-func (c *Context) Attachment(file, name string) error {
-	return c.contentDisposition(file, name, "attachment")
-}
-
-// Inline sends a response as inline, opening the file in the browser.
-func (c *Context) Inline(file, name string) error {
-	return c.contentDisposition(file, name, "inline")
-}
-
-// contentDisposition sends a response as the dispositionType.
-func (c *Context) contentDisposition(file, name, dispositionType string) error {
-	c.Header().Set(HeaderContentDisposition,
-		fmt.Sprintf("%s; filename=%s", dispositionType, name))
-	return c.File(file)
-}
-
-// NoContent sends a response with no body.
-func (c *Context) NoContent() error { return nil }
-
-// Redirect redirects the request with status code.
-func (c *Context) Redirect(code int, url string) error {
-	if code < http.StatusMultipleChoices ||
-		code > http.StatusTemporaryRedirect {
-		return ErrInvalidRedirectCode
-	}
-	c.Header().Set(HeaderLocation, url)
-	c.WriteHeader(code)
-	return nil
+// feed feeds the rw and req into where they should be.
+func (c *Context) feed(rw http.ResponseWriter, req *http.Request) {
+	c.Request.Request = req
+	c.Request.URL.URL = req.URL
+	c.Response.ResponseWriter = rw
 }
 
 // reset resets all fields in the c.
 func (c *Context) reset() {
 	c.Context = context.Background()
-	c.ResponseWriter = nil
-	c.statusCode = 0
-	c.size = 0
-	c.Request = nil
+	c.Request.reset()
+	c.Response.reset()
 	c.PristinePath = ""
 	c.ParamNames = c.ParamNames[:0]
 	c.ParamValues = c.ParamValues[:0]
@@ -296,8 +70,120 @@ func (c *Context) reset() {
 		delete(c.Params, k)
 	}
 	c.Handler = NotFoundHandler
-	for k := range c.Data {
-		delete(c.Data, k)
-	}
-	c.Written = false
+	c.Data = c.Response.Data
+}
+
+// MARK: Alias methods for the `Context#Request`.
+
+// Bind is an alias for the `Request#Bind()` of the c.
+func (c *Context) Bind(i interface{}) error {
+	return c.Request.Bind(i)
+}
+
+// QueryValue is an alias for the `Request#QueryValue()` of the c.
+func (c *Context) QueryValue(key string) string {
+	return c.Request.QueryValue(key)
+}
+
+// QueryValues is an alias for the `Request#QueryValues()` of the c.
+func (c *Context) QueryValues() url.Values {
+	return c.Request.QueryValues()
+}
+
+// FormValue is an alias for the `Request#FormValue()` of the c.
+func (c *Context) FormValue(key string) string {
+	return c.Request.FormValue(key)
+}
+
+// FormValues is an alias for the `Request#FormValues()` of the c.
+func (c *Context) FormValues() (url.Values, error) {
+	return c.Request.FormValues()
+}
+
+// FormFile is an alias for the `Request#FormFile()` of the c.
+func (c *Context) FormFile(key string) (multipart.File, *multipart.FileHeader,
+	error) {
+	return c.Request.FormFile(key)
+}
+
+// MARK: Alias methods for the `Context#Response`.
+
+// Render is an alias for the `Response#Render()` of the c.
+func (c *Context) Render() error {
+	return c.Response.Render()
+}
+
+// HTML is an alias for the `Response#HTML()` of the c.
+func (c *Context) HTML() error {
+	return c.Response.HTML()
+}
+
+// String is an alias for the `Response#String()` of the c.
+func (c *Context) String() error {
+	return c.Response.String()
+}
+
+// JSON is an alias for the `Response#JSON()` of the c.
+func (c *Context) JSON() error {
+	return c.Response.JSON()
+}
+
+// JSONBlob is an alias for the `Response#JSONBlob()` of the c.
+func (c *Context) JSONBlob(b []byte) error {
+	return c.Response.JSONBlob(b)
+}
+
+// JSONP is an alias for the `Response#JSONP()` of the c.
+func (c *Context) JSONP() error {
+	return c.Response.JSONP()
+}
+
+// JSONPBlob is an alias for the `Response#JSONPBlob()` of the c.
+func (c *Context) JSONPBlob(b []byte) error {
+	return c.Response.JSONPBlob(b)
+}
+
+// XML is an alias for the `Response#XML()` of the c.
+func (c *Context) XML() error {
+	return c.Response.XML()
+}
+
+// XMLBlob is an alias for the `Response#XMLBlob()` of the c.
+func (c *Context) XMLBlob(b []byte) error {
+	return c.Response.XMLBlob(b)
+}
+
+// Blob is an alias for the `Response#Blob()` of the c.
+func (c *Context) Blob(contentType string, b []byte) error {
+	return c.Response.Blob(contentType, b)
+}
+
+// Stream is an alias for the `Response#Stream()` of the c.
+func (c *Context) Stream(contentType string, r io.Reader) error {
+	return c.Response.Stream(contentType, r)
+}
+
+// File is an alias for the `Response#File()` of the c.
+func (c *Context) File(file string) error {
+	return c.Response.File(file)
+}
+
+// Attachment is an alias for the `Response#Attachment()` of the c.
+func (c *Context) Attachment(file, name string) error {
+	return c.Response.Attachment(file, name)
+}
+
+// Inline is an alias for the `Response#Inline()` of the c.
+func (c *Context) Inline(file, name string) error {
+	return c.Response.Inline(file, name)
+}
+
+// NoContent is an alias for the `Response#NoContent()` of the c.
+func (c *Context) NoContent() error {
+	return c.Response.NoContent()
+}
+
+// Redirect is an alias for the `Response#Redirect()` of the c.
+func (c *Context) Redirect(code int, url string) error {
+	return c.Response.Redirect(code, url)
 }
