@@ -8,12 +8,14 @@ import (
 )
 
 // server represents the HTTP server.
+// It's embedded with `http.Server`.
 type server struct {
 	*http.Server
+
 	air *Air
 }
 
-// newServer returns a new instance of `server`.
+// newServer returns a pointer of a new instance of `server`.
 func newServer(a *Air) *server {
 	s := &server{
 		Server: &http.Server{},
@@ -66,12 +68,10 @@ func (s *server) stop() error {
 	return s.air.Config.Listener.Close()
 }
 
-// ServeHTTP implements `http.Handler`.
+// ServeHTTP implements the `http.Handler`.
 func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	c := contextPool.Get().(*Context)
-
-	c.ResponseWriter = rw
-	c.Request = req
+	c.feed(rw, req)
 
 	// Gases
 	h := func(c *Context) error {
@@ -106,7 +106,7 @@ type tcpKeepAliveListener struct {
 	*net.TCPListener
 }
 
-// Accept implements `net.TCPListener#Accept()`.
+// Accept implements the `net.TCPListener#Accept()`.
 func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
 	tc, err := ln.AcceptTCP()
 	if err != nil {

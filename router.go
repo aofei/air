@@ -52,7 +52,7 @@ const (
 	anyKind
 )
 
-// newRouter returns a new router instance.
+// newRouter returns a pointer of a new router instance.
 func newRouter(a *Air) *router {
 	return &router{
 		routes: make(map[string]*route),
@@ -455,7 +455,7 @@ func unhex(c byte) byte {
 	return 0
 }
 
-// newNode returns a new instance of `node` with provided values.
+// newNode returns a pointer of a new instance of `node` with provided values.
 func newNode(t nodeKind, pre string, mh *methodHandler, p *node, c []*node, ppath string, pnames []string) *node {
 	return &node{
 		kind:          t,

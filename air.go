@@ -14,16 +14,19 @@ import (
 type (
 	// Air is the top-level framework struct.
 	Air struct {
-		server   *server
+		server *server
+
 		pregases []GasFunc
 		gases    []GasFunc
 		router   *router
-		binder   *binder
+
 		renderer *renderer
 
 		Config           *Config
-		Logger           *Logger
+		Binder           Binder
 		HTTPErrorHandler HTTPErrorHandler
+
+		Logger *Logger
 	}
 
 	// HandlerFunc defines a function to server HTTP requests.
@@ -124,7 +127,6 @@ var (
 	ErrGatewayTimeout      = NewHTTPError(http.StatusGatewayTimeout)      // 504
 
 	ErrInvalidRedirectCode = errors.New("invalid redirect status code")
-	ErrCookieNotFound      = errors.New("cookie not found")
 )
 
 // HTTP error handlers
@@ -138,15 +140,15 @@ var (
 	}
 )
 
-// New returns a new instance of `Air`.
+// New returns a pointer of a new instance of `Air`.
 func New() *Air {
 	a := &Air{}
 	a.router = newRouter(a)
-	a.binder = newBinder(a)
 	a.renderer = newRenderer(a)
 	a.Config = newConfig()
-	a.Logger = newLogger(a)
+	a.Binder = newBinder()
 	a.HTTPErrorHandler = defaultHTTPErrorHandler
+	a.Logger = newLogger(a)
 	contextPool = &sync.Pool{
 		New: func() interface{} {
 			return newContext(a)
@@ -294,7 +296,7 @@ func WrapGas(handler HandlerFunc) GasFunc {
 	}
 }
 
-// NewHTTPError returns a new instance of `HTTPError`.
+// NewHTTPError returns a pointer of a new instance of `HTTPError`.
 func NewHTTPError(code int, msg ...interface{}) *HTTPError {
 	he := &HTTPError{Code: code, Message: http.StatusText(code)}
 	if len(msg) > 0 {
@@ -303,7 +305,7 @@ func NewHTTPError(code int, msg ...interface{}) *HTTPError {
 	return he
 }
 
-// Error implements `Error#Error()`.
+// Error implements the `error#Error()`.
 func (he *HTTPError) Error() string {
 	return he.Message
 }
@@ -317,9 +319,9 @@ func defaultHTTPErrorHandler(err error, c *Context) {
 	if c.Air.Config.DebugMode {
 		he.Message = err.Error()
 	}
-	if !c.Written {
+	if !c.Response.Written() {
 		c.Data["string"] = he.Message
-		c.WriteHeader(he.Code)
+		c.Response.WriteHeader(he.Code)
 		c.String()
 	}
 	c.Air.Logger.Error(err)
