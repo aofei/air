@@ -21,7 +21,7 @@ type renderer struct {
 	air             *Air
 }
 
-// defaultTemplateFuncMap is a default template func map of `renderer`
+// defaultTemplateFuncMap is a default template func map of `renderer`.
 var defaultTemplateFuncMap = template.FuncMap{
 	"strlen":  strlen,
 	"substr":  substr,
@@ -34,7 +34,7 @@ var defaultTemplateFuncMap = template.FuncMap{
 	"ge":      ge,
 }
 
-// newRenderer returns a new instance of `Renderer`.
+// newRenderer returns a pointer of a new instance of `Renderer`.
 func newRenderer(a *Air) *renderer {
 	return &renderer{
 		templateFuncMap: defaultTemplateFuncMap,
@@ -110,8 +110,8 @@ func (r *renderer) parseTemplates() {
 }
 
 // render renders a "text/html" response by using `template.Template`.
-func (r *renderer) render(wr io.Writer, templateName string, c *Context) error {
-	return r.goTemplate.ExecuteTemplate(wr, templateName, c.Data)
+func (r *renderer) render(w io.Writer, templateName string, res *Response) error {
+	return r.goTemplate.ExecuteTemplate(w, templateName, res.Data)
 }
 
 // strlen returns the number of char in the s.
@@ -119,15 +119,15 @@ func strlen(s string) int {
 	return len([]rune(s))
 }
 
-// substr returns the substring consisting of the chars of the s starting
-// at index i and continuing up to, but not including, the char at index j.
+// substr returns the substring consisting of the chars of the s starting at the
+// index i and continuing up to, but not including, the char at the index j.
 func substr(s string, i, j int) string {
 	rs := []rune(s)
 	return string(rs[i:j])
 }
 
-// timefmt returns a textual representation of the time value formatted
-// according to layout.
+// timefmt returns a textual representation of the t formatted according to the
+// layout.
 func timefmt(t time.Time, layout string) string {
 	return t.Format(layout)
 }

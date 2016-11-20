@@ -12,23 +12,24 @@ import (
 	"strings"
 )
 
-// binder is used to provide a `bind()` method for an `Air` instance
-// for binds a HTTP request body into privided type.
-type binder struct {
-	air *Air
-}
-
-// newBinder returns a new instance of `binder`.
-func newBinder(a *Air) *binder {
-	return &binder{
-		air: a,
+type (
+	// Binder is used to provide a `Bind()` method for an `Air` instance
+	// for binds a HTTP request body into privided type.
+	Binder interface {
+		// Bind binds the HTTP request body into provided type.
+		Bind(interface{}, *Request) error
 	}
+
+	binder struct{}
+)
+
+// newBinder returns a pointer of a new instance of `binder`.
+func newBinder() *binder {
+	return &binder{}
 }
 
-// bind binds the HTTP request body into provided type i based on
-// "Content-Type" header.
-func (b *binder) bind(i interface{}, c *Context) error {
-	req := c.Request
+// Bind implements the `Binder#Bind()` based on "Content-Type" header.
+func (b *binder) Bind(i interface{}, req *Request) error {
 	if req.Method == GET {
 		err := b.bindData(i, req.URL.Query())
 		if err != nil {
