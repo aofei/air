@@ -74,10 +74,10 @@ func (res *Response) Written() bool {
 	return res.written
 }
 
-// SetCookie adds a "Set-Cookie" header in the res. The provided c must have a
-// valid `Name`. Invalid cookies may be silently dropped.
-func (res *Response) SetCookie(c *http.Cookie) {
-	http.SetCookie(res.ResponseWriter, c)
+// SetCookie adds a "Set-Cookie" header in the res. The provided cookie must
+// have a valid `Name`. Invalid cookies may be silently dropped.
+func (res *Response) SetCookie(cookie *http.Cookie) {
+	http.SetCookie(res.ResponseWriter, cookie)
 }
 
 // Render renders a template with the `Data` and `Data["template"]` of the res
