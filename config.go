@@ -9,8 +9,7 @@ import (
 	"time"
 )
 
-// Config is a global set of configurations that for an instance of `Air`
-// for customization.
+// Config is a global set of configurations that for an instance of `Air` for customization.
 type Config struct {
 	// AppName represens the name of current `Air` instance.
 	//
@@ -29,22 +28,20 @@ type Config struct {
 	// LogFormat represents the format of `Logger`'s output content.
 	//
 	// Default value is:
-	// `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}",` +
-	// `"level":"{{.level}}","file":"{{.short_file}}","line":"{{.line}}"}`
+	// `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}","level":"{{.level}}",` +
+	// `"file":"{{.short_file}}","line":"{{.line}}"}`
 	//
 	// It's called "log_format" in the config file.
 	LogFormat string
 
-	// Address represents the TCP address that `Server` to listen
-	// on.
+	// Address represents the TCP address that `Server` to listen on.
 	//
 	// Default value is "localhost:8080".
 	//
 	// It's called "address" in the config file.
 	Address string
 
-	// Listener represens the custom `net.Listener`. If set, `Server`
-	// accepts connections on it.
+	// Listener represens the custom `net.Listener`. If set, `Server` accepts connections on it.
 	//
 	// Default value is nil.
 	Listener net.Listener
@@ -70,8 +67,7 @@ type Config struct {
 	// It's called "tls_key_file" in the config file.
 	TLSKeyFile string
 
-	// ReadTimeout represents the maximum duration before timing out
-	// read of the request.
+	// ReadTimeout represents the maximum duration before timing out read of the request.
 	//
 	// Default value is 0.
 	//
@@ -80,8 +76,7 @@ type Config struct {
 	// *It's unit in the config file is SECONDS.*
 	ReadTimeout time.Duration
 
-	// WriteTimeout represents the maximum duration before timing
-	// out write of the response.
+	// WriteTimeout represents the maximum duration before timing out write of the response.
 	//
 	// Default value is 0.
 	//
@@ -90,35 +85,34 @@ type Config struct {
 	// *It's unit in the config file is SECONDS.*
 	WriteTimeout time.Duration
 
-	// TemplatesRoot represents the root directory of the html templates.
-	// It will be parsed into `Renderer`.
+	// TemplatesRoot represents the root directory of the html templates. It will be parsed into
+	// `Renderer`.
 	//
-	// Default value is "templates" that means a subdirectory of the
-	// runtime directory.
+	// Default value is "templates" that means a subdirectory of the runtime directory.
 	//
 	// It's called "templates_root" in the config file.
 	TemplatesRoot string
 
-	// Data represents the data that parsing from config file. You can
-	// use it to access the values in the config file.
+	// Data represents the data that parsing from config file. You can use it to access the
+	// values in the config file.
 	//
-	// e.g. c.Data["mysql_user_name"] will accesses the value in config
-	// file called "mysql_user_name".
+	// e.g. c.Data["mysql_user_name"] will accesses the value in config file called
+	// "mysql_user_name".
 	Data JSONMap
 }
 
 // defaultConfig is the default instance of `Config`.
 var defaultConfig = Config{
 	AppName: "air",
-	LogFormat: `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}",` +
-		`"level":"{{.level}}","file":"{{.short_file}}","line":"{{.line}}"}`,
+	LogFormat: `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}","level":"{{.level}}",` +
+		`"file":"{{.short_file}}","line":"{{.line}}"}`,
 	Address:       "localhost:8080",
 	TemplatesRoot: "templates",
 }
 
-// newConfig returns a pointer of a new instance of `Config` by parsing the
-// config file that in the rumtime directory named "config.json". It returns
-// the defaultConfig if the config file doesn't exist.
+// newConfig returns a pointer of a new instance of `Config` by parsing the config file that in the
+// rumtime directory named "config.json". It returns the defaultConfig if the config file doesn't
+// exist.
 func newConfig() *Config {
 	c := defaultConfig
 	cfn := "config.json"
@@ -138,6 +132,7 @@ func (c *Config) Parse(filename string) {
 	if err != nil {
 		panic(err)
 	}
+
 	err = json.Unmarshal(bytes, &c.Data)
 	if err != nil {
 		panic(err)

@@ -13,8 +13,8 @@ import (
 )
 
 type (
-	// Binder is used to provide a `Bind()` method for an `Air` instance
-	// for binds a HTTP request body into privided type.
+	// Binder is used to provide a `Bind()` method for an `Air` instance for binds a HTTP
+	// request body into privided type.
 	Binder interface {
 		// Bind binds the HTTP request body into provided type.
 		Bind(interface{}, *Request) error
@@ -71,7 +71,8 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 				err = NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 		}
-	case strings.HasPrefix(ctype, MIMEApplicationForm), strings.HasPrefix(ctype, MIMEMultipartForm):
+	case strings.HasPrefix(ctype, MIMEApplicationForm), strings.HasPrefix(ctype,
+		MIMEMultipartForm):
 		if err = req.ParseForm(); err == nil {
 			if err = b.bindData(i, req.Form); err != nil {
 				err = NewHTTPError(http.StatusBadRequest, err.Error())
@@ -122,13 +123,15 @@ func (b *binder) bindData(ptr interface{}, data url.Values) error {
 			sliceOf := structField.Type().Elem().Kind()
 			slice := reflect.MakeSlice(structField.Type(), numElems, numElems)
 			for i := 0; i < numElems; i++ {
-				if err := setWithProperType(sliceOf, inputValue[i], slice.Index(i)); err != nil {
+				if err := setWithProperType(sliceOf, inputValue[i],
+					slice.Index(i)); err != nil {
 					return err
 				}
 			}
 			val.Field(i).Set(slice)
 		} else {
-			if err := setWithProperType(typeField.Type.Kind(), inputValue[0], structField); err != nil {
+			if err := setWithProperType(typeField.Type.Kind(), inputValue[0],
+				structField); err != nil {
 				return err
 			}
 		}

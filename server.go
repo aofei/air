@@ -7,8 +7,7 @@ import (
 	"time"
 )
 
-// server represents the HTTP server.
-// It's embedded with `http.Server`.
+// server represents the HTTP server. It's embedded with `http.Server`.
 type server struct {
 	*http.Server
 
@@ -99,9 +98,9 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	contextPool.Put(c)
 }
 
-// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted connections.
-// It's used by ListenAndServe and ListenAndServeTLS so dead TCP connections
-// (e.g. closing laptop mid-download) eventually go away.
+// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted connections. It's used by
+// ListenAndServe and ListenAndServeTLS so dead TCP connections (e.g. closing laptop mid-download)
+// eventually go away.
 type tcpKeepAliveListener struct {
 	*net.TCPListener
 }

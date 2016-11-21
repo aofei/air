@@ -7,6 +7,7 @@ import (
 )
 
 // Request represents the current HTTP request.
+//
 // It's embedded with `http.Request`.
 type Request struct {
 	*http.Request
@@ -26,8 +27,8 @@ func newRequest(c *Context) *Request {
 	}
 }
 
-// Bind binds the HTTP body of the req into provided type i. The default binder
-// does it based on "Content-Type" header.
+// Bind binds the HTTP body of the req into provided type i. The default binder does it based on
+// "Content-Type" header.
 func (req *Request) Bind(i interface{}) error {
 	return req.context.Air.Binder.Bind(i, req)
 }

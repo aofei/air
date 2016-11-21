@@ -2,22 +2,21 @@ package air
 
 import "path"
 
-// Group is a set of sub-routes for a specified route. It can be used for inner
-// routes that share a common gas or functionality that should be separate
-// from the parent `Air` instance while still inheriting from it.
+// Group is a set of sub-routes for a specified route. It can be used for inner routes that share a
+// common gas or functionality that should be separate from the parent `Air` instance while still
+// inheriting from it.
 type Group struct {
 	prefix string
 	gases  []GasFunc
 	air    *Air
 }
 
-// NewGroup returns a pointer of a new router group with prefix and optional
-// group-level gases.
+// NewGroup returns a pointer of a new router group with prefix and optional group-level gases.
 func NewGroup(prefix string, a *Air, gases ...GasFunc) *Group {
 	g := &Group{prefix: prefix, air: a}
 	g.Contain(gases...)
-	// Allow all requests to reach the group as they might get dropped if
-	// router doesn't find a match, making none of the group gas process.
+	// Allow all requests to reach the group as they might get dropped if router doesn't find a
+	// match, making none of the group gas process.
 	path := g.prefix + "*"
 	handler := func(c *Context) error { return ErrNotFound }
 	for _, m := range methods {
@@ -26,8 +25,7 @@ func NewGroup(prefix string, a *Air, gases ...GasFunc) *Group {
 	return g
 }
 
-// NewSubGroup creates a pointer of a new sub-group with prefix and optional
-// sub-group-level gases.
+// NewSubGroup creates a pointer of a new sub-group with prefix and optional sub-group-level gases.
 func (g *Group) NewSubGroup(prefix string, gases ...GasFunc) *Group {
 	gs := []GasFunc{}
 	gs = append(gs, g.gases...)
@@ -76,9 +74,8 @@ func (g *Group) File(path, file string) {
 
 // add implements the `Air#add()`.
 func (g *Group) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
-	// Combine into a new slice to avoid accidentally passing the same slice
-	// for multiple routes, which would lead to later add() calls
-	// overwriting the gas from earlier calls.
+	// Combine into a new slice to avoid accidentally passing the same slice for multiple
+	// routes, which would lead to later add() calls overwriting the gas from earlier calls.
 	gs := []GasFunc{}
 	gs = append(gs, g.gases...)
 	gs = append(gs, gases...)

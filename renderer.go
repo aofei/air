@@ -13,8 +13,8 @@ import (
 	"github.com/tdewolff/minify/html"
 )
 
-// renderer is used to provide a `render()` method for an `Air` instance
-// for renders a "text/html" response by using `template.Template`.
+// renderer is used to provide a `render()` method for an `Air` instance for renders a "text/html"
+// response by using `template.Template`.
 type renderer struct {
 	goTemplate      *template.Template
 	templateFuncMap template.FuncMap
@@ -57,8 +57,7 @@ func newRenderer(a *Air) *renderer {
 //
 // will be parsed into:
 //
-// "index.html", "login.html", "register.html",
-// "parts/header.html", "parts/footer.html".
+// "index.html", "login.html", "register.html", "parts/header.html", "parts/footer.html".
 func (r *renderer) parseTemplates() {
 	tr := filepath.Clean(r.air.Config.TemplatesRoot)
 	filenames, err := filepath.Glob(tr + "/*/*.html")
@@ -119,20 +118,20 @@ func strlen(s string) int {
 	return len([]rune(s))
 }
 
-// substr returns the substring consisting of the chars of the s starting at the
-// index i and continuing up to, but not including, the char at the index j.
+// substr returns the substring consisting of the chars of the s starting at the index i and
+// continuing up to, but not including, the char at the index j.
 func substr(s string, i, j int) string {
 	rs := []rune(s)
 	return string(rs[i:j])
 }
 
-// timefmt returns a textual representation of the t formatted according to the
-// layout.
+// timefmt returns a textual representation of the t formatted according to the layout.
 func timefmt(t time.Time, layout string) string {
 	return t.Format(layout)
 }
 
 // eq reports whether the v is equal to one of the ovs.
+//
 // It means v == v1 || v == v2 || ...
 func eq(v interface{}, ovs ...interface{}) bool {
 	for _, ov := range ovs {
@@ -144,12 +143,14 @@ func eq(v interface{}, ovs ...interface{}) bool {
 }
 
 // ne reports whether the v is not equal to any of the ovs.
+//
 // It means v != v1 && v != v2 && ...
 func ne(v interface{}, ovs ...interface{}) bool {
 	return !eq(v, ovs...)
 }
 
 // lt reports whether the a is less than the b.
+//
 // It means a < b.
 func lt(a, b interface{}) bool {
 	switch a.(type) {
@@ -167,18 +168,21 @@ func lt(a, b interface{}) bool {
 }
 
 // le reports whether the a is less than or equal to the b.
+//
 // It means a <= b.
 func le(a, b interface{}) bool {
 	return lt(a, b) || eq(a, b)
 }
 
 // gt reports whether the a is greater than the b.
+//
 // It means a > b.
 func gt(a, b interface{}) bool {
 	return !le(a, b)
 }
 
 // ge reports whether the a is greater than or equal to the b.
+//
 // It means a >= b.
 func ge(a, b interface{}) bool {
 	return lt(a, b)
