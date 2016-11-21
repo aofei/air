@@ -167,32 +167,32 @@ func (a *Air) Contain(gases ...GasFunc) {
 	a.gases = append(a.gases, gases...)
 }
 
-// GET registers a new GET route for a path with matching handler in the router
-// with optional route-level gases.
+// GET registers a new GET route for a path with matching handler in the router with optional
+// route-level gases.
 func (a *Air) GET(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(GET, path, handler, gases...)
 }
 
-// POST registers a new POST route for a path with matching handler in the
-// router with optional route-level gases.
+// POST registers a new POST route for a path with matching handler in the router with optional
+// route-level gases.
 func (a *Air) POST(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(POST, path, handler, gases...)
 }
 
-// PUT registers a new PUT route for a path with matching handler in the
-// router with optional route-level gases.
+// PUT registers a new PUT route for a path with matching handler in the router with optional
+// route-level gases.
 func (a *Air) PUT(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(PUT, path, handler, gases...)
 }
 
-// DELETE registers a new DELETE route for a path with matching handler in
-// the router with optional route-level gases.
+// DELETE registers a new DELETE route for a path with matching handler in the router with
+// optional route-level gases.
 func (a *Air) DELETE(path string, handler HandlerFunc, gases ...GasFunc) {
 	a.add(DELETE, path, handler, gases...)
 }
 
-// Static registers a new route with path prefix to serve static files from
-// the provided root directory.
+// Static registers a new route with path prefix to serve static files from the provided root
+// directory.
 func (a *Air) Static(prefix, root string) {
 	a.GET(prefix+"*", func(c *Context) error {
 		return c.File(path.Join(root, c.Params[c.ParamNames[0]]))
@@ -206,8 +206,8 @@ func (a *Air) File(path, file string) {
 	})
 }
 
-// add registers a new route for a path with a HTTP method and matching handler
-// in the router with optional route-level gases.
+// add registers a new route for a path with a HTTP method and matching handler in the router with
+// optional route-level gases.
 func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
 	name := handlerName(handler)
 	a.router.add(method, path, func(c *Context) error {

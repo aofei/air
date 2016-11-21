@@ -6,8 +6,8 @@ import (
 )
 
 type (
-	// router is the registry of all registered routes for an `Air` instance for
-	// request matching and URI path parameter parsing.
+	// router is the registry of all registered routes for an `Air` instance for request
+	// matching and URI path parameter parsing.
 	router struct {
 		routes map[string]*route
 		tree   *node
@@ -147,7 +147,8 @@ func (r *router) add(method, path string, h HandlerFunc) {
 }
 
 // insert inserts a new route into the tree of r.
-func (r *router) insert(method, path string, h HandlerFunc, t nodeKind, ppath string, pnames []string) {
+func (r *router) insert(method, path string, h HandlerFunc, t nodeKind, ppath string,
+	pnames []string) {
 	cn := r.tree // Current node as root
 	search := path
 
@@ -176,7 +177,8 @@ func (r *router) insert(method, path string, h HandlerFunc, t nodeKind, ppath st
 			}
 		} else if l < pl {
 			// Split node
-			n := newNode(cn.kind, cn.prefix[l:], cn.methodHandler, cn, cn.children, cn.pristinePath, cn.paramNames)
+			n := newNode(cn.kind, cn.prefix[l:], cn.methodHandler, cn, cn.children,
+				cn.pristinePath, cn.paramNames)
 
 			// Reset parent node
 			cn.kind = staticKind
@@ -225,8 +227,8 @@ func (r *router) insert(method, path string, h HandlerFunc, t nodeKind, ppath st
 	}
 }
 
-// route routes a handler registed for method and path. It also parses URI for path
-// parameters and load them into ctx.
+// route routes a handler registed for method and path. It also parses URI for path parameters and
+// load them into ctx.
 func (r *router) route(method, path string, ctx *Context) {
 	cn := r.tree // Current node as root
 
@@ -343,8 +345,7 @@ End:
 	if ctx.Handler == nil {
 		ctx.Handler = cn.checkMethodNotAllowed()
 
-		// Dig further for any, might have an empty value for *, e.g.
-		// serving a directory.
+		// Dig further for any, might have an empty value for *, e.g. serving a directory.
 		if cn = cn.childByKind(anyKind); cn == nil {
 			return
 		}
@@ -456,7 +457,8 @@ func unhex(c byte) byte {
 }
 
 // newNode returns a pointer of a new instance of `node` with provided values.
-func newNode(t nodeKind, pre string, mh *methodHandler, p *node, c []*node, ppath string, pnames []string) *node {
+func newNode(t nodeKind, pre string, mh *methodHandler, p *node, c []*node, ppath string,
+	pnames []string) *node {
 	return &node{
 		kind:          t,
 		label:         pre[0],

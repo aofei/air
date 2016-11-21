@@ -14,6 +14,7 @@ import (
 )
 
 // Response represents the current HTTP response.
+//
 // It's embedded with `http.ResponseWriter`.
 type Response struct {
 	http.ResponseWriter
@@ -63,8 +64,7 @@ func (res *Response) StatusCode() int {
 	return res.statusCode
 }
 
-// Size returns the number of bytes already written into the HTTP body of the
-// res.
+// Size returns the number of bytes already written into the HTTP body of the res.
 func (res *Response) Size() int {
 	return res.size
 }
@@ -74,14 +74,14 @@ func (res *Response) Written() bool {
 	return res.written
 }
 
-// SetCookie adds a "Set-Cookie" header in the res. The provided cookie must
-// have a valid `Name`. Invalid cookies may be silently dropped.
+// SetCookie adds a "Set-Cookie" header in the res. The provided cookie must have a valid `Name`.
+// Invalid cookies may be silently dropped.
 func (res *Response) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(res.ResponseWriter, cookie)
 }
 
-// Render renders a template with the `Data` and `Data["template"]` of the res
-// and sends a "text/html" response with the `statusCode` of the res.
+// Render renders a template with the `Data` and `Data["template"]` of the res and sends a
+// "text/html" response with the `statusCode` of the res.
 func (res *Response) Render() error {
 	t, ok := res.Data["template"]
 	if !ok || reflect.ValueOf(t).Kind() != reflect.String {
@@ -97,8 +97,7 @@ func (res *Response) Render() error {
 	return err
 }
 
-// HTML sends an HTTP response with the `statusCode` and `Data["html"]` of the
-// res.
+// HTML sends an HTTP response with the `statusCode` and `Data["html"]` of the res.
 func (res *Response) HTML() error {
 	h, ok := res.Data["html"]
 	if !ok || reflect.ValueOf(h).Kind() != reflect.String {
@@ -109,8 +108,7 @@ func (res *Response) HTML() error {
 	return err
 }
 
-// String sends a string response with the `statusCode` and `Data["string"]` of
-// the res.
+// String sends a string response with the `statusCode` and `Data["string"]` of the res.
 func (res *Response) String() error {
 	s, ok := res.Data["string"]
 	if !ok || reflect.ValueOf(s).Kind() != reflect.String {
@@ -121,8 +119,7 @@ func (res *Response) String() error {
 	return err
 }
 
-// JSON sends a JSON response with the `statusCode` and `Data["json"]` of the
-// res.
+// JSON sends a JSON response with the `statusCode` and `Data["json"]` of the res.
 func (res *Response) JSON() error {
 	j, ok := res.Data["json"]
 	if !ok {
@@ -143,9 +140,8 @@ func (res *Response) JSONBlob(b []byte) error {
 	return res.Blob(MIMEApplicationJSON, b)
 }
 
-// JSONP sends a JSONP response with the `statusCode` and `Data["jsonp"]` of the
-// res. It uses the `Data["callback"]` of the res to construct the JSONP
-// payload.
+// JSONP sends a JSONP response with the `statusCode` and `Data["jsonp"]` of the res. It uses the
+// `Data["callback"]` of the res to construct the JSONP payload.
 func (res *Response) JSONP() error {
 	j, jok := res.Data["jsonp"]
 	if !jok {
@@ -158,8 +154,8 @@ func (res *Response) JSONP() error {
 	return res.JSONPBlob(b)
 }
 
-// JSONPBlob sends a JSONP blob response with the `statusCode` of the res. It
-// uses the `Data["callback"]` of the res to construct the JSONP payload.
+// JSONPBlob sends a JSONP blob response with the `statusCode` of the res. It uses the
+// `Data["callback"]` of the res to construct the JSONP payload.
 func (res *Response) JSONPBlob(b []byte) error {
 	cb, cbok := res.Data["callback"]
 	if !cbok || reflect.ValueOf(cb).Kind() != reflect.String {
@@ -207,8 +203,7 @@ func (res *Response) Blob(contentType string, b []byte) error {
 	return err
 }
 
-// Stream sends a streaming response with the `statusCode` of the res and
-// contentType.
+// Stream sends a streaming response with the `statusCode` of the res and contentType.
 func (res *Response) Stream(contentType string, r io.Reader) error {
 	res.Header().Set(HeaderContentType, contentType)
 	_, err := io.Copy(res, r)
@@ -252,7 +247,8 @@ func (res *Response) Inline(file, name string) error {
 
 // contentDisposition sends a response as the dispositionType.
 func (res *Response) contentDisposition(file, name, dispositionType string) error {
-	res.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s", dispositionType, name))
+	res.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s",
+		dispositionType, name))
 	return res.File(file)
 }
 
@@ -261,8 +257,7 @@ func (res *Response) NoContent() error { return nil }
 
 // Redirect redirects the request to the url with the statusCode.
 func (res *Response) Redirect(statusCode int, url string) error {
-	if statusCode < http.StatusMultipleChoices ||
-		statusCode > http.StatusTemporaryRedirect {
+	if statusCode < http.StatusMultipleChoices || statusCode > http.StatusTemporaryRedirect {
 		return ErrInvalidRedirectCode
 	}
 	res.Header().Set(HeaderLocation, url)
