@@ -10,6 +10,7 @@ import (
 )
 
 // Context represents the context of the current HTTP request.
+//
 // It's embedded with `context.Context`.
 type Context struct {
 	context.Context
@@ -101,8 +102,7 @@ func (c *Context) FormValues() (url.Values, error) {
 }
 
 // FormFile is an alias for the `Request#FormFile()` of the c.
-func (c *Context) FormFile(key string) (multipart.File, *multipart.FileHeader,
-	error) {
+func (c *Context) FormFile(key string) (multipart.File, *multipart.FileHeader, error) {
 	return c.Request.FormFile(key)
 }
 
