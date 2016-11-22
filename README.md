@@ -61,6 +61,11 @@ gas as its composition. Everyone can create new gas and use it within this frame
 If you want to learn more about the gases, or create your own gas for this framework, simply visit
 [here](https://github.com/sheng/gases).
 
+## Examples
+
+If you want to be familiar with the framework as soon as possible, simply visit
+[here](https://github.com/sheng/atmosphere).
+
 ## Community
 
 If you want to discuss this framework, or ask questions about it, simply post questions or ideas
