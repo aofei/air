@@ -63,7 +63,7 @@ If you want to learn more about the gases, or create your own gas for this frame
 
 ## Examples
 
-If you want to be familiar with the framework as soon as possible, simply visit
+If you want to be familiar with this framework as soon as possible, simply visit
 [here](https://github.com/sheng/atmosphere).
 
 ## Community
