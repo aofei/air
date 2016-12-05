@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"time"
@@ -60,7 +61,16 @@ func newRenderer(a *Air) *renderer {
 // "index.html", "login.html", "register.html", "parts/header.html", "parts/footer.html".
 func (r *renderer) parseTemplates() {
 	tr := filepath.Clean(r.air.Config.TemplatesRoot)
-	filenames, err := filepath.Glob(tr + "/*/*.html")
+
+	var filenames []string
+	err := filepath.Walk(tr, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			return err
+		}
+		fns, err := filepath.Glob(path + "/*.html")
+		filenames = append(filenames, fns...)
+		return err
+	})
 	if err != nil {
 		panic(err)
 	}
