@@ -104,17 +104,19 @@ func (r *renderer) parseTemplates() {
 			tmpl = r.goTemplate.New(name)
 		}
 
-		err = m.Minify("text/html", buf, bytes.NewReader(b))
+		if r.air.Config.MinifyTemplates {
+			err = m.Minify("text/html", buf, bytes.NewReader(b))
+			if err != nil {
+				panic(err)
+			}
+			b = buf.Bytes()
+			buf.Reset()
+		}
+
+		_, err = tmpl.Parse(string(b))
 		if err != nil {
 			panic(err)
 		}
-
-		_, err = tmpl.Parse(buf.String())
-		if err != nil {
-			panic(err)
-		}
-
-		buf.Reset()
 	}
 }
 
