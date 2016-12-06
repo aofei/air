@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"os"
@@ -80,20 +81,33 @@ func (res *Response) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(res.ResponseWriter, cookie)
 }
 
-// Render renders a template with the `Data` and `Data["template"]` of the res and sends a
-// "text/html" response with the `statusCode` of the res.
+// Render renders a template with the `Data` and `Data["template"]` or `Data["templates"]` of the
+// res and sends a "text/html" response with the `statusCode` of the res.
 func (res *Response) Render() error {
-	t, ok := res.Data["template"]
-	if !ok || reflect.ValueOf(t).Kind() != reflect.String {
-		return errors.New("Data[\"template\"] not setted")
+	t, tok := res.Data["template"]
+	ts, tsok := res.Data["templates"]
+	if (!tok || reflect.ValueOf(t).Kind() != reflect.String) &&
+		(!tsok || reflect.ValueOf(ts).Kind() != reflect.Slice) {
+		return errors.New("both Data[\"template\"] and Data[\"templates\"] are not setted")
 	}
 	buf := &bytes.Buffer{}
-	err := res.context.Air.renderer.render(buf, t.(string), res)
-	if err != nil {
-		return err
+	if tok {
+		err := res.context.Air.renderer.render(buf, t.(string), res)
+		if err != nil {
+			return err
+		}
+	} else {
+		for _, t := range ts.([]string) {
+			res.Data["InheritedHTML"] = template.HTML(buf.String())
+			buf.Reset()
+			err := res.context.Air.renderer.render(buf, t, res)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	res.Header().Set(HeaderContentType, MIMETextHTML)
-	_, err = res.Write(buf.Bytes())
+	_, err := res.Write(buf.Bytes())
 	return err
 }
 
