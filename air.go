@@ -195,14 +195,16 @@ func (a *Air) DELETE(path string, handler HandlerFunc, gases ...GasFunc) {
 // directory.
 func (a *Air) Static(prefix, root string) {
 	a.GET(prefix+"*", func(c *Context) error {
-		return c.File(path.Join(root, c.Params[c.ParamNames[0]]))
+		c.Data["file"] = path.Join(root, c.Params[c.ParamNames[0]])
+		return c.File()
 	})
 }
 
 // File registers a new route with path to serve a static file.
 func (a *Air) File(path, file string) {
 	a.GET(path, func(c *Context) error {
-		return c.File(file)
+		c.Data["file"] = file
+		return c.File()
 	})
 }
 
