@@ -93,6 +93,15 @@ type Config struct {
 	// It's called "templates_root" in the config file.
 	TemplatesRoot string
 
+	// MinifyTemplates indicates whether to minify the html templates before it being parsed
+	// into the `Renderer`. The minify feature powered by the Minify project that can be found
+	// at "https://github.com/tdewolff/minify".
+	//
+	// Default value is false.
+	//
+	// It's called "minify_templates" in the config file.
+	MinifyTemplates bool
+
 	// Data represents the data that parsing from config file. You can use it to access the
 	// values in the config file.
 	//
@@ -172,5 +181,8 @@ func (c *Config) fillData() {
 	}
 	if tr, ok := c.Data["templates_root"]; ok {
 		c.TemplatesRoot = tr.(string)
+	}
+	if mt, ok := c.Data["minify_templates"]; ok {
+		c.MinifyTemplates = mt.(bool)
 	}
 }
