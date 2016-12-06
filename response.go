@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
 )
 
 // Response represents the current HTTP response.
@@ -84,20 +83,20 @@ func (res *Response) SetCookie(cookie *http.Cookie) {
 // Render renders a template with the `Data` and `Data["template"]` or `Data["templates"]` of the
 // res and sends a "text/html" response with the `statusCode` of the res.
 func (res *Response) Render() error {
-	t, tok := res.Data["template"]
-	ts, tsok := res.Data["templates"]
-	if (!tok || reflect.ValueOf(t).Kind() != reflect.String) &&
-		(!tsok || reflect.ValueOf(ts).Kind() != reflect.Slice) {
+	t, tok := res.Data["template"].(string)
+	ts, tsok := res.Data["templates"].([]string)
+	if !tok && !tsok {
 		return errors.New("both Data[\"template\"] and Data[\"templates\"] are not setted")
 	}
+
 	buf := &bytes.Buffer{}
 	if tok {
-		err := res.context.Air.renderer.render(buf, t.(string), res)
+		err := res.context.Air.renderer.render(buf, t, res)
 		if err != nil {
 			return err
 		}
 	} else {
-		for _, t := range ts.([]string) {
+		for _, t := range ts {
 			res.Data["InheritedHTML"] = template.HTML(buf.String())
 			buf.Reset()
 			err := res.context.Air.renderer.render(buf, t, res)
@@ -106,30 +105,32 @@ func (res *Response) Render() error {
 			}
 		}
 	}
+
 	res.Header().Set(HeaderContentType, MIMETextHTML)
 	_, err := res.Write(buf.Bytes())
+
 	return err
 }
 
 // HTML sends an HTTP response with the `statusCode` and `Data["html"]` of the res.
 func (res *Response) HTML() error {
-	h, ok := res.Data["html"]
-	if !ok || reflect.ValueOf(h).Kind() != reflect.String {
-		return errors.New("Data[\"html\"] not setted")
+	h, ok := res.Data["html"].(string)
+	if !ok {
+		return errors.New("Data[\"html\"] is not setted")
 	}
 	res.Header().Set(HeaderContentType, MIMETextHTML)
-	_, err := res.Write([]byte(h.(string)))
+	_, err := res.Write([]byte(h))
 	return err
 }
 
 // String sends a string response with the `statusCode` and `Data["string"]` of the res.
 func (res *Response) String() error {
-	s, ok := res.Data["string"]
-	if !ok || reflect.ValueOf(s).Kind() != reflect.String {
-		return errors.New("Data[\"string\"] not setted")
+	s, ok := res.Data["string"].(string)
+	if !ok {
+		return errors.New("Data[\"string\"] is not setted")
 	}
 	res.Header().Set(HeaderContentType, MIMETextPlain)
-	_, err := res.Write([]byte(s.(string)))
+	_, err := res.Write([]byte(s))
 	return err
 }
 
@@ -137,7 +138,7 @@ func (res *Response) String() error {
 func (res *Response) JSON() error {
 	j, ok := res.Data["json"]
 	if !ok {
-		return errors.New("Data[\"json\"] not setted")
+		return errors.New("Data[\"json\"] is not setted")
 	}
 	b, err := json.Marshal(j)
 	if res.context.Air.Config.DebugMode {
@@ -157,9 +158,9 @@ func (res *Response) JSONBlob(b []byte) error {
 // JSONP sends a JSONP response with the `statusCode` and `Data["jsonp"]` of the res. It uses the
 // `Data["callback"]` of the res to construct the JSONP payload.
 func (res *Response) JSONP() error {
-	j, jok := res.Data["jsonp"]
-	if !jok {
-		return errors.New("Data[\"jsonp\"] not setted")
+	j, ok := res.Data["jsonp"]
+	if !ok {
+		return errors.New("Data[\"jsonp\"] is not setted")
 	}
 	b, err := json.Marshal(j)
 	if err != nil {
@@ -171,12 +172,12 @@ func (res *Response) JSONP() error {
 // JSONPBlob sends a JSONP blob response with the `statusCode` of the res. It uses the
 // `Data["callback"]` of the res to construct the JSONP payload.
 func (res *Response) JSONPBlob(b []byte) error {
-	cb, cbok := res.Data["callback"]
-	if !cbok || reflect.ValueOf(cb).Kind() != reflect.String {
-		return errors.New("Data[\"callback\"] not setted")
+	cb, ok := res.Data["callback"].(string)
+	if !ok {
+		return errors.New("Data[\"callback\"] is not setted")
 	}
 	res.Header().Set(HeaderContentType, MIMEApplicationJavaScript)
-	if _, err := res.Write([]byte(cb.(string) + "(")); err != nil {
+	if _, err := res.Write([]byte(cb + "(")); err != nil {
 		return err
 	}
 	if _, err := res.Write(b); err != nil {
@@ -190,7 +191,7 @@ func (res *Response) JSONPBlob(b []byte) error {
 func (res *Response) XML() error {
 	x, ok := res.Data["xml"]
 	if !ok {
-		return errors.New("Data[\"xml\"] not setted")
+		return errors.New("Data[\"xml\"] is not setted")
 	}
 	b, err := xml.Marshal(x)
 	if res.context.Air.Config.DebugMode {
@@ -228,7 +229,7 @@ func (res *Response) Stream(contentType string, r io.Reader) error {
 func (res *Response) File() error {
 	file, ok := res.Data["file"].(string)
 	if !ok {
-		return errors.New("Data[\"file\"] not setted")
+		return errors.New("Data[\"file\"] is not setted")
 	}
 
 	f, err := os.Open(file)
@@ -270,7 +271,7 @@ func (res *Response) Inline() error {
 func (res *Response) contentDisposition(dispositionType string) error {
 	fn, ok := res.Data["filename"].(string)
 	if !ok {
-		return errors.New("Data[\"filename\"] not setted")
+		return errors.New("Data[\"filename\"] is not setted")
 	}
 	res.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s",
 		dispositionType, fn))
