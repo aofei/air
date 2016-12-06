@@ -179,18 +179,18 @@ func (c *Context) Stream(contentType string, r io.Reader) error {
 }
 
 // File is an alias for the `Response#File()` of the c.
-func (c *Context) File(file string) error {
-	return c.Response.File(file)
+func (c *Context) File() error {
+	return c.Response.File()
 }
 
 // Attachment is an alias for the `Response#Attachment()` of the c.
-func (c *Context) Attachment(file, name string) error {
-	return c.Response.Attachment(file, name)
+func (c *Context) Attachment() error {
+	return c.Response.Attachment()
 }
 
 // Inline is an alias for the `Response#Inline()` of the c.
-func (c *Context) Inline(file, name string) error {
-	return c.Response.Inline(file, name)
+func (c *Context) Inline() error {
+	return c.Response.Inline()
 }
 
 // NoContent is an alias for the `Response#NoContent()` of the c.

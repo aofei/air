@@ -224,8 +224,13 @@ func (res *Response) Stream(contentType string, r io.Reader) error {
 	return err
 }
 
-// File sends a response with the resontent of the file.
-func (res *Response) File(file string) error {
+// File sends a response with the `Data["file"]` of the res.
+func (res *Response) File() error {
+	file, ok := res.Data["file"].(string)
+	if !ok {
+		return errors.New("Data[\"file\"] not setted")
+	}
+
 	f, err := os.Open(file)
 	if err != nil {
 		return ErrNotFound
@@ -244,26 +249,32 @@ func (res *Response) File(file string) error {
 			return err
 		}
 	}
-	http.ServeContent(res, res.context.Request.Request, fi.Name(),
-		fi.ModTime(), f)
+	http.ServeContent(res, res.context.Request.Request, fi.Name(), fi.ModTime(), f)
 	return nil
 }
 
-// Attachment sends a response as attachment, prompting client to save the file.
-func (res *Response) Attachment(file, name string) error {
-	return res.contentDisposition(file, name, "attachment")
+// Attachment sends a response with the `Data["file"]` and `Data["filename"]` of the res as
+// attachment, prompting client to save the file.
+func (res *Response) Attachment() error {
+	return res.contentDisposition("attachment")
 }
 
-// Inline sends a response as inline, opening the file in the browser.
-func (res *Response) Inline(file, name string) error {
-	return res.contentDisposition(file, name, "inline")
+// Inline sends a response with the `Data["file"]` and `Data["filename"]` of the res as inline,
+// opening the file in the browser.
+func (res *Response) Inline() error {
+	return res.contentDisposition("inline")
 }
 
-// contentDisposition sends a response as the dispositionType.
-func (res *Response) contentDisposition(file, name, dispositionType string) error {
+// contentDisposition sends a response with the `Data["file"]` and `Data["filename"]` as the
+// dispositionType.
+func (res *Response) contentDisposition(dispositionType string) error {
+	fn, ok := res.Data["filename"].(string)
+	if !ok {
+		return errors.New("Data[\"filename\"] not setted")
+	}
 	res.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s",
-		dispositionType, name))
-	return res.File(file)
+		dispositionType, fn))
+	return res.File()
 }
 
 // NoContent sends a response with no body.
