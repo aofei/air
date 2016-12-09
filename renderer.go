@@ -61,6 +61,9 @@ func newRenderer(a *Air) *renderer {
 // "index.html", "login.html", "register.html", "parts/header.html", "parts/footer.html".
 func (r *renderer) parseTemplates() {
 	tr := filepath.Clean(r.air.Config.TemplatesRoot)
+	if _, err := os.Stat(tr); err != nil && os.IsNotExist(err) {
+		return
+	}
 
 	var filenames []string
 	err := filepath.Walk(tr, func(path string, info os.FileInfo, err error) error {
