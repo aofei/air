@@ -143,29 +143,14 @@ func (c *Context) JSON() error {
 	return c.Response.JSON()
 }
 
-// JSONBlob is an alias for the `Response#JSONBlob()` of the c.
-func (c *Context) JSONBlob(b []byte) error {
-	return c.Response.JSONBlob(b)
-}
-
 // JSONP is an alias for the `Response#JSONP()` of the c.
 func (c *Context) JSONP() error {
 	return c.Response.JSONP()
 }
 
-// JSONPBlob is an alias for the `Response#JSONPBlob()` of the c.
-func (c *Context) JSONPBlob(b []byte) error {
-	return c.Response.JSONPBlob(b)
-}
-
 // XML is an alias for the `Response#XML()` of the c.
 func (c *Context) XML() error {
 	return c.Response.XML()
-}
-
-// XMLBlob is an alias for the `Response#XMLBlob()` of the c.
-func (c *Context) XMLBlob(b []byte) error {
-	return c.Response.XMLBlob(b)
 }
 
 // Blob is an alias for the `Response#Blob()` of the c.
