@@ -81,7 +81,7 @@ func (res *Response) SetCookie(cookie *http.Cookie) {
 }
 
 // Render renders a template with the `Data` and `Data["template"]` or `Data["templates"]` of the
-// res and sends a "text/html" response with the `statusCode` of the res.
+// res and sends a "text/html" response.
 func (res *Response) Render() error {
 	t, tok := res.Data["template"].(string)
 	ts, tsok := res.Data["templates"].([]string)
@@ -106,40 +106,34 @@ func (res *Response) Render() error {
 		}
 	}
 
-	res.Header().Set(HeaderContentType, MIMETextHTML)
-	_, err := res.Write(buf.Bytes())
-
-	return err
+	return res.Blob(MIMETextHTML, buf.Bytes())
 }
 
-// HTML sends an HTTP response with the `statusCode` and `Data["html"]` of the res.
+// HTML sends an HTTP response with the `Data["html"]` of the res.
 func (res *Response) HTML() error {
 	h, ok := res.Data["html"].(string)
 	if !ok {
 		return errors.New("Data[\"html\"] is not setted")
 	}
-	res.Header().Set(HeaderContentType, MIMETextHTML)
-	_, err := res.Write([]byte(h))
-	return err
+	return res.Blob(MIMETextHTML, []byte(h))
 }
 
-// String sends a string response with the `statusCode` and `Data["string"]` of the res.
+// String sends a string response with the `Data["string"]` of the res.
 func (res *Response) String() error {
 	s, ok := res.Data["string"].(string)
 	if !ok {
 		return errors.New("Data[\"string\"] is not setted")
 	}
-	res.Header().Set(HeaderContentType, MIMETextPlain)
-	_, err := res.Write([]byte(s))
-	return err
+	return res.Blob(MIMETextPlain, []byte(s))
 }
 
-// JSON sends a JSON response with the `statusCode` and `Data["json"]` of the res.
+// JSON sends a JSON response with the `Data["json"]` of the res.
 func (res *Response) JSON() error {
 	j, ok := res.Data["json"]
 	if !ok {
 		return errors.New("Data[\"json\"] is not setted")
 	}
+
 	b, err := json.Marshal(j)
 	if res.context.Air.Config.DebugMode {
 		b, err = json.MarshalIndent(j, "", "\t")
@@ -147,52 +141,37 @@ func (res *Response) JSON() error {
 	if err != nil {
 		return err
 	}
-	return res.JSONBlob(b)
-}
 
-// JSONBlob sends a JSON blob response with the `statusCode` of the res.
-func (res *Response) JSONBlob(b []byte) error {
 	return res.Blob(MIMEApplicationJSON, b)
 }
 
-// JSONP sends a JSONP response with the `statusCode` and `Data["jsonp"]` of the res. It uses the
-// `Data["callback"]` of the res to construct the JSONP payload.
+// JSONP sends a JSONP response with the `Data["jsonp"]` of the res. It uses the `Data["callback"]`
+// of the res to construct the JSONP payload.
 func (res *Response) JSONP() error {
 	j, ok := res.Data["jsonp"]
+	cb, _ := res.Data["callback"].(string)
 	if !ok {
 		return errors.New("Data[\"jsonp\"] is not setted")
 	}
+
 	b, err := json.Marshal(j)
 	if err != nil {
 		return err
 	}
-	return res.JSONPBlob(b)
+
+	b = append([]byte(cb+"("), b...)
+	b = append(b, []byte(");")...)
+
+	return res.Blob(MIMEApplicationJavaScript, b)
 }
 
-// JSONPBlob sends a JSONP blob response with the `statusCode` of the res. It uses the
-// `Data["callback"]` of the res to construct the JSONP payload.
-func (res *Response) JSONPBlob(b []byte) error {
-	cb, ok := res.Data["callback"].(string)
-	if !ok {
-		return errors.New("Data[\"callback\"] is not setted")
-	}
-	res.Header().Set(HeaderContentType, MIMEApplicationJavaScript)
-	if _, err := res.Write([]byte(cb + "(")); err != nil {
-		return err
-	}
-	if _, err := res.Write(b); err != nil {
-		return err
-	}
-	_, err := res.Write([]byte(");"))
-	return err
-}
-
-// XML sends an XML response with the `statusCode` and `Data["xml"]` of the res.
+// XML sends an XML response with the `Data["xml"]` of the res.
 func (res *Response) XML() error {
 	x, ok := res.Data["xml"]
 	if !ok {
 		return errors.New("Data[\"xml\"] is not setted")
 	}
+
 	b, err := xml.Marshal(x)
 	if res.context.Air.Config.DebugMode {
 		b, err = xml.MarshalIndent(x, "", "\t")
@@ -200,25 +179,18 @@ func (res *Response) XML() error {
 	if err != nil {
 		return err
 	}
-	return res.XMLBlob(b)
+
+	return res.Blob(MIMEApplicationXML, append([]byte(xml.Header), b...))
 }
 
-// XMLBlob sends a XML blob response with the `statusCode` of the res.
-func (res *Response) XMLBlob(b []byte) error {
-	if _, err := res.Write([]byte(xml.Header)); err != nil {
-		return err
-	}
-	return res.Blob(MIMEApplicationXML, b)
-}
-
-// Blob sends a blob response with the `statusCode` of the res and contentType.
+// Blob sends a blob response with the contentType and the b.
 func (res *Response) Blob(contentType string, b []byte) error {
 	res.Header().Set(HeaderContentType, contentType)
 	_, err := res.Write(b)
 	return err
 }
 
-// Stream sends a streaming response with the `statusCode` of the res and contentType.
+// Stream sends a streaming response with the contentType and the r.
 func (res *Response) Stream(contentType string, r io.Reader) error {
 	res.Header().Set(HeaderContentType, contentType)
 	_, err := io.Copy(res, r)
@@ -250,23 +222,25 @@ func (res *Response) File() error {
 			return err
 		}
 	}
+
 	http.ServeContent(res, res.context.Request.Request, fi.Name(), fi.ModTime(), f)
+
 	return nil
 }
 
-// Attachment sends a response with the `Data["file"]` and `Data["filename"]` of the res as
+// Attachment sends a response with the `Data["file"]` and the `Data["filename"]` of the res as
 // attachment, prompting client to save the file.
 func (res *Response) Attachment() error {
 	return res.contentDisposition("attachment")
 }
 
-// Inline sends a response with the `Data["file"]` and `Data["filename"]` of the res as inline,
+// Inline sends a response with the `Data["file"]` and the `Data["filename"]` of the res as inline,
 // opening the file in the browser.
 func (res *Response) Inline() error {
 	return res.contentDisposition("inline")
 }
 
-// contentDisposition sends a response with the `Data["file"]` and `Data["filename"]` as the
+// contentDisposition sends a response with the `Data["file"]` and the `Data["filename"]` as the
 // dispositionType.
 func (res *Response) contentDisposition(dispositionType string) error {
 	fn, ok := res.Data["filename"].(string)
