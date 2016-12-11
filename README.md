@@ -1,7 +1,7 @@
 # Air
 
-An ideal RESTful web framework for Go. You can use it to develop a dynamic website or RESTful web
-service as natural as breathing.
+An ideal RESTful web framework for Go. You can use it to develop a RESTful web application as
+natural as breathing.
 
 High-performance? Fastest? Almost all of the web frameworks are using these words to tell people
 that they are the best. Maybe they are, maybe not. This framework does not intend to follow the
@@ -17,7 +17,7 @@ $ go get github.com/sheng/air
 
 done.
 
-> The only requirement is the [Go](https://golang.org/dl/), at least v1.7
+> The only requirement is the [Go](https://golang.org/dl/), at least v1.7.
 
 ## Hello, 世界
 
@@ -79,6 +79,6 @@ If you want to help build this framework, simply follow the
 
 ## License
 
-This project is licensed under the TFL License.
+This project is licensed under the Unlicense.
 
 License can be found [here](LICENSE).
