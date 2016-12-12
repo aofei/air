@@ -31,7 +31,7 @@ func newBinder() *binder {
 // Bind implements the `Binder#Bind()` based on "Content-Type" header.
 func (b *binder) Bind(i interface{}, req *Request) error {
 	if req.Method == GET {
-		err := b.bindData(i, req.URL.Query())
+		err := b.bindData(i, req.URL.Query(), "query")
 		if err != nil {
 			err = NewHTTPError(http.StatusBadRequest, err.Error())
 		}
@@ -74,7 +74,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 	case strings.HasPrefix(ctype, MIMEApplicationForm), strings.HasPrefix(ctype,
 		MIMEMultipartForm):
 		if err = req.ParseForm(); err == nil {
-			if err = b.bindData(i, req.Form); err != nil {
+			if err = b.bindData(i, req.Form, "form"); err != nil {
 				err = NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 		}
@@ -85,7 +85,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 }
 
 // bindData binds the data into a type ptr.
-func (b *binder) bindData(ptr interface{}, data url.Values) error {
+func (b *binder) bindData(ptr interface{}, data url.Values, tag string) error {
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
 
@@ -100,13 +100,13 @@ func (b *binder) bindData(ptr interface{}, data url.Values) error {
 			continue
 		}
 		structFieldKind := structField.Kind()
-		inputFieldName := typeField.Tag.Get("form")
+		inputFieldName := typeField.Tag.Get(tag)
 
 		if inputFieldName == "" {
 			inputFieldName = typeField.Name
-			// If "form" tag is nil, we inspect if the field is a struct.
+			// If tag is nil, we inspect if the field is a struct.
 			if structFieldKind == reflect.Struct {
-				err := b.bindData(structField.Addr().Interface(), data)
+				err := b.bindData(structField.Addr().Interface(), data, tag)
 				if err != nil {
 					return err
 				}
