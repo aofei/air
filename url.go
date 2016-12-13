@@ -11,17 +11,17 @@ type URL struct {
 	queryValues url.Values
 }
 
-// newURL returns a pointer of a new instance of `URL`.
+// newURL returns a pointer of a new instance of the `URL`.
 func newURL() *URL {
 	return &URL{}
 }
 
-// QueryValue returns the query value for the provided key.
+// QueryValue returns the query value in the url for the provided key.
 func (url *URL) QueryValue(key string) string {
 	return url.QueryValues().Get(key)
 }
 
-// QueryValues returns the query values.
+// QueryValues returns the query values in the url.
 func (url *URL) QueryValues() url.Values {
 	if url.queryValues == nil {
 		url.queryValues = url.Query()
