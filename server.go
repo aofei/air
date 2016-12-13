@@ -7,7 +7,9 @@ import (
 	"time"
 )
 
-// server represents the HTTP server. It's embedded with `http.Server`.
+// server represents the HTTP server.
+//
+// It's embedded with `http.Server`.
 type server struct {
 	*http.Server
 
