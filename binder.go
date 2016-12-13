@@ -16,8 +16,8 @@ type (
 	// Binder is used to provide a `Bind()` method for an `Air` instance for binds a HTTP
 	// request body into privided type.
 	Binder interface {
-		// Bind binds the HTTP request body into provided type.
-		Bind(interface{}, *Request) error
+		// Bind binds the body of the req into provided type i.
+		Bind(i interface{}, req *Request) error
 	}
 
 	binder struct{}
@@ -84,7 +84,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 	return err
 }
 
-// bindData binds the data into a type ptr.
+// bindData binds the data into the type ptr with the tag.
 func (b *binder) bindData(ptr interface{}, data url.Values, tag string) error {
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
