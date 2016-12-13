@@ -18,10 +18,7 @@ func newURL() *URL {
 
 // QueryValue returns the query value for the provided key.
 func (url *URL) QueryValue(key string) string {
-	if url.queryValues == nil {
-		url.queryValues = url.Query()
-	}
-	return url.queryValues.Get(key)
+	return url.QueryValues().Get(key)
 }
 
 // QueryValues returns the query values.
