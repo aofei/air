@@ -307,7 +307,7 @@ func (r *router) route(method, path string, ctx *Context) {
 			i, l := 0, len(search)
 			for ; i < l && search[i] != '/'; i++ {
 			}
-			ctx.ParamValues = append(ctx.ParamValues, search[:i])
+			ctx.ParamValues = append(ctx.ParamValues, unescape(search[:i]))
 			search = search[i:]
 			continue
 		}
@@ -329,9 +329,9 @@ func (r *router) route(method, path string, ctx *Context) {
 			return
 		}
 		if len(ctx.ParamValues) == len(cn.paramNames) {
-			ctx.ParamValues[len(ctx.ParamValues)-1] = search
+			ctx.ParamValues[len(ctx.ParamValues)-1] = unescape(search)
 		} else {
-			ctx.ParamValues = append(ctx.ParamValues, search)
+			ctx.ParamValues = append(ctx.ParamValues, unescape(search))
 		}
 		goto End
 	}
