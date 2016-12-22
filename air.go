@@ -157,12 +157,12 @@ func New() *Air {
 	return a
 }
 
-// Precontain adds gases to the chain which is run before router.
+// Precontain adds gases to the chain which is perform before router.
 func (a *Air) Precontain(gases ...GasFunc) {
 	a.pregases = append(a.pregases, gases...)
 }
 
-// Contain adds gases to the chain which is run after router.
+// Contain adds gases to the chain which is perform after router.
 func (a *Air) Contain(gases ...GasFunc) {
 	a.gases = append(a.gases, gases...)
 }
@@ -258,23 +258,28 @@ func (a *Air) SetTemplateFunc(name string, f interface{}) {
 	a.renderer.templateFuncMap[name] = f
 }
 
-// Run starts the HTTP server.
-func (a *Air) Run() {
+// Serve starts the HTTP server.
+func (a *Air) Serve() {
 	a.renderer.parseTemplates()
 	if a.Config.DebugMode {
 		a.Logger.Level = DEBUG
-		a.Logger.Debug("running in debug mode")
+		a.Logger.Debug("serving in debug mode")
 	}
 
 	a.server = newServer(a)
-	if err := a.server.start(); err != nil {
+	if err := a.server.serve(); err != nil {
 		panic(err)
 	}
 }
 
-// Stop stops the HTTP server.
-func (a *Air) Stop() error {
-	return a.server.stop()
+// Close closes the HTTP server immediately.
+func (a *Air) Close() error {
+	return a.server.Close()
+}
+
+// Shutdown gracefully shuts down the HTTP server without interrupting any active connections.
+func (a *Air) Shutdown(c *Context) error {
+	return a.server.Shutdown(c.Context)
 }
 
 // handlerName returns the handler's func name.

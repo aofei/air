@@ -5,7 +5,7 @@ natural as breathing.
 
 High-performance? Fastest? Almost all of the web frameworks are using these words to tell people
 that they are the best. Maybe they are, maybe not. This framework does not intend to follow the
-crowd. So, the Air web framework can assure you only one sentence: **it can run properly.**
+crowd. So, the Air web framework can assure you only one sentence: **it can serve properly.**
 
 ## Installation
 
@@ -17,7 +17,7 @@ $ go get github.com/sheng/air
 
 done.
 
-> The only requirement is the [Go](https://golang.org/dl/), at least v1.7.
+> The only requirement is the [Go](https://golang.org/dl/), at least v1.8.
 
 ## Hello, 世界
 
@@ -31,7 +31,7 @@ import "github.com/sheng/air"
 func main() {
 	a := air.New()
 	a.GET("/", homeHandler)
-	a.Run()
+	a.Serve()
 }
 
 func homeHandler(c *air.Context) error {
