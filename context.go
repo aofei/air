@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 )
 
 // Context represents the context of the current HTTP request.
@@ -45,6 +46,21 @@ func newContext(a *Air) *Context {
 	c.Air = a
 	c.Data = c.Response.Data
 	return c
+}
+
+// SetCancel sets a new done channel into the `Context` of the c.
+func (c *Context) SetCancel() {
+	c.Context, _ = context.WithCancel(c.Context)
+}
+
+// SetDeadline sets a new deadline into the `Context` of the c.
+func (c *Context) SetDeadline(deadline time.Time) {
+	c.Context, _ = context.WithDeadline(c.Context, deadline)
+}
+
+// SetTimeout sets a new deadline based on the timeout into the `Context` of the c.
+func (c *Context) SetTimeout(timeout time.Duration) {
+	c.Context, _ = context.WithTimeout(c.Context, timeout)
 }
 
 // SetValue sets request-scoped value into the `Context` of the c.
@@ -121,6 +137,11 @@ func (c *Context) Cookies() []*http.Cookie {
 // SetCookie is an alias for the `Response#SetCookie()` of the c.
 func (c *Context) SetCookie(cookie *http.Cookie) {
 	c.Response.SetCookie(cookie)
+}
+
+// Push is an alias for the `Response#Push()` of the c.
+func (c *Context) Push() error {
+	return c.Response.Push()
 }
 
 // Render is an alias for the `Response#Render()` of the c.

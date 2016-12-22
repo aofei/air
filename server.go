@@ -2,9 +2,7 @@ package air
 
 import (
 	"crypto/tls"
-	"net"
 	"net/http"
-	"time"
 )
 
 // server represents the HTTP server.
@@ -26,47 +24,26 @@ func newServer(a *Air) *server {
 	s.Handler = s
 	s.ReadTimeout = s.air.Config.ReadTimeout
 	s.WriteTimeout = s.air.Config.WriteTimeout
+	if s.air.Config.DisableHTTP2 {
+		s.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
+	}
 	return s
 }
 
-// start starts the HTTP server.
-func (s *server) start() error {
+// serve starts the HTTP server.
+func (s *server) serve() error {
 	cl := s.air.Config.Listener
 	if cl != nil {
 		return s.Serve(cl)
 	}
 
-	ln, err := net.Listen("tcp", s.air.Config.Address)
-	if err != nil {
-		return err
+	cert := s.air.Config.TLSCertFile
+	key := s.air.Config.TLSKeyFile
+	if cert != "" && key != "" {
+		return s.ListenAndServeTLS(cert, key)
 	}
 
-	ctcf := s.air.Config.TLSCertFile
-	ctkf := s.air.Config.TLSKeyFile
-	if ctcf != "" && ctkf != "" {
-		tlscfg := &tls.Config{}
-		if !s.air.Config.DisableHTTP2 {
-			tlscfg.NextProtos = append(tlscfg.NextProtos, "h2")
-		}
-		tlscfg.Certificates = make([]tls.Certificate, 1)
-		tlscfg.Certificates[0], err = tls.LoadX509KeyPair(ctcf, ctkf)
-		if err != nil {
-			return err
-		}
-		cl = tls.NewListener(
-			tcpKeepAliveListener{ln.(*net.TCPListener)},
-			tlscfg,
-		)
-	} else {
-		cl = tcpKeepAliveListener{ln.(*net.TCPListener)}
-	}
-
-	return s.Serve(cl)
-}
-
-// stop stops the HTTP server.
-func (s *server) stop() error {
-	return s.air.Config.Listener.Close()
+	return s.ListenAndServe()
 }
 
 // ServeHTTP implements the `http.Handler`.
@@ -98,22 +75,4 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	c.reset()
 	contextPool.Put(c)
-}
-
-// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted connections. It's used by
-// ListenAndServe and ListenAndServeTLS so dead TCP connections (e.g. closing laptop mid-download)
-// eventually go away.
-type tcpKeepAliveListener struct {
-	*net.TCPListener
-}
-
-// Accept implements the `net.TCPListener#Accept()`.
-func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
-	tc, err := ln.AcceptTCP()
-	if err != nil {
-		return
-	}
-	tc.SetKeepAlive(true)
-	tc.SetKeepAlivePeriod(3 * time.Minute)
-	return tc, nil
 }
