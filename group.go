@@ -73,10 +73,5 @@ func (g *Group) File(path, file string) {
 
 // add implements the `Air#add()`.
 func (g *Group) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
-	// Combine into a new slice to avoid accidentally passing the same slice for multiple
-	// routes, which would lead to later add() calls overwriting the gas from earlier calls.
-	gs := []GasFunc{}
-	gs = append(gs, g.gases...)
-	gs = append(gs, gases...)
-	g.air.add(method, g.prefix+path, handler, gs...)
+	g.air.add(method, g.prefix+path, handler, append(g.gases, gases...)...)
 }
