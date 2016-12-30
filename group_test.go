@@ -4,7 +4,7 @@ import "testing"
 
 func TestGroupRESTfulMethods(t *testing.T) {
 	a := New()
-	g := NewGroup("/group", a)
+	g := NewGroup(a, "/group")
 	h := func(*Context) error { return nil }
 
 	g.GET("/", h)
@@ -15,7 +15,7 @@ func TestGroupRESTfulMethods(t *testing.T) {
 
 func TestGroupOtherMethods(t *testing.T) {
 	a := New()
-	g := NewGroup("/group", a)
+	g := NewGroup(a, "/group")
 
 	g.Static("/static", "./")
 	g.File("/file", "README.md")
