@@ -12,7 +12,7 @@ type Group struct {
 }
 
 // NewGroup returns a pointer of a new router group with prefix and optional group-level gases.
-func NewGroup(prefix string, a *Air, gases ...GasFunc) *Group {
+func NewGroup(a *Air, prefix string, gases ...GasFunc) *Group {
 	g := &Group{prefix: prefix, air: a}
 	g.Contain(gases...)
 	// Allow all requests to reach the group as they might get dropped if router doesn't find a
@@ -27,10 +27,7 @@ func NewGroup(prefix string, a *Air, gases ...GasFunc) *Group {
 
 // NewSubGroup creates a pointer of a new sub-group with prefix and optional sub-group-level gases.
 func (g *Group) NewSubGroup(prefix string, gases ...GasFunc) *Group {
-	gs := []GasFunc{}
-	gs = append(gs, g.gases...)
-	gs = append(gs, gases...)
-	return NewGroup(g.prefix+prefix, g.air, gs...)
+	return NewGroup(g.air, g.prefix+prefix, append(g.gases, gases...)...)
 }
 
 // Contain implements the `Air#Contain()`.
