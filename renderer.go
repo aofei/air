@@ -123,9 +123,9 @@ func (r *renderer) parseTemplates() {
 	}
 }
 
-// render renders a "text/html" response by using `template.Template`.
-func (r *renderer) render(w io.Writer, templateName string, res *Response) error {
-	return r.goTemplate.ExecuteTemplate(w, templateName, res.Data)
+// render renders the data into the w by using `template.Template`.
+func (r *renderer) render(w io.Writer, templateName string, data JSONMap) error {
+	return r.goTemplate.ExecuteTemplate(w, templateName, data)
 }
 
 // strlen returns the number of char in the s.
