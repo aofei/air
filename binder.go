@@ -36,12 +36,15 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 			err = NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		return err
-	}
-	ctype := req.Header.Get(HeaderContentType)
-	if req.Body == nil {
+	} else if req.Body == nil {
 		return NewHTTPError(http.StatusBadRequest, "request body can't be empty")
 	}
+
+	ctype := req.Header.Get(HeaderContentType)
+
 	var err error
+	err = ErrUnsupportedMediaType
+
 	switch {
 	case strings.HasPrefix(ctype, MIMEApplicationJSON):
 		if err = json.NewDecoder(req.Body).Decode(i); err != nil {
@@ -78,9 +81,8 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 				err = NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 		}
-	default:
-		err = ErrUnsupportedMediaType
 	}
+
 	return err
 }
 
@@ -96,9 +98,11 @@ func (b *binder) bindData(ptr interface{}, data url.Values, tag string) error {
 	for i := 0; i < typ.NumField(); i++ {
 		typeField := typ.Field(i)
 		structField := val.Field(i)
+
 		if !structField.CanSet() {
 			continue
 		}
+
 		structFieldKind := structField.Kind()
 		inputFieldName := typeField.Tag.Get(tag)
 
@@ -113,21 +117,26 @@ func (b *binder) bindData(ptr interface{}, data url.Values, tag string) error {
 				continue
 			}
 		}
+
 		inputValue, exists := data[inputFieldName]
+
 		if !exists {
 			continue
 		}
 
 		numElems := len(inputValue)
+
 		if structFieldKind == reflect.Slice && numElems > 0 {
 			sliceOf := structField.Type().Elem().Kind()
 			slice := reflect.MakeSlice(structField.Type(), numElems, numElems)
+
 			for i := 0; i < numElems; i++ {
 				if err := setWithProperType(sliceOf, inputValue[i],
 					slice.Index(i)); err != nil {
 					return err
 				}
 			}
+
 			val.Field(i).Set(slice)
 		} else {
 			if err := setWithProperType(typeField.Type.Kind(), inputValue[0],
@@ -136,6 +145,7 @@ func (b *binder) bindData(ptr interface{}, data url.Values, tag string) error {
 			}
 		}
 	}
+
 	return nil
 }
 
