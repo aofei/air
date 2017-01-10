@@ -80,19 +80,6 @@ func (res *Response) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(res.ResponseWriter, cookie)
 }
 
-// Push initiates an HTTP/2 server push with the `Data["target"]` and an optional `Data["options"]`.
-func (res *Response) Push() error {
-	p, pok := res.ResponseWriter.(http.Pusher)
-	t, tok := res.Data["target"].(string)
-	o, _ := res.Data["options"].(*http.PushOptions)
-	if !pok {
-		return errors.New("the HTTP/2 has been disabled")
-	} else if !tok {
-		return errors.New("Data[\"target\"] is not setted")
-	}
-	return p.Push(t, o)
-}
-
 // Render renders a template with the `Data` and `Data["template"]` or `Data["templates"]` of the
 // res and sends a "text/html" response.
 func (res *Response) Render() error {
@@ -104,7 +91,7 @@ func (res *Response) Render() error {
 
 	buf := &bytes.Buffer{}
 	if tok {
-		err := res.context.Air.renderer.render(buf, t, res)
+		err := res.context.Air.renderer.render(buf, t, res.Data)
 		if err != nil {
 			return err
 		}
@@ -112,7 +99,7 @@ func (res *Response) Render() error {
 		for _, t := range ts {
 			res.Data["InheritedHTML"] = template.HTML(buf.String())
 			buf.Reset()
-			err := res.context.Air.renderer.render(buf, t, res)
+			err := res.context.Air.renderer.render(buf, t, res.Data)
 			if err != nil {
 				return err
 			}
