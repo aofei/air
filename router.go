@@ -227,7 +227,7 @@ func (r *router) insert(method, path string, h HandlerFunc, t nodeKind, ppath st
 	}
 }
 
-// route routes a handler registed for method and path. It also parses URL for path parameters and
+// route routes a handler registered for method and path. It also parses URL for path parameters and
 // load them into ctx.
 func (r *router) route(method, path string, ctx *Context) {
 	cn := r.tree // Current node as root
