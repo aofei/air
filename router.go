@@ -69,6 +69,8 @@ func (r *router) checkPath(path string) {
 		panic("path cannot be empty")
 	} else if path[0] != '/' {
 		panic("path must start with /")
+	} else if pathHasLastSlash(path) {
+		panic("path cannot end with /, except the root path")
 	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
 		for _, p := range ps {
@@ -233,11 +235,12 @@ func (r *router) route(method, path string, ctx *Context) {
 	cn := r.tree // Current node as root
 
 	var (
-		search = path
-		c      *node    // Child node
-		nk     nodeKind // Next kind
-		nn     *node    // Next node
-		ns     string   // Next search
+		search = pathWithoutLastSlash(path)
+		ls     = pathHasLastSlash(path) // Last slash
+		c      *node                    // Child node
+		nk     nodeKind                 // Next kind
+		nn     = cn                     // Next node
+		ns     string                   // Next search
 	)
 
 	// Search order: static > param > any
@@ -253,28 +256,29 @@ func (r *router) route(method, path string, ctx *Context) {
 			sl := len(search)
 			pl = len(cn.prefix)
 
-			// LCP
 			max := pl
 			if sl < max {
 				max = sl
 			}
-			for ; l < max && search[l] == cn.prefix[l]; l++ {
+
+			for l < max && search[l] == cn.prefix[l] {
+				l++
 			}
 		}
 
 		if l == pl {
-			// Continue search
 			search = search[l:]
 		} else {
 			cn = nn
 			search = ns
+
 			if nk == paramKind {
 				goto Param
-			} else if nk == anyKind {
+			} else if nk == anyKind || ls {
 				goto Any
 			}
-			// Not found
-			return
+
+			return // Not found
 		}
 
 		if search == "" {
@@ -305,10 +309,14 @@ func (r *router) route(method, path string, ctx *Context) {
 
 			cn = c
 			i, l := 0, len(search)
-			for ; i < l && search[i] != '/'; i++ {
+
+			for i < l && search[i] != '/' {
+				i++
 			}
+
 			ctx.ParamValues = append(ctx.ParamValues, unescape(search[:i]))
 			search = search[i:]
+
 			continue
 		}
 
@@ -319,58 +327,48 @@ func (r *router) route(method, path string, ctx *Context) {
 				cn = nn
 				nn = nil // Next
 				search = ns
+
 				if nk == paramKind {
 					goto Param
 				} else if nk == anyKind {
 					goto Any
 				}
 			}
-			// Not found
-			return
+
+			return // Not found
 		}
+
 		if len(ctx.ParamValues) == len(cn.paramNames) {
 			ctx.ParamValues[len(ctx.ParamValues)-1] = unescape(search)
 		} else {
 			ctx.ParamValues = append(ctx.ParamValues, unescape(search))
 		}
+
 		goto End
 	}
 
 End:
-	ctx.PristinePath = cn.pristinePath
-	ctx.ParamNames = cn.paramNames
 	ctx.Handler = cn.handler(method)
-
-	// NOTE: Slow zone...
 	if ctx.Handler == nil {
 		ctx.Handler = cn.checkMethodNotAllowed()
-
-		// Dig further for any, might have an empty value for *, e.g. serving a directory.
-		if cn = cn.childByKind(anyKind); cn == nil {
-			return
-		}
-		if h := cn.handler(method); h != nil {
-			ctx.Handler = h
-		} else {
-			ctx.Handler = cn.checkMethodNotAllowed()
-		}
-		ctx.PristinePath = cn.pristinePath
-		ctx.ParamNames = cn.paramNames
-		if len(ctx.ParamValues) == len(cn.paramNames) {
-			ctx.ParamValues[len(ctx.ParamValues)-1] = ""
-		} else {
-			ctx.ParamValues = append(ctx.ParamValues, "")
-		}
+		return
 	}
 
-	for i, v := range ctx.ParamValues {
-		ctx.Params[ctx.ParamNames[i]] = v
+	ctx.PristinePath = cn.pristinePath
+	ctx.ParamNames = cn.paramNames
+
+	if cn.kind != staticKind && ls {
+		ctx.ParamValues[len(ctx.ParamValues)-1] += "/"
+	}
+
+	for i, n := range ctx.ParamNames {
+		ctx.Params[n] = ctx.ParamValues[i]
 	}
 
 	return
 }
 
-// pathWithoutParamNames returns the path from p without param names.
+// pathWithoutParamNames returns the path from p without the param names.
 func pathWithoutParamNames(p string) string {
 	for i, l := 0, len(p); i < l; i++ {
 		if p[i] == ':' {
@@ -388,6 +386,24 @@ func pathWithoutParamNames(p string) string {
 		}
 	}
 	return p
+}
+
+// pathWithoutLastSlash returns the path from p without the last slash. It returns itself if the p
+// is equal to "/".
+func pathWithoutLastSlash(p string) string {
+	if pathHasLastSlash(p) {
+		p = p[:len(p)-1]
+	}
+	return p
+}
+
+// pathHasLastSlash reports whether the p has the last slash. It returns false if the p is equal to
+// "/".
+func pathHasLastSlash(p string) bool {
+	if p != "/" && p[len(p)-1] == '/' {
+		return true
+	}
+	return false
 }
 
 // unescape return a normal string unescaped from s.
