@@ -73,5 +73,8 @@ func (g *Group) File(path, file string) {
 
 // add implements the `Air#add()`.
 func (g *Group) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
+	if path == "/" {
+		path = ""
+	}
 	g.air.add(method, g.prefix+path, handler, append(g.gases, gases...)...)
 }
