@@ -80,17 +80,13 @@ func (res *Response) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(res.ResponseWriter, cookie)
 }
 
-// Push initiates an HTTP/2 server push with the `Data["target"]` and an optional `Data["options"]`.
-func (res *Response) Push() error {
+// Push initiates an HTTP/2 server push with the target and an optional pos.
+func (res *Response) Push(target string, pos *http.PushOptions) error {
 	p, pok := res.ResponseWriter.(http.Pusher)
-	t, tok := res.Data["target"].(string)
-	o, _ := res.Data["options"].(*http.PushOptions)
 	if !pok {
 		return errors.New("the HTTP/2 has been disabled")
-	} else if !tok {
-		return errors.New("Data[\"target\"] is not setted")
 	}
-	return p.Push(t, o)
+	return p.Push(target, pos)
 }
 
 // Render renders a template with the `Data` and `Data["template"]` or `Data["templates"]` of the
