@@ -143,17 +143,22 @@ var (
 // New returns a pointer of a new instance of `Air`.
 func New() *Air {
 	a := &Air{}
+
 	a.router = newRouter(a)
 	a.renderer = newRenderer(a)
+
 	a.Config = newConfig()
 	a.Binder = newBinder()
 	a.HTTPErrorHandler = defaultHTTPErrorHandler
+
 	a.Logger = newLogger(a)
+
 	contextPool = &sync.Pool{
 		New: func() interface{} {
 			return newContext(a)
 		},
 	}
+
 	return a
 }
 
@@ -167,28 +172,28 @@ func (a *Air) Contain(gases ...GasFunc) {
 	a.gases = append(a.gases, gases...)
 }
 
-// GET registers a new GET route for a path with matching handler in the router with optional
-// route-level gases.
-func (a *Air) GET(path string, handler HandlerFunc, gases ...GasFunc) {
-	a.add(GET, path, handler, gases...)
+// GET registers a new GET route for a path with matching h in the router with optional route-level
+// gases.
+func (a *Air) GET(path string, h HandlerFunc, gases ...GasFunc) {
+	a.add(GET, path, h, gases...)
 }
 
-// POST registers a new POST route for a path with matching handler in the router with optional
+// POST registers a new POST route for a path with matching h in the router with optional
 // route-level gases.
-func (a *Air) POST(path string, handler HandlerFunc, gases ...GasFunc) {
-	a.add(POST, path, handler, gases...)
+func (a *Air) POST(path string, h HandlerFunc, gases ...GasFunc) {
+	a.add(POST, path, h, gases...)
 }
 
-// PUT registers a new PUT route for a path with matching handler in the router with optional
-// route-level gases.
-func (a *Air) PUT(path string, handler HandlerFunc, gases ...GasFunc) {
-	a.add(PUT, path, handler, gases...)
+// PUT registers a new PUT route for a path with matching h in the router with optional route-level
+// gases.
+func (a *Air) PUT(path string, h HandlerFunc, gases ...GasFunc) {
+	a.add(PUT, path, h, gases...)
 }
 
-// DELETE registers a new DELETE route for a path with matching handler in the router with
-// optional route-level gases.
-func (a *Air) DELETE(path string, handler HandlerFunc, gases ...GasFunc) {
-	a.add(DELETE, path, handler, gases...)
+// DELETE registers a new DELETE route for a path with matching h in the router with optional
+// route-level gases.
+func (a *Air) DELETE(path string, h HandlerFunc, gases ...GasFunc) {
+	a.add(DELETE, path, h, gases...)
 }
 
 // Static registers a new route with path prefix to serve static files from the provided root
@@ -208,34 +213,34 @@ func (a *Air) File(path, file string) {
 	})
 }
 
-// add registers a new route for a path with a HTTP method and matching handler in the router with
+// add registers a new route for a path with a HTTP method and matching h in the router with
 // optional route-level gases.
-func (a *Air) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
-	name := handlerName(handler)
+func (a *Air) add(method, path string, h HandlerFunc, gases ...GasFunc) {
+	hn := handlerName(h)
+
 	a.router.add(method, path, func(c *Context) error {
-		h := handler
-		// Chain gases
 		for i := len(gases) - 1; i >= 0; i-- {
 			h = gases[i](h)
 		}
 		return h(c)
 	})
-	r := &route{
+
+	a.router.routes[method+path] = &route{
 		method:  method,
 		path:    path,
-		handler: name,
+		handler: hn,
 	}
-	a.router.routes[method+path] = r
 }
 
-// URL returns a URL generated from handler with optional params.
-func (a *Air) URL(handler HandlerFunc, params ...interface{}) string {
+// URL returns a URL generated from h with optional params.
+func (a *Air) URL(h HandlerFunc, params ...interface{}) string {
 	url := &bytes.Buffer{}
+	hn := handlerName(h)
 	ln := len(params)
 	n := 0
-	name := handlerName(handler)
+
 	for _, r := range a.router.routes {
-		if r.handler == name {
+		if r.handler == hn {
 			for i, l := 0, len(r.path); i < l; i++ {
 				if r.path[i] == ':' && n < ln {
 					for ; i < l && r.path[i] != '/'; i++ {
@@ -243,13 +248,16 @@ func (a *Air) URL(handler HandlerFunc, params ...interface{}) string {
 					url.WriteString(fmt.Sprintf("%v", params[n]))
 					n++
 				}
+
 				if i < l {
 					url.WriteByte(r.path[i])
 				}
 			}
+
 			break
 		}
 	}
+
 	return url.String()
 }
 
@@ -282,20 +290,20 @@ func (a *Air) Shutdown(c *Context) error {
 	return a.server.Shutdown(c.Context)
 }
 
-// handlerName returns the handler's func name.
-func handlerName(handler HandlerFunc) string {
-	t := reflect.ValueOf(handler).Type()
+// handlerName returns the h's func name.
+func handlerName(h HandlerFunc) string {
+	t := reflect.ValueOf(h).Type()
 	if t.Kind() == reflect.Func {
-		return runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
+		return runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
 	}
 	return t.String()
 }
 
 // WrapGas wraps `HandlerFunc` into `GasFunc`.
-func WrapGas(handler HandlerFunc) GasFunc {
+func WrapGas(h HandlerFunc) GasFunc {
 	return func(next HandlerFunc) HandlerFunc {
 		return func(c *Context) error {
-			if err := handler(c); err != nil {
+			if err := h(c); err != nil {
 				return err
 			}
 			return next(c)
@@ -320,16 +328,20 @@ func (he *HTTPError) Error() string {
 // defaultHTTPErrorHandler invokes the default HTTP error handler.
 func defaultHTTPErrorHandler(err error, c *Context) {
 	he := ErrInternalServerError
+
 	if che, ok := err.(*HTTPError); ok {
 		he = che
 	}
+
 	if c.Air.Config.DebugMode {
 		he.Message = err.Error()
 	}
+
 	if !c.Response.Written() {
 		c.Data["string"] = he.Message
 		c.Response.WriteHeader(he.Code)
 		c.String()
 	}
+
 	c.Air.Logger.Error(err)
 }
