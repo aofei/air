@@ -15,13 +15,15 @@ type Group struct {
 func NewGroup(a *Air, prefix string, gases ...GasFunc) *Group {
 	g := &Group{prefix: prefix, air: a}
 	g.Contain(gases...)
+
 	// Allow all requests to reach the group as they might get dropped if router doesn't find a
 	// match, making none of the group gas process.
 	path := g.prefix + "*"
-	handler := func(c *Context) error { return ErrNotFound }
+	h := func(c *Context) error { return ErrNotFound }
 	for _, m := range methods {
-		g.air.add(m, path, handler, g.gases...)
+		g.air.add(m, path, h, g.gases...)
 	}
+
 	return g
 }
 
@@ -36,23 +38,23 @@ func (g *Group) Contain(gases ...GasFunc) {
 }
 
 // GET implements the `Air#GET()`.
-func (g *Group) GET(path string, handler HandlerFunc, gases ...GasFunc) {
-	g.add(GET, path, handler, gases...)
+func (g *Group) GET(path string, h HandlerFunc, gases ...GasFunc) {
+	g.add(GET, path, h, gases...)
 }
 
 // POST implements the `Air#POST()`.
-func (g *Group) POST(path string, handler HandlerFunc, gases ...GasFunc) {
-	g.add(POST, path, handler, gases...)
+func (g *Group) POST(path string, h HandlerFunc, gases ...GasFunc) {
+	g.add(POST, path, h, gases...)
 }
 
 // PUT implements the `Air#PUT()`.
-func (g *Group) PUT(path string, handler HandlerFunc, gases ...GasFunc) {
-	g.add(PUT, path, handler, gases...)
+func (g *Group) PUT(path string, h HandlerFunc, gases ...GasFunc) {
+	g.add(PUT, path, h, gases...)
 }
 
 // DELETE implements the `Air#DELETE()`.
-func (g *Group) DELETE(path string, handler HandlerFunc, gases ...GasFunc) {
-	g.add(DELETE, path, handler, gases...)
+func (g *Group) DELETE(path string, h HandlerFunc, gases ...GasFunc) {
+	g.add(DELETE, path, h, gases...)
 }
 
 // Static implements the `Air#Static()`.
@@ -72,9 +74,9 @@ func (g *Group) File(path, file string) {
 }
 
 // add implements the `Air#add()`.
-func (g *Group) add(method, path string, handler HandlerFunc, gases ...GasFunc) {
+func (g *Group) add(method, path string, h HandlerFunc, gases ...GasFunc) {
 	if path == "/" {
 		path = ""
 	}
-	g.air.add(method, g.prefix+path, handler, append(g.gases, gases...)...)
+	g.air.add(method, g.prefix+path, h, append(g.gases, gases...)...)
 }
