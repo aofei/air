@@ -157,8 +157,8 @@ func (c *Context) Flush() {
 }
 
 // Push is an alias for the `Response#Push()` of the c.
-func (c *Context) Push() error {
-	return c.Response.Push()
+func (c *Context) Push(target string, pos *http.PushOptions) error {
+	return c.Response.Push(target, pos)
 }
 
 // Render is an alias for the `Response#Render()` of the c.
