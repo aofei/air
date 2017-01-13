@@ -1,6 +1,7 @@
 package air
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
@@ -8,6 +9,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -78,6 +80,23 @@ func (res *Response) Written() bool {
 // Invalid cookies may be silently dropped.
 func (res *Response) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(res.ResponseWriter, cookie)
+}
+
+// Hijack lets the caller take over the connection. After a call to this method, the `server` will
+// not do anything else with the connection.
+func (res *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return res.ResponseWriter.(http.Hijacker).Hijack()
+}
+
+// CloseNotify returns a channel that receives at most a single value (true) when the client
+// connection has gone away.
+func (res *Response) CloseNotify() <-chan bool {
+	return res.ResponseWriter.(http.CloseNotifier).CloseNotify()
+}
+
+// Flush sends any buffered data to the client.
+func (res *Response) Flush() {
+	res.ResponseWriter.(http.Flusher).Flush()
 }
 
 // Push initiates an HTTP/2 server push with the target and an optional pos.

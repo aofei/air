@@ -1,9 +1,11 @@
 package air
 
 import (
+	"bufio"
 	"context"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"sync"
@@ -137,6 +139,21 @@ func (c *Context) Cookies() []*http.Cookie {
 // SetCookie is an alias for the `Response#SetCookie()` of the c.
 func (c *Context) SetCookie(cookie *http.Cookie) {
 	c.Response.SetCookie(cookie)
+}
+
+// Hijack is an alias for the `Response#Hijack()` of the c.
+func (c *Context) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return c.Response.Hijack()
+}
+
+// CloseNotify is an alias for the `Response#CloseNotify()` of the c.
+func (c *Context) CloseNotify() <-chan bool {
+	return c.Response.CloseNotify()
+}
+
+// Flush is an alias for the `Response#Flush()` of the c.
+func (c *Context) Flush() {
+	c.Response.Flush()
 }
 
 // Push is an alias for the `Response#Push()` of the c.
