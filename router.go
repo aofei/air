@@ -69,7 +69,7 @@ func (r *router) checkPath(path string) {
 		panic("path cannot be empty")
 	} else if path[0] != '/' {
 		panic("path must start with /")
-	} else if pathHasLastSlash(path) {
+	} else if path != "/" && path[len(path)-1] == '/' {
 		panic("path cannot end with /, except the root path")
 	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
@@ -118,10 +118,12 @@ func (r *router) add(method, path string, h HandlerFunc) {
 			j := i + 1
 
 			r.insert(method, path[:i], nil, staticKind, "", nil)
+
 			for ; i < l && path[i] != '/'; i++ {
 			}
 
 			pname := path[j:i]
+
 			for _, pn := range pnames {
 				if pn == pname {
 					panic("a path cannot have duplicate param names")
@@ -130,12 +132,12 @@ func (r *router) add(method, path string, h HandlerFunc) {
 
 			pnames = append(pnames, pname)
 			path = path[:j] + path[i:]
-			i, l = j, len(path)
 
-			if i == l {
+			if i, l = j, len(path); i == l {
 				r.insert(method, path, h, paramKind, ppath, pnames)
 				return
 			}
+
 			r.insert(method, path[:i], nil, paramKind, ppath, pnames)
 		} else if path[i] == '*' {
 			r.insert(method, path[:i], nil, staticKind, "", nil)
@@ -149,172 +151,184 @@ func (r *router) add(method, path string, h HandlerFunc) {
 }
 
 // insert inserts a new route into the tree of r.
-func (r *router) insert(method, path string, h HandlerFunc, t nodeKind, ppath string,
+func (r *router) insert(method, path string, h HandlerFunc, k nodeKind, ppath string,
 	pnames []string) {
 	cn := r.tree // Current node as root
-	search := path
+
+	var (
+		search = path
+		nn     *node // Next node
+		sl     int   // Search length
+		pl     int   // Prefix length
+		ll     int   // LCP length
+		max    int   // Max number of sl and pl
+	)
 
 	for {
-		sl := len(search)
-		pl := len(cn.prefix)
-		l := 0
+		sl = len(search)
+		pl = len(cn.prefix)
+		ll = 0
 
-		// LCP
-		max := pl
+		max = pl
 		if sl < max {
 			max = sl
 		}
-		for ; l < max && search[l] == cn.prefix[l]; l++ {
+
+		for ; ll < max && search[ll] == cn.prefix[ll]; ll++ {
 		}
 
-		if l == 0 {
+		if ll == 0 {
 			// At root node
 			cn.label = search[0]
 			cn.prefix = search
 			if h != nil {
-				cn.kind = t
+				cn.kind = k
 				cn.addHandler(method, h)
 				cn.pristinePath = ppath
 				cn.paramNames = pnames
 			}
-		} else if l < pl {
+		} else if ll < pl {
 			// Split node
-			n := newNode(cn.kind, cn.prefix[l:], cn.methodHandler, cn, cn.children,
+			nn = newNode(cn.kind, cn.prefix[ll:], cn.methodHandler, cn, cn.children,
 				cn.pristinePath, cn.paramNames)
 
 			// Reset parent node
 			cn.kind = staticKind
 			cn.label = cn.prefix[0]
-			cn.prefix = cn.prefix[:l]
+			cn.prefix = cn.prefix[:ll]
 			cn.children = nil
 			cn.methodHandler = &methodHandler{}
 			cn.pristinePath = ""
 			cn.paramNames = nil
 
-			cn.addChild(n)
+			cn.addChild(nn)
 
-			if l == sl {
+			if ll == sl {
 				// At parent node
-				cn.kind = t
+				cn.kind = k
 				cn.addHandler(method, h)
 				cn.pristinePath = ppath
 				cn.paramNames = pnames
 			} else {
 				// Create child node
-				n = newNode(t, search[l:], &methodHandler{}, cn, nil, ppath, pnames)
-				n.addHandler(method, h)
-				cn.addChild(n)
+				nn = newNode(k, search[ll:], &methodHandler{}, cn, nil, ppath,
+					pnames)
+				nn.addHandler(method, h)
+				cn.addChild(nn)
 			}
-		} else if l < sl {
-			search = search[l:]
-			c := cn.childByLabel(search[0])
-			if c != nil {
+		} else if ll < sl {
+			search = search[ll:]
+
+			if nn = cn.childByLabel(search[0]); nn != nil {
 				// Go deeper
-				cn = c
+				cn = nn
 				continue
 			}
+
 			// Create child node
-			n := newNode(t, search, &methodHandler{}, cn, nil, ppath, pnames)
-			n.addHandler(method, h)
-			cn.addChild(n)
-		} else {
+			nn = newNode(k, search, &methodHandler{}, cn, nil, ppath, pnames)
+			nn.addHandler(method, h)
+			cn.addChild(nn)
+		} else if h != nil {
 			// Node already exists
-			if h != nil {
-				cn.addHandler(method, h)
-				cn.pristinePath = ppath
-				cn.paramNames = pnames
-			}
+			cn.addHandler(method, h)
+			cn.pristinePath = ppath
+			cn.paramNames = pnames
 		}
 		return
 	}
 }
 
 // route routes a handler registered for method and path. It also parses URL for path parameters and
-// load them into ctx.
-func (r *router) route(method, path string, ctx *Context) {
+// load them into c.
+func (r *router) route(method, path string, c *Context) {
 	cn := r.tree // Current node as root
 
 	var (
-		search = pathWithoutLastSlash(path)
-		ls     = pathHasLastSlash(path) // Last slash
-		c      *node                    // Child node
-		nk     nodeKind                 // Next kind
-		nn     = cn                     // Next node
-		ns     string                   // Next search
+		search = path
+		nn     *node    // Next node
+		nk     nodeKind // Next kind
+		sn     *node    // Saved node
+		ss     string   // Saved search
+		sl     int      // Search length
+		pl     int      // Prefix length
+		ll     int      // LCP length
+		max    int      // Max number of sl and pl
+		i, l   int      // Temp vars
 	)
 
 	// Search order: static > param > any
 	for {
 		if search == "" {
-			goto End
+			break
 		}
 
-		pl := 0 // Prefix length
-		l := 0  // LCP length
+		pl = 0
+		ll = 0
 
 		if cn.label != ':' {
-			sl := len(search)
+			sl = len(search)
 			pl = len(cn.prefix)
 
-			max := pl
+			max = pl
 			if sl < max {
 				max = sl
 			}
 
-			for l < max && search[l] == cn.prefix[l] {
-				l++
+			for ; ll < max && search[ll] == cn.prefix[ll]; ll++ {
 			}
 		}
 
-		if l == pl {
-			search = search[l:]
+		if ll == pl {
+			search = search[ll:]
 		} else {
-			cn = nn
-			search = ns
+			cn = sn
+			search = ss
 
-			if nk == paramKind {
+			switch nk {
+			case paramKind:
 				goto Param
-			} else if nk == anyKind || ls {
+			case anyKind:
 				goto Any
 			}
 
-			return // Not found
+			return
 		}
 
 		if search == "" {
-			goto End
+			break
 		}
 
 		// Static node
-		if c = cn.child(search[0], staticKind); c != nil {
+		if nn = cn.child(search[0], staticKind); nn != nil {
 			// Save next
 			if cn.prefix[len(cn.prefix)-1] == '/' {
 				nk = paramKind
-				nn = cn
-				ns = search
+				sn = cn
+				ss = search
 			}
-			cn = c
+
+			cn = nn
+
 			continue
 		}
 
 		// Param node
 	Param:
-		if c = cn.childByKind(paramKind); c != nil {
+		if nn = cn.childByKind(paramKind); nn != nil {
 			// Save next
 			if cn.prefix[len(cn.prefix)-1] == '/' {
 				nk = anyKind
-				nn = cn
-				ns = search
+				sn = cn
+				ss = search
 			}
 
-			cn = c
-			i, l := 0, len(search)
+			cn = nn
 
-			for i < l && search[i] != '/' {
-				i++
+			for i, l = 0, len(search); i < l && search[i] != '/'; i++ {
 			}
 
-			ctx.ParamValues = append(ctx.ParamValues, unescape(search[:i]))
+			c.ParamValues = append(c.ParamValues, unescape(search[:i]))
 			search = search[i:]
 
 			continue
@@ -322,47 +336,60 @@ func (r *router) route(method, path string, ctx *Context) {
 
 		// Any node
 	Any:
-		if cn = cn.childByKind(anyKind); cn == nil {
-			if nn != nil {
-				cn = nn
-				nn = nil // Next
-				search = ns
-
-				if nk == paramKind {
-					goto Param
-				} else if nk == anyKind {
-					goto Any
-				}
+		if cn = cn.childByKind(anyKind); cn != nil {
+			if len(c.ParamValues) == len(cn.paramNames) {
+				c.ParamValues[len(c.ParamValues)-1] = unescape(search)
+			} else {
+				c.ParamValues = append(c.ParamValues, unescape(search))
 			}
 
-			return // Not found
+			break
 		}
 
-		if len(ctx.ParamValues) == len(cn.paramNames) {
-			ctx.ParamValues[len(ctx.ParamValues)-1] = unescape(search)
-		} else {
-			ctx.ParamValues = append(ctx.ParamValues, unescape(search))
+		if sn != nil {
+			cn = sn
+			sn = nil
+			search = ss
+
+			switch nk {
+			case paramKind:
+				goto Param
+			case anyKind:
+				goto Any
+			}
 		}
 
-		goto End
-	}
-
-End:
-	ctx.Handler = cn.handler(method)
-	if ctx.Handler == nil {
-		ctx.Handler = cn.checkMethodNotAllowed()
 		return
 	}
 
-	ctx.PristinePath = cn.pristinePath
-	ctx.ParamNames = cn.paramNames
+	c.Handler = cn.handler(method)
+	if c.Handler == nil {
+		c.Handler = cn.checkMethodNotAllowed()
 
-	if cn.kind != staticKind && ls {
-		ctx.ParamValues[len(ctx.ParamValues)-1] += "/"
+		// Dig further for any, might have an empty value for *, e.g. serving a directory.
+
+		if cn = cn.childByKind(anyKind); cn == nil {
+			return
+		}
+
+		if h := cn.handler(method); h != nil {
+			c.Handler = h
+		} else {
+			c.Handler = cn.checkMethodNotAllowed()
+		}
+
+		if len(c.ParamValues) == len(cn.paramNames) {
+			c.ParamValues[len(c.ParamValues)-1] = ""
+		} else {
+			c.ParamValues = append(c.ParamValues, "")
+		}
 	}
 
-	for i, n := range ctx.ParamNames {
-		ctx.Params[n] = ctx.ParamValues[i]
+	c.PristinePath = cn.pristinePath
+	c.ParamNames = cn.paramNames
+
+	for i, n := range c.ParamNames {
+		c.Params[n] = c.ParamValues[i]
 	}
 
 	return
@@ -386,24 +413,6 @@ func pathWithoutParamNames(p string) string {
 		}
 	}
 	return p
-}
-
-// pathWithoutLastSlash returns the path from p without the last slash. It returns itself if the p
-// is equal to "/".
-func pathWithoutLastSlash(p string) string {
-	if pathHasLastSlash(p) {
-		p = p[:len(p)-1]
-	}
-	return p
-}
-
-// pathHasLastSlash reports whether the p has the last slash. It returns false if the p is equal to
-// "/".
-func pathHasLastSlash(p string) bool {
-	if p != "/" && p[len(p)-1] == '/' {
-		return true
-	}
-	return false
 }
 
 // unescape return a normal string unescaped from s.
@@ -473,10 +482,10 @@ func unhex(c byte) byte {
 }
 
 // newNode returns a pointer of a new instance of `node` with provided values.
-func newNode(t nodeKind, pre string, mh *methodHandler, p *node, c []*node, ppath string,
+func newNode(k nodeKind, pre string, mh *methodHandler, p *node, c []*node, ppath string,
 	pnames []string) *node {
 	return &node{
-		kind:          t,
+		kind:          k,
 		label:         pre[0],
 		prefix:        pre,
 		methodHandler: mh,
