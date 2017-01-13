@@ -91,20 +91,20 @@ func (r *router) checkPath(path string) {
 
 // checkRoute checks whether the [method path] route is valid.
 func (r *router) checkRoute(method, path string) {
+	if r.routes[method+path] != nil {
+		panic(fmt.Sprintf("route [%s %s] is already registered", method, path))
+	}
+
 	for _, route := range r.routes {
-		if route.method == method {
-			if route.path == path {
-				panic(fmt.Sprintf("route [%s %s] is already registered",
-					method, path))
-			} else if pathWithoutParamNames(route.path) == pathWithoutParamNames(path) {
-				panic(fmt.Sprintf("route [%s %s] and [%s %s] are ambiguous",
-					method, path, route.method, route.path))
-			}
+		if route.method == method &&
+			pathWithoutParamNames(route.path) == pathWithoutParamNames(path) {
+			panic(fmt.Sprintf("route [%s %s] and [%s %s] are ambiguous",
+				method, path, route.method, route.path))
 		}
 	}
 }
 
-// add registers a new route for method and path with matching handler.
+// add registers a new route for method and path with matching h.
 func (r *router) add(method, path string, h HandlerFunc) {
 	// Checks
 	r.checkPath(path)
@@ -235,6 +235,7 @@ func (r *router) insert(method, path string, h HandlerFunc, k nodeKind, ppath st
 			cn.pristinePath = ppath
 			cn.paramNames = pnames
 		}
+
 		return
 	}
 }
