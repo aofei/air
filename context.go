@@ -40,7 +40,6 @@ var contextPool *sync.Pool
 // newContext returns a pointer of a new instance of `Context`.
 func newContext(a *Air) *Context {
 	c := &Context{}
-	c.Context = context.Background()
 	c.Request = newRequest(c)
 	c.Response = newResponse(c)
 	c.Params = make(map[string]string)
@@ -70,8 +69,9 @@ func (c *Context) SetValue(key interface{}, val interface{}) {
 	c.Context = context.WithValue(c.Context, key, val)
 }
 
-// feed feeds the rw and req into where they should be.
-func (c *Context) feed(rw http.ResponseWriter, req *http.Request) {
+// feed feeds the req and rw into where they should be.
+func (c *Context) feed(req *http.Request, rw http.ResponseWriter) {
+	c.Context = req.Context()
 	c.Request.Request = req
 	c.Request.URL.URL = req.URL
 	c.Response.ResponseWriter = rw
@@ -79,7 +79,7 @@ func (c *Context) feed(rw http.ResponseWriter, req *http.Request) {
 
 // reset resets all fields in the c.
 func (c *Context) reset() {
-	c.Context = context.Background()
+	c.Context = nil
 	c.Request.reset()
 	c.Response.reset()
 	c.PristinePath = ""
