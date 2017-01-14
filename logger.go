@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-// Logger is used to log information generated in runtime.
 type (
+	// Logger is used to log information generated in runtime.
 	Logger struct {
 		template   *template.Template
 		bufferPool *sync.Pool
