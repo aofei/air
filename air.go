@@ -219,10 +219,11 @@ func (a *Air) add(method, path string, h HandlerFunc, gases ...GasFunc) {
 	hn := handlerName(h)
 
 	a.router.add(method, path, func(c *Context) error {
+		hf := h
 		for i := len(gases) - 1; i >= 0; i-- {
-			h = gases[i](h)
+			hf = gases[i](hf)
 		}
-		return h(c)
+		return hf(c)
 	})
 
 	a.router.routes[method+path] = &route{
