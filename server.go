@@ -49,7 +49,7 @@ func (s *server) serve() error {
 // ServeHTTP implements the `http.Handler`.
 func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	c := contextPool.Get().(*Context)
-	c.feed(rw, req)
+	c.feed(req, rw)
 
 	// Gases
 	h := func(c *Context) error {
