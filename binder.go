@@ -20,6 +20,7 @@ type (
 		Bind(i interface{}, req *Request) error
 	}
 
+	// binder implements the `Binder` based on "Content-Type" header.
 	binder struct{}
 )
 
