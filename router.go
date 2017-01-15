@@ -6,22 +6,22 @@ import (
 )
 
 type (
-	// router is the registry of all registered routes for an `Air` instance for request
-	// matching and URL path parameter parsing.
+	// router is the registry of all registered routes for an `Air` instance for the HTTP
+	// request matching and the HTTP URL path parameters parsing.
 	router struct {
 		routes map[string]*route
 		tree   *node
 		air    *Air
 	}
 
-	// route contains a handler and information for matching against requests.
+	// route contains a handler and information for matching against the HTTP requests.
 	route struct {
 		method  string
 		path    string
 		handler string
 	}
 
-	// node is the node of the router's tree.
+	// node is the node of the field `tree` of the `router`.
 	node struct {
 		kind          nodeKind
 		label         byte
@@ -33,10 +33,10 @@ type (
 		paramNames    []string
 	}
 
-	// nodekind is the kind of `node`.
+	// nodekind is the kind of the `node`.
 	nodeKind uint8
 
-	// methodHandler is a set of `HandlerFunc` distinguish by method.
+	// methodHandler is a set of the `HandlerFunc` distinguish by method.
 	methodHandler struct {
 		get    HandlerFunc
 		post   HandlerFunc
@@ -52,7 +52,7 @@ const (
 	anyKind
 )
 
-// newRouter returns a pointer of a new router instance.
+// newRouter returns a pointer of a new instance of the `router`.
 func newRouter(a *Air) *router {
 	return &router{
 		routes: make(map[string]*route),
@@ -104,7 +104,7 @@ func (r *router) checkRoute(method, path string) {
 	}
 }
 
-// add registers a new route for method and path with matching h.
+// add registers a new route for the method and the path with the matching h.
 func (r *router) add(method, path string, h HandlerFunc) {
 	// Checks
 	r.checkPath(path)
@@ -150,7 +150,7 @@ func (r *router) add(method, path string, h HandlerFunc) {
 	r.insert(method, path, h, staticKind, ppath, pnames)
 }
 
-// insert inserts a new route into the tree of r.
+// insert inserts a new route into the tree of the r.
 func (r *router) insert(method, path string, h HandlerFunc, k nodeKind, ppath string,
 	pnames []string) {
 	cn := r.tree // Current node as root
@@ -240,8 +240,8 @@ func (r *router) insert(method, path string, h HandlerFunc, k nodeKind, ppath st
 	}
 }
 
-// route routes a handler registered for method and path. It also parses URL for path parameters and
-// load them into c.
+// route routes a handler registered for the method and the path. It also parses the HTTP URL for
+// the path parameters and load them into the c.
 func (r *router) route(method, path string, c *Context) {
 	cn := r.tree // Current node as root
 
@@ -396,7 +396,7 @@ func (r *router) route(method, path string, c *Context) {
 	return
 }
 
-// pathWithoutParamNames returns the path from p without the param names.
+// pathWithoutParamNames returns the path from the p without the param names.
 func pathWithoutParamNames(p string) string {
 	for i, l := 0, len(p); i < l; i++ {
 		if p[i] == ':' {
@@ -416,7 +416,7 @@ func pathWithoutParamNames(p string) string {
 	return p
 }
 
-// unescape return a normal string unescaped from s.
+// unescape return a normal string unescaped from the s.
 func unescape(s string) string {
 	// Count %, check that they're well-formed.
 	n := 0
@@ -456,7 +456,7 @@ func unescape(s string) string {
 	return string(t)
 }
 
-// ishex returns true if c was hex.
+// ishex reports whether the c is hex.
 func ishex(c byte) bool {
 	switch {
 	case '0' <= c && c <= '9':
@@ -469,7 +469,7 @@ func ishex(c byte) bool {
 	return false
 }
 
-// unhex returns normal byte from hex char c.
+// unhex returns the normal byte from the hex char c.
 func unhex(c byte) byte {
 	switch {
 	case '0' <= c && c <= '9':
@@ -482,7 +482,7 @@ func unhex(c byte) byte {
 	return 0
 }
 
-// newNode returns a pointer of a new instance of `node` with provided values.
+// newNode returns a pointer of a new instance of the `node` with the provided values.
 func newNode(k nodeKind, pre string, mh *methodHandler, p *node, c []*node, ppath string,
 	pnames []string) *node {
 	return &node{
@@ -497,7 +497,7 @@ func newNode(k nodeKind, pre string, mh *methodHandler, p *node, c []*node, ppat
 	}
 }
 
-// child returns a child `node` of n by provided label l and kint t.
+// child returns a child `node` of the n by the provided label l and the kind t.
 func (n *node) child(l byte, t nodeKind) *node {
 	for _, c := range n.children {
 		if c.label == l && c.kind == t {
@@ -507,7 +507,7 @@ func (n *node) child(l byte, t nodeKind) *node {
 	return nil
 }
 
-// childByLabel returns a child `node` of n by provided label l.
+// childByLabel returns a child `node` of the n by the provided label l.
 func (n *node) childByLabel(l byte) *node {
 	for _, c := range n.children {
 		if c.label == l {
@@ -517,7 +517,7 @@ func (n *node) childByLabel(l byte) *node {
 	return nil
 }
 
-// childByKind returns a child `node` of n by provided kint t.
+// childByKind returns a child `node` of the n by the provided kind t.
 func (n *node) childByKind(t nodeKind) *node {
 	for _, c := range n.children {
 		if c.kind == t {
@@ -527,12 +527,12 @@ func (n *node) childByKind(t nodeKind) *node {
 	return nil
 }
 
-// addChild adds c into children nodes of n.
+// addChild adds the c into the children nodes of the n.
 func (n *node) addChild(c *node) {
 	n.children = append(n.children, c)
 }
 
-// handler returns a `HandlerFunc` by provided method.
+// handler returns a `HandlerFunc` by the provided method.
 func (n *node) handler(method string) HandlerFunc {
 	switch method {
 	case GET:
@@ -548,7 +548,7 @@ func (n *node) handler(method string) HandlerFunc {
 	}
 }
 
-// addHandler adds h into methodHandlers of n with provided method.
+// addHandler adds the h into the filed `methodHandler` of the n with the provided method.
 func (n *node) addHandler(method string, h HandlerFunc) {
 	switch method {
 	case GET:

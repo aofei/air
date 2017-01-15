@@ -8,7 +8,7 @@ import (
 
 // Request represents the current HTTP request.
 //
-// It's embedded with `http.Request`.
+// It's embedded with the `http.Request`.
 type Request struct {
 	*http.Request
 
@@ -19,7 +19,7 @@ type Request struct {
 
 const defaultMemory = 32 << 20 // 32 MB
 
-// newRequest returns a pointer of a new instance of `Request`.
+// newRequest returns a pointer of a new instance of the `Request`.
 func newRequest(c *Context) *Request {
 	return &Request{
 		context: c,
@@ -27,8 +27,8 @@ func newRequest(c *Context) *Request {
 	}
 }
 
-// Bind binds the HTTP body of the req into provided type i. The default binder does it based on
-// "Content-Type" header.
+// Bind binds the HTTP body of the req into the provided type i. The default `Binder` does it based
+// on the "Content-Type" header.
 func (req *Request) Bind(i interface{}) error {
 	return req.context.Air.Binder.Bind(i, req)
 }

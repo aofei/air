@@ -15,7 +15,7 @@ import (
 )
 
 type (
-	// Logger is used to log information generated in runtime.
+	// Logger is used to log information generated in the runtime.
 	Logger struct {
 		template   *template.Template
 		bufferPool *sync.Pool
@@ -27,7 +27,7 @@ type (
 		Output io.Writer
 	}
 
-	// LoggerLevel is level of the logger.
+	// LoggerLevel is the level of the `Logger`.
 	LoggerLevel uint8
 )
 
@@ -41,7 +41,7 @@ const (
 	OFF
 )
 
-// newLogger returns a pointer of a new instance of `Logger`.
+// newLogger returns a pointer of a new instance of the `Logger`.
 func newLogger(a *Air) *Logger {
 	l := &Logger{
 		bufferPool: &sync.Pool{
@@ -65,100 +65,100 @@ func newLogger(a *Air) *Logger {
 	return l
 }
 
-// Print prints log info with provided type i.
+// Print prints log info with the provided type i.
 func (l *Logger) Print(i ...interface{}) {
 	fmt.Fprintln(l.Output, i...)
 }
 
-// Printf prints log info in a format with provided type i.
+// Printf prints log info in a format with the provided args.
 func (l *Logger) Printf(format string, args ...interface{}) {
 	f := fmt.Sprintf("%s\n", format)
 	fmt.Fprintf(l.Output, f, args...)
 }
 
-// Printj prints log info with provided json map.
+// Printj prints log info with the provided JSON map i.
 func (l *Logger) Printj(j JSONMap) {
 	json.NewEncoder(l.Output).Encode(j)
 }
 
-// Debug prints debug level log info with provided type i.
+// Debug prints debug level log info with the provided type i.
 func (l *Logger) Debug(i ...interface{}) {
 	l.log(DEBUG, "", i...)
 }
 
-// Debugf prints debug level log info in a format with provided type i.
+// Debugf prints debug level log info in a format with the provided args.
 func (l *Logger) Debugf(format string, args ...interface{}) {
 	l.log(DEBUG, format, args...)
 }
 
-// Debugj prints debug level log info in a format with provided json map.
+// Debugj prints debug level log info in a format with the provided JSON map i.
 func (l *Logger) Debugj(j JSONMap) {
 	l.log(DEBUG, "json", j)
 }
 
-// Info prints info level log info with provided type i.
+// Info prints info level log info with the provided type i.
 func (l *Logger) Info(i ...interface{}) {
 	l.log(INFO, "", i...)
 }
 
-// Infof prints info level log info in a format with provided type i.
+// Infof prints info level log info in a format with the provided args.
 func (l *Logger) Infof(format string, args ...interface{}) {
 	l.log(INFO, format, args...)
 }
 
-// Infoj prints info level log info in a format with provided json map.
+// Infoj prints info level log info in a format with the provided JSON map i.
 func (l *Logger) Infoj(j JSONMap) {
 	l.log(INFO, "json", j)
 }
 
-// Warn prints warn level log info with provided type i.
+// Warn prints warn level log info with the provided type i.
 func (l *Logger) Warn(i ...interface{}) {
 	l.log(WARN, "", i...)
 }
 
-// Warnf prints warn level log info in a format with provided type i.
+// Warnf prints warn level log info in a format with the provided args.
 func (l *Logger) Warnf(format string, args ...interface{}) {
 	l.log(WARN, format, args...)
 }
 
-// Warnj prints warn level log info in a format with provided json map.
+// Warnj prints warn level log info in a format with the provided JSON map i.
 func (l *Logger) Warnj(j JSONMap) {
 	l.log(WARN, "json", j)
 }
 
-// Error prints error level log info with provided type i.
+// Error prints error level log info with the provided type i.
 func (l *Logger) Error(i ...interface{}) {
 	l.log(ERROR, "", i...)
 }
 
-// Errorf prints error level log info in a format with provided type i.
+// Errorf prints error level log info in a format with the provided args.
 func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.log(ERROR, format, args...)
 }
 
-// Errorj prints error level log info in a format with provided json map.
+// Errorj prints error level log info in a format with the provided JSON map i.
 func (l *Logger) Errorj(j JSONMap) {
 	l.log(ERROR, "json", j)
 }
 
-// Fatal prints fatal level log info with provided type i.
+// Fatal prints fatal level log info with the provided type i.
 func (l *Logger) Fatal(i ...interface{}) {
 	l.log(FATAL, "", i...)
 	os.Exit(1)
 }
 
-// Fatalf prints fatal level log info in a format with provided type i.
+// Fatalf prints fatal level log info in a format with the provided args.
 func (l *Logger) Fatalf(format string, args ...interface{}) {
 	l.log(FATAL, format, args...)
 	os.Exit(1)
 }
 
-// Fatalj prints fatal level log info in a format with provided json map.
+// Fatalj prints fatal level log info in a format with the provided JSON map i.
 func (l *Logger) Fatalj(j JSONMap) {
 	l.log(FATAL, "json", j)
 }
 
-// log prints log info in a format with provided level and args.
+// log prints log info in a format with the provided level lvl and the args.
 func (l *Logger) log(lvl LoggerLevel, format string, args ...interface{}) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()

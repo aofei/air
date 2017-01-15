@@ -13,23 +13,23 @@ import (
 )
 
 type (
-	// Binder is used to provide a `Bind()` method for an `Air` instance for binds a HTTP
+	// Binder is used to provide a `Bind()` method for an `Air` instance for binds an HTTP
 	// request body into privided type.
 	Binder interface {
-		// Bind binds the body of the req into provided type i.
+		// Bind binds the body of the req into the provided type i.
 		Bind(i interface{}, req *Request) error
 	}
 
-	// binder implements the `Binder` based on "Content-Type" header.
+	// binder implements the `Binder` based on the "Content-Type" header.
 	binder struct{}
 )
 
-// newBinder returns a pointer of a new instance of `binder`.
+// newBinder returns a pointer of a new instance of the `binder`.
 func newBinder() *binder {
 	return &binder{}
 }
 
-// Bind implements the `Binder#Bind()` based on "Content-Type" header.
+// Bind implements the `Binder#Bind()` based on the "Content-Type" header.
 func (b *binder) Bind(i interface{}, req *Request) error {
 	if req.Method == GET {
 		err := b.bindData(i, req.URL.Query(), "query")

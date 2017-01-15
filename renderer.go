@@ -21,7 +21,7 @@ type (
 		// SetTemplateFunc sets the func f into template func map with the name.
 		SetTemplateFunc(name string, f interface{})
 
-		// ParseTemplates parses template files. It will be called in `Air#Serve()`.
+		// ParseTemplates parses template files. It will be called in the `Air#Serve()`.
 		ParseTemplates() error
 
 		// Render renders the data into the w with the templateName.
@@ -36,7 +36,7 @@ type (
 	}
 )
 
-// defaultTemplateFuncMap is a default template func map of `renderer`.
+// defaultTemplateFuncMap is the default template func map of the `renderer`.
 var defaultTemplateFuncMap = template.FuncMap{
 	"strlen":  strlen,
 	"substr":  substr,
@@ -49,7 +49,7 @@ var defaultTemplateFuncMap = template.FuncMap{
 	"ge":      ge,
 }
 
-// newRenderer returns a pointer of a new instance of `renderer`.
+// newRenderer returns a pointer of a new instance of the `renderer`.
 func newRenderer(a *Air) *renderer {
 	return &renderer{
 		templateFuncMap: defaultTemplateFuncMap,
@@ -149,7 +149,7 @@ func (r *renderer) Render(w io.Writer, templateName string, data JSONMap) error 
 	return r.goTemplate.ExecuteTemplate(w, templateName, data)
 }
 
-// strlen returns the number of char in the s.
+// strlen returns the number of chars in the s.
 func strlen(s string) int {
 	return len([]rune(s))
 }

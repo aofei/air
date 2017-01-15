@@ -17,7 +17,7 @@ import (
 
 // Response represents the current HTTP response.
 //
-// It's embedded with `http.ResponseWriter`.
+// It's embedded with the `http.ResponseWriter`.
 type Response struct {
 	http.ResponseWriter
 
@@ -30,7 +30,7 @@ type Response struct {
 	Data JSONMap
 }
 
-// newResponse returns a pointer of a new instance of `Response`.
+// newResponse returns a pointer of a new instance of the `Response`.
 func newResponse(c *Context) *Response {
 	return &Response{
 		context: c,
@@ -69,7 +69,7 @@ func (res *Response) Size() int {
 	return res.size
 }
 
-// Written returns whether the HTTP body of the res is already written.
+// Written reports whether the HTTP body of the res is already written.
 func (res *Response) Written() bool {
 	return res.written
 }
@@ -80,8 +80,8 @@ func (res *Response) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(res.ResponseWriter, cookie)
 }
 
-// Hijack lets the caller take over the connection. After a call to this method, the `server` will
-// not do anything else with the connection.
+// Hijack lets the caller take over the connection. After a call to this method, the HTTP server
+// will not do anything else with the connection.
 func (res *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return res.ResponseWriter.(http.Hijacker).Hijack()
 }
@@ -106,8 +106,9 @@ func (res *Response) Push(target string, pos *http.PushOptions) error {
 	return p.Push(target, pos)
 }
 
-// Render renders a template with the `Data` and `Data["template"]` or `Data["templates"]` of the
-// res and sends a "text/html" response.
+// Render renders a template with the `Data` and the `Data["template"]` or the `Data["templates"]`
+// of the res and sends a "text/html" HTTP response. The default `Renderer` does it by using the
+// `template.Template`.
 func (res *Response) Render() error {
 	t, tok := res.Data["template"].(string)
 	ts, tsok := res.Data["templates"].([]string)
@@ -135,7 +136,7 @@ func (res *Response) Render() error {
 	return res.Blob(MIMETextHTML, buf.Bytes())
 }
 
-// HTML sends an HTTP response with the `Data["html"]` of the res.
+// HTML sends a "text/html" HTTP response with the `Data["html"]` of the res.
 func (res *Response) HTML() error {
 	h, ok := res.Data["html"].(string)
 	if !ok {
@@ -144,7 +145,7 @@ func (res *Response) HTML() error {
 	return res.Blob(MIMETextHTML, []byte(h))
 }
 
-// String sends a string response with the `Data["string"]` of the res.
+// String sends a "text/plain" HTTP response with the `Data["string"]` of the res.
 func (res *Response) String() error {
 	s, ok := res.Data["string"].(string)
 	if !ok {
@@ -153,7 +154,7 @@ func (res *Response) String() error {
 	return res.Blob(MIMETextPlain, []byte(s))
 }
 
-// JSON sends a JSON response with the `Data["json"]` of the res.
+// JSON sends an "application/json" HTTP response with the `Data["json"]` of the res.
 func (res *Response) JSON() error {
 	j, ok := res.Data["json"]
 	if !ok {
@@ -171,8 +172,8 @@ func (res *Response) JSON() error {
 	return res.Blob(MIMEApplicationJSON, b)
 }
 
-// JSONP sends a JSONP response with the `Data["jsonp"]` of the res. It uses the `Data["callback"]`
-// of the res to construct the JSONP payload.
+// JSONP sends an "application/javascript" HTTP response with the `Data["jsonp"]` of the res. It
+// uses the `Data["callback"]` of the res to construct the JSONP payload.
 func (res *Response) JSONP() error {
 	j, ok := res.Data["jsonp"]
 	cb, _ := res.Data["callback"].(string)
@@ -191,7 +192,7 @@ func (res *Response) JSONP() error {
 	return res.Blob(MIMEApplicationJavaScript, b)
 }
 
-// XML sends an XML response with the `Data["xml"]` of the res.
+// XML sends an "application/xml" HTTP response with the `Data["xml"]` of the res.
 func (res *Response) XML() error {
 	x, ok := res.Data["xml"]
 	if !ok {
@@ -209,21 +210,21 @@ func (res *Response) XML() error {
 	return res.Blob(MIMEApplicationXML, append([]byte(xml.Header), b...))
 }
 
-// Blob sends a blob response with the contentType and the b.
+// Blob sends a blob HTTP response with the contentType and the b.
 func (res *Response) Blob(contentType string, b []byte) error {
 	res.Header().Set(HeaderContentType, contentType)
 	_, err := res.Write(b)
 	return err
 }
 
-// Stream sends a streaming response with the contentType and the r.
+// Stream sends a streaming HTTP response with the contentType and the r.
 func (res *Response) Stream(contentType string, r io.Reader) error {
 	res.Header().Set(HeaderContentType, contentType)
 	_, err := io.Copy(res, r)
 	return err
 }
 
-// File sends a response with the `Data["file"]` of the res.
+// File sends a file HTTP response with the `Data["file"]` of the res.
 func (res *Response) File() error {
 	file, ok := res.Data["file"].(string)
 	if !ok {
@@ -254,20 +255,20 @@ func (res *Response) File() error {
 	return nil
 }
 
-// Attachment sends a response with the `Data["file"]` and the `Data["filename"]` of the res as
-// attachment, prompting client to save the file.
+// Attachment sends an HTTP response with the `Data["file"]` and the `Data["filename"]` of the res
+// as attachment, prompting client to save the file.
 func (res *Response) Attachment() error {
 	return res.contentDisposition("attachment")
 }
 
-// Inline sends a response with the `Data["file"]` and the `Data["filename"]` of the res as inline,
-// opening the file in the browser.
+// Inline sends an HTTP response with the `Data["file"]` and the `Data["filename"]` of the res as
+// inline, opening the file in the browser.
 func (res *Response) Inline() error {
 	return res.contentDisposition("inline")
 }
 
-// contentDisposition sends a response with the `Data["file"]` and the `Data["filename"]` as the
-// dispositionType.
+// contentDisposition sends an HTTP response with the `Data["file"]` and the `Data["filename"]` as
+// the dispositionType.
 func (res *Response) contentDisposition(dispositionType string) error {
 	fn, ok := res.Data["filename"].(string)
 	if !ok {
@@ -278,10 +279,10 @@ func (res *Response) contentDisposition(dispositionType string) error {
 	return res.File()
 }
 
-// NoContent sends a response with no body.
+// NoContent sends an HTTP response with no body.
 func (res *Response) NoContent() error { return nil }
 
-// Redirect redirects the request to the url with the statusCode.
+// Redirect redirects the current HTTP request to the url with the statusCode.
 func (res *Response) Redirect(statusCode int, url string) error {
 	if statusCode < http.StatusMultipleChoices || statusCode > http.StatusTemporaryRedirect {
 		return ErrInvalidRedirectCode
