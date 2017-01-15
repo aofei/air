@@ -117,7 +117,7 @@ func (res *Response) Render() error {
 
 	buf := &bytes.Buffer{}
 	if tok {
-		err := res.context.Air.renderer.render(buf, t, res.Data)
+		err := res.context.Air.Renderer.Render(buf, t, res.Data)
 		if err != nil {
 			return err
 		}
@@ -125,7 +125,7 @@ func (res *Response) Render() error {
 		for _, t := range ts {
 			res.Data["InheritedHTML"] = template.HTML(buf.String())
 			buf.Reset()
-			err := res.context.Air.renderer.render(buf, t, res.Data)
+			err := res.context.Air.Renderer.Render(buf, t, res.Data)
 			if err != nil {
 				return err
 			}
