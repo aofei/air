@@ -1,0 +1,8 @@
+language: go
+
+go:
+  - master
+
+install:
+  - go get github.com/stretchr/testify
+  - go get github.com/tdewolff/minify
