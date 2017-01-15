@@ -6,3 +6,6 @@ go:
 install:
   - go get github.com/stretchr/testify
   - go get github.com/tdewolff/minify
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
