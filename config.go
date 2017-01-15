@@ -9,108 +9,109 @@ import (
 	"time"
 )
 
-// Config is a global set of configurations that for an instance of `Air` for customization.
+// Config is a global set of configs that for an instance of the `Air` for customization.
 type Config struct {
-	// AppName represens the name of current `Air` instance.
+	// AppName represens the name of the `Air` instance.
 	//
-	// Default Value is "air".
+	// The default Value is "air".
 	//
 	// It's called "app_name" in the config file.
 	AppName string
 
-	// DebugMode represents the state of `Air`'s debug mode.
+	// DebugMode represents the state of the debug mode enabled of the `Air`.
 	//
-	// Default value is false.
+	// The default value is false.
 	//
 	// It's called "debug_mode" in the config file.
 	DebugMode bool
 
-	// LogFormat represents the format of `Logger`'s output content.
+	// LogFormat represents the format of the output content of the `Logger`.
 	//
-	// Default value is:
+	// The default value is:
 	// `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}","level":"{{.level}}",` +
 	// `"file":"{{.short_file}}","line":"{{.line}}"}`
 	//
 	// It's called "log_format" in the config file.
 	LogFormat string
 
-	// Address represents the TCP address that `Server` to listen on.
+	// Address represents the TCP address that the HTTP server to listen on.
 	//
-	// Default value is "localhost:8080".
+	// The default value is "localhost:8080".
 	//
 	// It's called "address" in the config file.
 	Address string
 
-	// Listener represens the custom `net.Listener`. If set, `Server` accepts connections on it.
+	// Listener represens the custom `net.Listener`. If set, the HTTP server accepts connections
+	// on it.
 	//
-	// Default value is nil.
+	// The default value is nil.
 	Listener net.Listener
 
-	// DisableHTTP2 represens the state of `Air`'s HTTP/2 enabled.
+	// DisableHTTP2 represens the state of the HTTP/2 disabled of the `Air`.
 	//
-	// Default value is false.
+	// The default value is false.
 	//
-	// I'ts called "disable_http2" in the config file.
+	// It's called "disable_http2" in the config file.
 	DisableHTTP2 bool
 
-	// TLSCertFile represents the TLS certificate file path.
+	// TLSCertFile represents the path of the TLS certificate file.
 	//
-	// Default value is "".
+	// The default value is "".
 	//
 	// It's called "tls_cert_file" in the config file.
 	TLSCertFile string
 
-	// TLSKeyFile represents the TLS key file path.
+	// TLSKeyFile represents the path of the TLS key file.
 	//
-	// Default value is "".
+	// The default value is "".
 	//
 	// It's called "tls_key_file" in the config file.
 	TLSKeyFile string
 
-	// ReadTimeout represents the maximum duration before timing out read of the request.
+	// ReadTimeout represents the maximum duration before timing out read of the HTTP request.
 	//
-	// Default value is 0.
+	// The default value is 0.
 	//
 	// It's called "read_timeout" in the config file.
 	//
-	// *It's unit in the config file is SECONDS.*
+	// **It's unit in the config file is SECONDS.**
 	ReadTimeout time.Duration
 
-	// WriteTimeout represents the maximum duration before timing out write of the response.
+	// WriteTimeout represents the maximum duration before timing out write of the HTTP
+	// response.
 	//
-	// Default value is 0.
+	// The default value is 0.
 	//
 	// It's called "write_timeout" in the config file.
 	//
-	// *It's unit in the config file is SECONDS.*
+	// **It's unit in the config file is SECONDS.**
 	WriteTimeout time.Duration
 
-	// TemplatesRoot represents the root directory of the html templates. It will be parsed into
-	// `Renderer`.
+	// TemplatesRoot represents the root directory of the HTML templates. It will be parsed into
+	// the `Renderer`.
 	//
-	// Default value is "templates" that means a subdirectory of the runtime directory.
+	// The default value is "templates" that means a subdirectory of the runtime directory.
 	//
 	// It's called "templates_root" in the config file.
 	TemplatesRoot string
 
-	// MinifyTemplates indicates whether to minify the html templates before it being parsed
-	// into the `Renderer`. The minify feature powered by the Minify project that can be found
-	// at "https://github.com/tdewolff/minify".
+	// MinifyTemplates indicates whether to minify the HTML templates before they being parsed
+	// into the `Renderer`. It works only with the default `Renderer`. The minify feature
+	// powered by the Minify project that can be found at "https://github.com/tdewolff/minify".
 	//
-	// Default value is false.
+	// The default value is false.
 	//
 	// It's called "minify_templates" in the config file.
 	MinifyTemplates bool
 
-	// Data represents the data that parsing from config file. You can use it to access the
+	// Data represents the data that parsing from the config file. You can use it to access the
 	// values in the config file.
 	//
-	// e.g. c.Data["mysql_user_name"] will accesses the value in config file called
-	// "mysql_user_name".
+	// e.g. Data["foobar"] will accesses the value in the config file called "foobar".
 	Data JSONMap
 }
 
-// defaultConfig is the default instance of `Config`.
+// defaultConfig is the default instance of the `Config`.
 var defaultConfig = Config{
 	AppName: "air",
 	LogFormat: `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}","level":"{{.level}}",` +
@@ -119,9 +120,9 @@ var defaultConfig = Config{
 	TemplatesRoot: "templates",
 }
 
-// newConfig returns a pointer of a new instance of `Config` by parsing the config file that in the
-// rumtime directory named "config.json". It returns the defaultConfig if the config file doesn't
-// exist.
+// newConfig returns a pointer of a new instance of the `Config` by parsing the config file that in
+// the rumtime directory named "config.json". It returns the defaultConfig if the config file does
+// not exist.
 func newConfig() *Config {
 	c := defaultConfig
 	cfn := "config.json"
@@ -150,7 +151,7 @@ func (c *Config) Parse(filename string) {
 	c.fillData()
 }
 
-// fillData fills field's value from field `Data` of c.
+// fillData fills the values of the fields from the field `Data` of the c.
 func (c *Config) fillData() {
 	if an, ok := c.Data["app_name"]; ok {
 		c.AppName = an.(string)

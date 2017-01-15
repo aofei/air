@@ -26,13 +26,13 @@ type (
 		HTTPErrorHandler HTTPErrorHandler
 	}
 
-	// HandlerFunc defines a function to server HTTP requests.
+	// HandlerFunc defines a function to serve HTTP requests.
 	HandlerFunc func(*Context) error
 
 	// GasFunc defines a function to process gas.
 	GasFunc func(HandlerFunc) HandlerFunc
 
-	// HTTPError represents an error that occurred while handling a request.
+	// HTTPError represents an error that occurred while handling an HTTP request.
 	HTTPError struct {
 		Code    int
 		Message string
@@ -137,7 +137,7 @@ var (
 	}
 )
 
-// New returns a pointer of a new instance of `Air`.
+// New returns a pointer of a new instance of the `Air`.
 func New() *Air {
 	a := &Air{}
 
@@ -158,42 +158,42 @@ func New() *Air {
 	return a
 }
 
-// Precontain adds gases to the chain which is perform before router.
+// Precontain adds the gases to the chain which is perform before the router.
 func (a *Air) Precontain(gases ...GasFunc) {
 	a.pregases = append(a.pregases, gases...)
 }
 
-// Contain adds gases to the chain which is perform after router.
+// Contain adds the gases to the chain which is perform after the router.
 func (a *Air) Contain(gases ...GasFunc) {
 	a.gases = append(a.gases, gases...)
 }
 
-// GET registers a new GET route for a path with matching h in the router with optional route-level
-// gases.
+// GET registers a new GET route for the path with the matching h in the router with the optional
+// route-level gases.
 func (a *Air) GET(path string, h HandlerFunc, gases ...GasFunc) {
 	a.add(GET, path, h, gases...)
 }
 
-// POST registers a new POST route for a path with matching h in the router with optional
+// POST registers a new POST route for the path with the matching h in the router with the optional
 // route-level gases.
 func (a *Air) POST(path string, h HandlerFunc, gases ...GasFunc) {
 	a.add(POST, path, h, gases...)
 }
 
-// PUT registers a new PUT route for a path with matching h in the router with optional route-level
-// gases.
+// PUT registers a new PUT route for the path with the matching h in the router with the optional
+// route-level gases.
 func (a *Air) PUT(path string, h HandlerFunc, gases ...GasFunc) {
 	a.add(PUT, path, h, gases...)
 }
 
-// DELETE registers a new DELETE route for a path with matching h in the router with optional
-// route-level gases.
+// DELETE registers a new DELETE route for the path with the matching h in the router with the
+// optional route-level gases.
 func (a *Air) DELETE(path string, h HandlerFunc, gases ...GasFunc) {
 	a.add(DELETE, path, h, gases...)
 }
 
-// Static registers a new route with path prefix to serve static files from the provided root
-// directory.
+// Static registers a new route with the path prefix to serve the static files from the provided
+// root directory.
 func (a *Air) Static(prefix, root string) {
 	a.GET(prefix+"*", func(c *Context) error {
 		c.Data["file"] = path.Join(root, c.Params[c.ParamNames[0]])
@@ -201,7 +201,7 @@ func (a *Air) Static(prefix, root string) {
 	})
 }
 
-// File registers a new route with path to serve a static file.
+// File registers a new route with the path to serve a static file.
 func (a *Air) File(path, file string) {
 	a.GET(path, func(c *Context) error {
 		c.Data["file"] = file
@@ -209,7 +209,7 @@ func (a *Air) File(path, file string) {
 	})
 }
 
-// add registers a new route for a path with a HTTP method and matching h in the router with
+// add registers a new route for the path with the method and the matching h in the router with the
 // optional route-level gases.
 func (a *Air) add(method, path string, h HandlerFunc, gases ...GasFunc) {
 	hn := handlerName(h)
@@ -229,7 +229,7 @@ func (a *Air) add(method, path string, h HandlerFunc, gases ...GasFunc) {
 	}
 }
 
-// URL returns a URL generated from h with optional params.
+// URL returns an URL generated from the h with the optional params.
 func (a *Air) URL(h HandlerFunc, params ...interface{}) string {
 	url := &bytes.Buffer{}
 	hn := handlerName(h)
@@ -285,7 +285,7 @@ func (a *Air) Shutdown(c *Context) error {
 	return a.server.Shutdown(c.Context)
 }
 
-// handlerName returns the h's func name.
+// handlerName returns the func name of the h.
 func handlerName(h HandlerFunc) string {
 	t := reflect.ValueOf(h).Type()
 	if t.Kind() == reflect.Func {
@@ -294,7 +294,7 @@ func handlerName(h HandlerFunc) string {
 	return t.String()
 }
 
-// WrapGas wraps `HandlerFunc` into `GasFunc`.
+// WrapGas wraps the h into the `GasFunc`.
 func WrapGas(h HandlerFunc) GasFunc {
 	return func(next HandlerFunc) HandlerFunc {
 		return func(c *Context) error {
@@ -306,7 +306,7 @@ func WrapGas(h HandlerFunc) GasFunc {
 	}
 }
 
-// NewHTTPError returns a pointer of a new instance of `HTTPError`.
+// NewHTTPError returns a pointer of a new instance of the `HTTPError`.
 func NewHTTPError(code int, msg ...interface{}) *HTTPError {
 	he := &HTTPError{Code: code, Message: http.StatusText(code)}
 	if len(msg) > 0 {

@@ -4,7 +4,7 @@ import "net/url"
 
 // URL represents the HTTP URL of the current HTTP request.
 //
-// It's embedded with `url.URL`.
+// It's embedded with the `url.URL`.
 type URL struct {
 	*url.URL
 

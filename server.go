@@ -7,14 +7,14 @@ import (
 
 // server represents the HTTP server.
 //
-// It's embedded with `http.Server`.
+// It's embedded with the `http.Server`.
 type server struct {
 	*http.Server
 
 	air *Air
 }
 
-// newServer returns a pointer of a new instance of `server`.
+// newServer returns a pointer of a new instance of the `server`.
 func newServer(a *Air) *server {
 	s := &server{
 		Server: &http.Server{},
