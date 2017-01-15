@@ -1,7 +1,8 @@
 # Air
 
 [![Build Status](https://travis-ci.org/sheng/air.svg?branch=master)](https://travis-ci.org/sheng/air)
-[![GoDoc](http://godoc.org/github.com/sheng/air?status.svg)](http://godoc.org/github.com/sheng/air)
+[![Go Report Card](https://goreportcard.com/badge/github.com/sheng/air)](https://goreportcard.com/report/github.com/sheng/air)
+[![GoDoc](https://godoc.org/github.com/sheng/air?status.svg)](https://godoc.org/github.com/sheng/air)
 
 An ideal RESTful web framework for Go. You can use it to develop a RESTful web application as
 natural as breathing.
