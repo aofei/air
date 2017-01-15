@@ -36,7 +36,7 @@ type Config struct {
 
 	// Address represents the TCP address that the HTTP server to listen on.
 	//
-	// The default value is "localhost:8080".
+	// The default value is "localhost:2333".
 	//
 	// It's called "address" in the config file.
 	Address string
@@ -116,7 +116,7 @@ var defaultConfig = Config{
 	AppName: "air",
 	LogFormat: `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}","level":"{{.level}}",` +
 		`"file":"{{.short_file}}","line":"{{.line}}"}`,
-	Address:       "localhost:8080",
+	Address:       "localhost:2333",
 	TemplatesRoot: "templates",
 }
 
