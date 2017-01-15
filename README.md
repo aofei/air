@@ -49,7 +49,7 @@ and run it
 $ go run hello.go
 ```
 
-then open your browser and visit `http://localhost:8080`.
+then open your browser and visit `http://localhost:2333`.
 
 ## Documentation
 
