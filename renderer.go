@@ -14,13 +14,27 @@ import (
 	"github.com/tdewolff/minify/html"
 )
 
-// renderer is used to provide a `render()` method for an `Air` instance for renders a "text/html"
-// response by using `template.Template`.
-type renderer struct {
-	goTemplate      *template.Template
-	templateFuncMap template.FuncMap
-	air             *Air
-}
+type (
+	// Renderer is used to provide a `Render()` method for an `Air` instance for renders a
+	// "text/html" HTTP response.
+	Renderer interface {
+		// SetTemplateFunc sets the func f into template func map with the name.
+		SetTemplateFunc(name string, f interface{})
+
+		// ParseTemplates parses template files. It will be called in `Air#Serve()`.
+		ParseTemplates() error
+
+		// Render renders the data into the w with the templateName.
+		Render(w io.Writer, templateName string, data JSONMap) error
+	}
+
+	// renderer implements the `Renderer` by using the `template.Template`.
+	renderer struct {
+		goTemplate      *template.Template
+		templateFuncMap template.FuncMap
+		air             *Air
+	}
+)
 
 // defaultTemplateFuncMap is a default template func map of `renderer`.
 var defaultTemplateFuncMap = template.FuncMap{
@@ -35,7 +49,7 @@ var defaultTemplateFuncMap = template.FuncMap{
 	"ge":      ge,
 }
 
-// newRenderer returns a pointer of a new instance of `Renderer`.
+// newRenderer returns a pointer of a new instance of `renderer`.
 func newRenderer(a *Air) *renderer {
 	return &renderer{
 		templateFuncMap: defaultTemplateFuncMap,
@@ -43,7 +57,12 @@ func newRenderer(a *Air) *renderer {
 	}
 }
 
-// parseTemplates parses files into templates.
+// SetTemplateFunc implements the `Renderer#SetTemplateFunc()` by using the `template.Template`.
+func (r *renderer) SetTemplateFunc(name string, f interface{}) {
+	r.templateFuncMap[name] = f
+}
+
+// ParseTemplates implements the `Renderer#ParseTemplates()` by using the `template.Template`.
 //
 // e.g. r.air.Config.TemplatesRoot == "templates"
 //
@@ -59,10 +78,10 @@ func newRenderer(a *Air) *renderer {
 // will be parsed into:
 //
 // "index.html", "login.html", "register.html", "parts/header.html", "parts/footer.html".
-func (r *renderer) parseTemplates() {
+func (r *renderer) ParseTemplates() error {
 	tr := filepath.Clean(r.air.Config.TemplatesRoot)
 	if _, err := os.Stat(tr); err != nil && os.IsNotExist(err) {
-		return
+		return nil
 	}
 
 	var filenames []string
@@ -75,7 +94,7 @@ func (r *renderer) parseTemplates() {
 		return err
 	})
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	m := minify.New()
@@ -88,7 +107,7 @@ func (r *renderer) parseTemplates() {
 	for _, filename := range filenames {
 		b, err := ioutil.ReadFile(filename)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		name := filepath.ToSlash(filename[len(tr):])
@@ -110,7 +129,7 @@ func (r *renderer) parseTemplates() {
 		if r.air.Config.MinifyTemplates {
 			err = m.Minify("text/html", buf, bytes.NewReader(b))
 			if err != nil {
-				panic(err)
+				return err
 			}
 			b = buf.Bytes()
 			buf.Reset()
@@ -118,13 +137,15 @@ func (r *renderer) parseTemplates() {
 
 		_, err = tmpl.Parse(string(b))
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
+
+	return nil
 }
 
-// render renders the data into the w by using `template.Template`.
-func (r *renderer) render(w io.Writer, templateName string, data JSONMap) error {
+// Render implements the `Renderer#Render()` by using the `template.Template`.
+func (r *renderer) Render(w io.Writer, templateName string, data JSONMap) error {
 	return r.goTemplate.ExecuteTemplate(w, templateName, data)
 }
 
