@@ -30,8 +30,6 @@ type Response struct {
 	Data JSONMap
 }
 
-const indexPage = "index.html"
-
 // newResponse returns a pointer of a new instance of `Response`.
 func newResponse(c *Context) *Response {
 	return &Response{
@@ -240,7 +238,7 @@ func (res *Response) File() error {
 
 	fi, _ := f.Stat()
 	if fi.IsDir() {
-		file = filepath.Join(file, indexPage)
+		file = filepath.Join(file, "index.html")
 		f, err = os.Open(file)
 		if err != nil {
 			return ErrNotFound
