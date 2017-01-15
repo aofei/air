@@ -14,7 +14,7 @@ import (
 
 // Context represents the context of the current HTTP request.
 //
-// It's embedded with `context.Context`.
+// It's embedded with the `context.Context`.
 type Context struct {
 	context.Context
 
@@ -29,15 +29,15 @@ type Context struct {
 
 	Air *Air
 
-	// MARK: Alias fields for `Response`.
+	// MARK: Alias fields for the `Response`.
 
-	// Data is an alias for `Response#Data`.
+	// Data is an alias for the `Response#Data`.
 	Data JSONMap
 }
 
 var contextPool *sync.Pool
 
-// newContext returns a pointer of a new instance of `Context`.
+// newContext returns a pointer of a new instance of the `Context`.
 func newContext(a *Air) *Context {
 	c := &Context{}
 	c.Request = newRequest(c)
@@ -69,7 +69,7 @@ func (c *Context) SetValue(key interface{}, val interface{}) {
 	c.Context = context.WithValue(c.Context, key, val)
 }
 
-// feed feeds the req and rw into where they should be.
+// feed feeds the req and the rw into where they should be.
 func (c *Context) feed(req *http.Request, rw http.ResponseWriter) {
 	c.Context = req.Context()
 	c.Request.Request = req
