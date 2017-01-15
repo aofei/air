@@ -14,19 +14,16 @@ import (
 type (
 	// Air is the top-level framework struct.
 	Air struct {
-		server *server
-
 		pregases []GasFunc
 		gases    []GasFunc
+		server   *server
 		router   *router
 
-		renderer *renderer
-
 		Config           *Config
+		Logger           *Logger
 		Binder           Binder
+		Renderer         Renderer
 		HTTPErrorHandler HTTPErrorHandler
-
-		Logger *Logger
 	}
 
 	// HandlerFunc defines a function to server HTTP requests.
@@ -145,13 +142,12 @@ func New() *Air {
 	a := &Air{}
 
 	a.router = newRouter(a)
-	a.renderer = newRenderer(a)
 
 	a.Config = newConfig()
-	a.Binder = newBinder()
-	a.HTTPErrorHandler = defaultHTTPErrorHandler
-
 	a.Logger = newLogger(a)
+	a.Binder = newBinder()
+	a.Renderer = newRenderer(a)
+	a.HTTPErrorHandler = defaultHTTPErrorHandler
 
 	contextPool = &sync.Pool{
 		New: func() interface{} {
@@ -262,17 +258,15 @@ func (a *Air) URL(h HandlerFunc, params ...interface{}) string {
 	return url.String()
 }
 
-// SetTemplateFunc sets the f into template func map with a name.
-func (a *Air) SetTemplateFunc(name string, f interface{}) {
-	a.renderer.templateFuncMap[name] = f
-}
-
 // Serve starts the HTTP server.
 func (a *Air) Serve() {
-	a.renderer.parseTemplates()
 	if a.Config.DebugMode {
 		a.Logger.Level = DEBUG
 		a.Logger.Debug("serving in debug mode")
+	}
+
+	if err := a.Renderer.ParseTemplates(); err != nil {
+		panic(err)
 	}
 
 	a.server = newServer(a)
