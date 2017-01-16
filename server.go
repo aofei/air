@@ -16,17 +16,20 @@ type server struct {
 
 // newServer returns a pointer of a new instance of the `server`.
 func newServer(a *Air) *server {
-	s := &server{
-		Server: &http.Server{},
-		air:    a,
-	}
-	s.Addr = s.air.Config.Address
+	s := &server{}
+
+	s.Server = &http.Server{}
+	s.Addr = a.Config.Address
 	s.Handler = s
-	s.ReadTimeout = s.air.Config.ReadTimeout
-	s.WriteTimeout = s.air.Config.WriteTimeout
-	if s.air.Config.DisableHTTP2 {
+	s.ReadTimeout = a.Config.ReadTimeout
+	s.WriteTimeout = a.Config.WriteTimeout
+
+	if a.Config.DisableHTTP2 {
 		s.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
 	}
+
+	s.air = a
+
 	return s
 }
 
