@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -101,7 +100,7 @@ func (res *Response) Flush() {
 func (res *Response) Push(target string, pos *http.PushOptions) error {
 	p, pok := res.ResponseWriter.(http.Pusher)
 	if !pok {
-		return errors.New("the HTTP/2 has been disabled")
+		return ErrDisabledHTTP2
 	}
 	return p.Push(target, pos)
 }
@@ -113,7 +112,7 @@ func (res *Response) Render() error {
 	t, tok := res.Data["template"].(string)
 	ts, tsok := res.Data["templates"].([]string)
 	if !tok && !tsok {
-		return errors.New("both Data[\"template\"] and Data[\"templates\"] are not setted")
+		return ErrDataTmplNotSet
 	}
 
 	buf := &bytes.Buffer{}
@@ -140,7 +139,7 @@ func (res *Response) Render() error {
 func (res *Response) HTML() error {
 	h, ok := res.Data["html"].(string)
 	if !ok {
-		return errors.New("Data[\"html\"] is not setted")
+		return ErrDataHTMLNotSet
 	}
 	return res.Blob(MIMETextHTML, []byte(h))
 }
@@ -149,7 +148,7 @@ func (res *Response) HTML() error {
 func (res *Response) String() error {
 	s, ok := res.Data["string"].(string)
 	if !ok {
-		return errors.New("Data[\"string\"] is not setted")
+		return ErrDataStringNotSet
 	}
 	return res.Blob(MIMETextPlain, []byte(s))
 }
@@ -158,7 +157,7 @@ func (res *Response) String() error {
 func (res *Response) JSON() error {
 	j, ok := res.Data["json"]
 	if !ok {
-		return errors.New("Data[\"json\"] is not setted")
+		return ErrDataJSONNotSet
 	}
 
 	b, err := json.Marshal(j)
@@ -178,7 +177,7 @@ func (res *Response) JSONP() error {
 	j, ok := res.Data["jsonp"]
 	cb, _ := res.Data["callback"].(string)
 	if !ok {
-		return errors.New("Data[\"jsonp\"] is not setted")
+		return ErrDataJSONPNotSet
 	}
 
 	b, err := json.Marshal(j)
@@ -196,7 +195,7 @@ func (res *Response) JSONP() error {
 func (res *Response) XML() error {
 	x, ok := res.Data["xml"]
 	if !ok {
-		return errors.New("Data[\"xml\"] is not setted")
+		return ErrDataXMLNotSet
 	}
 
 	b, err := xml.Marshal(x)
@@ -228,7 +227,7 @@ func (res *Response) Stream(contentType string, r io.Reader) error {
 func (res *Response) File() error {
 	file, ok := res.Data["file"].(string)
 	if !ok {
-		return errors.New("Data[\"file\"] is not setted")
+		return ErrDataFileNotSet
 	}
 
 	f, err := os.Open(file)
@@ -272,7 +271,7 @@ func (res *Response) Inline() error {
 func (res *Response) contentDisposition(dispositionType string) error {
 	fn, ok := res.Data["filename"].(string)
 	if !ok {
-		return errors.New("Data[\"filename\"] is not setted")
+		return ErrDataFilenameNotSet
 	}
 	res.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s",
 		dispositionType, fn))

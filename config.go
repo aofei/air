@@ -145,7 +145,7 @@ func newConfig() *Config {
 // Parse parses the config file found in the filename path.
 func (c *Config) Parse(filename string) {
 	if _, err := os.Stat(filename); err != nil && !os.IsExist(err) {
-		panic(fmt.Sprintf("config file %s does not exist", filename))
+		panic(fmt.Sprintf("the config file %s does not exist", filename))
 	}
 
 	bytes, err := ioutil.ReadFile(filename)

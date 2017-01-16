@@ -7,7 +7,7 @@ import (
 
 type (
 	// router is the registry of all registered routes for an `Air` instance for the HTTP
-	// request matching and the HTTP URL path parameters parsing.
+	// request matching and the HTTP URL path params parsing.
 	router struct {
 		routes map[string]*route
 		tree   *node
@@ -66,39 +66,39 @@ func newRouter(a *Air) *router {
 // checkPath checks whether the path is valid.
 func (r *router) checkPath(path string) {
 	if path == "" {
-		panic("path cannot be empty")
+		panic("the path cannot be empty")
 	} else if path[0] != '/' {
-		panic("path must start with /")
+		panic("the path must start with the /")
 	} else if path != "/" && path[len(path)-1] == '/' {
-		panic("path cannot end with /, except the root path")
+		panic("the path cannot end with the /, except the root path")
 	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
 		for _, p := range ps {
 			if strings.Count(p, ":") > 1 {
-				panic("adjacent params in a path must be separated by /")
+				panic("adjacent params in the path must be separated by the /")
 			}
 		}
 	} else if strings.Contains(path, "*") {
 		if strings.Count(path, "*") > 1 {
-			panic("only one * is allowed in a path")
+			panic("only one * is allowed in the path")
 		} else if path[len(path)-1] != '*' {
-			panic("* can only appear at the end of a path")
+			panic("the * can only appear at the end of the path")
 		} else if strings.Contains(path[strings.LastIndex(path, "/"):], ":") {
-			panic("adjacent param and * in a path must be separated by /")
+			panic("adjacent param and the * in the path must be separated by the /")
 		}
 	}
 }
 
-// checkRoute checks whether the [method path] route is valid.
+// checkRoute checks whether the route [method path] is valid.
 func (r *router) checkRoute(method, path string) {
 	if r.routes[method+path] != nil {
-		panic(fmt.Sprintf("route [%s %s] is already registered", method, path))
+		panic(fmt.Sprintf("the route [%s %s] is already registered", method, path))
 	}
 
 	for _, route := range r.routes {
 		if route.method == method &&
 			pathWithoutParamNames(route.path) == pathWithoutParamNames(path) {
-			panic(fmt.Sprintf("route [%s %s] and [%s %s] are ambiguous",
+			panic(fmt.Sprintf("the route [%s %s] and the route [%s %s] are ambiguous",
 				method, path, route.method, route.path))
 		}
 	}
@@ -126,7 +126,7 @@ func (r *router) add(method, path string, h HandlerFunc) {
 
 			for _, pn := range pnames {
 				if pn == pname {
-					panic("a path cannot have duplicate param names")
+					panic("the path cannot have duplicate param names")
 				}
 			}
 
@@ -241,7 +241,7 @@ func (r *router) insert(method, path string, h HandlerFunc, k nodeKind, ppath st
 }
 
 // route routes a handler registered for the method and the path. It also parses the HTTP URL for
-// the path parameters and load them into the c.
+// the path params and load them into the c.
 func (r *router) route(method, path string, c *Context) {
 	cn := r.tree // Current node as root
 
@@ -367,7 +367,7 @@ func (r *router) route(method, path string, c *Context) {
 	if c.Handler == nil {
 		c.Handler = cn.checkMethodNotAllowed()
 
-		// Dig further for any, might have an empty value for *, e.g. serving a directory.
+		// Dig further for any, might have an empty value for the *.
 
 		if cn = cn.childByKind(anyKind); cn == nil {
 			return
@@ -418,7 +418,7 @@ func pathWithoutParamNames(p string) string {
 
 // unescape return a normal string unescaped from the s.
 func unescape(s string) string {
-	// Count %, check that they're well-formed.
+	// Count the %, check that they're well-formed.
 	n := 0
 	for i := 0; i < len(s); i++ {
 		if s[i] == '%' {
