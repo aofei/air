@@ -123,6 +123,16 @@ var (
 	ErrServiceUnavailable  = NewHTTPError(http.StatusServiceUnavailable)  // 503
 	ErrGatewayTimeout      = NewHTTPError(http.StatusGatewayTimeout)      // 504
 
+	ErrDisabledHTTP2  = errors.New("the HTTP/2 has been disabled")
+	ErrDataTmplNotSet = errors.New("both the Data[\"template\"] and the " +
+		"Data[\"templates\"] are not set")
+	ErrDataHTMLNotSet      = errors.New("the Data[\"html\"] is not set")
+	ErrDataStringNotSet    = errors.New("the Data[\"string\"] is not set")
+	ErrDataJSONNotSet      = errors.New("the Data[\"json\"] is not set")
+	ErrDataJSONPNotSet     = errors.New("the Data[\"jsonp\"] is not set")
+	ErrDataXMLNotSet       = errors.New("the Data[\"xml\"] is not set")
+	ErrDataFileNotSet      = errors.New("the Data[\"file\"] is not set")
+	ErrDataFilenameNotSet  = errors.New("the Data[\"filename\"] is not set")
 	ErrInvalidRedirectCode = errors.New("invalid redirect status code")
 )
 
