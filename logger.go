@@ -16,150 +16,225 @@ import (
 
 type (
 	// Logger is used to log information generated in the runtime.
-	Logger struct {
+	Logger interface {
+		// Output returns the output of the `Logger`.
+		Output() io.Writer
+
+		// SetOutput sets the w to the output of the `Logger`.
+		SetOutput(w io.Writer)
+
+		// Print prints the log info with the provided type i.
+		Print(i ...interface{})
+
+		// Printf prints the log info in the format with the provided args.
+		Printf(format string, args ...interface{})
+
+		// Printj prints the log info in the JSON format with the provided j.
+		Printj(j JSONMap)
+
+		// Debug prints the DEBUG level log info with the provided type i.
+		Debug(i ...interface{})
+
+		// Debugf prints the DEBUG level log info in the format with the provided args.
+		Debugf(format string, args ...interface{})
+
+		// Debugj prints the DEBUG level log info in the JSON format with the provided j.
+		Debugj(j JSONMap)
+
+		// Info prints the INFO level log info with the provided type i.
+		Info(i ...interface{})
+
+		// Infof prints the INFO level log info in the format with the provided args.
+		Infof(format string, args ...interface{})
+
+		// Infoj prints the INFO level log info in the JSON format with the provided j.
+		Infoj(j JSONMap)
+
+		// Warn prints the WARN level log info with the provided type i.
+		Warn(i ...interface{})
+
+		// Warnf prints the WARN level log info in the format with the provided args.
+		Warnf(format string, args ...interface{})
+
+		// Warnj prints the WARN level log info in the JSON format with the provided j.
+		Warnj(j JSONMap)
+
+		// Error prints the ERROR level log info with the provided type i.
+		Error(i ...interface{})
+
+		// Errorf prints the ERROR level log info in the format with the provided args.
+		Errorf(format string, args ...interface{})
+
+		// Errorj prints the ERROR level log info in the JSON format with the provided j.
+		Errorj(j JSONMap)
+
+		// Fatal prints the FATAL level log info with the provided type i.
+		Fatal(i ...interface{})
+
+		// Fatalf prints the FATAL level log info in the format with the provided args.
+		Fatalf(format string, args ...interface{})
+
+		// Fatalj prints the FATAL level log info in the JSON format with the provided j.
+		Fatalj(j JSONMap)
+	}
+
+	// logger implements the `Logger` by using the `template.Template`.
+	logger struct {
 		template   *template.Template
 		bufferPool *sync.Pool
 		mutex      *sync.Mutex
-		levels     []string
-		air        *Air
 
-		Level  LoggerLevel
-		Output io.Writer
+		enabled bool
+		levels  []string
+		output  io.Writer
+
+		air *Air
 	}
 
-	// LoggerLevel is the level of the `Logger`.
-	LoggerLevel uint8
+	// loggerLevel is the level of the `logger`.
+	loggerLevel uint8
 )
 
-// Logger levels
+// logger levels
 const (
-	DEBUG LoggerLevel = iota
-	INFO
-	WARN
-	ERROR
-	FATAL
-	OFF
+	lvlDebug loggerLevel = iota
+	lvlInfo
+	lvlWarn
+	lvlError
+	lvlFatal
 )
 
-// newLogger returns a pointer of a new instance of the `Logger`.
-func newLogger(a *Air) *Logger {
-	l := &Logger{
-		bufferPool: &sync.Pool{
-			New: func() interface{} {
-				return bytes.NewBuffer(make([]byte, 256))
-			},
-		},
-		mutex: &sync.Mutex{},
-		levels: []string{
-			"DEBUG",
-			"INFO",
-			"WARN",
-			"ERROR",
-			"FATAL",
-		},
-		air:   a,
-		Level: OFF,
-	}
+// newLogger returns a pointer of a new instance of the `logger`.
+func newLogger(a *Air) *logger {
+	l := &logger{}
+
 	l.template, _ = template.New("logger").Parse(a.Config.LogFormat)
-	l.Output = os.Stdout
+	l.bufferPool = &sync.Pool{
+		New: func() interface{} {
+			return bytes.NewBuffer(make([]byte, 256))
+		},
+	}
+	l.mutex = &sync.Mutex{}
+
+	l.levels = []string{
+		"DEBUG",
+		"INFO",
+		"WARN",
+		"ERROR",
+		"FATAL",
+	}
+	l.output = os.Stdout
+
+	l.air = a
+
 	return l
 }
 
-// Print prints log info with the provided type i.
-func (l *Logger) Print(i ...interface{}) {
-	fmt.Fprintln(l.Output, i...)
+// Output implements the `Logger#Output()`.
+func (l *logger) Output() io.Writer {
+	return l.output
 }
 
-// Printf prints log info in a format with the provided args.
-func (l *Logger) Printf(format string, args ...interface{}) {
+// SetOutput implements the `Logger#SetOutput()`.
+func (l *logger) SetOutput(w io.Writer) {
+	l.output = w
+}
+
+// Print implements the `Logger#Print()` by using the `template.Template`.
+func (l *logger) Print(i ...interface{}) {
+	fmt.Fprintln(l.output, i...)
+}
+
+// Printf implements the `Logger#Printf()` by using the `template.Template`.
+func (l *logger) Printf(format string, args ...interface{}) {
 	f := fmt.Sprintf("%s\n", format)
-	fmt.Fprintf(l.Output, f, args...)
+	fmt.Fprintf(l.output, f, args...)
 }
 
-// Printj prints log info with the provided JSON map i.
-func (l *Logger) Printj(j JSONMap) {
-	json.NewEncoder(l.Output).Encode(j)
+// Printj implements the `Logger#Printj()` by using the `template.Template`.
+func (l *logger) Printj(j JSONMap) {
+	json.NewEncoder(l.output).Encode(j)
 }
 
-// Debug prints debug level log info with the provided type i.
-func (l *Logger) Debug(i ...interface{}) {
-	l.log(DEBUG, "", i...)
+// Debug implements the `Logger#Debug()` by using the `template.Template`.
+func (l *logger) Debug(i ...interface{}) {
+	l.log(lvlDebug, "", i...)
 }
 
-// Debugf prints debug level log info in a format with the provided args.
-func (l *Logger) Debugf(format string, args ...interface{}) {
-	l.log(DEBUG, format, args...)
+// Debugf implements the `Logger#Debugf()` by using the `template.Template`.
+func (l *logger) Debugf(format string, args ...interface{}) {
+	l.log(lvlDebug, format, args...)
 }
 
-// Debugj prints debug level log info in a format with the provided JSON map i.
-func (l *Logger) Debugj(j JSONMap) {
-	l.log(DEBUG, "json", j)
+// Debugj implements the `Logger#Debugj()` by using the `template.Template`.
+func (l *logger) Debugj(j JSONMap) {
+	l.log(lvlDebug, "json", j)
 }
 
-// Info prints info level log info with the provided type i.
-func (l *Logger) Info(i ...interface{}) {
-	l.log(INFO, "", i...)
+// Info implements the `Logger#Info()` by using the `template.Template`.
+func (l *logger) Info(i ...interface{}) {
+	l.log(lvlInfo, "", i...)
 }
 
-// Infof prints info level log info in a format with the provided args.
-func (l *Logger) Infof(format string, args ...interface{}) {
-	l.log(INFO, format, args...)
+// Infof implements the `Logger#Infof()` by using the `template.Template`.
+func (l *logger) Infof(format string, args ...interface{}) {
+	l.log(lvlInfo, format, args...)
 }
 
-// Infoj prints info level log info in a format with the provided JSON map i.
-func (l *Logger) Infoj(j JSONMap) {
-	l.log(INFO, "json", j)
+// Infoj implements the `Logger#Infoj()` by using the `template.Template`.
+func (l *logger) Infoj(j JSONMap) {
+	l.log(lvlInfo, "json", j)
 }
 
-// Warn prints warn level log info with the provided type i.
-func (l *Logger) Warn(i ...interface{}) {
-	l.log(WARN, "", i...)
+// Warn implements the `Logger#Warn()` by using the `template.Template`.
+func (l *logger) Warn(i ...interface{}) {
+	l.log(lvlWarn, "", i...)
 }
 
-// Warnf prints warn level log info in a format with the provided args.
-func (l *Logger) Warnf(format string, args ...interface{}) {
-	l.log(WARN, format, args...)
+// Warnf implements the `Logger#Warnf()` by using the `template.Template`.
+func (l *logger) Warnf(format string, args ...interface{}) {
+	l.log(lvlWarn, format, args...)
 }
 
-// Warnj prints warn level log info in a format with the provided JSON map i.
-func (l *Logger) Warnj(j JSONMap) {
-	l.log(WARN, "json", j)
+// Warnj implements the `Logger#Warnj()` by using the `template.Template`.
+func (l *logger) Warnj(j JSONMap) {
+	l.log(lvlWarn, "json", j)
 }
 
-// Error prints error level log info with the provided type i.
-func (l *Logger) Error(i ...interface{}) {
-	l.log(ERROR, "", i...)
+// Error implements the `Logger#Error()` by using the `template.Template`.
+func (l *logger) Error(i ...interface{}) {
+	l.log(lvlError, "", i...)
 }
 
-// Errorf prints error level log info in a format with the provided args.
-func (l *Logger) Errorf(format string, args ...interface{}) {
-	l.log(ERROR, format, args...)
+// Errorf implements the `Logger#Errorf()` by using the `template.Template`.
+func (l *logger) Errorf(format string, args ...interface{}) {
+	l.log(lvlError, format, args...)
 }
 
-// Errorj prints error level log info in a format with the provided JSON map i.
-func (l *Logger) Errorj(j JSONMap) {
-	l.log(ERROR, "json", j)
+// Errorj implements the `Logger#Errorj()` by using the `template.Template`.
+func (l *logger) Errorj(j JSONMap) {
+	l.log(lvlError, "json", j)
 }
 
-// Fatal prints fatal level log info with the provided type i.
-func (l *Logger) Fatal(i ...interface{}) {
-	l.log(FATAL, "", i...)
+// Fatal implements the `Logger#Fatal()` by using the `template.Template`.
+func (l *logger) Fatal(i ...interface{}) {
+	l.log(lvlFatal, "", i...)
 	os.Exit(1)
 }
 
-// Fatalf prints fatal level log info in a format with the provided args.
-func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.log(FATAL, format, args...)
+// Fatalf implements the `Logger#Fatalf()` by using the `template.Template`.
+func (l *logger) Fatalf(format string, args ...interface{}) {
+	l.log(lvlFatal, format, args...)
 	os.Exit(1)
 }
 
-// Fatalj prints fatal level log info in a format with the provided JSON map i.
-func (l *Logger) Fatalj(j JSONMap) {
-	l.log(FATAL, "json", j)
+// Fatalj implements the `Logger#Fatalj()` by using the `template.Template`.
+func (l *logger) Fatalj(j JSONMap) {
+	l.log(lvlFatal, "json", j)
 }
 
-// log prints log info in a format with the provided level lvl and the args.
-func (l *Logger) log(lvl LoggerLevel, format string, args ...interface{}) {
+// log prints the lvl level log info in the format with the args.
+func (l *logger) log(lvl loggerLevel, format string, args ...interface{}) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	buf := l.bufferPool.Get().(*bytes.Buffer)
@@ -167,7 +242,7 @@ func (l *Logger) log(lvl LoggerLevel, format string, args ...interface{}) {
 	defer l.bufferPool.Put(buf)
 	_, file, line, _ := runtime.Caller(3)
 
-	if lvl >= l.Level {
+	if l.air.Config.LogEnabled {
 		message := ""
 		if format == "" {
 			message = fmt.Sprint(args...)
@@ -181,7 +256,7 @@ func (l *Logger) log(lvl LoggerLevel, format string, args ...interface{}) {
 			message = fmt.Sprintf(format, args...)
 		}
 
-		if lvl == FATAL {
+		if lvl == lvlFatal {
 			panic(message)
 		}
 
@@ -214,7 +289,7 @@ func (l *Logger) log(lvl LoggerLevel, format string, args ...interface{}) {
 				buf.WriteString(message)
 			}
 			buf.WriteByte('\n')
-			l.Output.Write(buf.Bytes())
+			l.output.Write(buf.Bytes())
 		}
 	}
 }
