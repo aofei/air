@@ -18,14 +18,24 @@ type Config struct {
 	// It's called "app_name" in the config file.
 	AppName string
 
-	// DebugMode represents the state of the debug mode enabled of the `Air`.
+	// DebugMode represents the state of the debug mode enabled of the `Air`. It works only with
+	// the default `Logger`.
 	//
 	// The default value is false.
 	//
 	// It's called "debug_mode" in the config file.
 	DebugMode bool
 
-	// LogFormat represents the format of the output content of the `Logger`.
+	// LogEnabled represents the state of the enabled of the `Logger`. It will be forced to the
+	// true if the `DebugMode` is true. It works only with the default `Logger`.
+	//
+	// The default value is false.
+	//
+	// It's called "log_enabled" in the config file.
+	LogEnabled bool
+
+	// LogFormat represents the format of the output content of the `Logger`. It works only with
+	// the default `Logger`.
 	//
 	// The default value is:
 	// `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}","level":"{{.level}}",` +
@@ -158,6 +168,9 @@ func (c *Config) fillData() {
 	}
 	if dm, ok := c.Data["debug_mode"]; ok {
 		c.DebugMode = dm.(bool)
+	}
+	if le, ok := c.Data["log_enabled"]; ok {
+		c.LogEnabled = le.(bool)
 	}
 	if lf, ok := c.Data["log_format"]; ok {
 		c.LogFormat = lf.(string)

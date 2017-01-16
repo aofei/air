@@ -20,7 +20,7 @@ type (
 		router   *router
 
 		Config           *Config
-		Logger           *Logger
+		Logger           Logger
 		Binder           Binder
 		Renderer         Renderer
 		HTTPErrorHandler HTTPErrorHandler
@@ -261,7 +261,7 @@ func (a *Air) URL(h HandlerFunc, params ...interface{}) string {
 // Serve starts the HTTP server.
 func (a *Air) Serve() {
 	if a.Config.DebugMode {
-		a.Logger.Level = DEBUG
+		a.Config.LogEnabled = true
 		a.Logger.Debug("serving in debug mode")
 	}
 
