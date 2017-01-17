@@ -107,7 +107,7 @@ func (res *Response) Push(target string, pos *http.PushOptions) error {
 
 // Render renders one or more HTML templates with the `Data` of the res and sends a "text/html" HTTP
 // response. The default `Renderer` does it by using the `template.Template`. The results rendered
-// by the former can be obtained by accessing the `Data["InheritedHTML"]` of the res.
+// by the former can be inherited by accessing the `Data["InheritedHTML"]` of the res.
 func (res *Response) Render(templates ...string) error {
 	buf := &bytes.Buffer{}
 	for _, t := range templates {
@@ -121,7 +121,7 @@ func (res *Response) Render(templates ...string) error {
 	return res.Blob(MIMETextHTML, buf.Bytes())
 }
 
-// HTML sends a "text/html" HTTP response with the h.
+// HTML sends a "text/html" HTTP response with the html.
 func (res *Response) HTML(html string) error {
 	return res.Blob(MIMETextHTML, []byte(html))
 }
