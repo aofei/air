@@ -123,16 +123,7 @@ var (
 	ErrServiceUnavailable  = NewHTTPError(http.StatusServiceUnavailable)  // 503
 	ErrGatewayTimeout      = NewHTTPError(http.StatusGatewayTimeout)      // 504
 
-	ErrDisabledHTTP2  = errors.New("the HTTP/2 has been disabled")
-	ErrDataTmplNotSet = errors.New("both the Data[\"template\"] and the " +
-		"Data[\"templates\"] are not set")
-	ErrDataHTMLNotSet      = errors.New("the Data[\"html\"] is not set")
-	ErrDataStringNotSet    = errors.New("the Data[\"string\"] is not set")
-	ErrDataJSONNotSet      = errors.New("the Data[\"json\"] is not set")
-	ErrDataJSONPNotSet     = errors.New("the Data[\"jsonp\"] is not set")
-	ErrDataXMLNotSet       = errors.New("the Data[\"xml\"] is not set")
-	ErrDataFileNotSet      = errors.New("the Data[\"file\"] is not set")
-	ErrDataFilenameNotSet  = errors.New("the Data[\"filename\"] is not set")
+	ErrDisabledHTTP2       = errors.New("the HTTP/2 has been disabled")
 	ErrInvalidRedirectCode = errors.New("invalid redirect status code")
 )
 
@@ -206,16 +197,14 @@ func (a *Air) DELETE(path string, h HandlerFunc, gases ...GasFunc) {
 // root directory.
 func (a *Air) Static(prefix, root string) {
 	a.GET(prefix+"*", func(c *Context) error {
-		c.Data["file"] = path.Join(root, c.Params[c.ParamNames[0]])
-		return c.File()
+		return c.File(path.Join(root, c.Params[c.ParamNames[0]]))
 	})
 }
 
 // File registers a new route with the path to serve a static file.
 func (a *Air) File(path, file string) {
 	a.GET(path, func(c *Context) error {
-		c.Data["file"] = file
-		return c.File()
+		return c.File(file)
 	})
 }
 
@@ -343,9 +332,8 @@ func defaultHTTPErrorHandler(err error, c *Context) {
 	}
 
 	if !c.Response.Written() {
-		c.Data["string"] = he.Message
 		c.Response.WriteHeader(he.Code)
-		c.String()
+		c.String(he.Message)
 	}
 
 	c.Air.Logger.Error(err)

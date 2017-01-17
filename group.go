@@ -62,16 +62,14 @@ func (g *Group) DELETE(path string, h HandlerFunc, gases ...GasFunc) {
 // Static implements the `Air#Static()`.
 func (g *Group) Static(prefix, root string) {
 	g.GET(prefix+"*", func(c *Context) error {
-		c.Data["file"] = path.Join(root, c.Params[c.ParamNames[0]])
-		return c.File()
+		return c.File(path.Join(root, c.Params[c.ParamNames[0]]))
 	})
 }
 
 // File implements the `Air#File()`.
 func (g *Group) File(path, file string) {
 	g.GET(path, func(c *Context) error {
-		c.Data["file"] = file
-		return c.File()
+		return c.File(file)
 	})
 }
 
