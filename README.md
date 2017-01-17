@@ -39,8 +39,7 @@ func main() {
 }
 
 func homeHandler(c *air.Context) error {
-	c.Data["string"] = "Hello, 世界"
-	return c.String()
+	return c.String("Hello, 世界")
 }
 ```
 
