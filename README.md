@@ -7,9 +7,9 @@
 An ideal RESTful web framework for Go. You can use it to develop a RESTful web application as
 natural as breathing.
 
-High-performance? Fastest? Almost all of the web frameworks are using these words to tell people
-that they are the best. Maybe they are, maybe not. This framework does not intend to follow the
-crowd. So, the Air web framework can assure you only one sentence: **it can serve properly.**
+High-performance? Fastest? Almost all the web frameworks are using these words to tell people that
+they are the best. Maybe they are, maybe not. This framework does not intend to follow the crowd.
+So, the Air web framework can only guarantee you one thing: **it can serve properly.**
 
 ## Installation
 
