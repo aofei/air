@@ -162,33 +162,33 @@ func (c *Context) Push(target string, pos *http.PushOptions) error {
 }
 
 // Render is an alias for the `Response#Render()` of the c.
-func (c *Context) Render() error {
-	return c.Response.Render()
+func (c *Context) Render(templates ...string) error {
+	return c.Response.Render(templates...)
 }
 
 // HTML is an alias for the `Response#HTML()` of the c.
-func (c *Context) HTML() error {
-	return c.Response.HTML()
+func (c *Context) HTML(html string) error {
+	return c.Response.HTML(html)
 }
 
 // String is an alias for the `Response#String()` of the c.
-func (c *Context) String() error {
-	return c.Response.String()
+func (c *Context) String(s string) error {
+	return c.Response.String(s)
 }
 
 // JSON is an alias for the `Response#JSON()` of the c.
-func (c *Context) JSON() error {
-	return c.Response.JSON()
+func (c *Context) JSON(i interface{}) error {
+	return c.Response.JSON(i)
 }
 
 // JSONP is an alias for the `Response#JSONP()` of the c.
-func (c *Context) JSONP() error {
-	return c.Response.JSONP()
+func (c *Context) JSONP(i interface{}, callback string) error {
+	return c.Response.JSONP(i, callback)
 }
 
 // XML is an alias for the `Response#XML()` of the c.
-func (c *Context) XML() error {
-	return c.Response.XML()
+func (c *Context) XML(i interface{}) error {
+	return c.Response.XML(i)
 }
 
 // Blob is an alias for the `Response#Blob()` of the c.
@@ -202,18 +202,18 @@ func (c *Context) Stream(contentType string, r io.Reader) error {
 }
 
 // File is an alias for the `Response#File()` of the c.
-func (c *Context) File() error {
-	return c.Response.File()
+func (c *Context) File(file string) error {
+	return c.Response.File(file)
 }
 
 // Attachment is an alias for the `Response#Attachment()` of the c.
-func (c *Context) Attachment() error {
-	return c.Response.Attachment()
+func (c *Context) Attachment(file, filename string) error {
+	return c.Response.Attachment(file, filename)
 }
 
 // Inline is an alias for the `Response#Inline()` of the c.
-func (c *Context) Inline() error {
-	return c.Response.Inline()
+func (c *Context) Inline(file, filename string) error {
+	return c.Response.Inline(file, filename)
 }
 
 // NoContent is an alias for the `Response#NoContent()` of the c.
@@ -222,6 +222,6 @@ func (c *Context) NoContent() error {
 }
 
 // Redirect is an alias for the `Response#Redirect()` of the c.
-func (c *Context) Redirect(code int, url string) error {
-	return c.Response.Redirect(code, url)
+func (c *Context) Redirect(statusCode int, url string) error {
+	return c.Response.Redirect(statusCode, url)
 }

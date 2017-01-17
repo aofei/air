@@ -105,107 +105,65 @@ func (res *Response) Push(target string, pos *http.PushOptions) error {
 	return p.Push(target, pos)
 }
 
-// Render renders a template with the `Data` and the `Data["template"]` or the `Data["templates"]`
-// of the res and sends a "text/html" HTTP response. The default `Renderer` does it by using the
-// `template.Template`.
-func (res *Response) Render() error {
-	t, tok := res.Data["template"].(string)
-	ts, tsok := res.Data["templates"].([]string)
-	if !tok && !tsok {
-		return ErrDataTmplNotSet
-	}
-
+// Render renders one or more HTML templates with the `Data` of the res and sends a "text/html" HTTP
+// response. The default `Renderer` does it by using the `template.Template`. The results rendered
+// by the former can be obtained by accessing the `Data["InheritedHTML"]` of the res.
+func (res *Response) Render(templates ...string) error {
 	buf := &bytes.Buffer{}
-	if tok {
+	for _, t := range templates {
+		res.Data["InheritedHTML"] = template.HTML(buf.String())
+		buf.Reset()
 		err := res.context.Air.Renderer.Render(buf, t, res.Data)
 		if err != nil {
 			return err
 		}
-	} else {
-		for _, t := range ts {
-			res.Data["InheritedHTML"] = template.HTML(buf.String())
-			buf.Reset()
-			err := res.context.Air.Renderer.Render(buf, t, res.Data)
-			if err != nil {
-				return err
-			}
-		}
 	}
-
 	return res.Blob(MIMETextHTML, buf.Bytes())
 }
 
-// HTML sends a "text/html" HTTP response with the `Data["html"]` of the res.
-func (res *Response) HTML() error {
-	h, ok := res.Data["html"].(string)
-	if !ok {
-		return ErrDataHTMLNotSet
-	}
-	return res.Blob(MIMETextHTML, []byte(h))
+// HTML sends a "text/html" HTTP response with the h.
+func (res *Response) HTML(html string) error {
+	return res.Blob(MIMETextHTML, []byte(html))
 }
 
-// String sends a "text/plain" HTTP response with the `Data["string"]` of the res.
-func (res *Response) String() error {
-	s, ok := res.Data["string"].(string)
-	if !ok {
-		return ErrDataStringNotSet
-	}
+// String sends a "text/plain" HTTP response with the s.
+func (res *Response) String(s string) error {
 	return res.Blob(MIMETextPlain, []byte(s))
 }
 
-// JSON sends an "application/json" HTTP response with the `Data["json"]` of the res.
-func (res *Response) JSON() error {
-	j, ok := res.Data["json"]
-	if !ok {
-		return ErrDataJSONNotSet
-	}
-
-	b, err := json.Marshal(j)
+// JSON sends an "application/json" HTTP response with the type i.
+func (res *Response) JSON(i interface{}) error {
+	b, err := json.Marshal(i)
 	if res.context.Air.Config.DebugMode {
-		b, err = json.MarshalIndent(j, "", "\t")
+		b, err = json.MarshalIndent(i, "", "\t")
 	}
 	if err != nil {
 		return err
 	}
-
 	return res.Blob(MIMEApplicationJSON, b)
 }
 
-// JSONP sends an "application/javascript" HTTP response with the `Data["jsonp"]` of the res. It
-// uses the `Data["callback"]` of the res to construct the JSONP payload.
-func (res *Response) JSONP() error {
-	j, ok := res.Data["jsonp"]
-	cb, _ := res.Data["callback"].(string)
-	if !ok {
-		return ErrDataJSONPNotSet
-	}
-
-	b, err := json.Marshal(j)
+// JSONP sends an "application/javascript" HTTP response with the type i. It uses the callback to
+// construct the JSONP payload.
+func (res *Response) JSONP(i interface{}, callback string) error {
+	b, err := json.Marshal(i)
 	if err != nil {
 		return err
 	}
-
-	b = append([]byte(cb+"("), b...)
+	b = append([]byte(callback+"("), b...)
 	b = append(b, []byte(");")...)
-
 	return res.Blob(MIMEApplicationJavaScript, b)
 }
 
-// XML sends an "application/xml" HTTP response with the `Data["xml"]` of the res.
-func (res *Response) XML() error {
-	x, ok := res.Data["xml"]
-	if !ok {
-		return ErrDataXMLNotSet
-	}
-
-	b, err := xml.Marshal(x)
+// XML sends an "application/xml" HTTP response with the type i.
+func (res *Response) XML(i interface{}) error {
+	b, err := xml.Marshal(i)
 	if res.context.Air.Config.DebugMode {
-		b, err = xml.MarshalIndent(x, "", "\t")
+		b, err = xml.MarshalIndent(i, "", "\t")
 	}
 	if err != nil {
 		return err
 	}
-
 	return res.Blob(MIMEApplicationXML, append([]byte(xml.Header), b...))
 }
 
@@ -223,13 +181,8 @@ func (res *Response) Stream(contentType string, r io.Reader) error {
 	return err
 }
 
-// File sends a file HTTP response with the `Data["file"]` of the res.
-func (res *Response) File() error {
-	file, ok := res.Data["file"].(string)
-	if !ok {
-		return ErrDataFileNotSet
-	}
-
+// File sends a file HTTP response with the file.
+func (res *Response) File(file string) error {
 	f, err := os.Open(file)
 	if err != nil {
 		return ErrNotFound
@@ -254,28 +207,23 @@ func (res *Response) File() error {
 	return nil
 }
 
-// Attachment sends an HTTP response with the `Data["file"]` and the `Data["filename"]` of the res
-// as attachment, prompting client to save the file.
-func (res *Response) Attachment() error {
-	return res.contentDisposition("attachment")
+// Attachment sends an HTTP response with the file and the filename as attachment, prompting client
+// to save the file.
+func (res *Response) Attachment(file, filename string) error {
+	return res.contentDisposition("attachment", file, filename)
 }
 
-// Inline sends an HTTP response with the `Data["file"]` and the `Data["filename"]` of the res as
-// inline, opening the file in the browser.
-func (res *Response) Inline() error {
-	return res.contentDisposition("inline")
+// Inline sends an HTTP response with the file and the filename as inline, opening the file in the
+// browser.
+func (res *Response) Inline(file, filename string) error {
+	return res.contentDisposition("inline", file, filename)
 }
 
-// contentDisposition sends an HTTP response with the `Data["file"]` and the `Data["filename"]` as
-// the dispositionType.
-func (res *Response) contentDisposition(dispositionType string) error {
-	fn, ok := res.Data["filename"].(string)
-	if !ok {
-		return ErrDataFilenameNotSet
-	}
+// contentDisposition sends an HTTP response with the file and the filename as the dispositionType.
+func (res *Response) contentDisposition(dispositionType, file, filename string) error {
 	res.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s",
-		dispositionType, fn))
-	return res.File()
+		dispositionType, filename))
+	return res.File(file)
 }
 
 // NoContent sends an HTTP response with no body.
