@@ -11,7 +11,6 @@ type (
 	router struct {
 		routes map[string]*route
 		tree   *node
-		air    *Air
 	}
 
 	// route contains a handler and information for matching against the HTTP requests.
@@ -53,13 +52,12 @@ const (
 )
 
 // newRouter returns a pointer of a new instance of the `router`.
-func newRouter(a *Air) *router {
+func newRouter() *router {
 	return &router{
 		routes: make(map[string]*route),
 		tree: &node{
 			methodHandler: &methodHandler{},
 		},
-		air: a,
 	}
 }
 
