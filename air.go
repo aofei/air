@@ -142,7 +142,7 @@ var (
 func New() *Air {
 	a := &Air{}
 
-	a.router = newRouter(a)
+	a.router = newRouter()
 
 	a.Config = newConfig()
 	a.Logger = newLogger(a)
