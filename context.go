@@ -50,18 +50,24 @@ func newContext(a *Air) *Context {
 }
 
 // SetCancel sets a new done channel into the `Context` of the c.
-func (c *Context) SetCancel() {
-	c.Context, _ = context.WithCancel(c.Context)
+func (c *Context) SetCancel() context.CancelFunc {
+	var cf context.CancelFunc
+	c.Context, cf = context.WithCancel(c.Context)
+	return cf
 }
 
 // SetDeadline sets a new deadline into the `Context` of the c.
-func (c *Context) SetDeadline(deadline time.Time) {
-	c.Context, _ = context.WithDeadline(c.Context, deadline)
+func (c *Context) SetDeadline(deadline time.Time) context.CancelFunc {
+	var cf context.CancelFunc
+	c.Context, cf = context.WithDeadline(c.Context, deadline)
+	return cf
 }
 
 // SetTimeout sets a new deadline based on the timeout into the `Context` of the c.
-func (c *Context) SetTimeout(timeout time.Duration) {
-	c.Context, _ = context.WithTimeout(c.Context, timeout)
+func (c *Context) SetTimeout(timeout time.Duration) context.CancelFunc {
+	var cf context.CancelFunc
+	c.Context, cf = context.WithTimeout(c.Context, timeout)
+	return cf
 }
 
 // SetValue sets request-scoped value into the `Context` of the c.
