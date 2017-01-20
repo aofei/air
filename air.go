@@ -14,10 +14,12 @@ import (
 type (
 	// Air is the top-level framework struct.
 	Air struct {
-		pregases []GasFunc
-		gases    []GasFunc
-		server   *server
-		router   *router
+		pregases    []GasFunc
+		gases       []GasFunc
+		maxParam    int
+		contextPool *sync.Pool
+		server      *server
+		router      *router
 
 		Config           *Config
 		Logger           Logger
@@ -142,19 +144,18 @@ var (
 func New() *Air {
 	a := &Air{}
 
-	a.router = newRouter()
+	a.contextPool = &sync.Pool{
+		New: func() interface{} {
+			return newContext(a)
+		},
+	}
+	a.router = newRouter(a)
 
 	a.Config = newConfig()
 	a.Logger = newLogger(a)
 	a.Binder = newBinder()
 	a.Renderer = newRenderer(a)
 	a.HTTPErrorHandler = defaultHTTPErrorHandler
-
-	contextPool = &sync.Pool{
-		New: func() interface{} {
-			return newContext(a)
-		},
-	}
 
 	return a
 }

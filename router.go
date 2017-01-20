@@ -11,6 +11,7 @@ type (
 	router struct {
 		routes map[string]*route
 		tree   *node
+		air    *Air
 	}
 
 	// route contains a handler and information for matching against the HTTP requests.
@@ -52,12 +53,13 @@ const (
 )
 
 // newRouter returns a pointer of a new instance of the `router`.
-func newRouter() *router {
+func newRouter(a *Air) *router {
 	return &router{
 		routes: make(map[string]*route),
 		tree: &node{
 			methodHandler: &methodHandler{},
 		},
+		air: a,
 	}
 }
 
@@ -151,6 +153,10 @@ func (r *router) add(method, path string, h HandlerFunc) {
 // insert inserts a new route into the tree of the r.
 func (r *router) insert(method, path string, h HandlerFunc, k nodeKind, ppath string,
 	pnames []string) {
+	if l := len(pnames); l > r.air.maxParam {
+		r.air.maxParam = l
+	}
+
 	cn := r.tree // Current node as root
 
 	var (
@@ -246,6 +252,7 @@ func (r *router) route(method, path string, c *Context) {
 	var (
 		search = path
 		nn     *node    // Next node
+		pi     int      // Param index
 		nk     nodeKind // Next kind
 		sn     *node    // Saved node
 		ss     string   // Saved search
@@ -327,7 +334,8 @@ func (r *router) route(method, path string, c *Context) {
 			for i, l = 0, len(search); i < l && search[i] != '/'; i++ {
 			}
 
-			c.ParamValues = append(c.ParamValues, unescape(search[:i]))
+			c.ParamValues[pi] = unescape(search[:i])
+			pi++
 			search = search[i:]
 
 			continue
@@ -336,12 +344,7 @@ func (r *router) route(method, path string, c *Context) {
 		// Any node
 	Any:
 		if cn = cn.childByKind(anyKind); cn != nil {
-			if len(c.ParamValues) == len(cn.paramNames) {
-				c.ParamValues[len(c.ParamValues)-1] = unescape(search)
-			} else {
-				c.ParamValues = append(c.ParamValues, unescape(search))
-			}
-
+			c.ParamValues[len(cn.paramNames)-1] = unescape(search)
 			break
 		}
 
@@ -377,11 +380,7 @@ func (r *router) route(method, path string, c *Context) {
 			c.Handler = cn.checkMethodNotAllowed()
 		}
 
-		if len(c.ParamValues) == len(cn.paramNames) {
-			c.ParamValues[len(c.ParamValues)-1] = ""
-		} else {
-			c.ParamValues = append(c.ParamValues, "")
-		}
+		c.ParamValues[len(cn.paramNames)-1] = ""
 	}
 
 	c.PristinePath = cn.pristinePath

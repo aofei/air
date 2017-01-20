@@ -14,6 +14,8 @@ func TestAirNew(t *testing.T) {
 
 	assert.Equal(t, 0, len(a.pregases))
 	assert.Equal(t, 0, len(a.gases))
+	assert.Equal(t, 0, a.maxParam)
+	assert.NotNil(t, a.contextPool)
 	assert.Nil(t, a.server)
 	assert.NotNil(t, a.router)
 
@@ -22,8 +24,6 @@ func TestAirNew(t *testing.T) {
 	assert.NotNil(t, a.Binder)
 	assert.NotNil(t, a.Renderer)
 	assert.NotNil(t, a.HTTPErrorHandler)
-
-	assert.NotNil(t, contextPool)
 }
 
 func TestAirPrecontain(t *testing.T) {
