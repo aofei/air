@@ -23,7 +23,6 @@ type Context struct {
 	PristinePath string
 	ParamNames   []string
 	ParamValues  []string
-	Params       map[string]string
 	Handler      HandlerFunc
 
 	Air *Air
@@ -40,7 +39,6 @@ func newContext(a *Air) *Context {
 	c.Request = newRequest(c)
 	c.Response = newResponse(c)
 	c.ParamValues = make([]string, a.maxParam)
-	c.Params = make(map[string]string, a.maxParam)
 	c.Handler = NotFoundHandler
 	c.Air = a
 	c.Data = c.Response.Data
@@ -73,6 +71,16 @@ func (c *Context) SetValue(key interface{}, val interface{}) {
 	c.Context = context.WithValue(c.Context, key, val)
 }
 
+// Param returns the path param value by the name.
+func (c *Context) Param(name string) string {
+	for i, n := range c.ParamNames {
+		if n == name {
+			return c.ParamValues[i]
+		}
+	}
+	return ""
+}
+
 // feed feeds the req and the rw into where they should be.
 func (c *Context) feed(req *http.Request, rw http.ResponseWriter) {
 	c.Context = req.Context()
@@ -91,9 +99,6 @@ func (c *Context) reset() {
 		c.ParamValues[i] = ""
 	}
 	c.ParamNames = c.ParamNames[:0]
-	for k := range c.Params {
-		delete(c.Params, k)
-	}
 	c.Handler = NotFoundHandler
 	c.Data = c.Response.Data
 }

@@ -34,7 +34,7 @@ func TestRouterMatchParam(t *testing.T) {
 	r.route(GET, "/users/1", c)
 	assert.Equal(t, "id", c.ParamNames[0])
 	assert.Equal(t, "1", c.ParamValues[0])
-	assert.Equal(t, "1", c.Params["id"])
+	assert.Equal(t, "1", c.Param("id"))
 
 	r.add(GET, "/users/:uid/posts/:pid/:anchor", func(*Context) error {
 		return nil
@@ -48,9 +48,9 @@ func TestRouterMatchParam(t *testing.T) {
 	assert.Equal(t, "1", c.ParamValues[0])
 	assert.Equal(t, "1", c.ParamValues[1])
 	assert.Equal(t, "stars", c.ParamValues[2])
-	assert.Equal(t, "1", c.Params["uid"])
-	assert.Equal(t, "1", c.Params["pid"])
-	assert.Equal(t, "stars", c.Params["anchor"])
+	assert.Equal(t, "1", c.Param("uid"))
+	assert.Equal(t, "1", c.Param("pid"))
+	assert.Equal(t, "stars", c.Param("anchor"))
 }
 
 func TestRouterMatchAny(t *testing.T) {
@@ -64,7 +64,7 @@ func TestRouterMatchAny(t *testing.T) {
 	c := a.contextPool.Get().(*Context)
 	r.route(GET, "/any", c)
 	assert.Equal(t, "any", c.ParamValues[0])
-	assert.Equal(t, "any", c.Params["*"])
+	assert.Equal(t, "any", c.Param("*"))
 
 	r.add(GET, "/users/*", func(*Context) error {
 		return nil
@@ -74,7 +74,7 @@ func TestRouterMatchAny(t *testing.T) {
 	r.route(GET, "/users/1", c)
 	assert.Equal(t, "*", c.ParamNames[0])
 	assert.Equal(t, "1", c.ParamValues[0])
-	assert.Equal(t, "1", c.Params["*"])
+	assert.Equal(t, "1", c.Param("*"))
 }
 
 func TestRouterMixMatchParamAndAny(t *testing.T) {
@@ -92,8 +92,8 @@ func TestRouterMixMatchParamAndAny(t *testing.T) {
 	assert.Equal(t, "*", c.ParamNames[1])
 	assert.Equal(t, "1", c.ParamValues[0])
 	assert.Equal(t, "posts", c.ParamValues[1])
-	assert.Equal(t, "1", c.Params["id"])
-	assert.Equal(t, "posts", c.Params["*"])
+	assert.Equal(t, "1", c.Param("id"))
+	assert.Equal(t, "posts", c.Param("*"))
 }
 
 func TestRouterMatchingPriority(t *testing.T) {
@@ -179,5 +179,5 @@ func TestRouterMatchingPriority(t *testing.T) {
 	r.route(GET, "/users/1/followers", c)
 	c.Handler(c)
 	assert.Equal(t, 7, c.Value("h"))
-	assert.Equal(t, "1/followers", c.Params["*"])
+	assert.Equal(t, "1/followers", c.Param("*"))
 }
