@@ -364,8 +364,7 @@ func (r *router) route(method, path string, c *Context) {
 		return
 	}
 
-	c.Handler = cn.handler(method)
-	if c.Handler == nil {
+	if c.Handler = cn.handler(method); c.Handler == nil {
 		c.Handler = cn.checkMethodNotAllowed()
 
 		// Dig further for any, might have an empty value for the *.
@@ -385,10 +384,6 @@ func (r *router) route(method, path string, c *Context) {
 
 	c.PristinePath = cn.pristinePath
 	c.ParamNames = cn.paramNames
-
-	for i, n := range c.ParamNames {
-		c.Params[n] = c.ParamValues[i]
-	}
 
 	return
 }
