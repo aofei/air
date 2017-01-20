@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 )
 
@@ -35,14 +34,13 @@ type Context struct {
 	Data JSONMap
 }
 
-var contextPool *sync.Pool
-
 // newContext returns a pointer of a new instance of the `Context`.
 func newContext(a *Air) *Context {
 	c := &Context{}
 	c.Request = newRequest(c)
 	c.Response = newResponse(c)
-	c.Params = make(map[string]string)
+	c.ParamValues = make([]string, a.maxParam)
+	c.Params = make(map[string]string, a.maxParam)
 	c.Handler = NotFoundHandler
 	c.Air = a
 	c.Data = c.Response.Data
@@ -89,8 +87,10 @@ func (c *Context) reset() {
 	c.Request.reset()
 	c.Response.reset()
 	c.PristinePath = ""
+	for i := range c.ParamNames {
+		c.ParamValues[i] = ""
+	}
 	c.ParamNames = c.ParamNames[:0]
-	c.ParamValues = c.ParamValues[:0]
 	for k := range c.Params {
 		delete(c.Params, k)
 	}
