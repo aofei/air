@@ -1,12 +1,13 @@
 package air
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
 	"time"
+
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Config is a global set of configs that for an instance of the `Air` for customization.
@@ -158,34 +159,38 @@ var defaultConfig = Config{
 }
 
 // newConfig returns a pointer of a new instance of the `Config` by parsing the config file that in
-// the rumtime directory named "config.json". It returns the defaultConfig if the config file does
-// not exist.
+// the rumtime directory named "config.yml" or "config.json". It returns the defaultConfig if the
+// config file does not exist.
 func newConfig() *Config {
 	c := defaultConfig
-	cfn := "config.json"
+	cfn := "config.yml"
+	cfnJSON := "config.json"
 	if _, err := os.Stat(cfn); err == nil || os.IsExist(err) {
-		c.Parse(cfn)
+		c.ParseFile(cfn)
+	} else if _, err := os.Stat(cfnJSON); err == nil || os.IsExist(err) {
+		c.ParseFile(cfnJSON)
 	}
 	return &c
 }
 
-// Parse parses the config file found in the filename path.
-func (c *Config) Parse(filename string) {
+// Parse parses the src into the c.
+func (c *Config) Parse(src string) {
+	if err := yaml.Unmarshal([]byte(src), &c.Data); err != nil {
+		panic(err)
+	}
+	c.fillData()
+}
+
+// ParseFile parses the config file found in the filename path into the c.
+func (c *Config) ParseFile(filename string) {
 	if _, err := os.Stat(filename); err != nil && !os.IsExist(err) {
 		panic(fmt.Sprintf("the config file %s does not exist", filename))
 	}
-
-	bytes, err := ioutil.ReadFile(filename)
+	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-
-	err = json.Unmarshal(bytes, &c.Data)
-	if err != nil {
-		panic(err)
-	}
-
-	c.fillData()
+	c.Parse(string(b))
 }
 
 // fillData fills the values of the fields from the field `Data` of the c.
