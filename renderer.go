@@ -30,30 +30,27 @@ type (
 
 	// renderer implements the `Renderer` by using the `template.Template`.
 	renderer struct {
-		goTemplate      *template.Template
+		templates       *template.Template
 		templateFuncMap template.FuncMap
 		air             *Air
 	}
 )
 
-// defaultTemplateFuncMap is the default template func map of the `renderer`.
-var defaultTemplateFuncMap = template.FuncMap{
-	"strlen":  strlen,
-	"substr":  substr,
-	"timefmt": timefmt,
-	"eq":      eq,
-	"ne":      ne,
-	"lt":      lt,
-	"le":      le,
-	"gt":      gt,
-	"ge":      ge,
-}
-
 // newRenderer returns a pointer of a new instance of the `renderer`.
 func newRenderer(a *Air) *renderer {
 	return &renderer{
-		templateFuncMap: defaultTemplateFuncMap,
-		air:             a,
+		templateFuncMap: template.FuncMap{
+			"strlen":  strlen,
+			"substr":  substr,
+			"timefmt": timefmt,
+			"eq":      eq,
+			"ne":      ne,
+			"lt":      lt,
+			"le":      le,
+			"gt":      gt,
+			"ge":      ge,
+		},
+		air: a,
 	}
 }
 
@@ -64,7 +61,7 @@ func (r *renderer) SetTemplateFunc(name string, f interface{}) {
 
 // ParseTemplates implements the `Renderer#ParseTemplates()` by using the `template.Template`.
 //
-// e.g. r.air.Config.TemplatesRoot == "templates"
+// e.g. r.air.Config.TemplateRoot == "templates"
 //
 // templates/
 //   index.html
@@ -79,7 +76,7 @@ func (r *renderer) SetTemplateFunc(name string, f interface{}) {
 //
 // "index.html", "login.html", "register.html", "parts/header.html", "parts/footer.html".
 func (r *renderer) ParseTemplates() error {
-	tr := filepath.Clean(r.air.Config.TemplatesRoot)
+	tr := filepath.Clean(r.air.Config.TemplateRoot)
 	if _, err := os.Stat(tr); err != nil && os.IsNotExist(err) {
 		return nil
 	}
@@ -115,28 +112,26 @@ func (r *renderer) ParseTemplates() error {
 			name = name[1:]
 		}
 
-		if r.goTemplate == nil {
-			r.goTemplate = template.New(name).Funcs(r.templateFuncMap)
+		if r.templates == nil {
+			r.templates = template.New(name).Funcs(r.templateFuncMap)
 		}
 
 		var tmpl *template.Template
-		if name == r.goTemplate.Name() {
-			tmpl = r.goTemplate
+		if name == r.templates.Name() {
+			tmpl = r.templates
 		} else {
-			tmpl = r.goTemplate.New(name)
+			tmpl = r.templates.New(name)
 		}
 
-		if r.air.Config.MinifyTemplates {
-			err = m.Minify("text/html", buf, bytes.NewReader(b))
-			if err != nil {
+		if r.air.Config.MinifyTemplate {
+			if err := m.Minify("text/html", buf, bytes.NewReader(b)); err != nil {
 				return err
 			}
 			b = buf.Bytes()
 			buf.Reset()
 		}
 
-		_, err = tmpl.Parse(string(b))
-		if err != nil {
+		if _, err := tmpl.Parse(string(b)); err != nil {
 			return err
 		}
 	}
@@ -146,7 +141,7 @@ func (r *renderer) ParseTemplates() error {
 
 // Render implements the `Renderer#Render()` by using the `template.Template`.
 func (r *renderer) Render(w io.Writer, templateName string, data JSONMap) error {
-	return r.goTemplate.ExecuteTemplate(w, templateName, data)
+	return r.templates.ExecuteTemplate(w, templateName, data)
 }
 
 // strlen returns the number of chars in the s.
