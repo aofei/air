@@ -106,13 +106,13 @@ type Config struct {
 	// It's called "template_root" in the config file.
 	TemplateRoot string
 
-	// TemplateSuffix represents the file suffix of the HTML templates. It will be used when
-	// parsing the HTML templates. It works only with the default `Renderer`.
+	// TemplateExt represents the file name extension of the HTML templates. It will be used
+	// when parsing the HTML templates. It works only with the default `Renderer`.
 	//
 	// The default value is ".html".
 	//
-	// It's called "template_suffix" in the config file.
-	TemplateSuffix string
+	// It's called "template_ext" in the config file.
+	TemplateExt string
 
 	// TemplateLeftDelim represents the left side of the HTML template delimiter. It will be
 	// used when parsing the HTML templates. It works only with the default `Renderer`.
@@ -153,7 +153,7 @@ var defaultConfig = Config{
 		`"file":"{{.short_file}}","line":"{{.line}}"}`,
 	Address:            "localhost:2333",
 	TemplateRoot:       "templates",
-	TemplateSuffix:     ".html",
+	TemplateExt:        ".html",
 	TemplateLeftDelim:  "{{",
 	TemplateRightDelim: "}}",
 }
@@ -228,8 +228,8 @@ func (c *Config) fillData() {
 	if tr, ok := c.Data["template_root"]; ok {
 		c.TemplateRoot = tr.(string)
 	}
-	if ts, ok := c.Data["template_suffix"]; ok {
-		c.TemplateSuffix = ts.(string)
+	if te, ok := c.Data["template_ext"]; ok {
+		c.TemplateExt = te.(string)
 	}
 	if tld, ok := c.Data["template_left_delim"]; ok {
 		c.TemplateLeftDelim = tld.(string)
