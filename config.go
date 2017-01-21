@@ -97,22 +97,22 @@ type Config struct {
 	// **It's unit in the config file is SECONDS.**
 	WriteTimeout time.Duration
 
-	// TemplatesRoot represents the root directory of the HTML templates. It will be parsed into
-	// the `Renderer`.
+	// TemplateRoot represents the root directory of the HTML templates. It will be parsed into
+	// the `Renderer`. It works only with the default `Renderer`.
 	//
 	// The default value is "templates" that means a subdirectory of the runtime directory.
 	//
-	// It's called "templates_root" in the config file.
-	TemplatesRoot string
+	// It's called "template_root" in the config file.
+	TemplateRoot string
 
-	// MinifyTemplates indicates whether to minify the HTML templates before they being parsed
+	// MinifyTemplate indicates whether to minify the HTML templates before they being parsed
 	// into the `Renderer`. It works only with the default `Renderer`. The minify feature
 	// powered by the Minify project that can be found at "https://github.com/tdewolff/minify".
 	//
 	// The default value is false.
 	//
-	// It's called "minify_templates" in the config file.
-	MinifyTemplates bool
+	// It's called "minify_template" in the config file.
+	MinifyTemplate bool
 
 	// Data represents the data that parsing from the config file. You can use it to access the
 	// values in the config file.
@@ -126,8 +126,8 @@ var defaultConfig = Config{
 	AppName: "air",
 	LogFormat: `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}","level":"{{.level}}",` +
 		`"file":"{{.short_file}}","line":"{{.line}}"}`,
-	Address:       "localhost:2333",
-	TemplatesRoot: "templates",
+	Address:      "localhost:2333",
+	TemplateRoot: "templates",
 }
 
 // newConfig returns a pointer of a new instance of the `Config` by parsing the config file that in
@@ -193,10 +193,10 @@ func (c *Config) fillData() {
 	if wt, ok := c.Data["write_timeout"]; ok {
 		c.WriteTimeout = time.Duration(wt.(float64)) * time.Second
 	}
-	if tr, ok := c.Data["templates_root"]; ok {
-		c.TemplatesRoot = tr.(string)
+	if tr, ok := c.Data["template_root"]; ok {
+		c.TemplateRoot = tr.(string)
 	}
-	if mt, ok := c.Data["minify_templates"]; ok {
-		c.MinifyTemplates = mt.(bool)
+	if mt, ok := c.Data["minify_template"]; ok {
+		c.MinifyTemplate = mt.(bool)
 	}
 }
