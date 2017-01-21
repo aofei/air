@@ -220,10 +220,10 @@ func (c *Config) fillData() {
 		c.TLSKeyFile = tlskf.(string)
 	}
 	if rt, ok := c.Data["read_timeout"]; ok {
-		c.ReadTimeout = time.Duration(rt.(float64)) * time.Second
+		c.ReadTimeout = time.Duration(rt.(int)) * time.Second
 	}
 	if wt, ok := c.Data["write_timeout"]; ok {
-		c.WriteTimeout = time.Duration(wt.(float64)) * time.Second
+		c.WriteTimeout = time.Duration(wt.(int)) * time.Second
 	}
 	if tr, ok := c.Data["template_root"]; ok {
 		c.TemplateRoot = tr.(string)
