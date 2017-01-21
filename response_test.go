@@ -116,6 +116,23 @@ func TestResponseXML(t *testing.T) {
 	}
 }
 
+func TestResponseYAML(t *testing.T) {
+	a := New()
+	req, _ := http.NewRequest(GET, "/", nil)
+	rec := httptest.NewRecorder()
+	c := newContext(a)
+
+	c.feed(req, rec)
+
+	info := struct{ Name, Author string }{"Air", "Aofei Sheng"}
+	infoStr := "name: Air\nauthor: Aofei Sheng\n"
+	if err := c.Response.YAML(info); assert.NoError(t, err) {
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, MIMEApplicationYAML, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, infoStr, rec.Body.String())
+	}
+}
+
 func TestResponseBlob(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)

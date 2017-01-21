@@ -63,6 +63,7 @@ const (
 	MIMEApplicationJSON       = "application/json; charset=utf-8"
 	MIMEApplicationJavaScript = "application/javascript; charset=utf-8"
 	MIMEApplicationXML        = "application/xml; charset=utf-8"
+	MIMEApplicationYAML       = "application/x-yaml; charset=utf-8"
 	MIMEApplicationForm       = "application/x-www-form-urlencoded"
 	MIMEApplicationProtobuf   = "application/protobuf"
 	MIMEApplicationMsgpack    = "application/msgpack"
