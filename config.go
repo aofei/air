@@ -105,6 +105,30 @@ type Config struct {
 	// It's called "template_root" in the config file.
 	TemplateRoot string
 
+	// TemplateSuffix represents the file suffix of the HTML templates. It will be used when
+	// parsing the HTML templates. It works only with the default `Renderer`.
+	//
+	// The default value is ".html".
+	//
+	// It's called "template_suffix" in the config file.
+	TemplateSuffix string
+
+	// TemplateLeftDelim represents the left side of the HTML template delimiter. It will be
+	// used when parsing the HTML templates. It works only with the default `Renderer`.
+	//
+	// The default value is "{{".
+	//
+	// It's called "template_left_delim" in the config file.
+	TemplateLeftDelim string
+
+	// TemplateRightDelim represents the right side of the HTML template delimiter. It will be
+	// used when parsing the HTML templates. It works only with the default `Renderer`.
+	//
+	// The default value is "}}".
+	//
+	// It's called "template_right_delim" in the config file.
+	TemplateRightDelim string
+
 	// MinifyTemplate indicates whether to minify the HTML templates before they being parsed
 	// into the `Renderer`. It works only with the default `Renderer`. The minify feature
 	// powered by the Minify project that can be found at "https://github.com/tdewolff/minify".
@@ -126,8 +150,11 @@ var defaultConfig = Config{
 	AppName: "air",
 	LogFormat: `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}","level":"{{.level}}",` +
 		`"file":"{{.short_file}}","line":"{{.line}}"}`,
-	Address:      "localhost:2333",
-	TemplateRoot: "templates",
+	Address:            "localhost:2333",
+	TemplateRoot:       "templates",
+	TemplateSuffix:     ".html",
+	TemplateLeftDelim:  "{{",
+	TemplateRightDelim: "}}",
 }
 
 // newConfig returns a pointer of a new instance of the `Config` by parsing the config file that in
@@ -195,6 +222,15 @@ func (c *Config) fillData() {
 	}
 	if tr, ok := c.Data["template_root"]; ok {
 		c.TemplateRoot = tr.(string)
+	}
+	if ts, ok := c.Data["template_suffix"]; ok {
+		c.TemplateSuffix = ts.(string)
+	}
+	if tld, ok := c.Data["template_left_delim"]; ok {
+		c.TemplateLeftDelim = tld.(string)
+	}
+	if trd, ok := c.Data["template_right_delim"]; ok {
+		c.TemplateRightDelim = trd.(string)
 	}
 	if mt, ok := c.Data["minify_template"]; ok {
 		c.MinifyTemplate = mt.(bool)
