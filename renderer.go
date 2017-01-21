@@ -61,7 +61,7 @@ func (r *renderer) SetTemplateFunc(name string, f interface{}) {
 
 // ParseTemplates implements the `Renderer#ParseTemplates()` by using the `template.Template`.
 //
-// e.g. r.air.Config.TemplateRoot == "templates"
+// e.g. r.air.Config.TemplateRoot == "templates" && r.air.Config.TemplateSuffix == ".html"
 //
 // templates/
 //   index.html
@@ -76,7 +76,9 @@ func (r *renderer) SetTemplateFunc(name string, f interface{}) {
 //
 // "index.html", "login.html", "register.html", "parts/header.html", "parts/footer.html".
 func (r *renderer) ParseTemplates() error {
-	tr := filepath.Clean(r.air.Config.TemplateRoot)
+	c := r.air.Config
+
+	tr := filepath.Clean(c.TemplateRoot)
 	if _, err := os.Stat(tr); err != nil && os.IsNotExist(err) {
 		return nil
 	}
@@ -86,7 +88,7 @@ func (r *renderer) ParseTemplates() error {
 		if !info.IsDir() {
 			return err
 		}
-		fns, err := filepath.Glob(path + "/*.html")
+		fns, err := filepath.Glob(path + "/*" + c.TemplateSuffix)
 		filenames = append(filenames, fns...)
 		return err
 	})
@@ -114,6 +116,7 @@ func (r *renderer) ParseTemplates() error {
 
 		if r.templates == nil {
 			r.templates = template.New(name).Funcs(r.templateFuncMap)
+			r.templates.Delims(c.TemplateLeftDelim, c.TemplateRightDelim)
 		}
 
 		var tmpl *template.Template
@@ -123,7 +126,7 @@ func (r *renderer) ParseTemplates() error {
 			tmpl = r.templates.New(name)
 		}
 
-		if r.air.Config.MinifyTemplate {
+		if c.MinifyTemplate {
 			if err := m.Minify("text/html", buf, bytes.NewReader(b)); err != nil {
 				return err
 			}
