@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Response represents the current HTTP response.
@@ -165,6 +167,15 @@ func (res *Response) XML(i interface{}) error {
 		return err
 	}
 	return res.Blob(MIMEApplicationXML, append([]byte(xml.Header), b...))
+}
+
+// YAML sends an "application/x-yaml" HTTP response with the type i.
+func (res *Response) YAML(i interface{}) error {
+	b, err := yaml.Marshal(i)
+	if err != nil {
+		return err
+	}
+	return res.Blob(MIMEApplicationYAML, b)
 }
 
 // Blob sends a blob HTTP response with the contentType and the b.
