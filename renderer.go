@@ -61,7 +61,7 @@ func (r *renderer) SetTemplateFunc(name string, f interface{}) {
 
 // ParseTemplates implements the `Renderer#ParseTemplates()` by using the `template.Template`.
 //
-// e.g. r.air.Config.TemplateRoot == "templates" && r.air.Config.TemplateSuffix == ".html"
+// e.g. r.air.Config.TemplateRoot == "templates" && r.air.Config.TemplateExt == ".html"
 //
 // templates/
 //   index.html
@@ -88,7 +88,7 @@ func (r *renderer) ParseTemplates() error {
 		if !info.IsDir() {
 			return err
 		}
-		fns, err := filepath.Glob(path + "/*" + c.TemplateSuffix)
+		fns, err := filepath.Glob(path + "/*" + c.TemplateExt)
 		filenames = append(filenames, fns...)
 		return err
 	})
