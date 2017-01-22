@@ -10,10 +10,10 @@ import (
 func TestConfigParseYAML(t *testing.T) {
 	c := newConfig()
 
-	yaml := `app_name: "json"` + "\n" +
+	yaml := `app_name: "air"` + "\n" +
 		`debug_mode: true` + "\n" +
 		`log_enabled: true` + "\n" +
-		`log_format: "json"` + "\n" +
+		`log_format: "air_log"` + "\n" +
 		`address: "127.0.0.1:2333"` + "\n" +
 		`disable_http2: true` + "\n" +
 		`tls_cert_file: "path_to_tls_cert_file"` + "\n" +
@@ -27,10 +27,10 @@ func TestConfigParseYAML(t *testing.T) {
 		`minify_template: true`
 
 	c.Parse(yaml)
-	assert.Equal(t, "json", c.AppName)
+	assert.Equal(t, "air", c.AppName)
 	assert.Equal(t, true, c.DebugMode)
 	assert.Equal(t, true, c.LogEnabled)
-	assert.Equal(t, "json", c.LogFormat)
+	assert.Equal(t, "air_log", c.LogFormat)
 	assert.Equal(t, "127.0.0.1:2333", c.Address)
 	assert.Equal(t, true, c.DisableHTTP2)
 	assert.Equal(t, "path_to_tls_cert_file", c.TLSCertFile)
@@ -49,10 +49,10 @@ func TestConfigParseJSON(t *testing.T) {
 	c := newConfig()
 
 	json := `{
-			"app_name": "json",
+			"app_name": "air",
 			"debug_mode": true,
 			"log_enabled": true,
-			"log_format": "json",
+			"log_format": "air_log",
 			"address": "127.0.0.1:2333",
 			"disable_http2": true,
 			"tls_cert_file": "path_to_tls_cert_file",
@@ -67,10 +67,10 @@ func TestConfigParseJSON(t *testing.T) {
 		 }`
 
 	c.Parse(json)
-	assert.Equal(t, "json", c.AppName)
+	assert.Equal(t, "air", c.AppName)
 	assert.Equal(t, true, c.DebugMode)
 	assert.Equal(t, true, c.LogEnabled)
-	assert.Equal(t, "json", c.LogFormat)
+	assert.Equal(t, "air_log", c.LogFormat)
 	assert.Equal(t, "127.0.0.1:2333", c.Address)
 	assert.Equal(t, true, c.DisableHTTP2)
 	assert.Equal(t, "path_to_tls_cert_file", c.TLSCertFile)
