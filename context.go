@@ -25,6 +25,11 @@ type Context struct {
 	ParamValues  []string
 	Handler      HandlerFunc
 
+	// Cancel is non-nil if one of the `SetCancel()`, the `SetDeadline()` or the `SetTimeout()`
+	// is called. It will be called when the HTTP server finishes the current cycle if it is
+	// non-nil and has never been called.
+	Cancel context.CancelFunc
+
 	Air *Air
 
 	// MARK: Alias fields for the `Response`.
@@ -46,24 +51,18 @@ func newContext(a *Air) *Context {
 }
 
 // SetCancel sets a new done channel into the `Context` of the c.
-func (c *Context) SetCancel() context.CancelFunc {
-	var cf context.CancelFunc
-	c.Context, cf = context.WithCancel(c.Context)
-	return cf
+func (c *Context) SetCancel() {
+	c.Context, c.Cancel = context.WithCancel(c.Context)
 }
 
 // SetDeadline sets a new deadline into the `Context` of the c.
-func (c *Context) SetDeadline(deadline time.Time) context.CancelFunc {
-	var cf context.CancelFunc
-	c.Context, cf = context.WithDeadline(c.Context, deadline)
-	return cf
+func (c *Context) SetDeadline(deadline time.Time) {
+	c.Context, c.Cancel = context.WithDeadline(c.Context, deadline)
 }
 
 // SetTimeout sets a new deadline based on the timeout into the `Context` of the c.
-func (c *Context) SetTimeout(timeout time.Duration) context.CancelFunc {
-	var cf context.CancelFunc
-	c.Context, cf = context.WithTimeout(c.Context, timeout)
-	return cf
+func (c *Context) SetTimeout(timeout time.Duration) {
+	c.Context, c.Cancel = context.WithTimeout(c.Context, timeout)
 }
 
 // SetValue sets request-scoped value into the `Context` of the c.
