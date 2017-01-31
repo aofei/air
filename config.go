@@ -159,16 +159,13 @@ var defaultConfig = Config{
 }
 
 // newConfig returns a pointer of a new instance of the `Config` by parsing the config file that in
-// the rumtime directory named "config.yml" or "config.json". It returns the defaultConfig if the
-// config file does not exist.
+// the rumtime directory named "config.yml". It returns the defaultConfig if the config file does
+// not exist.
 func newConfig() *Config {
 	c := defaultConfig
 	cfn := "config.yml"
-	cfnJSON := "config.json"
 	if _, err := os.Stat(cfn); err == nil || os.IsExist(err) {
 		c.ParseFile(cfn)
-	} else if _, err := os.Stat(cfnJSON); err == nil || os.IsExist(err) {
-		c.ParseFile(cfnJSON)
 	}
 	return &c
 }
