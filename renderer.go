@@ -30,15 +30,17 @@ type (
 
 	// renderer implements the `Renderer` by using the `template.Template`.
 	renderer struct {
+		air *Air
+
 		templates       *template.Template
 		templateFuncMap template.FuncMap
-		air             *Air
 	}
 )
 
 // newRenderer returns a pointer of a new instance of the `renderer`.
 func newRenderer(a *Air) *renderer {
 	return &renderer{
+		air: a,
 		templateFuncMap: template.FuncMap{
 			"strlen":  strlen,
 			"substr":  substr,
@@ -50,7 +52,6 @@ func newRenderer(a *Air) *renderer {
 			"gt":      gt,
 			"ge":      ge,
 		},
-		air: a,
 	}
 }
 

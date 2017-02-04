@@ -6,15 +6,17 @@ import "path"
 // common gas or functionality that should be separate from the parent `Air` instance while still
 // inheriting from it.
 type Group struct {
+	air *Air
+
 	prefix string
 	gases  []Gas
-	air    *Air
 }
 
 // NewGroup returns a pointer of a new router group with the prefix and the optional group-level
 // gases.
 func NewGroup(a *Air, prefix string, gases ...Gas) *Group {
-	g := &Group{prefix: prefix, air: a}
+	g := &Group{air: a}
+	g.prefix = prefix
 	g.Contain(gases...)
 
 	// Allow all HTTP requests to reach the group as they might get dropped if the router

@@ -147,12 +147,12 @@ func New() *Air {
 
 	a.contextPool = &sync.Pool{
 		New: func() interface{} {
-			return newContext(a)
+			return NewContext(a)
 		},
 	}
 	a.router = newRouter(a)
 
-	a.Config = newConfig()
+	a.Config = NewConfig("config.yml")
 	a.Logger = newLogger(a)
 	a.Binder = newBinder()
 	a.Renderer = newRenderer(a)

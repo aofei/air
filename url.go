@@ -8,12 +8,16 @@ import "net/url"
 type URL struct {
 	*url.URL
 
+	request *Request
+
 	queryValues url.Values
 }
 
-// newURL returns a pointer of a new instance of the `URL`.
-func newURL() *URL {
-	return &URL{}
+// NewURL returns a pointer of a new instance of the `URL`.
+func NewURL(req *Request) *URL {
+	return &URL{
+		request: req,
+	}
 }
 
 // QueryValue returns the query value in the url for the provided key.
