@@ -36,7 +36,7 @@ func TestConfigNewConfig(t *testing.T) {
 
 	f.WriteString(yaml)
 
-	c := newConfig()
+	c := NewConfig("config.yml")
 
 	assert.Equal(t, "air", c.AppName)
 	assert.Equal(t, true, c.DebugMode)

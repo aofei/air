@@ -22,17 +22,17 @@ import (
 type Response struct {
 	http.ResponseWriter
 
+	context *Context
+
 	statusCode int
 	size       int
 	written    bool
 
-	context *Context
-
 	Data JSONMap
 }
 
-// newResponse returns a pointer of a new instance of the `Response`.
-func newResponse(c *Context) *Response {
+// NewResponse returns a pointer of a new instance of the `Response`.
+func NewResponse(c *Context) *Response {
 	return &Response{
 		context: c,
 		Data:    make(JSONMap),

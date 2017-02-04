@@ -11,7 +11,7 @@ import (
 
 func TestRequestFormValue(t *testing.T) {
 	a := New()
-	c := newContext(a)
+	c := NewContext(a)
 
 	vs := make(url.Values)
 	vs.Set("name", "Air")

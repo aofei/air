@@ -16,7 +16,7 @@ func TestResponseRender(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -37,7 +37,7 @@ func TestResponseHTML(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -52,7 +52,7 @@ func TestResponseString(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -67,7 +67,7 @@ func TestResponseJSON(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -84,7 +84,7 @@ func TestResponseJSONP(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -102,7 +102,7 @@ func TestResponseXML(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -120,7 +120,7 @@ func TestResponseYAML(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -137,7 +137,7 @@ func TestResponseBlob(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -154,7 +154,7 @@ func TestResponseStream(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -170,7 +170,7 @@ func TestResponseFile(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -187,7 +187,7 @@ func TestResponseAttachment(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -205,7 +205,7 @@ func TestResponseInline(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -223,7 +223,7 @@ func TestResponseNoContent(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
@@ -237,7 +237,7 @@ func TestResponseRedirect(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
-	c := newContext(a)
+	c := NewContext(a)
 
 	c.feed(req, rec)
 
