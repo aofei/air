@@ -295,6 +295,14 @@ func handlerName(h Handler) string {
 	return t.String()
 }
 
+// WrapHandler wraps the h into the `Handler`.
+func WrapHandler(h http.Handler) Handler {
+	return func(c *Context) error {
+		h.ServeHTTP(c.Response.ResponseWriter, c.Request.Request)
+		return nil
+	}
+}
+
 // WrapGas wraps the h into the `Gas`.
 func WrapGas(h Handler) Gas {
 	return func(next Handler) Handler {
