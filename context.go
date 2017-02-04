@@ -17,6 +17,8 @@ import (
 type Context struct {
 	context.Context
 
+	Air *Air
+
 	Request  *Request
 	Response *Response
 
@@ -30,22 +32,19 @@ type Context struct {
 	// non-nil and has never been called.
 	Cancel context.CancelFunc
 
-	Air *Air
-
 	// MARK: Alias fields for the `Response`.
 
 	// Data is an alias for the `Response#Data`.
 	Data JSONMap
 }
 
-// newContext returns a pointer of a new instance of the `Context`.
-func newContext(a *Air) *Context {
-	c := &Context{}
-	c.Request = newRequest(c)
-	c.Response = newResponse(c)
+// NewContext returns a pointer of a new instance of the `Context`.
+func NewContext(a *Air) *Context {
+	c := &Context{Air: a}
+	c.Request = NewRequest(c)
+	c.Response = NewResponse(c)
 	c.ParamValues = make([]string, a.maxParam)
 	c.Handler = NotFoundHandler
-	c.Air = a
 	c.Data = c.Response.Data
 	return c
 }

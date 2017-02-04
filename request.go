@@ -19,12 +19,11 @@ type Request struct {
 
 const maxMemory = 32 << 20 // 32 MB
 
-// newRequest returns a pointer of a new instance of the `Request`.
-func newRequest(c *Context) *Request {
-	return &Request{
-		context: c,
-		URL:     newURL(),
-	}
+// NewRequest returns a pointer of a new instance of the `Request`.
+func NewRequest(c *Context) *Request {
+	req := &Request{context: c}
+	req.URL = NewURL(req)
+	return req
 }
 
 // Bind binds the HTTP body of the req into the provided type i. The default `Binder` does it based

@@ -80,6 +80,8 @@ type (
 
 	// logger implements the `Logger` by using the `template.Template`.
 	logger struct {
+		air *Air
+
 		template   *template.Template
 		bufferPool *sync.Pool
 		mutex      *sync.Mutex
@@ -87,8 +89,6 @@ type (
 		enabled bool
 		levels  []string
 		output  io.Writer
-
-		air *Air
 	}
 
 	// loggerLevel is the level of the `logger`.
@@ -106,7 +106,7 @@ const (
 
 // newLogger returns a pointer of a new instance of the `logger`.
 func newLogger(a *Air) *logger {
-	l := &logger{}
+	l := &logger{air: a}
 
 	l.template, _ = template.New("logger").Parse(a.Config.LogFormat)
 	l.bufferPool = &sync.Pool{
@@ -124,8 +124,6 @@ func newLogger(a *Air) *logger {
 		"FATAL",
 	}
 	l.output = os.Stdout
-
-	l.air = a
 
 	return l
 }

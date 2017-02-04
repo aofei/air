@@ -158,14 +158,13 @@ var DefaultConfig = Config{
 	TemplateRightDelim: "}}",
 }
 
-// newConfig returns a pointer of a new instance of the `Config` by parsing the config file that in
-// the rumtime directory named "config.yml". It returns the DefaultConfig if the config file does
+// NewConfig returns a pointer of a new instance of the `Config` by parsing the config file that in
+// the rumtime directory named the filename. It returns the DefaultConfig if the config file does
 // not exist.
-func newConfig() *Config {
+func NewConfig(filename string) *Config {
 	c := DefaultConfig
-	cfn := "config.yml"
-	if _, err := os.Stat(cfn); err == nil || os.IsExist(err) {
-		c.ParseFile(cfn)
+	if _, err := os.Stat(filename); err == nil || os.IsExist(err) {
+		c.ParseFile(filename)
 	}
 	return &c
 }
