@@ -23,7 +23,7 @@ type Context struct {
 	PristinePath string
 	ParamNames   []string
 	ParamValues  []string
-	Handler      HandlerFunc
+	Handler      Handler
 
 	// Cancel is non-nil if one of the `SetCancel()`, the `SetDeadline()` or the `SetTimeout()`
 	// is called. It will be called when the HTTP server finishes the current cycle if it is

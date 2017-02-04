@@ -36,12 +36,12 @@ type (
 	// nodekind is the kind of the `node`.
 	nodeKind uint8
 
-	// methodHandler is a set of the `HandlerFunc` distinguish by method.
+	// methodHandler is a set of the `Handler` distinguish by method.
 	methodHandler struct {
-		get    HandlerFunc
-		post   HandlerFunc
-		put    HandlerFunc
-		delete HandlerFunc
+		get    Handler
+		post   Handler
+		put    Handler
+		delete Handler
 	}
 )
 
@@ -105,7 +105,7 @@ func (r *router) checkRoute(method, path string) {
 }
 
 // add registers a new route for the method and the path with the matching h.
-func (r *router) add(method, path string, h HandlerFunc) {
+func (r *router) add(method, path string, h Handler) {
 	// Checks
 	r.checkPath(path)
 	r.checkRoute(method, path)
@@ -151,7 +151,7 @@ func (r *router) add(method, path string, h HandlerFunc) {
 }
 
 // insert inserts a new route into the tree of the r.
-func (r *router) insert(method, path string, h HandlerFunc, k nodeKind, ppath string,
+func (r *router) insert(method, path string, h Handler, k nodeKind, ppath string,
 	pnames []string) {
 	if l := len(pnames); l > r.air.maxParam {
 		r.air.maxParam = l
@@ -524,8 +524,8 @@ func (n *node) addChild(c *node) {
 	n.children = append(n.children, c)
 }
 
-// handler returns a `HandlerFunc` by the provided method.
-func (n *node) handler(method string) HandlerFunc {
+// handler returns a `Handler` by the provided method.
+func (n *node) handler(method string) Handler {
 	switch method {
 	case GET:
 		return n.methodHandler.get
@@ -541,7 +541,7 @@ func (n *node) handler(method string) HandlerFunc {
 }
 
 // addHandler adds the h into the filed `methodHandler` of the n with the provided method.
-func (n *node) addHandler(method string, h HandlerFunc) {
+func (n *node) addHandler(method string, h Handler) {
 	switch method {
 	case GET:
 		n.methodHandler.get = h
@@ -554,8 +554,8 @@ func (n *node) addHandler(method string, h HandlerFunc) {
 	}
 }
 
-// checkMethodNotAllowed returns a `HandlerFunc` by checked methods.
-func (n *node) checkMethodNotAllowed() HandlerFunc {
+// checkMethodNotAllowed returns a `Handler` by checked methods.
+func (n *node) checkMethodNotAllowed() Handler {
 	for _, m := range methods {
 		if h := n.handler(m); h != nil {
 			return MethodNotAllowedHandler

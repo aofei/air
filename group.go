@@ -7,13 +7,13 @@ import "path"
 // inheriting from it.
 type Group struct {
 	prefix string
-	gases  []GasFunc
+	gases  []Gas
 	air    *Air
 }
 
 // NewGroup returns a pointer of a new router group with the prefix and the optional group-level
 // gases.
-func NewGroup(a *Air, prefix string, gases ...GasFunc) *Group {
+func NewGroup(a *Air, prefix string, gases ...Gas) *Group {
 	g := &Group{prefix: prefix, air: a}
 	g.Contain(gases...)
 
@@ -30,32 +30,32 @@ func NewGroup(a *Air, prefix string, gases ...GasFunc) *Group {
 
 // NewSubGroup creates a pointer of a new sub-group with the prefix and the optional sub-group-level
 // gases.
-func (g *Group) NewSubGroup(prefix string, gases ...GasFunc) *Group {
+func (g *Group) NewSubGroup(prefix string, gases ...Gas) *Group {
 	return NewGroup(g.air, g.prefix+prefix, append(g.gases, gases...)...)
 }
 
 // Contain implements the `Air#Contain()`.
-func (g *Group) Contain(gases ...GasFunc) {
+func (g *Group) Contain(gases ...Gas) {
 	g.gases = append(g.gases, gases...)
 }
 
 // GET implements the `Air#GET()`.
-func (g *Group) GET(path string, h HandlerFunc, gases ...GasFunc) {
+func (g *Group) GET(path string, h Handler, gases ...Gas) {
 	g.add(GET, path, h, gases...)
 }
 
 // POST implements the `Air#POST()`.
-func (g *Group) POST(path string, h HandlerFunc, gases ...GasFunc) {
+func (g *Group) POST(path string, h Handler, gases ...Gas) {
 	g.add(POST, path, h, gases...)
 }
 
 // PUT implements the `Air#PUT()`.
-func (g *Group) PUT(path string, h HandlerFunc, gases ...GasFunc) {
+func (g *Group) PUT(path string, h Handler, gases ...Gas) {
 	g.add(PUT, path, h, gases...)
 }
 
 // DELETE implements the `Air#DELETE()`.
-func (g *Group) DELETE(path string, h HandlerFunc, gases ...GasFunc) {
+func (g *Group) DELETE(path string, h Handler, gases ...Gas) {
 	g.add(DELETE, path, h, gases...)
 }
 
@@ -74,7 +74,7 @@ func (g *Group) File(path, file string) {
 }
 
 // add implements the `Air#add()`.
-func (g *Group) add(method, path string, h HandlerFunc, gases ...GasFunc) {
+func (g *Group) add(method, path string, h Handler, gases ...Gas) {
 	if path == "/" {
 		path = ""
 	}
