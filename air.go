@@ -156,7 +156,7 @@ func New() *Air {
 	a.Logger = newLogger(a)
 	a.Binder = newBinder()
 	a.Renderer = newRenderer(a)
-	a.HTTPErrorHandler = defaultHTTPErrorHandler
+	a.HTTPErrorHandler = DefaultHTTPErrorHandler
 
 	return a
 }
@@ -329,8 +329,8 @@ func (he *HTTPError) Error() string {
 	return he.Message
 }
 
-// defaultHTTPErrorHandler invokes the default HTTP error handler.
-func defaultHTTPErrorHandler(err error, c *Context) {
+// DefaultHTTPErrorHandler is the default HTTP error handler.
+func DefaultHTTPErrorHandler(err error, c *Context) {
 	he := ErrInternalServerError
 
 	if che, ok := err.(*HTTPError); ok {
