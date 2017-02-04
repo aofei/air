@@ -17,7 +17,7 @@ type Request struct {
 	URL *URL
 }
 
-const defaultMemory = 32 << 20 // 32 MB
+const maxMemory = 32 << 20 // 32 MB
 
 // newRequest returns a pointer of a new instance of the `Request`.
 func newRequest(c *Context) *Request {
@@ -36,7 +36,7 @@ func (req *Request) Bind(i interface{}) error {
 // FormValues returns the form values.
 func (req *Request) FormValues() (url.Values, error) {
 	if strings.HasPrefix(req.Header.Get(HeaderContentType), MIMEMultipartForm) {
-		if err := req.ParseMultipartForm(defaultMemory); err != nil {
+		if err := req.ParseMultipartForm(maxMemory); err != nil {
 			return nil, err
 		}
 	} else {
