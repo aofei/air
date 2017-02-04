@@ -14,8 +14,8 @@ import (
 type (
 	// Air is the top-level framework struct.
 	Air struct {
-		pregases    []GasFunc
-		gases       []GasFunc
+		pregases    []Gas
+		gases       []Gas
 		maxParam    int
 		contextPool *sync.Pool
 		server      *server
@@ -28,11 +28,11 @@ type (
 		HTTPErrorHandler HTTPErrorHandler
 	}
 
-	// HandlerFunc defines a function to serve HTTP requests.
-	HandlerFunc func(*Context) error
+	// Handler defines a function to serve HTTP requests.
+	Handler func(*Context) error
 
-	// GasFunc defines a function to process gas.
-	GasFunc func(HandlerFunc) HandlerFunc
+	// Gas defines a function to process gases.
+	Gas func(Handler) Handler
 
 	// HTTPError represents an error that occurred while handling an HTTP request.
 	HTTPError struct {
@@ -162,36 +162,36 @@ func New() *Air {
 }
 
 // Precontain adds the gases to the chain which is perform before the router.
-func (a *Air) Precontain(gases ...GasFunc) {
+func (a *Air) Precontain(gases ...Gas) {
 	a.pregases = append(a.pregases, gases...)
 }
 
 // Contain adds the gases to the chain which is perform after the router.
-func (a *Air) Contain(gases ...GasFunc) {
+func (a *Air) Contain(gases ...Gas) {
 	a.gases = append(a.gases, gases...)
 }
 
 // GET registers a new GET route for the path with the matching h in the router with the optional
 // route-level gases.
-func (a *Air) GET(path string, h HandlerFunc, gases ...GasFunc) {
+func (a *Air) GET(path string, h Handler, gases ...Gas) {
 	a.add(GET, path, h, gases...)
 }
 
 // POST registers a new POST route for the path with the matching h in the router with the optional
 // route-level gases.
-func (a *Air) POST(path string, h HandlerFunc, gases ...GasFunc) {
+func (a *Air) POST(path string, h Handler, gases ...Gas) {
 	a.add(POST, path, h, gases...)
 }
 
 // PUT registers a new PUT route for the path with the matching h in the router with the optional
 // route-level gases.
-func (a *Air) PUT(path string, h HandlerFunc, gases ...GasFunc) {
+func (a *Air) PUT(path string, h Handler, gases ...Gas) {
 	a.add(PUT, path, h, gases...)
 }
 
 // DELETE registers a new DELETE route for the path with the matching h in the router with the
 // optional route-level gases.
-func (a *Air) DELETE(path string, h HandlerFunc, gases ...GasFunc) {
+func (a *Air) DELETE(path string, h Handler, gases ...Gas) {
 	a.add(DELETE, path, h, gases...)
 }
 
@@ -212,7 +212,7 @@ func (a *Air) File(path, file string) {
 
 // add registers a new route for the path with the method and the matching h in the router with the
 // optional route-level gases.
-func (a *Air) add(method, path string, h HandlerFunc, gases ...GasFunc) {
+func (a *Air) add(method, path string, h Handler, gases ...Gas) {
 	hn := handlerName(h)
 
 	a.router.add(method, path, func(c *Context) error {
@@ -231,7 +231,7 @@ func (a *Air) add(method, path string, h HandlerFunc, gases ...GasFunc) {
 }
 
 // URL returns an URL generated from the h with the optional params.
-func (a *Air) URL(h HandlerFunc, params ...interface{}) string {
+func (a *Air) URL(h Handler, params ...interface{}) string {
 	url := &bytes.Buffer{}
 	hn := handlerName(h)
 	ln := len(params)
@@ -287,7 +287,7 @@ func (a *Air) Shutdown(c *Context) error {
 }
 
 // handlerName returns the func name of the h.
-func handlerName(h HandlerFunc) string {
+func handlerName(h Handler) string {
 	t := reflect.ValueOf(h).Type()
 	if t.Kind() == reflect.Func {
 		return runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
@@ -295,9 +295,9 @@ func handlerName(h HandlerFunc) string {
 	return t.String()
 }
 
-// WrapGas wraps the h into the `GasFunc`.
-func WrapGas(h HandlerFunc) GasFunc {
-	return func(next HandlerFunc) HandlerFunc {
+// WrapGas wraps the h into the `Gas`.
+func WrapGas(h Handler) Gas {
+	return func(next Handler) Handler {
 		return func(c *Context) error {
 			if err := h(c); err != nil {
 				return err
