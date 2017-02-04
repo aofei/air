@@ -146,8 +146,8 @@ type Config struct {
 	Data JSONMap
 }
 
-// defaultConfig is the default instance of the `Config`.
-var defaultConfig = Config{
+// DefaultConfig is the default instance of the `Config`.
+var DefaultConfig = Config{
 	AppName: "air",
 	LogFormat: `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}","level":"{{.level}}",` +
 		`"file":"{{.short_file}}","line":"{{.line}}"}`,
@@ -159,10 +159,10 @@ var defaultConfig = Config{
 }
 
 // newConfig returns a pointer of a new instance of the `Config` by parsing the config file that in
-// the rumtime directory named "config.yml". It returns the defaultConfig if the config file does
+// the rumtime directory named "config.yml". It returns the DefaultConfig if the config file does
 // not exist.
 func newConfig() *Config {
-	c := defaultConfig
+	c := DefaultConfig
 	cfn := "config.yml"
 	if _, err := os.Stat(cfn); err == nil || os.IsExist(err) {
 		c.ParseFile(cfn)
