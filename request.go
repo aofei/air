@@ -46,6 +46,12 @@ func (req *Request) FormValues() (url.Values, error) {
 	return req.Form, nil
 }
 
+// feed feeds the r into where it should be.
+func (req *Request) feed(r *http.Request) {
+	req.Request = r
+	req.URL.feed(r.URL)
+}
+
 // reset resets all fields in the req.
 func (req *Request) reset() {
 	req.Request = nil
