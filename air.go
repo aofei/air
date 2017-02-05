@@ -126,7 +126,6 @@ var (
 	ErrServiceUnavailable  = NewHTTPError(http.StatusServiceUnavailable)  // 503
 	ErrGatewayTimeout      = NewHTTPError(http.StatusGatewayTimeout)      // 504
 
-	ErrDisabledHTTP2       = errors.New("the HTTP/2 has been disabled")
 	ErrInvalidRedirectCode = errors.New("invalid redirect status code")
 )
 
@@ -298,7 +297,7 @@ func handlerName(h Handler) string {
 // WrapHandler wraps the h into the `Handler`.
 func WrapHandler(h http.Handler) Handler {
 	return func(c *Context) error {
-		h.ServeHTTP(c.Response.ResponseWriter, c.Request.Request)
+		h.ServeHTTP(c.Response, c.Request.Request)
 		return nil
 	}
 }
@@ -316,10 +315,10 @@ func WrapGas(h Handler) Gas {
 }
 
 // NewHTTPError returns a pointer of a new instance of the `HTTPError`.
-func NewHTTPError(code int, msg ...interface{}) *HTTPError {
+func NewHTTPError(code int, messages ...interface{}) *HTTPError {
 	he := &HTTPError{Code: code, Message: http.StatusText(code)}
-	if len(msg) > 0 {
-		he.Message = fmt.Sprint(msg...)
+	if len(messages) > 0 {
+		he.Message = fmt.Sprint(messages...)
 	}
 	return he
 }
