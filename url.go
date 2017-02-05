@@ -33,6 +33,11 @@ func (url *URL) QueryValues() url.Values {
 	return url.queryValues
 }
 
+// feed feeds the u into where it should be.
+func (url *URL) feed(u *url.URL) {
+	url.URL = u
+}
+
 // reset resets all fields in the url.
 func (url *URL) reset() {
 	url.URL = nil
