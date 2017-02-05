@@ -14,7 +14,6 @@ func TestConfigNewConfig(t *testing.T) {
 		`log_enabled: true` + "\n" +
 		`log_format: "air_log"` + "\n" +
 		`address: "127.0.0.1:2333"` + "\n" +
-		`disable_http2: true` + "\n" +
 		`tls_cert_file: "path_to_tls_cert_file"` + "\n" +
 		`tls_key_file: "path_to_tls_key_file"` + "\n" +
 		`read_timeout: 60` + "\n" +
@@ -43,7 +42,6 @@ func TestConfigNewConfig(t *testing.T) {
 	assert.Equal(t, true, c.LogEnabled)
 	assert.Equal(t, "air_log", c.LogFormat)
 	assert.Equal(t, "127.0.0.1:2333", c.Address)
-	assert.Equal(t, true, c.DisableHTTP2)
 	assert.Equal(t, "path_to_tls_cert_file", c.TLSCertFile)
 	assert.Equal(t, "path_to_tls_key_file", c.TLSKeyFile)
 	assert.Equal(t, 60*time.Second, c.ReadTimeout)

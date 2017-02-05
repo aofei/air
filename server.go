@@ -1,9 +1,6 @@
 package air
 
-import (
-	"crypto/tls"
-	"net/http"
-)
+import "net/http"
 
 // server represents the HTTP server.
 //
@@ -26,17 +23,12 @@ func newServer(a *Air) *server {
 	s.ReadTimeout = a.Config.ReadTimeout
 	s.WriteTimeout = a.Config.WriteTimeout
 
-	if a.Config.DisableHTTP2 {
-		s.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
-	}
-
 	return s
 }
 
 // serve starts the HTTP server.
 func (s *server) serve() error {
-	cl := s.air.Config.Listener
-	if cl != nil {
+	if cl := s.air.Config.Listener; cl != nil {
 		return s.Serve(cl)
 	}
 
