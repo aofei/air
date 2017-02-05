@@ -126,3 +126,23 @@ func TestAirURL(t *testing.T) {
 	a.GET("/:first/:second", h)
 	assert.Equal(t, "/foo/bar", a.URL(h, "foo", "bar"))
 }
+
+func TestAirServe(t *testing.T) {
+	a := New()
+	a.GET("/hello", func(c *Context) error { return c.String("Hello, 世界") })
+
+	go a.Serve()
+
+	res, err := http.Get("http://localhost:2333/hello")
+	if err != nil {
+		panic(err)
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	assert.Equal(t, "Hello, 世界", string(body))
+}
