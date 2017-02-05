@@ -233,61 +233,64 @@ func (l *logger) Fatalj(j JSONMap) {
 
 // log prints the lvl level log info in the format with the args.
 func (l *logger) log(lvl loggerLevel, format string, args ...interface{}) {
+	if !l.air.Config.LogEnabled {
+		return
+	}
+
 	l.mutex.Lock()
-	defer l.mutex.Unlock()
 	buf := l.bufferPool.Get().(*bytes.Buffer)
-	buf.Reset()
-	defer l.bufferPool.Put(buf)
+
+	message := ""
+	if format == "" {
+		message = fmt.Sprint(args...)
+	} else if format == "json" {
+		b, err := json.Marshal(args[0])
+		if err != nil {
+			panic(err)
+		}
+		message = string(b)
+	} else {
+		message = fmt.Sprintf(format, args...)
+	}
+
+	if lvl == lvlFatal {
+		panic(message)
+	}
+
 	_, file, line, _ := runtime.Caller(3)
 
-	if l.air.Config.LogEnabled {
-		message := ""
-		if format == "" {
-			message = fmt.Sprint(args...)
-		} else if format == "json" {
-			b, err := json.Marshal(args[0])
-			if err != nil {
-				panic(err)
-			}
-			message = string(b)
-		} else {
-			message = fmt.Sprintf(format, args...)
-		}
+	data := make(JSONMap)
+	data["app_name"] = l.air.Config.AppName
+	data["time_rfc3339"] = time.Now().Format(time.RFC3339)
+	data["level"] = l.levels[lvl]
+	data["short_file"] = path.Base(file)
+	data["long_file"] = file
+	data["line"] = strconv.Itoa(line)
 
-		if lvl == lvlFatal {
-			panic(message)
-		}
-
-		data := make(JSONMap)
-		data["app_name"] = l.air.Config.AppName
-		data["time_rfc3339"] = time.Now().Format(time.RFC3339)
-		data["level"] = l.levels[lvl]
-		data["long_file"] = file
-		data["short_file"] = path.Base(file)
-		data["line"] = strconv.Itoa(line)
-		err := l.template.Execute(buf, data)
-
-		if err == nil {
-			s := buf.String()
-			i := buf.Len() - 1
-			if s[i] == '}' {
-				// JSON header
-				buf.Truncate(i)
-				buf.WriteByte(',')
-				if format == "json" {
-					buf.WriteString(message[1:])
-				} else {
-					buf.WriteString(`"message":"`)
-					buf.WriteString(message)
-					buf.WriteString(`"}`)
-				}
+	if err := l.template.Execute(buf, data); err == nil {
+		s := buf.String()
+		i := buf.Len() - 1
+		if s[i] == '}' {
+			// JSON header
+			buf.Truncate(i)
+			buf.WriteByte(',')
+			if format == "json" {
+				buf.WriteString(message[1:])
 			} else {
-				// Text header
-				buf.WriteByte(' ')
+				buf.WriteString(`"message":"`)
 				buf.WriteString(message)
+				buf.WriteString(`"}`)
 			}
-			buf.WriteByte('\n')
-			l.output.Write(buf.Bytes())
+		} else {
+			// Text header
+			buf.WriteByte(' ')
+			buf.WriteString(message)
 		}
+		buf.WriteByte('\n')
+		l.output.Write(buf.Bytes())
 	}
+
+	buf.Reset()
+	l.bufferPool.Put(buf)
+	l.mutex.Unlock()
 }
