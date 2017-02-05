@@ -52,19 +52,6 @@ type Config struct {
 	// It's called "address" in the config file.
 	Address string
 
-	// Listener represens the custom `net.Listener`. If set, the HTTP server accepts connections
-	// on it.
-	//
-	// The default value is nil.
-	Listener net.Listener
-
-	// DisableHTTP2 represens the state of the HTTP/2 disabled of the `Air`.
-	//
-	// The default value is false.
-	//
-	// It's called "disable_http2" in the config file.
-	DisableHTTP2 bool
-
 	// TLSCertFile represents the path of the TLS certificate file.
 	//
 	// The default value is "".
@@ -97,6 +84,12 @@ type Config struct {
 	//
 	// **It's unit in the config file is SECONDS.**
 	WriteTimeout time.Duration
+
+	// Listener represens the custom `net.Listener`. If set, the HTTP server accepts connections
+	// on it.
+	//
+	// The default value is nil.
+	Listener net.Listener
 
 	// TemplateRoot represents the root directory of the HTML templates. It will be parsed into
 	// the `Renderer`. It works only with the default `Renderer`.
@@ -205,9 +198,6 @@ func (c *Config) fillData() {
 	}
 	if addr, ok := c.Data["address"]; ok {
 		c.Address = addr.(string)
-	}
-	if dh, ok := c.Data["disable_http2"]; ok {
-		c.DisableHTTP2 = dh.(bool)
 	}
 	if tlscf, ok := c.Data["tls_cert_file"]; ok {
 		c.TLSCertFile = tlscf.(string)
