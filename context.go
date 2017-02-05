@@ -1,11 +1,9 @@
 package air
 
 import (
-	"bufio"
 	"context"
 	"io"
 	"mime/multipart"
-	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -82,9 +80,15 @@ func (c *Context) Param(name string) string {
 // feed feeds the req and the rw into where they should be.
 func (c *Context) feed(req *http.Request, rw http.ResponseWriter) {
 	c.Context = req.Context()
+
 	c.Request.Request = req
 	c.Request.URL.URL = req.URL
+
 	c.Response.ResponseWriter = rw
+	c.Response.Hijacker, _ = rw.(http.Hijacker)
+	c.Response.CloseNotifier, _ = rw.(http.CloseNotifier)
+	c.Response.Flusher, _ = rw.(http.Flusher)
+	c.Response.Pusher, _ = rw.(http.Pusher)
 }
 
 // reset resets all fields in the c.
@@ -148,21 +152,6 @@ func (c *Context) Cookies() []*http.Cookie {
 // SetCookie is an alias for the `Response#SetCookie()` of the c.
 func (c *Context) SetCookie(cookie *http.Cookie) {
 	c.Response.SetCookie(cookie)
-}
-
-// Hijack is an alias for the `Response#Hijack()` of the c.
-func (c *Context) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return c.Response.Hijack()
-}
-
-// CloseNotify is an alias for the `Response#CloseNotify()` of the c.
-func (c *Context) CloseNotify() <-chan bool {
-	return c.Response.CloseNotify()
-}
-
-// Flush is an alias for the `Response#Flush()` of the c.
-func (c *Context) Flush() {
-	c.Response.Flush()
 }
 
 // Push is an alias for the `Response#Push()` of the c.

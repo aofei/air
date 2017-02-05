@@ -1,14 +1,12 @@
 package air
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"html/template"
 	"io"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -18,9 +16,14 @@ import (
 
 // Response represents the current HTTP response.
 //
-// It's embedded with the `http.ResponseWriter`.
+// It's embedded with the `http.ResponseWriter`, the `http.Hijacker`, the `http.CloseNotifier`,
+// the `http.Flusher` and the `http.Pusher`.
 type Response struct {
 	http.ResponseWriter
+	http.Hijacker
+	http.CloseNotifier
+	http.Flusher
+	http.Pusher
 
 	context *Context
 
@@ -78,33 +81,7 @@ func (res *Response) Written() bool {
 // SetCookie adds a "Set-Cookie" header in the res. The provided cookie must have a valid `Name`.
 // Invalid cookies may be silently dropped.
 func (res *Response) SetCookie(cookie *http.Cookie) {
-	http.SetCookie(res.ResponseWriter, cookie)
-}
-
-// Hijack lets the caller take over the connection. After a call to this method, the HTTP server
-// will not do anything else with the connection.
-func (res *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return res.ResponseWriter.(http.Hijacker).Hijack()
-}
-
-// CloseNotify returns a channel that receives at most a single value (true) when the client
-// connection has gone away.
-func (res *Response) CloseNotify() <-chan bool {
-	return res.ResponseWriter.(http.CloseNotifier).CloseNotify()
-}
-
-// Flush sends any buffered data to the client.
-func (res *Response) Flush() {
-	res.ResponseWriter.(http.Flusher).Flush()
-}
-
-// Push initiates an HTTP/2 server push with the target and an optional pos.
-func (res *Response) Push(target string, pos *http.PushOptions) error {
-	p, pok := res.ResponseWriter.(http.Pusher)
-	if !pok {
-		return ErrDisabledHTTP2
-	}
-	return p.Push(target, pos)
+	http.SetCookie(res, cookie)
 }
 
 // Render renders one or more HTML templates with the `Data` of the res and sends a "text/html" HTTP
