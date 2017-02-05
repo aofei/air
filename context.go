@@ -80,15 +80,8 @@ func (c *Context) Param(name string) string {
 // feed feeds the req and the rw into where they should be.
 func (c *Context) feed(req *http.Request, rw http.ResponseWriter) {
 	c.Context = req.Context()
-
-	c.Request.Request = req
-	c.Request.URL.URL = req.URL
-
-	c.Response.ResponseWriter = rw
-	c.Response.Hijacker, _ = rw.(http.Hijacker)
-	c.Response.CloseNotifier, _ = rw.(http.CloseNotifier)
-	c.Response.Flusher, _ = rw.(http.Flusher)
-	c.Response.Pusher, _ = rw.(http.Pusher)
+	c.Request.feed(req)
+	c.Response.feed(rw)
 }
 
 // reset resets all fields in the c.

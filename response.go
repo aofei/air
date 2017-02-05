@@ -227,6 +227,15 @@ func (res *Response) Redirect(statusCode int, url string) error {
 	return nil
 }
 
+// feed feeds the rw into where it should be.
+func (res *Response) feed(rw http.ResponseWriter) {
+	res.ResponseWriter = rw
+	res.Hijacker, _ = rw.(http.Hijacker)
+	res.CloseNotifier, _ = rw.(http.CloseNotifier)
+	res.Flusher, _ = rw.(http.Flusher)
+	res.Pusher, _ = rw.(http.Pusher)
+}
+
 // reset resets all fields in the res.
 func (res *Response) reset() {
 	res.ResponseWriter = nil
