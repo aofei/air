@@ -21,7 +21,7 @@ func TestResponseRender(t *testing.T) {
 	c.feed(req, rec)
 
 	r := newRenderer(a)
-	r.templates = template.Must(template.New("info").Parse("{{.name}} by {{.author}}."))
+	r.template = template.Must(template.New("info").Parse("{{.name}} by {{.author}}."))
 	a.Renderer = r
 
 	c.Response.Data["name"] = "Air"
