@@ -108,7 +108,6 @@ const (
 func newLogger(a *Air) *logger {
 	l := &logger{air: a}
 
-	l.template, _ = template.New("logger").Parse(a.Config.LogFormat)
 	l.bufferPool = &sync.Pool{
 		New: func() interface{} {
 			return bytes.NewBuffer(make([]byte, 256))
@@ -235,6 +234,11 @@ func (l *logger) Fatalj(j JSONMap) {
 func (l *logger) log(lvl loggerLevel, format string, args ...interface{}) {
 	if !l.air.Config.LogEnabled {
 		return
+	} else if l.template == nil {
+		l.template = template.New("logger")
+		if _, err := l.template.Parse(l.air.Config.LogFormat); err != nil {
+			panic(err)
+		}
 	}
 
 	l.mutex.Lock()

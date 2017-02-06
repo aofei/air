@@ -13,29 +13,25 @@ type server struct {
 
 // newServer returns a pointer of a new instance of the `server`.
 func newServer(a *Air) *server {
-	s := &server{
+	return &server{
 		Server: &http.Server{},
 		air:    a,
 	}
-
-	s.Addr = a.Config.Address
-	s.Handler = s
-	s.ReadTimeout = a.Config.ReadTimeout
-	s.WriteTimeout = a.Config.WriteTimeout
-
-	return s
 }
 
 // serve starts the HTTP server.
 func (s *server) serve() error {
-	if cl := s.air.Config.Listener; cl != nil {
-		return s.Serve(cl)
-	}
+	c := s.air.Config
 
-	cert := s.air.Config.TLSCertFile
-	key := s.air.Config.TLSKeyFile
-	if cert != "" && key != "" {
-		return s.ListenAndServeTLS(cert, key)
+	s.Addr = c.Address
+	s.Handler = s
+	s.ReadTimeout = c.ReadTimeout
+	s.WriteTimeout = c.WriteTimeout
+
+	if c.Listener != nil {
+		return s.Serve(c.Listener)
+	} else if c.TLSCertFile != "" && c.TLSKeyFile != "" {
+		return s.ListenAndServeTLS(c.TLSCertFile, c.TLSKeyFile)
 	}
 
 	return s.ListenAndServe()
