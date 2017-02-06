@@ -32,7 +32,7 @@ type (
 	renderer struct {
 		air *Air
 
-		templates       *template.Template
+		template        *template.Template
 		templateFuncMap template.FuncMap
 	}
 )
@@ -115,16 +115,17 @@ func (r *renderer) ParseTemplates() error {
 			name = name[1:]
 		}
 
-		if r.templates == nil {
-			r.templates = template.New(name).Funcs(r.templateFuncMap)
-			r.templates.Delims(c.TemplateLeftDelim, c.TemplateRightDelim)
+		if r.template == nil {
+			r.template = template.New(name)
+			r.template.Funcs(r.templateFuncMap)
+			r.template.Delims(c.TemplateLeftDelim, c.TemplateRightDelim)
 		}
 
-		var tmpl *template.Template
-		if name == r.templates.Name() {
-			tmpl = r.templates
+		var t *template.Template
+		if name == r.template.Name() {
+			t = r.template
 		} else {
-			tmpl = r.templates.New(name)
+			t = r.template.New(name)
 		}
 
 		if c.MinifyTemplate {
@@ -135,7 +136,7 @@ func (r *renderer) ParseTemplates() error {
 			buf.Reset()
 		}
 
-		if _, err := tmpl.Parse(string(b)); err != nil {
+		if _, err := t.Parse(string(b)); err != nil {
 			return err
 		}
 	}
@@ -145,7 +146,7 @@ func (r *renderer) ParseTemplates() error {
 
 // Render implements the `Renderer#Render()` by using the `template.Template`.
 func (r *renderer) Render(w io.Writer, templateName string, data JSONMap) error {
-	return r.templates.ExecuteTemplate(w, templateName, data)
+	return r.template.ExecuteTemplate(w, templateName, data)
 }
 
 // strlen returns the number of chars in the s.
