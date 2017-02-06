@@ -151,9 +151,8 @@ var DefaultConfig = Config{
 	TemplateRightDelim: "}}",
 }
 
-// NewConfig returns a pointer of a new instance of the `Config` by parsing the config file that in
-// the rumtime directory named the filename. It returns the DefaultConfig if the config file does
-// not exist.
+// NewConfig returns a pointer of a new instance of the `Config` by parsing the config file found in
+// the filename path. It returns a copy of the DefaultConfig if the config file does not exist.
 func NewConfig(filename string) *Config {
 	c := DefaultConfig
 	if _, err := os.Stat(filename); err == nil || os.IsExist(err) {
