@@ -149,6 +149,7 @@ func New() *Air {
 			return NewContext(a)
 		},
 	}
+	a.server = newServer(a)
 	a.router = newRouter(a)
 
 	a.Config = NewConfig("config.yml")
@@ -259,20 +260,17 @@ func (a *Air) URL(h Handler, params ...interface{}) string {
 }
 
 // Serve starts the HTTP server.
-func (a *Air) Serve() {
+func (a *Air) Serve() error {
+	if err := a.Renderer.ParseTemplates(); err != nil {
+		return err
+	}
+
 	if a.Config.DebugMode {
 		a.Config.LogEnabled = true
 		a.Logger.Debug("serving in debug mode")
 	}
 
-	if err := a.Renderer.ParseTemplates(); err != nil {
-		panic(err)
-	}
-
-	a.server = newServer(a)
-	if err := a.server.serve(); err != nil {
-		panic(err)
-	}
+	return a.server.serve()
 }
 
 // Close closes the HTTP server immediately.
