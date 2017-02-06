@@ -235,10 +235,7 @@ func (l *logger) log(lvl loggerLevel, format string, args ...interface{}) {
 	if !l.air.Config.LogEnabled {
 		return
 	} else if l.template == nil {
-		l.template = template.New("logger")
-		if _, err := l.template.Parse(l.air.Config.LogFormat); err != nil {
-			panic(err)
-		}
+		l.template = template.Must(template.New("logger").Parse(l.air.Config.LogFormat))
 	}
 
 	l.mutex.Lock()
