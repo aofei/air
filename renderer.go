@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"time"
 
 	"github.com/tdewolff/minify"
@@ -45,12 +44,6 @@ func newRenderer(a *Air) *renderer {
 			"strlen":  strlen,
 			"substr":  substr,
 			"timefmt": timefmt,
-			"eq":      eq,
-			"ne":      ne,
-			"lt":      lt,
-			"le":      le,
-			"gt":      gt,
-			"ge":      ge,
 		},
 	}
 }
@@ -166,62 +159,4 @@ func substr(s string, i, j int) string {
 // timefmt returns a textual representation of the t formatted according to the layout.
 func timefmt(t time.Time, layout string) string {
 	return t.Format(layout)
-}
-
-// eq reports whether the v is equal to one of the ovs.
-//
-// It means v == v1 || v == v2 || ...
-func eq(v interface{}, ovs ...interface{}) bool {
-	for _, ov := range ovs {
-		if ov == v {
-			return true
-		}
-	}
-	return false
-}
-
-// ne reports whether the v is not equal to any of the ovs.
-//
-// It means v != v1 && v != v2 && ...
-func ne(v interface{}, ovs ...interface{}) bool {
-	return !eq(v, ovs...)
-}
-
-// lt reports whether the a is less than the b.
-//
-// It means a < b.
-func lt(a, b interface{}) bool {
-	switch a.(type) {
-	case int, int8, int16, int32, int64:
-		return reflect.ValueOf(a).Int() < reflect.ValueOf(b).Int()
-	case uint, uint8, uint16, uint32, uint64, uintptr:
-		return reflect.ValueOf(a).Uint() < reflect.ValueOf(b).Uint()
-	case float32, float64:
-		return reflect.ValueOf(a).Float() < reflect.ValueOf(b).Float()
-	case string:
-		return a.(string) < b.(string)
-	default:
-		panic("invalid kind")
-	}
-}
-
-// le reports whether the a is less than or equal to the b.
-//
-// It means a <= b.
-func le(a, b interface{}) bool {
-	return lt(a, b) || eq(a, b)
-}
-
-// gt reports whether the a is greater than the b.
-//
-// It means a > b.
-func gt(a, b interface{}) bool {
-	return !le(a, b)
-}
-
-// ge reports whether the a is greater than or equal to the b.
-//
-// It means a >= b.
-func ge(a, b interface{}) bool {
-	return lt(a, b)
 }
