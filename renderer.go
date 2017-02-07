@@ -110,10 +110,12 @@ func (r *renderer) ParseTemplates() error {
 			return err
 		}
 
-		name := filepath.ToSlash(filename[len(tr):])
-		if name[0] == '/' {
-			name = name[1:]
+		start := 0
+		if tr != "." {
+			start = len(tr) + 1
 		}
+
+		name := filepath.ToSlash(filename[start:])
 
 		if r.template == nil {
 			r.template = template.New(name)
