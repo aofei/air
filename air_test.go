@@ -14,7 +14,7 @@ func TestAirNew(t *testing.T) {
 
 	assert.Equal(t, 0, len(a.pregases))
 	assert.Equal(t, 0, len(a.gases))
-	assert.Equal(t, 0, a.maxParam)
+	assert.Equal(t, 0, a.paramCap)
 	assert.NotNil(t, a.contextPool)
 	assert.NotNil(t, a.server)
 	assert.NotNil(t, a.router)

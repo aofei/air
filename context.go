@@ -41,7 +41,7 @@ func NewContext(a *Air) *Context {
 	c := &Context{Air: a}
 	c.Request = NewRequest(c)
 	c.Response = NewResponse(c)
-	c.ParamValues = make([]string, a.maxParam)
+	c.ParamValues = make([]string, 0, a.paramCap)
 	c.Handler = NotFoundHandler
 	c.Data = c.Response.Data
 	return c
@@ -90,10 +90,8 @@ func (c *Context) reset() {
 	c.Request.reset()
 	c.Response.reset()
 	c.PristinePath = ""
-	for i := range c.ParamNames {
-		c.ParamValues[i] = ""
-	}
 	c.ParamNames = c.ParamNames[:0]
+	c.ParamValues = c.ParamValues[:0]
 	c.Handler = NotFoundHandler
 	c.Data = c.Response.Data
 }

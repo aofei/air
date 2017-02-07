@@ -16,7 +16,7 @@ type (
 	Air struct {
 		pregases    []Gas
 		gases       []Gas
-		maxParam    int
+		paramCap    int
 		contextPool *sync.Pool
 		server      *server
 		router      *router

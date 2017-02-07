@@ -154,8 +154,8 @@ func (r *router) add(method, path string, h Handler) {
 // insert inserts a new route into the tree of the r.
 func (r *router) insert(method, path string, h Handler, k nodeKind, ppath string,
 	pnames []string) {
-	if l := len(pnames); l > r.air.maxParam {
-		r.air.maxParam = l
+	if l := len(pnames); l > r.air.paramCap {
+		r.air.paramCap = l
 	}
 
 	cn := r.tree // Current node as root
@@ -253,7 +253,6 @@ func (r *router) route(method, path string, c *Context) {
 	var (
 		search = path
 		nn     *node    // Next node
-		pi     int      // Param index
 		nk     nodeKind // Next kind
 		sn     *node    // Saved node
 		ss     string   // Saved search
@@ -335,8 +334,7 @@ func (r *router) route(method, path string, c *Context) {
 			for i, l = 0, len(search); i < l && search[i] != '/'; i++ {
 			}
 
-			c.ParamValues[pi] = unescape(search[:i])
-			pi++
+			c.ParamValues = append(c.ParamValues, unescape(search[:i]))
 			search = search[i:]
 
 			continue
@@ -345,7 +343,12 @@ func (r *router) route(method, path string, c *Context) {
 		// Any node
 	Any:
 		if cn = cn.childByKind(anyKind); cn != nil {
-			c.ParamValues[len(cn.paramNames)-1] = unescape(search)
+			if len(c.ParamValues) < len(cn.paramNames) {
+				c.ParamValues = append(c.ParamValues, unescape(search))
+			} else {
+				c.ParamValues[len(cn.paramNames)-1] = unescape(search)
+			}
+
 			break
 		}
 
@@ -380,7 +383,7 @@ func (r *router) route(method, path string, c *Context) {
 			c.Handler = cn.checkMethodNotAllowed()
 		}
 
-		c.ParamValues[len(cn.paramNames)-1] = ""
+		c.ParamValues = append(c.ParamValues, "")
 	}
 
 	c.PristinePath = cn.pristinePath
