@@ -90,7 +90,7 @@ func (res *Response) SetCookie(cookie *http.Cookie) {
 func (res *Response) Render(templates ...string) error {
 	buf := &bytes.Buffer{}
 	for _, t := range templates {
-		res.Data["InheritedHTML"] = template.HTML(buf.String())
+		res.Data["InheritedHTML"] = template.HTML(buf.Bytes())
 		buf.Reset()
 		err := res.context.Air.Renderer.Render(buf, t, res.Data)
 		if err != nil {
