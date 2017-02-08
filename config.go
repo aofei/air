@@ -1,9 +1,7 @@
 package air
 
 import (
-	"fmt"
 	"io/ioutil"
-	"os"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
@@ -148,30 +146,27 @@ var DefaultConfig = Config{
 // the filename path. It returns a copy of the DefaultConfig if the config file does not exist.
 func NewConfig(filename string) *Config {
 	c := DefaultConfig
-	if _, err := os.Stat(filename); err == nil || os.IsExist(err) {
-		c.ParseFile(filename)
-	}
+	c.ParseFile(filename)
 	return &c
 }
 
 // Parse parses the src into the c.
-func (c *Config) Parse(src string) {
+func (c *Config) Parse(src string) error {
 	if err := yaml.Unmarshal([]byte(src), &c.Data); err != nil {
-		panic(err)
+		return err
 	}
 	c.fillData()
+	return nil
 }
 
 // ParseFile parses the config file found in the filename path into the c.
-func (c *Config) ParseFile(filename string) {
-	if _, err := os.Stat(filename); err != nil && !os.IsExist(err) {
-		panic(fmt.Sprintf("the config file %s does not exist", filename))
-	}
+func (c *Config) ParseFile(filename string) error {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	c.Parse(string(b))
+	return nil
 }
 
 // fillData fills the values of the fields from the field `Data` of the c.
