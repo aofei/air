@@ -103,6 +103,14 @@ func (r *renderer) ParseTemplates() error {
 			return err
 		}
 
+		if c.MinifyTemplate {
+			if err := m.Minify("text/html", buf, bytes.NewReader(b)); err != nil {
+				return err
+			}
+			b = buf.Bytes()
+			buf.Reset()
+		}
+
 		start := 0
 		if tr != "." {
 			start = len(tr) + 1
@@ -116,22 +124,7 @@ func (r *renderer) ParseTemplates() error {
 			r.template.Delims(c.TemplateLeftDelim, c.TemplateRightDelim)
 		}
 
-		var t *template.Template
-		if name == r.template.Name() {
-			t = r.template
-		} else {
-			t = r.template.New(name)
-		}
-
-		if c.MinifyTemplate {
-			if err := m.Minify("text/html", buf, bytes.NewReader(b)); err != nil {
-				return err
-			}
-			b = buf.Bytes()
-			buf.Reset()
-		}
-
-		if _, err := t.Parse(string(b)); err != nil {
+		if _, err := r.template.New(name).Parse(string(b)); err != nil {
 			return err
 		}
 	}
