@@ -9,34 +9,31 @@ import (
 )
 
 func TestConfigNewConfig(t *testing.T) {
-	yaml := `app_name: "air"` + "\n" +
-		`debug_mode: true` + "\n" +
-		`log_enabled: true` + "\n" +
-		`log_format: "air_log"` + "\n" +
-		`address: "127.0.0.1:2333"` + "\n" +
-		`tls_cert_file: "path_to_tls_cert_file"` + "\n" +
-		`tls_key_file: "path_to_tls_key_file"` + "\n" +
-		`read_timeout: 60` + "\n" +
-		`write_timeout: 60` + "\n" +
-		`template_root: "ts"` + "\n" +
-		`template_ext: ".tmpl"` + "\n" +
-		`template_left_delim: "<<"` + "\n" +
-		`template_right_delim: ">>"` + "\n" +
-		`minify_template: true`
+	yaml := `
+app_name: "air"
+debug_mode: true
+log_enabled: true
+log_format: "air_log"
+address: "127.0.0.1:2333"
+tls_cert_file: "path_to_tls_cert_file"
+tls_key_file: "path_to_tls_key_file"
+read_timeout: 60
+write_timeout: 60
+template_root: "ts"
+template_ext: ".tmpl"
+template_left_delim: "<<"
+template_right_delim: ">>"
+minify_template: true
+`
 
-	f, err := os.Create("config.yml")
-	if err != nil {
-		panic(err)
-	}
+	f, _ := os.Create("config.yml")
 	defer func() {
 		f.Close()
 		os.Remove(f.Name())
 	}()
-
 	f.WriteString(yaml)
 
-	c := NewConfig("config.yml")
-
+	c := NewConfig(f.Name())
 	assert.Equal(t, "air", c.AppName)
 	assert.Equal(t, true, c.DebugMode)
 	assert.Equal(t, true, c.LogEnabled)
@@ -56,28 +53,10 @@ func TestConfigNewConfig(t *testing.T) {
 
 func TestConfigParseError(t *testing.T) {
 	c := &Config{}
-	assert.Panics(t, func() {
-		c.Parse("\t")
-	})
+	assert.Error(t, c.Parse("\t"))
 }
 
 func TestConfigParseFileError(t *testing.T) {
 	c := &Config{}
-
-	assert.Panics(t, func() {
-		c.ParseFile("config_not_exist.yml")
-	})
-
-	dn := "config_is_a_directory.yml"
-	err := os.Mkdir(dn, os.ModeDir)
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		os.Remove(dn)
-	}()
-
-	assert.Panics(t, func() {
-		c.ParseFile(dn)
-	})
+	assert.Error(t, c.ParseFile("config_not_exist.yml"))
 }

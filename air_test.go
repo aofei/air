@@ -194,32 +194,22 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 -----END PRIVATE KEY-----
 `
 
-	c, err := os.Create("cert.pem")
-	if err != nil {
-		panic(err)
-	}
+	c, _ := os.Create("cert.pem")
 	defer func() {
 		c.Close()
 		os.Remove(c.Name())
 	}()
-
 	c.WriteString(cert)
 
-	k, err := os.Create("key.pem")
-	if err != nil {
-		panic(err)
-	}
+	k, _ := os.Create("key.pem")
 	defer func() {
 		k.Close()
 		os.Remove(k.Name())
 	}()
-
 	k.WriteString(key)
 
 	a := New()
-
 	a.Config.TLSCertFile = c.Name()
 	a.Config.TLSKeyFile = k.Name()
-
 	go a.Serve()
 }
