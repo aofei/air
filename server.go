@@ -28,9 +28,7 @@ func (s *server) serve() error {
 	s.ReadTimeout = c.ReadTimeout
 	s.WriteTimeout = c.WriteTimeout
 
-	if c.Listener != nil {
-		return s.Serve(c.Listener)
-	} else if c.TLSCertFile != "" && c.TLSKeyFile != "" {
+	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
 		return s.ListenAndServeTLS(c.TLSCertFile, c.TLSKeyFile)
 	}
 

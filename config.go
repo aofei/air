@@ -3,7 +3,6 @@ package air
 import (
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"time"
 
@@ -84,12 +83,6 @@ type Config struct {
 	//
 	// **It's unit in the config file is SECONDS.**
 	WriteTimeout time.Duration
-
-	// Listener represens the custom `net.Listener`. If set, the HTTP server accepts connections
-	// on it.
-	//
-	// The default value is nil.
-	Listener net.Listener
 
 	// TemplateRoot represents the root directory of the HTML templates. It will be parsed into
 	// the `Renderer`. It works only with the default `Renderer`.
