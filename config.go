@@ -114,14 +114,14 @@ type Config struct {
 	// It's called "template_right_delim" in the config file.
 	TemplateRightDelim string
 
-	// MinifyTemplate indicates whether to minify the HTML templates before they being parsed
+	// TemplateMinified indicates whether to minify the HTML templates before they being parsed
 	// into the `Renderer`. It works only with the default `Renderer`. The minify feature
 	// powered by the Minify project that can be found at "https://github.com/tdewolff/minify".
 	//
 	// The default value is false.
 	//
-	// It's called "minify_template" in the config file.
-	MinifyTemplate bool
+	// It's called "template_minified" in the config file.
+	TemplateMinified bool
 
 	// Data represents the data that parsing from the config file. You can use it to access the
 	// values in the config file.
@@ -210,7 +210,7 @@ func (c *Config) fillData() {
 	if trd, ok := c.Data["template_right_delim"]; ok {
 		c.TemplateRightDelim = trd.(string)
 	}
-	if mt, ok := c.Data["minify_template"]; ok {
-		c.MinifyTemplate = mt.(bool)
+	if tm, ok := c.Data["template_minifed"]; ok {
+		c.TemplateMinified = tm.(bool)
 	}
 }

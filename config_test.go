@@ -23,7 +23,7 @@ template_root: "ts"
 template_ext: ".tmpl"
 template_left_delim: "<<"
 template_right_delim: ">>"
-minify_template: true
+template_minifed: true
 `
 
 	f, _ := os.Create("config.yml")
@@ -47,7 +47,7 @@ minify_template: true
 	assert.Equal(t, ".tmpl", c.TemplateExt)
 	assert.Equal(t, "<<", c.TemplateLeftDelim)
 	assert.Equal(t, ">>", c.TemplateRightDelim)
-	assert.Equal(t, true, c.MinifyTemplate)
+	assert.Equal(t, true, c.TemplateMinified)
 	assert.NotNil(t, c.Data)
 }
 
