@@ -2,6 +2,7 @@ package air
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -42,6 +43,7 @@ func newRenderer(a *Air) *renderer {
 		air: a,
 		templateFuncMap: template.FuncMap{
 			"strlen":  strlen,
+			"strcat":  strcat,
 			"substr":  substr,
 			"timefmt": timefmt,
 		},
@@ -140,6 +142,14 @@ func (r *renderer) Render(w io.Writer, templateName string, data JSONMap) error 
 // strlen returns the number of chars in the s.
 func strlen(s string) int {
 	return len([]rune(s))
+}
+
+// strcat returns a string that is catenated to the tail of the s by the ss.
+func strcat(s string, ss ...string) string {
+	for i := range ss {
+		s = fmt.Sprintf("%s%s", s, ss[i])
+	}
+	return s
 }
 
 // substr returns the substring consisting of the chars of the s starting at the index i and
