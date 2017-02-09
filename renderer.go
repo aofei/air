@@ -105,7 +105,7 @@ func (r *renderer) ParseTemplates() error {
 			return err
 		}
 
-		if c.MinifyTemplate {
+		if c.TemplateMinified {
 			if err := m.Minify("text/html", buf, bytes.NewReader(b)); err != nil {
 				return err
 			}
