@@ -23,7 +23,8 @@ template_root: "ts"
 template_ext: ".tmpl"
 template_left_delim: "<<"
 template_right_delim: ">>"
-template_minifed: true
+template_minified: true
+template_watched: true
 `
 
 	f, _ := os.Create("config.yml")
@@ -48,6 +49,7 @@ template_minifed: true
 	assert.Equal(t, "<<", c.TemplateLeftDelim)
 	assert.Equal(t, ">>", c.TemplateRightDelim)
 	assert.Equal(t, true, c.TemplateMinified)
+	assert.Equal(t, true, c.TemplateWatched)
 	assert.NotNil(t, c.Data)
 }
 

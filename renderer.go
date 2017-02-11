@@ -8,8 +8,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/html"
 )
@@ -34,13 +36,16 @@ type (
 
 		template        *template.Template
 		templateFuncMap template.FuncMap
+		minifier        *minify.M
+		watcher         *fsnotify.Watcher
 	}
 )
 
 // newRenderer returns a pointer of a new instance of the `renderer`.
 func newRenderer(a *Air) *renderer {
 	return &renderer{
-		air: a,
+		air:      a,
+		template: template.New("template"),
 		templateFuncMap: template.FuncMap{
 			"strlen":  strlen,
 			"strcat":  strcat,
@@ -74,30 +79,75 @@ func (r *renderer) SetTemplateFunc(name string, f interface{}) {
 func (r *renderer) ParseTemplates() error {
 	c := r.air.Config
 
+	if _, err := os.Stat(c.TemplateRoot); err != nil && os.IsNotExist(err) {
+		return nil
+	}
+
+	if c.TemplateMinified {
+		r.minifier = minify.New()
+		r.minifier.Add("text/html", &html.Minifier{
+			KeepDefaultAttrVals: true,
+			KeepDocumentTags:    true,
+			KeepWhitespace:      true,
+		})
+	}
+
+	if c.TemplateWatched {
+		var err error
+		if r.watcher, err = fsnotify.NewWatcher(); err != nil {
+			return err
+		}
+
+		dirs, err := walkDirs(r.air.Config.TemplateRoot)
+		if err != nil {
+			return err
+		}
+
+		for _, dir := range dirs {
+			if err := r.watcher.Add(dir); err != nil {
+				return err
+			}
+		}
+
+		go r.watchTemplates()
+	}
+
+	return r.parseTemplates()
+}
+
+// Render implements the `Renderer#Render()` by using the `template.Template`.
+func (r *renderer) Render(w io.Writer, templateName string, data JSONMap) error {
+	return r.template.ExecuteTemplate(w, templateName, data)
+}
+
+// parseTemplates parses all template files.
+func (r *renderer) parseTemplates() error {
+	c := r.air.Config
+
 	tr := filepath.Clean(c.TemplateRoot)
 	if _, err := os.Stat(tr); err != nil && os.IsNotExist(err) {
 		return nil
 	}
 
-	var filenames []string
-	err := filepath.Walk(tr, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			return err
-		}
-		fns, err := filepath.Glob(path + "/*" + c.TemplateExt)
-		filenames = append(filenames, fns...)
-		return err
-	})
+	dirs, err := walkDirs(tr)
 	if err != nil {
 		return err
 	}
 
-	m := minify.New()
-	m.Add("text/html", &html.Minifier{
-		KeepDefaultAttrVals: true,
-		KeepDocumentTags:    true,
-	})
+	var filenames []string
+	for _, dir := range dirs {
+		fns, err := filepath.Glob(fmt.Sprintf("%s/*%s", dir, c.TemplateExt))
+		if err != nil {
+			return err
+		}
+		filenames = append(filenames, fns...)
+	}
+
 	buf := &bytes.Buffer{}
+
+	t := template.New("template")
+	t.Funcs(r.templateFuncMap)
+	t.Delims(c.TemplateLeftDelim, c.TemplateRightDelim)
 
 	for _, filename := range filenames {
 		b, err := ioutil.ReadFile(filename)
@@ -106,7 +156,8 @@ func (r *renderer) ParseTemplates() error {
 		}
 
 		if c.TemplateMinified {
-			if err := m.Minify("text/html", buf, bytes.NewReader(b)); err != nil {
+			err := r.minifier.Minify("text/html", buf, bytes.NewReader(b))
+			if err != nil {
 				return err
 			}
 			b = buf.Bytes()
@@ -119,24 +170,51 @@ func (r *renderer) ParseTemplates() error {
 		}
 
 		name := filepath.ToSlash(filename[start:])
-
-		if r.template == nil {
-			r.template = template.New(name)
-			r.template.Funcs(r.templateFuncMap)
-			r.template.Delims(c.TemplateLeftDelim, c.TemplateRightDelim)
-		}
-
-		if _, err := r.template.New(name).Parse(string(b)); err != nil {
+		if _, err := t.New(name).Parse(string(b)); err != nil {
 			return err
 		}
 	}
 
+	r.template = t
+
 	return nil
 }
 
-// Render implements the `Renderer#Render()` by using the `template.Template`.
-func (r *renderer) Render(w io.Writer, templateName string, data JSONMap) error {
-	return r.template.ExecuteTemplate(w, templateName, data)
+// watchTemplates watchs the changing of all template files.
+func (r *renderer) watchTemplates() {
+	for {
+		select {
+		case event := <-r.watcher.Events:
+			r.air.Logger.Info(event)
+
+			if event.Op == fsnotify.Create {
+				s := event.String()
+				s = s[:strings.Index(s, ":")]
+				s = s[1 : len(s)-1]
+				if filepath.Ext(s) != r.air.Config.TemplateExt {
+					r.watcher.Add(s)
+				}
+			}
+
+			if err := r.parseTemplates(); err != nil {
+				r.air.Logger.Error(err)
+			}
+		case err := <-r.watcher.Errors:
+			r.air.Logger.Error(err)
+		}
+	}
+}
+
+// walkDirs walks all subdirs of the root recursively.
+func walkDirs(root string) ([]string, error) {
+	var dirs []string
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			dirs = append(dirs, path)
+		}
+		return err
+	})
+	return dirs, err
 }
 
 // strlen returns the number of chars in the s.
