@@ -16,16 +16,18 @@ type Config struct {
 	// It's called "app_name" in the config file.
 	AppName string
 
-	// DebugMode represents the state of the debug mode enabled of the `Air`. It works only with
-	// the default `Logger`.
+	// DebugMode indicates whether to enable the debug mode when the HTTP server is started. It
+	// works only with the default `Logger`.
 	//
 	// The default value is false.
 	//
 	// It's called "debug_mode" in the config file.
 	DebugMode bool
 
-	// LogEnabled represents the state of the enabled of the `Logger`. It will be forced to the
-	// true if the `DebugMode` is true. It works only with the default `Logger`.
+	// LogEnabled indicates whether to enable the `Logger` when the HTTP server is started. It
+	// works only with the default `Logger`.
+	//
+	// It will be forced to the true if the `DebugMode` is true.
 	//
 	// The default value is false.
 	//
@@ -115,13 +117,22 @@ type Config struct {
 	TemplateRightDelim string
 
 	// TemplateMinified indicates whether to minify the HTML templates before they being parsed
-	// into the `Renderer`. It works only with the default `Renderer`. The minify feature
-	// powered by the Minify project that can be found at "https://github.com/tdewolff/minify".
+	// into the `Renderer`. It works only with the default `Renderer`.
 	//
 	// The default value is false.
 	//
 	// It's called "template_minified" in the config file.
 	TemplateMinified bool
+
+	// TemplateWatched indicates whether to watch the changing of the HTML templates after they
+	// are parsed into the `Renderer`. It works only with the default `Renderer`.
+	//
+	// It will be forced to the true if the `DebugMode` is true.
+	//
+	// The default value is false.
+	//
+	// It's called "template_watched" in the config file.
+	TemplateWatched bool
 
 	// Data represents the data that parsing from the config file. You can use it to access the
 	// values in the config file.
@@ -210,7 +221,10 @@ func (c *Config) fillData() {
 	if trd, ok := c.Data["template_right_delim"]; ok {
 		c.TemplateRightDelim = trd.(string)
 	}
-	if tm, ok := c.Data["template_minifed"]; ok {
+	if tm, ok := c.Data["template_minified"]; ok {
 		c.TemplateMinified = tm.(bool)
+	}
+	if tw, ok := c.Data["template_watched"]; ok {
+		c.TemplateWatched = tw.(bool)
 	}
 }
