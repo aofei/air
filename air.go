@@ -261,13 +261,14 @@ func (a *Air) URL(h Handler, params ...interface{}) string {
 
 // Serve starts the HTTP server.
 func (a *Air) Serve() error {
-	if err := a.Renderer.ParseTemplates(); err != nil {
-		return err
-	}
-
 	if a.Config.DebugMode {
 		a.Config.LogEnabled = true
+		a.Config.TemplateWatched = true
 		a.Logger.Debug("serving in debug mode")
+	}
+
+	if err := a.Renderer.ParseTemplates(); err != nil {
+		return err
 	}
 
 	return a.server.serve()
