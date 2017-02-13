@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -149,6 +148,11 @@ func (r *renderer) parseTemplates() error {
 	t.Funcs(r.templateFuncMap)
 	t.Delims(c.TemplateLeftDelim, c.TemplateRightDelim)
 
+	start := 0
+	if tr != "." {
+		start = len(tr) + 1
+	}
+
 	for _, filename := range filenames {
 		b, err := ioutil.ReadFile(filename)
 		if err != nil {
@@ -162,11 +166,6 @@ func (r *renderer) parseTemplates() error {
 			}
 			b = buf.Bytes()
 			buf.Reset()
-		}
-
-		start := 0
-		if tr != "." {
-			start = len(tr) + 1
 		}
 
 		name := filepath.ToSlash(filename[start:])
@@ -188,12 +187,7 @@ func (r *renderer) watchTemplates() {
 			r.air.Logger.Info(event)
 
 			if event.Op == fsnotify.Create {
-				s := event.String()
-				s = s[:strings.Index(s, ":")]
-				s = s[1 : len(s)-1]
-				if filepath.Ext(s) != r.air.Config.TemplateExt {
-					r.watcher.Add(s)
-				}
+				r.watcher.Add(event.Name)
 			}
 
 			if err := r.parseTemplates(); err != nil {
