@@ -3,7 +3,6 @@ package air
 import (
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 // Request represents the current HTTP request.
@@ -16,8 +15,6 @@ type Request struct {
 
 	URL *URL
 }
-
-const maxMemory = 32 << 20 // 32 MB
 
 // NewRequest returns a pointer of a new instance of the `Request`.
 func NewRequest(c *Context) *Request {
@@ -33,17 +30,11 @@ func (req *Request) Bind(i interface{}) error {
 }
 
 // FormValues returns the form values.
-func (req *Request) FormValues() (url.Values, error) {
-	if strings.HasPrefix(req.Header.Get(HeaderContentType), MIMEMultipartForm) {
-		if err := req.ParseMultipartForm(maxMemory); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := req.ParseForm(); err != nil {
-			return nil, err
-		}
+func (req *Request) FormValues() url.Values {
+	if req.Form == nil {
+		req.ParseMultipartForm(32 << 20) // The maxMemory is 32 MB
 	}
-	return req.Form, nil
+	return req.Form
 }
 
 // feed feeds the r into where it should be.
