@@ -27,6 +27,7 @@ func (s *server) serve() error {
 	s.Handler = s
 	s.ReadTimeout = c.ReadTimeout
 	s.WriteTimeout = c.WriteTimeout
+	s.MaxHeaderBytes = c.MaxHeaderBytes
 
 	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
 		return s.ListenAndServeTLS(c.TLSCertFile, c.TLSKeyFile)
