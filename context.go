@@ -119,7 +119,7 @@ func (c *Context) FormValue(key string) string {
 }
 
 // FormValues is an alias for the `Request#FormValues()` of the c.
-func (c *Context) FormValues() (url.Values, error) {
+func (c *Context) FormValues() url.Values {
 	return c.Request.FormValues()
 }
 
