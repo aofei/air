@@ -23,7 +23,5 @@ func TestRequestFormValue(t *testing.T) {
 
 	assert.Equal(t, "Air", c.Request.FormValue("name"))
 	assert.Equal(t, "Aofei Sheng", c.Request.FormValue("author"))
-	if fvs, err := c.Request.FormValues(); assert.NoError(t, err) {
-		assert.Equal(t, vs, fvs)
-	}
+	assert.Equal(t, vs, c.Request.FormValues())
 }
