@@ -15,10 +15,11 @@ debug_mode: true
 log_enabled: true
 log_format: "air_log"
 address: "127.0.0.1:2333"
+read_timeout: 200
+write_timeout: 200
+max_header_bytes: 65536
 tls_cert_file: "path_to_tls_cert_file"
 tls_key_file: "path_to_tls_key_file"
-read_timeout: 60
-write_timeout: 60
 template_root: "ts"
 template_ext: ".tmpl"
 template_left_delim: "<<"
@@ -40,10 +41,11 @@ template_watched: true
 	assert.Equal(t, true, c.LogEnabled)
 	assert.Equal(t, "air_log", c.LogFormat)
 	assert.Equal(t, "127.0.0.1:2333", c.Address)
+	assert.Equal(t, 200*time.Millisecond, c.ReadTimeout)
+	assert.Equal(t, 200*time.Millisecond, c.WriteTimeout)
+	assert.Equal(t, 65536, c.MaxHeaderBytes)
 	assert.Equal(t, "path_to_tls_cert_file", c.TLSCertFile)
 	assert.Equal(t, "path_to_tls_key_file", c.TLSKeyFile)
-	assert.Equal(t, 60*time.Second, c.ReadTimeout)
-	assert.Equal(t, 60*time.Second, c.WriteTimeout)
 	assert.Equal(t, "ts", c.TemplateRoot)
 	assert.Equal(t, ".tmpl", c.TemplateExt)
 	assert.Equal(t, "<<", c.TemplateLeftDelim)
