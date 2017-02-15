@@ -33,7 +33,7 @@ type Context struct {
 	// MARK: Alias fields for the `Response`.
 
 	// Data is an alias for the `Response#Data`.
-	Data JSONMap
+	Data Map
 }
 
 // NewContext returns a pointer of a new instance of the `Context`.

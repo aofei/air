@@ -147,7 +147,7 @@ type Config struct {
 	// values in the config file.
 	//
 	// e.g. Data["foobar"] will accesses the value in the config file called "foobar".
-	Data JSONMap
+	Data Map
 }
 
 // DefaultConfig is the default instance of the `Config`.
