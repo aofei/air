@@ -31,14 +31,14 @@ type Response struct {
 	size       int
 	written    bool
 
-	Data JSONMap
+	Data Map
 }
 
 // NewResponse returns a pointer of a new instance of the `Response`.
 func NewResponse(c *Context) *Response {
 	return &Response{
 		context: c,
-		Data:    make(JSONMap),
+		Data:    make(Map),
 	}
 }
 

@@ -30,7 +30,7 @@ type (
 		Printf(format string, args ...interface{})
 
 		// Printj prints the log info in the JSON format with the provided j.
-		Printj(j JSONMap)
+		Printj(j Map)
 
 		// Debug prints the DEBUG level log info with the provided type i.
 		Debug(i ...interface{})
@@ -39,7 +39,7 @@ type (
 		Debugf(format string, args ...interface{})
 
 		// Debugj prints the DEBUG level log info in the JSON format with the provided j.
-		Debugj(j JSONMap)
+		Debugj(j Map)
 
 		// Info prints the INFO level log info with the provided type i.
 		Info(i ...interface{})
@@ -48,7 +48,7 @@ type (
 		Infof(format string, args ...interface{})
 
 		// Infoj prints the INFO level log info in the JSON format with the provided j.
-		Infoj(j JSONMap)
+		Infoj(j Map)
 
 		// Warn prints the WARN level log info with the provided type i.
 		Warn(i ...interface{})
@@ -57,7 +57,7 @@ type (
 		Warnf(format string, args ...interface{})
 
 		// Warnj prints the WARN level log info in the JSON format with the provided j.
-		Warnj(j JSONMap)
+		Warnj(j Map)
 
 		// Error prints the ERROR level log info with the provided type i.
 		Error(i ...interface{})
@@ -66,7 +66,7 @@ type (
 		Errorf(format string, args ...interface{})
 
 		// Errorj prints the ERROR level log info in the JSON format with the provided j.
-		Errorj(j JSONMap)
+		Errorj(j Map)
 
 		// Fatal prints the FATAL level log info with the provided type i.
 		Fatal(i ...interface{})
@@ -75,7 +75,7 @@ type (
 		Fatalf(format string, args ...interface{})
 
 		// Fatalj prints the FATAL level log info in the JSON format with the provided j.
-		Fatalj(j JSONMap)
+		Fatalj(j Map)
 	}
 
 	// logger implements the `Logger` by using the `template.Template`.
@@ -149,7 +149,7 @@ func (l *logger) Printf(format string, args ...interface{}) {
 }
 
 // Printj implements the `Logger#Printj()` by using the `template.Template`.
-func (l *logger) Printj(j JSONMap) {
+func (l *logger) Printj(j Map) {
 	json.NewEncoder(l.output).Encode(j)
 }
 
@@ -164,7 +164,7 @@ func (l *logger) Debugf(format string, args ...interface{}) {
 }
 
 // Debugj implements the `Logger#Debugj()` by using the `template.Template`.
-func (l *logger) Debugj(j JSONMap) {
+func (l *logger) Debugj(j Map) {
 	l.log(lvlDebug, "json", j)
 }
 
@@ -179,7 +179,7 @@ func (l *logger) Infof(format string, args ...interface{}) {
 }
 
 // Infoj implements the `Logger#Infoj()` by using the `template.Template`.
-func (l *logger) Infoj(j JSONMap) {
+func (l *logger) Infoj(j Map) {
 	l.log(lvlInfo, "json", j)
 }
 
@@ -194,7 +194,7 @@ func (l *logger) Warnf(format string, args ...interface{}) {
 }
 
 // Warnj implements the `Logger#Warnj()` by using the `template.Template`.
-func (l *logger) Warnj(j JSONMap) {
+func (l *logger) Warnj(j Map) {
 	l.log(lvlWarn, "json", j)
 }
 
@@ -209,7 +209,7 @@ func (l *logger) Errorf(format string, args ...interface{}) {
 }
 
 // Errorj implements the `Logger#Errorj()` by using the `template.Template`.
-func (l *logger) Errorj(j JSONMap) {
+func (l *logger) Errorj(j Map) {
 	l.log(lvlError, "json", j)
 }
 
@@ -226,7 +226,7 @@ func (l *logger) Fatalf(format string, args ...interface{}) {
 }
 
 // Fatalj implements the `Logger#Fatalj()` by using the `template.Template`.
-func (l *logger) Fatalj(j JSONMap) {
+func (l *logger) Fatalj(j Map) {
 	l.log(lvlFatal, "json", j)
 }
 
@@ -260,7 +260,7 @@ func (l *logger) log(lvl loggerLevel, format string, args ...interface{}) {
 
 	_, file, line, _ := runtime.Caller(3)
 
-	data := make(JSONMap)
+	data := make(Map)
 	data["app_name"] = l.air.Config.AppName
 	data["time_rfc3339"] = time.Now().Format(time.RFC3339)
 	data["level"] = l.levels[lvl]

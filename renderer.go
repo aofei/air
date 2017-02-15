@@ -26,7 +26,7 @@ type (
 		ParseTemplates() error
 
 		// Render renders the data into the w with the templateName.
-		Render(w io.Writer, templateName string, data JSONMap) error
+		Render(w io.Writer, templateName string, data Map) error
 	}
 
 	// renderer implements the `Renderer` by using the `template.Template`.
@@ -115,7 +115,7 @@ func (r *renderer) ParseTemplates() error {
 }
 
 // Render implements the `Renderer#Render()` by using the `template.Template`.
-func (r *renderer) Render(w io.Writer, templateName string, data JSONMap) error {
+func (r *renderer) Render(w io.Writer, templateName string, data Map) error {
 	return r.template.ExecuteTemplate(w, templateName, data)
 }
 
