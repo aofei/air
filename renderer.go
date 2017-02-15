@@ -203,7 +203,7 @@ func (r *renderer) watchTemplates() {
 func walkDirs(root string) ([]string, error) {
 	var dirs []string
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
+		if info != nil && info.IsDir() {
 			dirs = append(dirs, path)
 		}
 		return err
