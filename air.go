@@ -51,7 +51,7 @@ type (
 const (
 	GET    = "GET"
 	POST   = "POST"
-	PUT    = "PUT" // The Air advises you to forget the PATCH.
+	PUT    = "PUT" // The Air advises you to forget the PATCH
 	DELETE = "DELETE"
 )
 

@@ -14,32 +14,32 @@ type URL struct {
 }
 
 // NewURL returns a pointer of a new instance of the `URL`.
-func NewURL(req *Request) *URL {
+func NewURL(r *Request) *URL {
 	return &URL{
-		request: req,
+		request: r,
 	}
 }
 
-// QueryValue returns the query value in the url for the provided key.
-func (url *URL) QueryValue(key string) string {
-	return url.QueryValues().Get(key)
+// QueryValue returns the query value in the u for the provided key.
+func (u *URL) QueryValue(key string) string {
+	return u.QueryValues().Get(key)
 }
 
-// QueryValues returns the query values in the url.
-func (url *URL) QueryValues() url.Values {
-	if url.queryValues == nil {
-		url.queryValues = url.Query()
+// QueryValues returns the query values in the u.
+func (u *URL) QueryValues() url.Values {
+	if u.queryValues == nil {
+		u.queryValues = u.Query()
 	}
-	return url.queryValues
+	return u.queryValues
 }
 
-// feed feeds the u into where it should be.
-func (url *URL) feed(u *url.URL) {
-	url.URL = u
+// feed feeds the url into where it should be.
+func (u *URL) feed(url *url.URL) {
+	u.URL = url
 }
 
-// reset resets all fields in the url.
-func (url *URL) reset() {
-	url.URL = nil
-	url.queryValues = nil
+// reset resets all fields in the u.
+func (u *URL) reset() {
+	u.URL = nil
+	u.queryValues = nil
 }
