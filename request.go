@@ -18,45 +18,45 @@ type Request struct {
 
 // NewRequest returns a pointer of a new instance of the `Request`.
 func NewRequest(c *Context) *Request {
-	req := &Request{context: c}
-	req.URL = NewURL(req)
-	return req
+	r := &Request{context: c}
+	r.URL = NewURL(r)
+	return r
 }
 
-// Bind binds the HTTP body of the req into the provided type i. The default `Binder` does it based
+// Bind binds the HTTP body of the r into the provided type i. The default `Binder` does it based
 // on the "Content-Type" header.
-func (req *Request) Bind(i interface{}) error {
-	return req.context.Air.Binder.Bind(i, req)
+func (r *Request) Bind(i interface{}) error {
+	return r.context.Air.Binder.Bind(i, r)
 }
 
 // FormValues returns the form values.
-func (req *Request) FormValues() url.Values {
-	if req.Form == nil {
-		req.ParseMultipartForm(32 << 20) // The maxMemory is 32 MB
+func (r *Request) FormValues() url.Values {
+	if r.Form == nil {
+		r.ParseMultipartForm(32 << 20) // The maxMemory is 32 MB
 	}
-	return req.Form
+	return r.Form
 }
 
-// feed feeds the r into where it should be.
-func (req *Request) feed(r *http.Request) {
-	req.Request = r
-	req.URL.feed(r.URL)
+// feed feeds the req into where it should be.
+func (r *Request) feed(req *http.Request) {
+	r.Request = req
+	r.URL.feed(req.URL)
 }
 
-// reset resets all fields in the req.
-func (req *Request) reset() {
-	req.Request = nil
-	req.URL.reset()
+// reset resets all fields in the r.
+func (r *Request) reset() {
+	r.Request = nil
+	r.URL.reset()
 }
 
 // MARK: Alias methods for the `Request#URL`.
 
-// QueryValue is an alias for the `URL#QueryValue()` of the req.
-func (req *Request) QueryValue(key string) string {
-	return req.URL.QueryValue(key)
+// QueryValue is an alias for the `URL#QueryValue()` of the r.
+func (r *Request) QueryValue(key string) string {
+	return r.URL.QueryValue(key)
 }
 
-// QueryValues is an alias for the `URL#QueryValues()` of the req.
-func (req *Request) QueryValues() url.Values {
-	return req.URL.QueryValues()
+// QueryValues is an alias for the `URL#QueryValues()` of the r.
+func (r *Request) QueryValues() url.Values {
+	return r.URL.QueryValues()
 }

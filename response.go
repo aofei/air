@@ -43,134 +43,133 @@ func NewResponse(c *Context) *Response {
 }
 
 // Write implements the `http.ResponseWriter#Write()`.
-func (res *Response) Write(b []byte) (int, error) {
-	if !res.written {
-		res.WriteHeader(http.StatusOK)
+func (r *Response) Write(b []byte) (int, error) {
+	if !r.written {
+		r.WriteHeader(http.StatusOK)
 	}
-	n, err := res.ResponseWriter.Write(b)
-	res.size += n
+	n, err := r.ResponseWriter.Write(b)
+	r.size += n
 	return n, err
 }
 
 // WriteHeader implements the `http.ResponseWriter#WriteHeader()`.
-func (res *Response) WriteHeader(statusCode int) {
-	if res.written {
-		res.context.Air.Logger.Warn("response already written")
+func (r *Response) WriteHeader(statusCode int) {
+	if r.written {
+		r.context.Air.Logger.Warn("response already written")
 		return
 	}
-	res.statusCode = statusCode
-	res.ResponseWriter.WriteHeader(statusCode)
-	res.written = true
+	r.statusCode = statusCode
+	r.ResponseWriter.WriteHeader(statusCode)
+	r.written = true
 }
 
-// StatusCode returns the HTTP status code of the res.
-func (res *Response) StatusCode() int {
-	return res.statusCode
+// StatusCode returns the HTTP status code of the r.
+func (r *Response) StatusCode() int {
+	return r.statusCode
 }
 
-// Size returns the number of bytes already written into the HTTP body of the res.
-func (res *Response) Size() int {
-	return res.size
+// Size returns the number of bytes already written into the HTTP body of the r.
+func (r *Response) Size() int {
+	return r.size
 }
 
-// Written reports whether the HTTP body of the res is already written.
-func (res *Response) Written() bool {
-	return res.written
+// Written reports whether the HTTP body of the r is already written.
+func (r *Response) Written() bool {
+	return r.written
 }
 
-// SetCookie adds a "Set-Cookie" header in the res. The provided cookie must have a valid `Name`.
+// SetCookie adds a "Set-Cookie" header in the r. The provided cookie must have a valid `Name`.
 // Invalid cookies may be silently dropped.
-func (res *Response) SetCookie(cookie *http.Cookie) {
-	http.SetCookie(res, cookie)
+func (r *Response) SetCookie(cookie *http.Cookie) {
+	http.SetCookie(r, cookie)
 }
 
-// Render renders one or more HTML templates with the `Data` of the res and sends a "text/html" HTTP
-// response. The default `Renderer` does it by using the `template.Template`. The results rendered
-// by the former can be inherited by accessing the `Data["InheritedHTML"]` of the res.
-func (res *Response) Render(templates ...string) error {
+// Render renders one or more HTML templates with the `Data` of the r and sends a "text/html" HTTP
+// response. The default `Renderer` does it by using the `template.Template`. the rults rendered by
+// the former can be inherited by accessing the `Data["InheritedHTML"]` of the r.
+func (r *Response) Render(templates ...string) error {
 	buf := &bytes.Buffer{}
 	for _, t := range templates {
-		res.Data["InheritedHTML"] = template.HTML(buf.Bytes())
+		r.Data["InheritedHTML"] = template.HTML(buf.Bytes())
 		buf.Reset()
-		err := res.context.Air.Renderer.Render(buf, t, res.Data)
-		if err != nil {
+		if err := r.context.Air.Renderer.Render(buf, t, r.Data); err != nil {
 			return err
 		}
 	}
-	return res.Blob(MIMETextHTML, buf.Bytes())
+	return r.Blob(MIMETextHTML, buf.Bytes())
 }
 
 // HTML sends a "text/html" HTTP response with the html.
-func (res *Response) HTML(html string) error {
-	return res.Blob(MIMETextHTML, []byte(html))
+func (r *Response) HTML(html string) error {
+	return r.Blob(MIMETextHTML, []byte(html))
 }
 
 // String sends a "text/plain" HTTP response with the s.
-func (res *Response) String(s string) error {
-	return res.Blob(MIMETextPlain, []byte(s))
+func (r *Response) String(s string) error {
+	return r.Blob(MIMETextPlain, []byte(s))
 }
 
 // JSON sends an "application/json" HTTP response with the type i.
-func (res *Response) JSON(i interface{}) error {
+func (r *Response) JSON(i interface{}) error {
 	b, err := json.Marshal(i)
-	if res.context.Air.Config.DebugMode {
+	if r.context.Air.Config.DebugMode {
 		b, err = json.MarshalIndent(i, "", "\t")
 	}
 	if err != nil {
 		return err
 	}
-	return res.Blob(MIMEApplicationJSON, b)
+	return r.Blob(MIMEApplicationJSON, b)
 }
 
 // JSONP sends an "application/javascript" HTTP response with the type i. It uses the callback to
 // construct the JSONP payload.
-func (res *Response) JSONP(i interface{}, callback string) error {
+func (r *Response) JSONP(i interface{}, callback string) error {
 	b, err := json.Marshal(i)
 	if err != nil {
 		return err
 	}
 	b = append([]byte(callback+"("), b...)
 	b = append(b, []byte(");")...)
-	return res.Blob(MIMEApplicationJavaScript, b)
+	return r.Blob(MIMEApplicationJavaScript, b)
 }
 
 // XML sends an "application/xml" HTTP response with the type i.
-func (res *Response) XML(i interface{}) error {
+func (r *Response) XML(i interface{}) error {
 	b, err := xml.Marshal(i)
-	if res.context.Air.Config.DebugMode {
+	if r.context.Air.Config.DebugMode {
 		b, err = xml.MarshalIndent(i, "", "\t")
 	}
 	if err != nil {
 		return err
 	}
-	return res.Blob(MIMEApplicationXML, append([]byte(xml.Header), b...))
+	return r.Blob(MIMEApplicationXML, append([]byte(xml.Header), b...))
 }
 
 // YAML sends an "application/x-yaml" HTTP response with the type i.
-func (res *Response) YAML(i interface{}) error {
+func (r *Response) YAML(i interface{}) error {
 	b, err := yaml.Marshal(i)
 	if err != nil {
 		return err
 	}
-	return res.Blob(MIMEApplicationYAML, b)
+	return r.Blob(MIMEApplicationYAML, b)
 }
 
 // Blob sends a blob HTTP response with the contentType and the b.
-func (res *Response) Blob(contentType string, b []byte) error {
-	res.Header().Set(HeaderContentType, contentType)
-	_, err := res.Write(b)
+func (r *Response) Blob(contentType string, b []byte) error {
+	r.Header().Set(HeaderContentType, contentType)
+	_, err := r.Write(b)
 	return err
 }
 
-// Stream sends a streaming HTTP response with the contentType and the r.
-func (res *Response) Stream(contentType string, r io.Reader) error {
-	res.Header().Set(HeaderContentType, contentType)
-	_, err := io.Copy(res, r)
+// Stream sends a streaming HTTP response with the contentType and the reader.
+func (r *Response) Stream(contentType string, reader io.Reader) error {
+	r.Header().Set(HeaderContentType, contentType)
+	_, err := io.Copy(r, reader)
 	return err
 }
 
 // File sends a file HTTP response with the file.
-func (res *Response) File(file string) error {
+func (r *Response) File(file string) error {
 	f, err := os.Open(file)
 	if err != nil {
 		return ErrNotFound
@@ -190,59 +189,59 @@ func (res *Response) File(file string) error {
 		}
 	}
 
-	http.ServeContent(res, res.context.Request.Request, fi.Name(), fi.ModTime(), f)
+	http.ServeContent(r, r.context.Request.Request, fi.Name(), fi.ModTime(), f)
 
 	return nil
 }
 
 // Attachment sends an HTTP response with the file and the filename as attachment, prompting client
 // to save the file.
-func (res *Response) Attachment(file, filename string) error {
-	return res.contentDisposition("attachment", file, filename)
+func (r *Response) Attachment(file, filename string) error {
+	return r.contentDisposition("attachment", file, filename)
 }
 
 // Inline sends an HTTP response with the file and the filename as inline, opening the file in the
 // browser.
-func (res *Response) Inline(file, filename string) error {
-	return res.contentDisposition("inline", file, filename)
+func (r *Response) Inline(file, filename string) error {
+	return r.contentDisposition("inline", file, filename)
 }
 
 // contentDisposition sends an HTTP response with the file and the filename as the dispositionType.
-func (res *Response) contentDisposition(dispositionType, file, filename string) error {
-	res.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s",
+func (r *Response) contentDisposition(dispositionType, file, filename string) error {
+	r.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s",
 		dispositionType, filename))
-	return res.File(file)
+	return r.File(file)
 }
 
 // NoContent sends an HTTP response with no body.
-func (res *Response) NoContent() error { return nil }
+func (r *Response) NoContent() error { return nil }
 
 // Redirect redirects the current HTTP request to the url with the statusCode.
-func (res *Response) Redirect(statusCode int, url string) error {
+func (r *Response) Redirect(statusCode int, url string) error {
 	if statusCode < http.StatusMultipleChoices || statusCode > http.StatusTemporaryRedirect {
 		return ErrInvalidRedirectCode
 	}
-	res.Header().Set(HeaderLocation, url)
-	res.WriteHeader(statusCode)
+	r.Header().Set(HeaderLocation, url)
+	r.WriteHeader(statusCode)
 	return nil
 }
 
 // feed feeds the rw into where it should be.
-func (res *Response) feed(rw http.ResponseWriter) {
-	res.ResponseWriter = rw
-	res.Hijacker, _ = rw.(http.Hijacker)
-	res.CloseNotifier, _ = rw.(http.CloseNotifier)
-	res.Flusher, _ = rw.(http.Flusher)
-	res.Pusher, _ = rw.(http.Pusher)
+func (r *Response) feed(rw http.ResponseWriter) {
+	r.ResponseWriter = rw
+	r.Hijacker, _ = rw.(http.Hijacker)
+	r.CloseNotifier, _ = rw.(http.CloseNotifier)
+	r.Flusher, _ = rw.(http.Flusher)
+	r.Pusher, _ = rw.(http.Pusher)
 }
 
-// reset resets all fields in the res.
-func (res *Response) reset() {
-	res.ResponseWriter = nil
-	res.statusCode = 0
-	res.size = 0
-	res.written = false
-	for k := range res.Data {
-		delete(res.Data, k)
+// reset resets all fields in the r.
+func (r *Response) reset() {
+	r.ResponseWriter = nil
+	r.statusCode = 0
+	r.size = 0
+	r.written = false
+	for k := range r.Data {
+		delete(r.Data, k)
 	}
 }
