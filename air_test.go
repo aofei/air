@@ -1,11 +1,13 @@
 package air
 
 import (
+	"bytes"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -236,10 +238,12 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 
 func TestAirServeDebugMode(t *testing.T) {
 	a := New()
+	buf := &bytes.Buffer{}
 	ok := make(chan struct{})
 
 	a.Config.DebugMode = true
 	a.Config.Address = "localhost:2335"
+	a.Logger.SetOutput(buf)
 
 	go func() {
 		close(ok)
@@ -247,7 +251,9 @@ func TestAirServeDebugMode(t *testing.T) {
 	}()
 
 	<-ok
+	time.Sleep(time.Millisecond) // Wait for logger
 	assert.Equal(t, true, a.Config.LogEnabled)
 	assert.Equal(t, true, a.Config.TemplateWatched)
+	assert.NotEmpty(t, buf.String())
 	assert.NoError(t, a.Close())
 }
