@@ -1,6 +1,7 @@
 package air
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,6 +36,16 @@ func TestRouterMatchParam(t *testing.T) {
 	assert.Equal(t, "id", c.ParamNames[0])
 	assert.Equal(t, "1", c.ParamValues[0])
 	assert.Equal(t, "1", c.Param("id"))
+
+	r.add(GET, "/users/search/:keyword", func(c *Context) error {
+		return nil
+	})
+
+	c = a.contextPool.Get().(*Context)
+	r.route(GET, "/users/search/"+url.PathEscape("Air / 盛傲飞"), c)
+	assert.Equal(t, "keyword", c.ParamNames[0])
+	assert.Equal(t, "Air / 盛傲飞", c.ParamValues[0])
+	assert.Equal(t, "Air / 盛傲飞", c.Param("keyword"))
 
 	r.add(GET, "/users/:uid/posts/:pid/:anchor", func(*Context) error {
 		return nil
