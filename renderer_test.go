@@ -115,3 +115,13 @@ func TestRendererParseTemplatesAndRender(t *testing.T) {
 	assert.NoError(t, r.Render(b, "index.html", nil))
 	assert.Equal(t, result, b.String())
 }
+
+func TestRendererTemplateFuncs(t *testing.T) {
+	assert.Equal(t, 9, strlen("Hello, 世界"))
+	assert.Equal(t, "The Air Web Framework", strcat("The ", "Air ", "Web ", "Framework"))
+	assert.Equal(t, "世界", substr("Hello, 世界", 7, 9))
+
+	str := "2016-07-20T12:13:54Z"
+	tm, _ := time.Parse(time.RFC3339, str)
+	assert.Equal(t, str, timefmt(tm, time.RFC3339))
+}
