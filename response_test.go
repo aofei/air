@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -30,6 +31,15 @@ func TestResponseSetCookie(t *testing.T) {
 	assert.Equal(t, cookie.String(), c.Response.Header().Get(HeaderSetCookie))
 }
 
+func TestRequestPush(t *testing.T) {
+	a := New()
+	req, _ := http.NewRequest(GET, "/", nil)
+	rec := httptest.NewRecorder()
+	c := NewContext(a)
+	c.feed(req, rec)
+	assert.Panics(t, func() { c.Push("air.go", nil) })
+}
+
 func TestResponseRender(t *testing.T) {
 	a := New()
 	req, _ := http.NewRequest(GET, "/", nil)
@@ -49,6 +59,10 @@ func TestResponseRender(t *testing.T) {
 		assert.Equal(t, MIMETextHTML, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, "Air by Aofei Sheng.", rec.Body.String())
 	}
+
+	c.reset()
+
+	assert.Error(t, c.Render("unknown"))
 }
 
 func TestResponseHTML(t *testing.T) {
@@ -214,6 +228,33 @@ func TestResponseFile(t *testing.T) {
 		assert.Equal(t, MIMETextPlain, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, b, rec.Body.Bytes())
 	}
+
+	req, _ = http.NewRequest(GET, "/", nil)
+	rec = httptest.NewRecorder()
+
+	c.reset()
+	c.feed(req, rec)
+
+	assert.Equal(t, ErrNotFound, c.File("file_not_exist.html"))
+
+	file, _ := os.Create("index.html")
+	defer func() {
+		file.Close()
+		os.Remove(file.Name())
+	}()
+	file.WriteString("<html></html>")
+
+	req, _ = http.NewRequest(GET, "/", nil)
+	rec = httptest.NewRecorder()
+
+	c.reset()
+	c.feed(req, rec)
+
+	if err := c.File("./"); assert.NoError(t, err) {
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, MIMETextHTML, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, "<html></html>", rec.Body.String())
+	}
 }
 
 func TestResponseAttachment(t *testing.T) {
@@ -280,4 +321,6 @@ func TestResponseRedirect(t *testing.T) {
 		assert.Equal(t, url, rec.Header().Get(HeaderLocation))
 		assert.Equal(t, "", rec.Body.String())
 	}
+
+	assert.Equal(t, ErrInvalidRedirectCode, c.Redirect(http.StatusIMUsed, url))
 }
