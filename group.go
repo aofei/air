@@ -15,19 +15,11 @@ type Group struct {
 // NewGroup returns a pointer of a new router group with the prefix and the optional group-level
 // gases.
 func NewGroup(a *Air, prefix string, gases ...Gas) *Group {
-	g := &Group{air: a}
-	g.prefix = prefix
-	g.Contain(gases...)
-
-	// Allow all HTTP requests to reach the group as they might get dropped if the router
-	// doesn't find a match, making none of the group gas process.
-	path := g.prefix + "*"
-	h := func(c *Context) error { return ErrNotFound }
-	for _, m := range methods {
-		g.air.add(m, path, h, g.gases...)
+	return &Group{
+		air:    a,
+		prefix: prefix,
+		gases:  gases,
 	}
-
-	return g
 }
 
 // NewSubGroup creates a pointer of a new sub-group with the prefix and the optional sub-group-level
