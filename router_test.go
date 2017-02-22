@@ -46,6 +46,7 @@ func TestRouterMatchParam(t *testing.T) {
 	assert.Equal(t, "keyword", c.ParamNames[0])
 	assert.Equal(t, "Air / 盛傲飞", c.ParamValues[0])
 	assert.Equal(t, "Air / 盛傲飞", c.Param("keyword"))
+	assert.Empty(t, c.Param("unknown"))
 
 	r.add(GET, "/users/:uid/posts/:pid/:anchor", func(*Context) error {
 		return nil
