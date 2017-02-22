@@ -123,3 +123,14 @@ func TestLoggerLoggingMethods(t *testing.T) {
 	assert.Panics(t, func() { l.Fatalj(m) })
 	assert.Empty(t, b.String())
 }
+
+func TestLoggerLogFormat(t *testing.T) {
+	a := New()
+	a.Config.LogEnabled = true
+	a.Config.LogFormat = "I am the {{.app_name}}."
+	l := a.Logger.(*logger)
+	b := &bytes.Buffer{}
+	l.SetOutput(b)
+	l.log(lvlInfo, "")
+	assert.Contains(t, b.String(), "I am the air.")
+}

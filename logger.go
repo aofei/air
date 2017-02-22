@@ -246,10 +246,7 @@ func (l *logger) log(lvl loggerLevel, format string, args ...interface{}) {
 	if format == "" {
 		message = fmt.Sprint(args...)
 	} else if format == "json" {
-		b, err := json.Marshal(args[0])
-		if err != nil {
-			panic(err)
-		}
+		b, _ := json.Marshal(args[0])
 		message = string(b)
 	} else {
 		message = fmt.Sprintf(format, args...)
