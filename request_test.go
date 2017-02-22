@@ -126,6 +126,39 @@ func TestRequestBind(t *testing.T) {
 	assert.Equal(t, *raw, *i)
 }
 
+func TestRequestFormFile(t *testing.T) {
+	a := New()
+	c := NewContext(a)
+	req, _ := http.NewRequest(POST, "/", nil)
+	req.Header.Add(HeaderContentType, MIMEMultipartForm)
+	c.feed(req, nil)
+	f, fh, err := c.FormFile("air")
+	assert.Nil(t, f)
+	assert.Nil(t, fh)
+	assert.NotNil(t, err)
+}
+
+func TestRequestCookie(t *testing.T) {
+	a := New()
+	c := NewContext(a)
+
+	cookie := &http.Cookie{
+		Name:  "Air",
+		Value: "Aofei Sheng",
+	}
+
+	req, _ := http.NewRequest(GET, "/", nil)
+	req.Header.Add("Cookie", cookie.String())
+
+	c.feed(req, nil)
+
+	if nc, err := c.Cookie("Air"); assert.NoError(t, err) {
+		assert.Equal(t, *cookie, *nc)
+	}
+
+	assert.Contains(t, c.Cookies(), cookie)
+}
+
 func TestRequestOthers(t *testing.T) {
 	a := New()
 	c := NewContext(a)

@@ -9,6 +9,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGroupContain(t *testing.T) {
+	a := New()
+	a.server = newServer(a)
+	g := NewGroup(a, "/group")
+
+	g.Contain(WrapGas(func(c *Context) error {
+		return c.String("group gas")
+	}))
+
+	g.GET("/", func(*Context) error { return nil })
+
+	req, _ := http.NewRequest(GET, "/group", nil)
+	rec := httptest.NewRecorder()
+
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, "group gas", rec.Body.String())
+}
+
 func TestGroupRESTfulMethods(t *testing.T) {
 	a := New()
 	g := NewGroup(a, "/group")
