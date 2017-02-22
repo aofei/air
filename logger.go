@@ -29,8 +29,8 @@ type (
 		// Printf prints the log info in the format with the provided args.
 		Printf(format string, args ...interface{})
 
-		// Printj prints the log info in the JSON format with the provided j.
-		Printj(j Map)
+		// Printj prints the log info in the JSON format with the provided m.
+		Printj(m Map)
 
 		// Debug prints the DEBUG level log info with the provided type i.
 		Debug(i ...interface{})
@@ -38,8 +38,8 @@ type (
 		// Debugf prints the DEBUG level log info in the format with the provided args.
 		Debugf(format string, args ...interface{})
 
-		// Debugj prints the DEBUG level log info in the JSON format with the provided j.
-		Debugj(j Map)
+		// Debugj prints the DEBUG level log info in the JSON format with the provided m.
+		Debugj(m Map)
 
 		// Info prints the INFO level log info with the provided type i.
 		Info(i ...interface{})
@@ -47,8 +47,8 @@ type (
 		// Infof prints the INFO level log info in the format with the provided args.
 		Infof(format string, args ...interface{})
 
-		// Infoj prints the INFO level log info in the JSON format with the provided j.
-		Infoj(j Map)
+		// Infoj prints the INFO level log info in the JSON format with the provided m.
+		Infoj(m Map)
 
 		// Warn prints the WARN level log info with the provided type i.
 		Warn(i ...interface{})
@@ -56,8 +56,8 @@ type (
 		// Warnf prints the WARN level log info in the format with the provided args.
 		Warnf(format string, args ...interface{})
 
-		// Warnj prints the WARN level log info in the JSON format with the provided j.
-		Warnj(j Map)
+		// Warnj prints the WARN level log info in the JSON format with the provided m.
+		Warnj(m Map)
 
 		// Error prints the ERROR level log info with the provided type i.
 		Error(i ...interface{})
@@ -65,8 +65,8 @@ type (
 		// Errorf prints the ERROR level log info in the format with the provided args.
 		Errorf(format string, args ...interface{})
 
-		// Errorj prints the ERROR level log info in the JSON format with the provided j.
-		Errorj(j Map)
+		// Errorj prints the ERROR level log info in the JSON format with the provided m.
+		Errorj(m Map)
 
 		// Fatal prints the FATAL level log info with the provided type i.
 		Fatal(i ...interface{})
@@ -74,8 +74,8 @@ type (
 		// Fatalf prints the FATAL level log info in the format with the provided args.
 		Fatalf(format string, args ...interface{})
 
-		// Fatalj prints the FATAL level log info in the JSON format with the provided j.
-		Fatalj(j Map)
+		// Fatalj prints the FATAL level log info in the JSON format with the provided m.
+		Fatalj(m Map)
 	}
 
 	// logger implements the `Logger` by using the `template.Template`.
@@ -149,8 +149,8 @@ func (l *logger) Printf(format string, args ...interface{}) {
 }
 
 // Printj implements the `Logger#Printj()` by using the `template.Template`.
-func (l *logger) Printj(j Map) {
-	json.NewEncoder(l.output).Encode(j)
+func (l *logger) Printj(m Map) {
+	json.NewEncoder(l.output).Encode(m)
 }
 
 // Debug implements the `Logger#Debug()` by using the `template.Template`.
@@ -164,8 +164,8 @@ func (l *logger) Debugf(format string, args ...interface{}) {
 }
 
 // Debugj implements the `Logger#Debugj()` by using the `template.Template`.
-func (l *logger) Debugj(j Map) {
-	l.log(lvlDebug, "json", j)
+func (l *logger) Debugj(m Map) {
+	l.log(lvlDebug, "json", m)
 }
 
 // Info implements the `Logger#Info()` by using the `template.Template`.
@@ -179,8 +179,8 @@ func (l *logger) Infof(format string, args ...interface{}) {
 }
 
 // Infoj implements the `Logger#Infoj()` by using the `template.Template`.
-func (l *logger) Infoj(j Map) {
-	l.log(lvlInfo, "json", j)
+func (l *logger) Infoj(m Map) {
+	l.log(lvlInfo, "json", m)
 }
 
 // Warn implements the `Logger#Warn()` by using the `template.Template`.
@@ -194,8 +194,8 @@ func (l *logger) Warnf(format string, args ...interface{}) {
 }
 
 // Warnj implements the `Logger#Warnj()` by using the `template.Template`.
-func (l *logger) Warnj(j Map) {
-	l.log(lvlWarn, "json", j)
+func (l *logger) Warnj(m Map) {
+	l.log(lvlWarn, "json", m)
 }
 
 // Error implements the `Logger#Error()` by using the `template.Template`.
@@ -209,8 +209,8 @@ func (l *logger) Errorf(format string, args ...interface{}) {
 }
 
 // Errorj implements the `Logger#Errorj()` by using the `template.Template`.
-func (l *logger) Errorj(j Map) {
-	l.log(lvlError, "json", j)
+func (l *logger) Errorj(m Map) {
+	l.log(lvlError, "json", m)
 }
 
 // Fatal implements the `Logger#Fatal()` by using the `template.Template`.
@@ -226,8 +226,9 @@ func (l *logger) Fatalf(format string, args ...interface{}) {
 }
 
 // Fatalj implements the `Logger#Fatalj()` by using the `template.Template`.
-func (l *logger) Fatalj(j Map) {
-	l.log(lvlFatal, "json", j)
+func (l *logger) Fatalj(m Map) {
+	l.log(lvlFatal, "json", m)
+	os.Exit(1)
 }
 
 // log prints the lvl level log info in the format with the args.
