@@ -1,6 +1,13 @@
 package air
 
-import "testing"
+import (
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestGroupRESTfulMethods(t *testing.T) {
 	a := New()
@@ -13,14 +20,51 @@ func TestGroupRESTfulMethods(t *testing.T) {
 	g.DELETE("/", h)
 }
 
-func TestGroupOtherMethods(t *testing.T) {
+func TestGroupStatic(t *testing.T) {
 	a := New()
-	g := NewGroup(a, "/group")
+	a.server = newServer(a)
 
-	g.Static("/static", "./")
-	g.File("/file", "README.md")
+	prefix := "/group"
+	secondPrefix := "/air"
+	fn := "air.go"
+
+	g := NewGroup(a, prefix)
+	g.Static(secondPrefix, "./")
+
+	b, _ := ioutil.ReadFile(fn)
+	req, _ := http.NewRequest(GET, prefix+secondPrefix+"/"+fn, nil)
+	rec := httptest.NewRecorder()
+
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, b, rec.Body.Bytes())
+
+	fn = "air_test.go"
+
+	b, _ = ioutil.ReadFile(fn)
+	req, _ = http.NewRequest(GET, prefix+secondPrefix+"/"+fn, nil)
+	rec = httptest.NewRecorder()
+
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, b, rec.Body.Bytes())
 }
 
-// TODO: Implement this
-func TestGroupRouteGas(t *testing.T) {
+func TestGroupFile(t *testing.T) {
+	a := New()
+	a.server = newServer(a)
+
+	prefix := "/group"
+	secondPrefix := "/group2"
+	path := "/air"
+	fn := "air.go"
+
+	g := NewGroup(a, prefix)
+	sg := g.NewSubGroup(secondPrefix)
+	sg.File(path, fn)
+
+	b, _ := ioutil.ReadFile(fn)
+	req, _ := http.NewRequest(GET, prefix+secondPrefix+path, nil)
+	rec := httptest.NewRecorder()
+
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, b, rec.Body.Bytes())
 }
