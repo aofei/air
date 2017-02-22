@@ -2,6 +2,7 @@ package air
 
 import (
 	"encoding/xml"
+	"errors"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -115,6 +116,14 @@ func TestResponseJSON(t *testing.T) {
 		assert.Equal(t, MIMEApplicationJSON, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
+
+	req, _ = http.NewRequest(GET, "/", nil)
+	rec = httptest.NewRecorder()
+
+	c.reset()
+	c.feed(req, rec)
+
+	assert.Error(t, c.JSON(Air{}))
 }
 
 func TestResponseJSONP(t *testing.T) {
@@ -133,6 +142,14 @@ func TestResponseJSONP(t *testing.T) {
 		assert.Equal(t, MIMEApplicationJavaScript, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, cb+"("+infoStr+");", rec.Body.String())
 	}
+
+	req, _ = http.NewRequest(GET, "/", nil)
+	rec = httptest.NewRecorder()
+
+	c.reset()
+	c.feed(req, rec)
+
+	assert.Error(t, c.JSONP(Air{}, cb))
 }
 
 func TestResponseXML(t *testing.T) {
@@ -156,6 +173,20 @@ func TestResponseXML(t *testing.T) {
 		assert.Equal(t, MIMEApplicationXML, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
+
+	req, _ = http.NewRequest(GET, "/", nil)
+	rec = httptest.NewRecorder()
+
+	c.reset()
+	c.feed(req, rec)
+
+	assert.Error(t, c.XML(Air{}))
+}
+
+type failingYAMLMarshaler struct{}
+
+func (f *failingYAMLMarshaler) MarshalYAML() (interface{}, error) {
+	return nil, errors.New("error")
 }
 
 func TestResponseYAML(t *testing.T) {
@@ -173,6 +204,14 @@ func TestResponseYAML(t *testing.T) {
 		assert.Equal(t, MIMEApplicationYAML, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
+
+	req, _ = http.NewRequest(GET, "/", nil)
+	rec = httptest.NewRecorder()
+
+	c.reset()
+	c.feed(req, rec)
+
+	assert.Equal(t, "error", c.YAML(&failingYAMLMarshaler{}).Error())
 }
 
 func TestResponseBlob(t *testing.T) {
@@ -236,6 +275,14 @@ func TestResponseFile(t *testing.T) {
 	c.feed(req, rec)
 
 	assert.Equal(t, ErrNotFound, c.File("file_not_exist.html"))
+
+	req, _ = http.NewRequest(GET, "/", nil)
+	rec = httptest.NewRecorder()
+
+	c.reset()
+	c.feed(req, rec)
+
+	assert.Equal(t, ErrNotFound, c.File("./"))
 
 	file, _ := os.Create("index.html")
 	defer func() {
