@@ -47,11 +47,11 @@ type (
 	Map map[string]interface{}
 )
 
-// HTTP methods (which follows the REST principle)
+// HTTP methods
 const (
 	GET    = "GET"
 	POST   = "POST"
-	PUT    = "PUT" // The Air advises you to forget the PATCH
+	PUT    = "PUT"
 	DELETE = "DELETE"
 )
 
