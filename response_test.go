@@ -185,7 +185,7 @@ func TestResponseXML(t *testing.T) {
 
 type failingYAMLMarshaler struct{}
 
-func (f *failingYAMLMarshaler) MarshalYAML() (interface{}, error) {
+func (*failingYAMLMarshaler) MarshalYAML() (interface{}, error) {
 	return nil, errors.New("error")
 }
 

@@ -2,6 +2,8 @@ package air
 
 import (
 	"bytes"
+	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -143,6 +145,24 @@ func TestAirServe(t *testing.T) {
 	assert.NoError(t, a.Close())
 }
 
+type failingRenderer struct{}
+
+func (*failingRenderer) SetTemplateFunc(name string, f interface{}) {}
+
+func (*failingRenderer) ParseTemplates() error {
+	return errors.New("error")
+}
+
+func (*failingRenderer) Render(w io.Writer, templateName string, data Map) error {
+	return nil
+}
+
+func TestAirServeError(t *testing.T) {
+	a := New()
+	a.Renderer = &failingRenderer{}
+	assert.Equal(t, "error", a.Serve().Error())
+}
+
 func TestAirServeTLS(t *testing.T) {
 	cert := `
 -----BEGIN CERTIFICATE-----
@@ -256,4 +276,46 @@ func TestAirServeDebugMode(t *testing.T) {
 	assert.Equal(t, true, a.Config.TemplateWatched)
 	assert.NotEmpty(t, buf.String())
 	assert.NoError(t, a.Close())
+}
+
+type httpHandler struct{}
+
+func (*httpHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	rw.WriteHeader(http.StatusOK)
+}
+
+func TestAirWrapHandler(t *testing.T) {
+	a := New()
+	c := a.contextPool.Get().(*Context)
+	h := WrapHandler(&httpHandler{})
+
+	req, _ := http.NewRequest(GET, "/", nil)
+	rec := httptest.NewRecorder()
+
+	c.feed(req, rec)
+	h(c)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestAirWrapGasError(t *testing.T) {
+	g := WrapGas(func(*Context) error { return ErrInternalServerError })
+	h := g(func(*Context) error { return nil })
+	assert.Equal(t, ErrInternalServerError, h(nil))
+}
+
+func TestAirDefaultHTTPErrorHandler(t *testing.T) {
+	a := New()
+	a.Config.DebugMode = true
+	c := a.contextPool.Get().(*Context)
+
+	req, _ := http.NewRequest(GET, "/", nil)
+	rec := httptest.NewRecorder()
+
+	c.feed(req, rec)
+
+	DefaultHTTPErrorHandler(NewHTTPError(http.StatusInternalServerError, "error"), c)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Equal(t, "error", rec.Body.String())
 }
