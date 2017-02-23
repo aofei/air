@@ -2,6 +2,7 @@ package air
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 
@@ -21,7 +22,7 @@ func TestRouterCheckPath(t *testing.T) {
 	path = "/foobar/"
 	assert.Panics(t, func() { r.checkPath(path) })
 
-	path = "/:foo:bar/"
+	path = "/:foo:bar"
 	assert.Panics(t, func() { r.checkPath(path) })
 
 	path = "/foo*/bar*"
@@ -128,6 +129,10 @@ func TestRouterMatchAny(t *testing.T) {
 	r.add(GET, "/users/*", func(*Context) error {
 		return nil
 	})
+
+	c = a.contextPool.Get().(*Context)
+	r.route(POST, "/users/", c)
+	assert.Equal(t, MethodNotAllowedHandler(c), c.Handler(c))
 
 	c = a.contextPool.Get().(*Context)
 	r.route(GET, "/users/", c)
@@ -249,16 +254,15 @@ func TestRouterMatchingPriority(t *testing.T) {
 
 func TestRouterMatchMethodNotAllowed(t *testing.T) {
 	a := New()
+	a.server = newServer(a)
 	r := a.router
 
-	path := "/foo/bar"
+	path := "/"
 	r.add(GET, path, func(*Context) error { return nil })
 
-	c := a.contextPool.Get().(*Context)
-	r.route(POST, path, c)
-	assert.Equal(t, MethodNotAllowedHandler(c), c.Handler(c))
+	req, _ := http.NewRequest(POST, path, nil)
+	rec := httptest.NewRecorder()
 
-	c.reset()
-	r.route(http.MethodPatch, path, c)
-	assert.Equal(t, MethodNotAllowedHandler(c), c.Handler(c))
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 }
