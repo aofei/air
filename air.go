@@ -216,11 +216,11 @@ func (a *Air) add(method, path string, h Handler, gases ...Gas) {
 	hn := handlerName(h)
 
 	a.router.add(method, path, func(c *Context) error {
-		hf := h
+		h := h
 		for i := len(gases) - 1; i >= 0; i-- {
-			hf = gases[i](hf)
+			h = gases[i](h)
 		}
-		return hf(c)
+		return h(c)
 	})
 
 	a.router.routes[method+path] = &route{
@@ -286,11 +286,7 @@ func (a *Air) Shutdown(c *Context) error {
 
 // handlerName returns the func name of the h.
 func handlerName(h Handler) string {
-	t := reflect.ValueOf(h).Type()
-	if t.Kind() == reflect.Func {
-		return runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
-	}
-	return t.String()
+	return runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
 }
 
 // WrapHandler wraps the h into the `Handler`.
