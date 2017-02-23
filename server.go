@@ -43,13 +43,17 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	// Gases
 	h := func(c *Context) error {
-		method := c.Request.Method
-		path := c.Request.URL.EscapedPath()
-		s.air.router.route(method, path, c)
+		if methodAllowed(c.Request.Method) {
+			s.air.router.route(c.Request.Method, c.Request.URL.EscapedPath(), c)
+		} else {
+			c.Handler = MethodNotAllowedHandler
+		}
+
 		h := c.Handler
 		for i := len(s.air.gases) - 1; i >= 0; i-- {
 			h = s.air.gases[i](h)
 		}
+
 		return h(c)
 	}
 
@@ -65,4 +69,14 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	c.reset()
 	s.air.contextPool.Put(c)
+}
+
+// methodAllowed reports whether the method is allowed.
+func methodAllowed(method string) bool {
+	for _, m := range methods {
+		if m == method {
+			return true
+		}
+	}
+	return false
 }
