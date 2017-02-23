@@ -1,11 +1,58 @@
 package air
 
 import (
+	"net/http"
 	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestRouterCheckPath(t *testing.T) {
+	a := New()
+	r := a.router
+
+	path := ""
+	assert.Panics(t, func() { r.checkPath(path) })
+
+	path = "foobar"
+	assert.Panics(t, func() { r.checkPath(path) })
+
+	path = "/foobar/"
+	assert.Panics(t, func() { r.checkPath(path) })
+
+	path = "/:foo:bar/"
+	assert.Panics(t, func() { r.checkPath(path) })
+
+	path = "/foo*/bar*"
+	assert.Panics(t, func() { r.checkPath(path) })
+
+	path = "/foo*/bar"
+	assert.Panics(t, func() { r.checkPath(path) })
+
+	path = "/:foobar*"
+	assert.Panics(t, func() { r.checkPath(path) })
+}
+
+func TestRouterCheckRoute(t *testing.T) {
+	a := New()
+	r := a.router
+
+	method := GET
+	path := "/:foo"
+
+	a.add(method, path, func(*Context) error { return nil })
+
+	assert.Panics(t, func() { r.checkRoute(method, path) })
+
+	path = "/:bar"
+
+	assert.Panics(t, func() { r.checkRoute(method, path) })
+
+	path = "/:foobar/:foobar"
+
+	assert.Panics(t, func() { r.add(method, path, func(*Context) error { return nil }) })
+}
 
 func TestRouterMatchStatic(t *testing.T) {
 	a := New()
@@ -83,6 +130,12 @@ func TestRouterMatchAny(t *testing.T) {
 	})
 
 	c = a.contextPool.Get().(*Context)
+	r.route(GET, "/users/", c)
+	assert.Equal(t, "*", c.ParamNames[0])
+	assert.Equal(t, "", c.ParamValues[0])
+	assert.Equal(t, "", c.Param("*"))
+
+	c = a.contextPool.Get().(*Context)
 	r.route(GET, "/users/1", c)
 	assert.Equal(t, "*", c.ParamNames[0])
 	assert.Equal(t, "1", c.ParamValues[0])
@@ -93,19 +146,19 @@ func TestRouterMixMatchParamAndAny(t *testing.T) {
 	a := New()
 	r := a.router
 
-	r.add(GET, "/users/:id/*", func(c *Context) error {
+	r.add(GET, "/users/:id/posts/*", func(c *Context) error {
 		return nil
 	})
 
 	c := a.contextPool.Get().(*Context)
-	r.route(GET, "/users/1/posts", c)
+	r.route(GET, "/users/1/posts/2", c)
 	c.Handler(c)
 	assert.Equal(t, "id", c.ParamNames[0])
 	assert.Equal(t, "*", c.ParamNames[1])
 	assert.Equal(t, "1", c.ParamValues[0])
-	assert.Equal(t, "posts", c.ParamValues[1])
+	assert.Equal(t, "2", c.ParamValues[1])
 	assert.Equal(t, "1", c.Param("id"))
-	assert.Equal(t, "posts", c.Param("*"))
+	assert.Equal(t, "2", c.Param("*"))
 }
 
 func TestRouterMatchingPriority(t *testing.T) {
@@ -192,4 +245,20 @@ func TestRouterMatchingPriority(t *testing.T) {
 	c.Handler(c)
 	assert.Equal(t, 7, c.Value("h"))
 	assert.Equal(t, "1/followers", c.Param("*"))
+}
+
+func TestRouterMatchMethodNotAllowed(t *testing.T) {
+	a := New()
+	r := a.router
+
+	path := "/foo/bar"
+	r.add(GET, path, func(*Context) error { return nil })
+
+	c := a.contextPool.Get().(*Context)
+	r.route(POST, path, c)
+	assert.Equal(t, MethodNotAllowedHandler(c), c.Handler(c))
+
+	c.reset()
+	r.route(http.MethodPatch, path, c)
+	assert.Equal(t, MethodNotAllowedHandler(c), c.Handler(c))
 }
