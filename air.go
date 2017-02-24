@@ -263,7 +263,6 @@ func (a *Air) URL(h Handler, params ...interface{}) string {
 func (a *Air) Serve() error {
 	if a.Config.DebugMode {
 		a.Config.LogEnabled = true
-		a.Config.TemplateWatched = true
 		a.Logger.Debug("serving in debug mode")
 	}
 

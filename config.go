@@ -101,13 +101,13 @@ type Config struct {
 	// It's called "template_root" in the config file.
 	TemplateRoot string
 
-	// TemplateExt represents the file name extension of the HTML templates. It will be used
+	// TemplateExts represents the file name extensions of the HTML templates. It will be used
 	// when parsing the HTML templates. It works only with the default `Renderer`.
 	//
-	// The default value is ".html".
+	// The default value is [".html"].
 	//
-	// It's called "template_ext" in the config file.
-	TemplateExt string
+	// It's called "template_exts" in the config file.
+	TemplateExts []string
 
 	// TemplateLeftDelim represents the left side of the HTML template delimiter. It will be
 	// used when parsing the HTML templates. It works only with the default `Renderer`.
@@ -133,16 +133,6 @@ type Config struct {
 	// It's called "template_minified" in the config file.
 	TemplateMinified bool
 
-	// TemplateWatched indicates whether to watch the changing of the HTML templates after they
-	// are parsed into the `Renderer`. It works only with the default `Renderer`.
-	//
-	// It will be forced to the true if the `DebugMode` is true.
-	//
-	// The default value is false.
-	//
-	// It's called "template_watched" in the config file.
-	TemplateWatched bool
-
 	// Data represents the data that parsing from the config file. You can use it to access the
 	// values in the config file.
 	//
@@ -158,7 +148,7 @@ var DefaultConfig = Config{
 	Address:            "localhost:2333",
 	MaxHeaderBytes:     1 << 20,
 	TemplateRoot:       "templates",
-	TemplateExt:        ".html",
+	TemplateExts:       []string{".html"},
 	TemplateLeftDelim:  "{{",
 	TemplateRightDelim: "}}",
 }
@@ -186,58 +176,57 @@ func (c *Config) ParseFile(filename string) error {
 	if err != nil {
 		return err
 	}
-	c.Parse(string(b))
-	return nil
+	return c.Parse(string(b))
 }
 
 // fillData fills the values of the fields from the field `Data` of the c.
 func (c *Config) fillData() {
-	if an, ok := c.Data["app_name"]; ok {
-		c.AppName = an.(string)
+	if an, ok := c.Data["app_name"].(string); ok {
+		c.AppName = an
 	}
-	if dm, ok := c.Data["debug_mode"]; ok {
-		c.DebugMode = dm.(bool)
+	if dm, ok := c.Data["debug_mode"].(bool); ok {
+		c.DebugMode = dm
 	}
-	if le, ok := c.Data["log_enabled"]; ok {
-		c.LogEnabled = le.(bool)
+	if le, ok := c.Data["log_enabled"].(bool); ok {
+		c.LogEnabled = le
 	}
-	if lf, ok := c.Data["log_format"]; ok {
-		c.LogFormat = lf.(string)
+	if lf, ok := c.Data["log_format"].(string); ok {
+		c.LogFormat = lf
 	}
-	if addr, ok := c.Data["address"]; ok {
-		c.Address = addr.(string)
+	if a, ok := c.Data["address"].(string); ok {
+		c.Address = a
 	}
-	if rt, ok := c.Data["read_timeout"]; ok {
-		c.ReadTimeout = time.Duration(rt.(int)) * time.Millisecond
+	if rt, ok := c.Data["read_timeout"].(int); ok {
+		c.ReadTimeout = time.Duration(rt) * time.Millisecond
 	}
-	if wt, ok := c.Data["write_timeout"]; ok {
-		c.WriteTimeout = time.Duration(wt.(int)) * time.Millisecond
+	if wt, ok := c.Data["write_timeout"].(int); ok {
+		c.WriteTimeout = time.Duration(wt) * time.Millisecond
 	}
-	if mhb, ok := c.Data["max_header_bytes"]; ok {
-		c.MaxHeaderBytes = mhb.(int)
+	if mhb, ok := c.Data["max_header_bytes"].(int); ok {
+		c.MaxHeaderBytes = mhb
 	}
-	if tlscf, ok := c.Data["tls_cert_file"]; ok {
-		c.TLSCertFile = tlscf.(string)
+	if tcf, ok := c.Data["tls_cert_file"].(string); ok {
+		c.TLSCertFile = tcf
 	}
-	if tlskf, ok := c.Data["tls_key_file"]; ok {
-		c.TLSKeyFile = tlskf.(string)
+	if tkf, ok := c.Data["tls_key_file"].(string); ok {
+		c.TLSKeyFile = tkf
 	}
-	if tr, ok := c.Data["template_root"]; ok {
-		c.TemplateRoot = tr.(string)
+	if tr, ok := c.Data["template_root"].(string); ok {
+		c.TemplateRoot = tr
 	}
-	if te, ok := c.Data["template_ext"]; ok {
-		c.TemplateExt = te.(string)
+	if tes, ok := c.Data["template_exts"].([]interface{}); ok {
+		c.TemplateExts = []string{}
+		for _, te := range tes {
+			c.TemplateExts = append(c.TemplateExts, te.(string))
+		}
 	}
-	if tld, ok := c.Data["template_left_delim"]; ok {
-		c.TemplateLeftDelim = tld.(string)
+	if tld, ok := c.Data["template_left_delim"].(string); ok {
+		c.TemplateLeftDelim = tld
 	}
-	if trd, ok := c.Data["template_right_delim"]; ok {
-		c.TemplateRightDelim = trd.(string)
+	if trd, ok := c.Data["template_right_delim"].(string); ok {
+		c.TemplateRightDelim = trd
 	}
-	if tm, ok := c.Data["template_minified"]; ok {
-		c.TemplateMinified = tm.(bool)
-	}
-	if tw, ok := c.Data["template_watched"]; ok {
-		c.TemplateWatched = tw.(bool)
+	if tm, ok := c.Data["template_minified"].(bool); ok {
+		c.TemplateMinified = tm
 	}
 }

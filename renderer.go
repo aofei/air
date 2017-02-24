@@ -61,7 +61,7 @@ func (r *renderer) SetTemplateFunc(name string, f interface{}) {
 
 // ParseTemplates implements the `Renderer#ParseTemplates()` by using the `template.Template`.
 //
-// e.g. r.air.Config.TemplateRoot == "templates" && r.air.Config.TemplateExt == ".html"
+// e.g. r.air.Config.TemplateRoot == "templates" && r.air.Config.TemplateExt == [".html"]
 //
 // templates/
 //   index.html
@@ -82,23 +82,67 @@ func (r *renderer) ParseTemplates() error {
 		return nil
 	}
 
-	if c.TemplateMinified {
-		r.minifier = minify.New()
-		r.minifier.Add("text/html", &html.Minifier{
-			KeepDefaultAttrVals: true,
-			KeepDocumentTags:    true,
-			KeepWhitespace:      true,
-		})
+	tr, err := filepath.Abs(c.TemplateRoot)
+	if err != nil {
+		return err
 	}
 
-	if c.TemplateWatched {
-		var err error
-		if r.watcher, err = fsnotify.NewWatcher(); err != nil {
+	dirs, err := walkDirs(tr)
+	if err != nil {
+		return err
+	}
+
+	var filenames []string
+	for _, dir := range dirs {
+		for _, te := range c.TemplateExts {
+			fns, err := filepath.Glob(filepath.Join(dir, "*"+te))
+			if err != nil {
+				return err
+			}
+			filenames = append(filenames, fns...)
+		}
+	}
+
+	t := template.New("template")
+	t.Funcs(r.templateFuncMap)
+	t.Delims(c.TemplateLeftDelim, c.TemplateRightDelim)
+
+	for _, filename := range filenames {
+		b, err := ioutil.ReadFile(filename)
+		if err != nil {
 			return err
 		}
 
-		dirs, err := walkDirs(r.air.Config.TemplateRoot)
-		if err != nil {
+		if c.TemplateMinified {
+			if r.minifier == nil {
+				r.minifier = minify.New()
+				r.minifier.Add("text/html", &html.Minifier{
+					KeepDefaultAttrVals: true,
+					KeepDocumentTags:    true,
+					KeepWhitespace:      true,
+				})
+			}
+
+			buf := &bytes.Buffer{}
+
+			err := r.minifier.Minify("text/html", buf, bytes.NewReader(b))
+			if err != nil {
+				return err
+			}
+
+			b = buf.Bytes()
+		}
+
+		name := filepath.ToSlash(filename[len(tr)+1:])
+		if _, err = t.New(name).Parse(string(b)); err != nil {
+			return err
+		}
+	}
+
+	r.template = t
+
+	if r.watcher == nil {
+		if r.watcher, err = fsnotify.NewWatcher(); err != nil {
 			return err
 		}
 
@@ -111,72 +155,12 @@ func (r *renderer) ParseTemplates() error {
 		go r.watchTemplates()
 	}
 
-	return r.parseTemplates()
+	return nil
 }
 
 // Render implements the `Renderer#Render()` by using the `template.Template`.
 func (r *renderer) Render(w io.Writer, templateName string, data Map) error {
 	return r.template.ExecuteTemplate(w, templateName, data)
-}
-
-// parseTemplates parses all template files.
-func (r *renderer) parseTemplates() error {
-	c := r.air.Config
-
-	tr := filepath.Clean(c.TemplateRoot)
-	if _, err := os.Stat(tr); err != nil && os.IsNotExist(err) {
-		return nil
-	}
-
-	dirs, err := walkDirs(tr)
-	if err != nil {
-		return err
-	}
-
-	var filenames []string
-	for _, dir := range dirs {
-		fns, err := filepath.Glob(fmt.Sprintf("%s/*%s", dir, c.TemplateExt))
-		if err != nil {
-			return err
-		}
-		filenames = append(filenames, fns...)
-	}
-
-	buf := &bytes.Buffer{}
-
-	t := template.New("template")
-	t.Funcs(r.templateFuncMap)
-	t.Delims(c.TemplateLeftDelim, c.TemplateRightDelim)
-
-	start := 0
-	if tr != "." {
-		start = len(tr) + 1
-	}
-
-	for _, filename := range filenames {
-		b, err := ioutil.ReadFile(filename)
-		if err != nil {
-			return err
-		}
-
-		if c.TemplateMinified {
-			err := r.minifier.Minify("text/html", buf, bytes.NewReader(b))
-			if err != nil {
-				return err
-			}
-			b = buf.Bytes()
-			buf.Reset()
-		}
-
-		name := filepath.ToSlash(filename[start:])
-		if _, err := t.New(name).Parse(string(b)); err != nil {
-			return err
-		}
-	}
-
-	r.template = t
-
-	return nil
 }
 
 // watchTemplates watchs the changing of all template files.
@@ -190,7 +174,7 @@ func (r *renderer) watchTemplates() {
 				r.watcher.Add(event.Name)
 			}
 
-			if err := r.parseTemplates(); err != nil {
+			if err := r.ParseTemplates(); err != nil {
 				r.air.Logger.Error(err)
 			}
 		case err := <-r.watcher.Errors:
