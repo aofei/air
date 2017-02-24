@@ -267,9 +267,11 @@ func (a *Air) Serve() error {
 		a.Logger.Debug("serving in debug mode")
 	}
 
-	if err := a.Renderer.ParseTemplates(); err != nil {
-		return err
-	}
+	go func() {
+		if err := a.Renderer.ParseTemplates(); err != nil {
+			a.Logger.Error(err)
+		}
+	}()
 
 	return a.server.serve()
 }

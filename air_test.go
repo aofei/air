@@ -159,8 +159,22 @@ func (*failingRenderer) Render(w io.Writer, templateName string, data Map) error
 
 func TestAirServeError(t *testing.T) {
 	a := New()
+	buf := &bytes.Buffer{}
+	ok := make(chan struct{})
+
+	a.Logger.SetOutput(buf)
+	a.Config.LogEnabled = true
 	a.Renderer = &failingRenderer{}
-	assert.Equal(t, "error", a.Serve().Error())
+
+	go func() {
+		close(ok)
+		a.Serve()
+	}()
+
+	<-ok
+	time.Sleep(time.Millisecond) // Wait for logger
+	assert.Contains(t, buf.String(), "error")
+	assert.NoError(t, a.Close())
 }
 
 func TestAirServeTLS(t *testing.T) {
@@ -243,7 +257,6 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	a := New()
 	ok := make(chan struct{})
 
-	a.Config.Address = "localhost:2334"
 	a.Config.TLSCertFile = c.Name()
 	a.Config.TLSKeyFile = k.Name()
 
@@ -262,7 +275,6 @@ func TestAirServeDebugMode(t *testing.T) {
 	ok := make(chan struct{})
 
 	a.Config.DebugMode = true
-	a.Config.Address = "localhost:2335"
 	a.Logger.SetOutput(buf)
 
 	go func() {
