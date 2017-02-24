@@ -21,11 +21,10 @@ max_header_bytes: 65536
 tls_cert_file: "path_to_tls_cert_file"
 tls_key_file: "path_to_tls_key_file"
 template_root: "ts"
-template_ext: ".tmpl"
+template_exts: [".tmpl"]
 template_left_delim: "<<"
 template_right_delim: ">>"
 template_minified: true
-template_watched: true
 `
 
 	f, _ := os.Create("config.yml")
@@ -47,11 +46,10 @@ template_watched: true
 	assert.Equal(t, "path_to_tls_cert_file", c.TLSCertFile)
 	assert.Equal(t, "path_to_tls_key_file", c.TLSKeyFile)
 	assert.Equal(t, "ts", c.TemplateRoot)
-	assert.Equal(t, ".tmpl", c.TemplateExt)
+	assert.Equal(t, []string{".tmpl"}, c.TemplateExts)
 	assert.Equal(t, "<<", c.TemplateLeftDelim)
 	assert.Equal(t, ">>", c.TemplateRightDelim)
 	assert.Equal(t, true, c.TemplateMinified)
-	assert.Equal(t, true, c.TemplateWatched)
 	assert.NotNil(t, c.Data)
 }
 
