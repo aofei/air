@@ -285,7 +285,6 @@ func TestAirServeDebugMode(t *testing.T) {
 	<-ok
 	time.Sleep(time.Millisecond) // Wait for logger
 	assert.Equal(t, true, a.Config.LogEnabled)
-	assert.Equal(t, true, a.Config.TemplateWatched)
 	assert.NotEmpty(t, buf.String())
 	assert.NoError(t, a.Close())
 }
