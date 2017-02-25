@@ -90,10 +90,10 @@ func TestRouterMatchParam(t *testing.T) {
 	})
 
 	c = a.contextPool.Get().(*Context)
-	r.route(GET, "/users/search/"+url.PathEscape("Air / 盛傲飞"), c)
+	r.route(GET, "/users/search/"+url.PathEscape("Air / 盛傲飞+男"), c)
 	assert.Equal(t, "keyword", c.ParamNames[0])
-	assert.Equal(t, "Air / 盛傲飞", c.ParamValues[0])
-	assert.Equal(t, "Air / 盛傲飞", c.Param("keyword"))
+	assert.Equal(t, "Air / 盛傲飞 男", c.ParamValues[0])
+	assert.Equal(t, "Air / 盛傲飞 男", c.Param("keyword"))
 	assert.Empty(t, c.Param("unknown"))
 
 	r.add(GET, "/users/:uid/posts/:pid/:anchor", func(*Context) error {
@@ -151,19 +151,70 @@ func TestRouterMixMatchParamAndAny(t *testing.T) {
 	a := New()
 	r := a.router
 
+	r.add(GET, "/users/:id/posts/lucky", func(c *Context) error {
+		c.SetValue("n", 1)
+		return nil
+	})
+
+	r.add(GET, "/users/:id/posts/:pid", func(c *Context) error {
+		c.SetValue("n", 2)
+		return nil
+	})
+
+	r.add(GET, "/users/:id/posts/:pid/comments", func(c *Context) error {
+		c.SetValue("n", 3)
+		return nil
+	})
+
 	r.add(GET, "/users/:id/posts/*", func(c *Context) error {
+		c.SetValue("n", 4)
 		return nil
 	})
 
 	c := a.contextPool.Get().(*Context)
+	r.route(GET, "/users/1/posts/lucky", c)
+	c.Handler(c)
+	assert.Equal(t, "id", c.ParamNames[0])
+	assert.Equal(t, "1", c.ParamValues[0])
+	assert.Equal(t, "1", c.Param("id"))
+	assert.Equal(t, "", c.Param("*"))
+	assert.Equal(t, 1, c.Value("n"))
+
+	c = a.contextPool.Get().(*Context)
 	r.route(GET, "/users/1/posts/2", c)
+	c.Handler(c)
+	assert.Equal(t, "id", c.ParamNames[0])
+	assert.Equal(t, "pid", c.ParamNames[1])
+	assert.Equal(t, "1", c.ParamValues[0])
+	assert.Equal(t, "2", c.ParamValues[1])
+	assert.Equal(t, "1", c.Param("id"))
+	assert.Equal(t, "2", c.Param("pid"))
+	assert.Equal(t, "", c.Param("*"))
+	assert.Equal(t, 2, c.Value("n"))
+
+	c = a.contextPool.Get().(*Context)
+	r.route(GET, "/users/1/posts/lucky/comments", c)
+	c.Handler(c)
+	assert.Equal(t, "id", c.ParamNames[0])
+	assert.Equal(t, "pid", c.ParamNames[1])
+	assert.Equal(t, "1", c.ParamValues[0])
+	assert.Equal(t, "lucky", c.ParamValues[1])
+	assert.Equal(t, "1", c.Param("id"))
+	assert.Equal(t, "lucky", c.Param("pid"))
+	assert.Equal(t, "", c.Param("*"))
+	assert.Equal(t, 3, c.Value("n"))
+
+	c = a.contextPool.Get().(*Context)
+	r.route(GET, "/users/1/posts/2/comments/3", c)
 	c.Handler(c)
 	assert.Equal(t, "id", c.ParamNames[0])
 	assert.Equal(t, "*", c.ParamNames[1])
 	assert.Equal(t, "1", c.ParamValues[0])
-	assert.Equal(t, "2", c.ParamValues[1])
+	assert.Equal(t, "2/comments/3", c.ParamValues[1])
 	assert.Equal(t, "1", c.Param("id"))
-	assert.Equal(t, "2", c.Param("*"))
+	assert.Equal(t, "", c.Param("pid"))
+	assert.Equal(t, "2/comments/3", c.Param("*"))
+	assert.Equal(t, 4, c.Value("n"))
 }
 
 func TestRouterMatchingPriority(t *testing.T) {
