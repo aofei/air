@@ -28,6 +28,7 @@ func TestAirNew(t *testing.T) {
 	assert.NotNil(t, a.Logger)
 	assert.NotNil(t, a.Binder)
 	assert.NotNil(t, a.Renderer)
+	assert.NotNil(t, a.Coffer)
 	assert.NotNil(t, a.HTTPErrorHandler)
 }
 
@@ -97,7 +98,7 @@ func TestAirStatic(t *testing.T) {
 	req, _ := http.NewRequest(GET, prefix+"/"+fn, nil)
 	rec := httptest.NewRecorder()
 
-	a.Static(prefix, "./")
+	a.Static(prefix, ".")
 
 	a.server.ServeHTTP(rec, req)
 	assert.Equal(t, b, rec.Body.Bytes())
@@ -150,21 +151,34 @@ type failingRenderer struct{}
 func (*failingRenderer) SetTemplateFunc(name string, f interface{}) {}
 
 func (*failingRenderer) ParseTemplates() error {
-	return errors.New("error")
+	return errors.New("failingRenderer")
 }
 
 func (*failingRenderer) Render(w io.Writer, templateName string, data Map) error {
 	return nil
 }
 
-func TestAirServeError(t *testing.T) {
+type failingCoffer struct{}
+
+func (*failingCoffer) LoadAssets() error {
+	return errors.New("failingCoffer")
+}
+
+func (*failingCoffer) Asset(name string) *Asset {
+	return nil
+}
+
+func (*failingCoffer) SetAsset(a *Asset) {}
+
+func TestAirServeParseTemplatesError(t *testing.T) {
 	a := New()
 	buf := &bytes.Buffer{}
 	ok := make(chan struct{})
 
 	a.Logger.SetOutput(buf)
-	a.Config.LogEnabled = true
+	a.Config.LoggerEnabled = true
 	a.Renderer = &failingRenderer{}
+	a.Coffer = &failingCoffer{}
 
 	go func() {
 		close(ok)
@@ -173,7 +187,8 @@ func TestAirServeError(t *testing.T) {
 
 	<-ok
 	time.Sleep(time.Millisecond) // Wait for logger
-	assert.Contains(t, buf.String(), "error")
+	assert.Contains(t, buf.String(), "failingRenderer")
+	assert.Contains(t, buf.String(), "failingCoffer")
 	assert.NoError(t, a.Close())
 }
 
@@ -284,7 +299,7 @@ func TestAirServeDebugMode(t *testing.T) {
 
 	<-ok
 	time.Sleep(time.Millisecond) // Wait for logger
-	assert.Equal(t, true, a.Config.LogEnabled)
+	assert.Equal(t, true, a.Config.LoggerEnabled)
 	assert.NotEmpty(t, buf.String())
 	assert.NoError(t, a.Close())
 }
