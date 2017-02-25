@@ -27,6 +27,7 @@ func TestAirNew(t *testing.T) {
 	assert.NotNil(t, a.Config)
 	assert.NotNil(t, a.Logger)
 	assert.NotNil(t, a.Binder)
+	assert.NotNil(t, a.Minifier)
 	assert.NotNil(t, a.Renderer)
 	assert.NotNil(t, a.Coffer)
 	assert.NotNil(t, a.HTTPErrorHandler)
@@ -146,11 +147,21 @@ func TestAirServe(t *testing.T) {
 	assert.NoError(t, a.Close())
 }
 
+type failingMinifier struct{}
+
+func (*failingMinifier) Init() error {
+	return errors.New("failingMinifier")
+}
+
+func (*failingMinifier) Minify(MIMEType string, w io.Writer, r io.Reader) error {
+	return nil
+}
+
 type failingRenderer struct{}
 
 func (*failingRenderer) SetTemplateFunc(name string, f interface{}) {}
 
-func (*failingRenderer) ParseTemplates() error {
+func (*failingRenderer) Init() error {
 	return errors.New("failingRenderer")
 }
 
@@ -160,7 +171,7 @@ func (*failingRenderer) Render(w io.Writer, templateName string, data Map) error
 
 type failingCoffer struct{}
 
-func (*failingCoffer) LoadAssets() error {
+func (*failingCoffer) Init() error {
 	return errors.New("failingCoffer")
 }
 
@@ -177,6 +188,7 @@ func TestAirServeParseTemplatesError(t *testing.T) {
 
 	a.Logger.SetOutput(buf)
 	a.Config.LoggerEnabled = true
+	a.Minifier = &failingMinifier{}
 	a.Renderer = &failingRenderer{}
 	a.Coffer = &failingCoffer{}
 
@@ -187,6 +199,7 @@ func TestAirServeParseTemplatesError(t *testing.T) {
 
 	<-ok
 	time.Sleep(time.Millisecond) // Wait for logger
+	assert.Contains(t, buf.String(), "failingMinifier")
 	assert.Contains(t, buf.String(), "failingRenderer")
 	assert.Contains(t, buf.String(), "failingCoffer")
 	assert.NoError(t, a.Close())
