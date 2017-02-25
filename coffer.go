@@ -18,6 +18,8 @@ type (
 		Init() error
 
 		// Asset returns an `Asset` in the `Coffer` for the provided name.
+		//
+		// **Please use the `filepath.Abs()` to process the name before calling.**
 		Asset(name string) *Asset
 	}
 
@@ -66,7 +68,7 @@ func (a *Asset) Seek(offset int64, whence int) (int64, error) {
 	return a.reader.Seek(offset, whence)
 }
 
-// newAsset returns a pointer of a new instance of the `coffer`.
+// newCoffer returns a pointer of a new instance of the `coffer`.
 func newCoffer(a *Air) *coffer {
 	return &coffer{
 		air:    a,
@@ -89,52 +91,10 @@ func (c *coffer) Init() error {
 		return err
 	}
 
-	dirs, err := walkDirs(ar)
+	dirs, files, err := walkFiles(ar, cfg.AssetExts)
 	if err != nil {
 		return err
 	}
-
-	var filenames []string
-	for _, dir := range dirs {
-		for _, ae := range cfg.AssetExts {
-			fns, err := filepath.Glob(filepath.Join(dir, "*"+ae))
-			if err != nil {
-				return err
-			}
-			filenames = append(filenames, fns...)
-		}
-	}
-
-	assets := make(map[string]*Asset)
-
-	for _, filename := range filenames {
-		fi, err := os.Stat(filename)
-		if err != nil {
-			return err
-		}
-
-		b, err := ioutil.ReadFile(filename)
-		if err != nil {
-			return err
-		}
-
-		if cfg.AssetMinified {
-			if mt := mimeTypeByExt(filepath.Ext(filename)); mt != "" {
-				buf := &bytes.Buffer{}
-
-				err := c.air.Minifier.Minify(mt, buf, bytes.NewReader(b))
-				if err != nil {
-					return err
-				}
-
-				b = buf.Bytes()
-			}
-		}
-
-		assets[filename] = NewAsset(filename, fi.ModTime(), b)
-	}
-
-	c.assets = assets
 
 	if c.watcher == nil {
 		if c.watcher, err = fsnotify.NewWatcher(); err != nil {
@@ -149,6 +109,37 @@ func (c *coffer) Init() error {
 
 		go c.watchAssets()
 	}
+
+	assets := make(map[string]*Asset)
+
+	for _, file := range files {
+		fi, err := os.Stat(file)
+		if err != nil {
+			return err
+		}
+
+		b, err := ioutil.ReadFile(file)
+		if err != nil {
+			return err
+		}
+
+		if cfg.AssetMinified {
+			if mt := mimeTypeByExt(filepath.Ext(file)); mt != "" {
+				buf := &bytes.Buffer{}
+
+				err := c.air.Minifier.Minify(mt, buf, bytes.NewReader(b))
+				if err != nil {
+					return err
+				}
+
+				b = buf.Bytes()
+			}
+		}
+
+		assets[file] = NewAsset(file, fi.ModTime(), b)
+	}
+
+	c.assets = assets
 
 	return nil
 }
