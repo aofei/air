@@ -96,17 +96,17 @@ func (r *Response) Render(templates ...string) error {
 			return err
 		}
 	}
-	return r.Blob(MIMETextHTML, buf.Bytes())
+	return r.Blob(MIMETextHTML+CharsetUTF8, buf.Bytes())
 }
 
 // HTML sends a "text/html" HTTP response with the html.
 func (r *Response) HTML(html string) error {
-	return r.Blob(MIMETextHTML, []byte(html))
+	return r.Blob(MIMETextHTML+CharsetUTF8, []byte(html))
 }
 
 // String sends a "text/plain" HTTP response with the s.
 func (r *Response) String(s string) error {
-	return r.Blob(MIMETextPlain, []byte(s))
+	return r.Blob(MIMETextPlain+CharsetUTF8, []byte(s))
 }
 
 // JSON sends an "application/json" HTTP response with the type i.
@@ -118,7 +118,7 @@ func (r *Response) JSON(i interface{}) error {
 	if err != nil {
 		return err
 	}
-	return r.Blob(MIMEApplicationJSON, b)
+	return r.Blob(MIMEApplicationJSON+CharsetUTF8, b)
 }
 
 // JSONP sends an "application/javascript" HTTP response with the type i. It uses the callback to
@@ -130,7 +130,7 @@ func (r *Response) JSONP(i interface{}, callback string) error {
 	}
 	b = append([]byte(callback+"("), b...)
 	b = append(b, []byte(");")...)
-	return r.Blob(MIMEApplicationJavaScript, b)
+	return r.Blob(MIMEApplicationJavaScript+CharsetUTF8, b)
 }
 
 // XML sends an "application/xml" HTTP response with the type i.
@@ -142,7 +142,7 @@ func (r *Response) XML(i interface{}) error {
 	if err != nil {
 		return err
 	}
-	return r.Blob(MIMEApplicationXML, append([]byte(xml.Header), b...))
+	return r.Blob(MIMEApplicationXML+CharsetUTF8, append([]byte(xml.Header), b...))
 }
 
 // YAML sends an "application/x-yaml" HTTP response with the type i.
@@ -151,7 +151,7 @@ func (r *Response) YAML(i interface{}) error {
 	if err != nil {
 		return err
 	}
-	return r.Blob(MIMEApplicationYAML, b)
+	return r.Blob(MIMEApplicationYAML+CharsetUTF8, b)
 }
 
 // Blob sends a blob HTTP response with the contentType and the b.

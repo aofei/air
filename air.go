@@ -62,17 +62,23 @@ var methods = [4]string{GET, POST, PUT, DELETE}
 
 // MIME types
 const (
-	MIMEApplicationJSON       = "application/json; charset=utf-8"
-	MIMEApplicationJavaScript = "application/javascript; charset=utf-8"
-	MIMEApplicationXML        = "application/xml; charset=utf-8"
-	MIMEApplicationYAML       = "application/x-yaml; charset=utf-8"
+	MIMEApplicationJSON       = "application/json"
+	MIMEApplicationJavaScript = "application/javascript"
+	MIMEApplicationXML        = "application/xml"
+	MIMEApplicationYAML       = "application/x-yaml"
 	MIMEApplicationForm       = "application/x-www-form-urlencoded"
 	MIMEApplicationProtobuf   = "application/protobuf"
 	MIMEApplicationMsgpack    = "application/msgpack"
-	MIMETextHTML              = "text/html; charset=utf-8"
-	MIMETextPlain             = "text/plain; charset=utf-8"
+	MIMETextPlain             = "text/plain"
+	MIMETextHTML              = "text/html"
+	MIMETextCSS               = "text/css"
+	MIMETextJavaScript        = "text/javascript"
+	MIMETextXML               = "text/xml"
+	MIMEImageSVG              = "image/svg+xml"
 	MIMEMultipartForm         = "multipart/form-data"
 	MIMEOctetStream           = "application/octet-stream"
+
+	CharsetUTF8 = "; charset=utf-8"
 )
 
 // Headers
