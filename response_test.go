@@ -57,7 +57,7 @@ func TestResponseRender(t *testing.T) {
 	c.Data["author"] = "Aofei Sheng"
 	if err := c.Render("info"); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMETextHTML, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMETextHTML+CharsetUTF8, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, "Air by Aofei Sheng.", rec.Body.String())
 	}
 
@@ -76,7 +76,7 @@ func TestResponseHTML(t *testing.T) {
 
 	if err := c.HTML("Air"); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMETextHTML, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMETextHTML+CharsetUTF8, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, "Air", rec.Body.String())
 	}
 }
@@ -91,7 +91,7 @@ func TestResponseString(t *testing.T) {
 
 	if err := c.String("Air"); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMETextPlain, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMETextPlain+CharsetUTF8, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, "Air", rec.Body.String())
 	}
 }
@@ -113,7 +113,8 @@ func TestResponseJSON(t *testing.T) {
 
 	if err := c.JSON(info); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMEApplicationJSON, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMEApplicationJSON+CharsetUTF8,
+			rec.Header().Get(HeaderContentType))
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
 
@@ -139,7 +140,8 @@ func TestResponseJSONP(t *testing.T) {
 	cb := "callback"
 	if err := c.JSONP(info, cb); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMEApplicationJavaScript, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMEApplicationJavaScript+CharsetUTF8,
+			rec.Header().Get(HeaderContentType))
 		assert.Equal(t, cb+"("+infoStr+");", rec.Body.String())
 	}
 
@@ -170,7 +172,7 @@ func TestResponseXML(t *testing.T) {
 
 	if err := c.XML(info); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMEApplicationXML, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMEApplicationXML+CharsetUTF8, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
 
@@ -201,7 +203,8 @@ func TestResponseYAML(t *testing.T) {
 	infoStr := "name: Air\nauthor: Aofei Sheng\n"
 	if err := c.YAML(info); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMEApplicationYAML, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMEApplicationYAML+CharsetUTF8,
+			rec.Header().Get(HeaderContentType))
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
 
@@ -245,9 +248,9 @@ func TestResponseStream(t *testing.T) {
 	c.feed(req, rec)
 
 	s := "response from a stream"
-	if err := c.Stream(MIMEOctetStream, strings.NewReader(s)); assert.NoError(t, err) {
+	if assert.NoError(t, c.Stream(MIMEOctetStream+CharsetUTF8, strings.NewReader(s))) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMEOctetStream, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMEOctetStream+CharsetUTF8, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, s, rec.Body.String())
 	}
 }
@@ -264,7 +267,7 @@ func TestResponseFile(t *testing.T) {
 	b, _ := ioutil.ReadFile(f)
 	if err := c.File(f); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMETextPlain, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMETextPlain+CharsetUTF8, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, b, rec.Body.Bytes())
 	}
 
@@ -299,7 +302,7 @@ func TestResponseFile(t *testing.T) {
 
 	if err := c.File("."); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMETextHTML, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMETextHTML+CharsetUTF8, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, "<html></html>", rec.Body.String())
 	}
 }
@@ -325,7 +328,7 @@ func TestResponseFileAssets(t *testing.T) {
 
 	if err := c.File("."); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMETextHTML, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMETextHTML+CharsetUTF8, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, "<html></html>", rec.Body.String())
 	}
 }

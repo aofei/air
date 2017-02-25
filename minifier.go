@@ -38,25 +38,25 @@ func newMinifier() *minifier {
 
 // Init implements the `Minifier#Init()` by using the "github.com/tdewolff/minify".
 func (m *minifier) Init() error {
-	m.Add("text/html", &html.Minifier{
+	m.Add(MIMETextHTML, &html.Minifier{
 		KeepDefaultAttrVals: true,
 		KeepDocumentTags:    true,
 		KeepWhitespace:      true,
 	})
 
-	m.Add("text/css", &css.Minifier{
+	m.Add(MIMETextCSS, &css.Minifier{
 		Decimals: -1,
 	})
 
-	m.Add("text/javascript", &js.Minifier{})
+	m.Add(MIMETextJavaScript, &js.Minifier{})
 
-	m.Add("application/json", &json.Minifier{})
+	m.Add(MIMEApplicationJSON, &json.Minifier{})
 
-	m.Add("text/xml", &xml.Minifier{
+	m.Add(MIMETextXML, &xml.Minifier{
 		KeepWhitespace: true,
 	})
 
-	m.Add("image/svg+xml", &svg.Minifier{
+	m.Add(MIMEImageSVG, &svg.Minifier{
 		Decimals: -1,
 	})
 
