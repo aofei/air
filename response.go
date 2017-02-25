@@ -170,39 +170,32 @@ func (r *Response) Stream(contentType string, reader io.Reader) error {
 
 // File sends a file HTTP response with the file.
 func (r *Response) File(file string) error {
+	if fi, err := os.Stat(file); err != nil && os.IsNotExist(err) {
+		return ErrNotFound
+	} else if fi.IsDir() {
+		file = filepath.Join("index.html")
+		if _, err := os.Stat(file); err != nil && os.IsNotExist(err) {
+			return ErrNotFound
+		}
+	}
+
 	abs, err := filepath.Abs(file)
 	if err != nil {
 		return err
 	}
 
-	absi := filepath.Join(abs, "index.html")
-
 	if a := r.context.Air.Coffer.Asset(abs); a != nil {
-		http.ServeContent(r, r.context.Request.Request, a.Name(), a.ModTime(), a)
-	} else if a := r.context.Air.Coffer.Asset(absi); a != nil {
 		http.ServeContent(r, r.context.Request.Request, a.Name(), a.ModTime(), a)
 	} else {
 		f, err := os.Open(abs)
 		if err != nil {
-			return ErrNotFound
+			return err
 		}
 		defer f.Close()
 
 		fi, err := f.Stat()
 		if err != nil {
 			return err
-		}
-
-		if fi.IsDir() {
-			f, err = os.Open(absi)
-			if err != nil {
-				return ErrNotFound
-			}
-			defer f.Close()
-
-			if fi, err = f.Stat(); err != nil {
-				return err
-			}
 		}
 
 		http.ServeContent(r, r.context.Request.Request, fi.Name(), fi.ModTime(), f)
