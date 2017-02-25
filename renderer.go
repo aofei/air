@@ -11,19 +11,17 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/tdewolff/minify"
-	"github.com/tdewolff/minify/html"
 )
 
 type (
 	// Renderer is used to provide a `Render()` method for an `Air` instance for renders a
 	// "text/html" HTTP response.
 	Renderer interface {
-		// SetTemplateFunc sets the func f into template func map with the name.
-		SetTemplateFunc(name string, f interface{})
+		// Init initializes the `Renderer`. It will be called in the `Air#Serve()`.
+		Init() error
 
-		// ParseTemplates parses template files. It will be called in the `Air#Serve()`.
-		ParseTemplates() error
+		// SetTemplateFunc sets the func f into the `Renderer` with the name.
+		SetTemplateFunc(name string, f interface{})
 
 		// Render renders the data into the w with the templateName.
 		Render(w io.Writer, templateName string, data Map) error
@@ -35,7 +33,6 @@ type (
 
 		template        *template.Template
 		templateFuncMap template.FuncMap
-		minifier        *minify.M
 		watcher         *fsnotify.Watcher
 	}
 )
@@ -54,12 +51,7 @@ func newRenderer(a *Air) *renderer {
 	}
 }
 
-// SetTemplateFunc implements the `Renderer#SetTemplateFunc()` by using the `template.Template`.
-func (r *renderer) SetTemplateFunc(name string, f interface{}) {
-	r.templateFuncMap[name] = f
-}
-
-// ParseTemplates implements the `Renderer#ParseTemplates()` by using the `template.Template`.
+// Init implements the `Renderer#Init()` by using the `template.Template`.
 //
 // e.g. r.air.Config.TemplateRoot == "templates" && r.air.Config.TemplateExt == []string{".html"}
 //
@@ -75,7 +67,7 @@ func (r *renderer) SetTemplateFunc(name string, f interface{}) {
 // will be parsed into:
 //
 // "index.html", "login.html", "register.html", "parts/header.html", "parts/footer.html".
-func (r *renderer) ParseTemplates() error {
+func (r *renderer) Init() error {
 	c := r.air.Config
 
 	if _, err := os.Stat(c.TemplateRoot); err != nil && os.IsNotExist(err) {
@@ -114,18 +106,9 @@ func (r *renderer) ParseTemplates() error {
 		}
 
 		if c.TemplateMinified {
-			if r.minifier == nil {
-				r.minifier = minify.New()
-				r.minifier.Add("text/html", &html.Minifier{
-					KeepDefaultAttrVals: true,
-					KeepDocumentTags:    true,
-					KeepWhitespace:      true,
-				})
-			}
-
 			buf := &bytes.Buffer{}
 
-			err := r.minifier.Minify("text/html", buf, bytes.NewReader(b))
+			err := r.air.Minifier.Minify("text/html", buf, bytes.NewReader(b))
 			if err != nil {
 				return err
 			}
@@ -158,6 +141,11 @@ func (r *renderer) ParseTemplates() error {
 	return nil
 }
 
+// SetTemplateFunc implements the `Renderer#SetTemplateFunc()` by using the `template.Template`.
+func (r *renderer) SetTemplateFunc(name string, f interface{}) {
+	r.templateFuncMap[name] = f
+}
+
 // Render implements the `Renderer#Render()` by using the `template.Template`.
 func (r *renderer) Render(w io.Writer, templateName string, data Map) error {
 	return r.template.ExecuteTemplate(w, templateName, data)
@@ -174,7 +162,7 @@ func (r *renderer) watchTemplates() {
 				r.watcher.Add(event.Name)
 			}
 
-			if err := r.ParseTemplates(); err != nil {
+			if err := r.Init(); err != nil {
 				r.air.Logger.Error(err)
 			}
 		case err := <-r.watcher.Errors:

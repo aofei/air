@@ -308,6 +308,7 @@ func TestResponseFileAssets(t *testing.T) {
 	a := New()
 	a.Config.CofferEnabled = true
 	a.Config.AssetRoot = "."
+	a.Coffer.Init()
 
 	file, _ := os.Create("index.html")
 	defer func() {
@@ -315,8 +316,6 @@ func TestResponseFileAssets(t *testing.T) {
 		os.Remove(file.Name())
 	}()
 	file.WriteString("<html></html>")
-
-	a.Coffer.LoadAssets()
 
 	req, _ := http.NewRequest(GET, "/", nil)
 	rec := httptest.NewRecorder()
