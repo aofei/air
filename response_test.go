@@ -305,25 +305,15 @@ func TestResponseFile(t *testing.T) {
 		assert.Equal(t, MIMETextHTML+CharsetUTF8, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, "<html></html>", rec.Body.String())
 	}
-}
 
-func TestResponseFileAssets(t *testing.T) {
-	a := New()
 	a.Config.CofferEnabled = true
 	a.Config.AssetRoot = "."
 	a.Coffer.Init()
 
-	file, _ := os.Create("index.html")
-	defer func() {
-		file.Close()
-		os.Remove(file.Name())
-	}()
-	file.WriteString("<html></html>")
+	req, _ = http.NewRequest(GET, "/", nil)
+	rec = httptest.NewRecorder()
 
-	req, _ := http.NewRequest(GET, "/", nil)
-	rec := httptest.NewRecorder()
-	c := NewContext(a)
-
+	c.reset()
 	c.feed(req, rec)
 
 	if err := c.File("."); assert.NoError(t, err) {
