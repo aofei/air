@@ -233,7 +233,7 @@ func (l *logger) Fatalj(m Map) {
 
 // log prints the lvl level log info in the format with the args.
 func (l *logger) log(lvl loggerLevel, format string, args ...interface{}) {
-	if !l.air.Config.LogEnabled {
+	if !l.air.Config.LoggerEnabled {
 		return
 	} else if l.template == nil {
 		l.template = template.Must(template.New("logger").Parse(l.air.Config.LogFormat))

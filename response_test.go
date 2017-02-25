@@ -282,7 +282,7 @@ func TestResponseFile(t *testing.T) {
 	c.reset()
 	c.feed(req, rec)
 
-	assert.Equal(t, ErrNotFound, c.File("./"))
+	assert.Equal(t, ErrNotFound, c.File("."))
 
 	file, _ := os.Create("index.html")
 	defer func() {
@@ -297,7 +297,34 @@ func TestResponseFile(t *testing.T) {
 	c.reset()
 	c.feed(req, rec)
 
-	if err := c.File("./"); assert.NoError(t, err) {
+	if err := c.File("."); assert.NoError(t, err) {
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, MIMETextHTML, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, "<html></html>", rec.Body.String())
+	}
+}
+
+func TestResponseFileAssets(t *testing.T) {
+	a := New()
+	a.Config.CofferEnabled = true
+	a.Config.AssetRoot = "."
+
+	file, _ := os.Create("index.html")
+	defer func() {
+		file.Close()
+		os.Remove(file.Name())
+	}()
+	file.WriteString("<html></html>")
+
+	a.Coffer.LoadAssets()
+
+	req, _ := http.NewRequest(GET, "/", nil)
+	rec := httptest.NewRecorder()
+	c := NewContext(a)
+
+	c.feed(req, rec)
+
+	if err := c.File("."); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, MIMETextHTML, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, "<html></html>", rec.Body.String())
