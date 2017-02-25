@@ -16,7 +16,7 @@ func TestRendererSetTemplateFunc(t *testing.T) {
 	assert.NotNil(t, r.templateFuncMap["unixnano"])
 }
 
-func TestRendererParseTemplatesAndRender(t *testing.T) {
+func TestRendererInitAndRender(t *testing.T) {
 	index := `
 <!DOCTYPE html>
 <html>
@@ -97,6 +97,16 @@ func TestRendererParseTemplatesAndRender(t *testing.T) {
 	}()
 	mainFile.WriteString(main)
 
+	a := New()
+	a.Minifier.Init()
+
+	a.Config.TemplateMinified = true
+
+	b := &bytes.Buffer{}
+
+	assert.NoError(t, a.Renderer.Init())
+	assert.Error(t, a.Renderer.Render(b, "index.html", nil))
+
 	footerFile, _ := os.Create(templatesParts + "/footer.html")
 	defer func() {
 		footerFile.Close()
@@ -104,16 +114,8 @@ func TestRendererParseTemplatesAndRender(t *testing.T) {
 	}()
 	footerFile.WriteString(footer)
 
-	a := New()
-	a.Minifier.Init()
-
-	r := a.Renderer.(*renderer)
-	b := &bytes.Buffer{}
-
-	a.Config.TemplateMinified = true
-
-	assert.NoError(t, r.Init())
-	assert.NoError(t, r.Render(b, "index.html", nil))
+	time.Sleep(time.Millisecond) // Wait for renderer
+	assert.NoError(t, a.Renderer.Render(b, "index.html", nil))
 	assert.Equal(t, result, b.String())
 }
 
