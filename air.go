@@ -24,6 +24,7 @@ type (
 		Config           *Config
 		Logger           Logger
 		Binder           Binder
+		Minifier         Minifier
 		Renderer         Renderer
 		Coffer           Coffer
 		HTTPErrorHandler HTTPErrorHandler
@@ -156,6 +157,7 @@ func New() *Air {
 	a.Config = NewConfig("config.yml")
 	a.Logger = newLogger(a)
 	a.Binder = newBinder()
+	a.Minifier = newMinifier()
 	a.Renderer = newRenderer(a)
 	a.Coffer = newCoffer(a)
 	a.HTTPErrorHandler = DefaultHTTPErrorHandler
@@ -269,11 +271,15 @@ func (a *Air) Serve() error {
 	}
 
 	go func() {
-		if err := a.Renderer.ParseTemplates(); err != nil {
+		if err := a.Minifier.Init(); err != nil {
 			a.Logger.Error(err)
 		}
 
-		if err := a.Coffer.LoadAssets(); err != nil {
+		if err := a.Renderer.Init(); err != nil {
+			a.Logger.Error(err)
+		}
+
+		if err := a.Coffer.Init(); err != nil {
 			a.Logger.Error(err)
 		}
 	}()

@@ -8,21 +8,14 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/tdewolff/minify"
-	"github.com/tdewolff/minify/css"
-	"github.com/tdewolff/minify/html"
-	"github.com/tdewolff/minify/js"
-	"github.com/tdewolff/minify/json"
-	"github.com/tdewolff/minify/svg"
-	"github.com/tdewolff/minify/xml"
 )
 
 type (
-	// Coffer is used to provide an `Asset()` method for an `Air` instance for access binary
+	// Coffer is used to provide an `Asset()` method for an `Air` instance for accesses binary
 	// asset files by using the runtime memory.
 	Coffer interface {
-		// LoadAssets loads asset files. It will be called in the `Air#Serve()`.
-		LoadAssets() error
+		// Init initializes the `Coffer`. It will be called in the `Air#Serve()`.
+		Init() error
 
 		// Asset returns an `Asset` in the `Coffer` for the provided name.
 		Asset(name string) *Asset
@@ -39,9 +32,8 @@ type (
 	coffer struct {
 		air *Air
 
-		assets   map[string]*Asset
-		minifier *minify.M
-		watcher  *fsnotify.Watcher
+		assets  map[string]*Asset
+		watcher *fsnotify.Watcher
 	}
 )
 
@@ -82,8 +74,8 @@ func newCoffer(a *Air) *coffer {
 	}
 }
 
-// LoadAssets implements the `Coffer#LoadAssets()` by using the `map[string]*Asset`.
-func (c *coffer) LoadAssets() error {
+// Init implements the `Coffer#Init()` by using the `map[string]*Asset`.
+func (c *coffer) Init() error {
 	cfg := c.air.Config
 
 	if !cfg.CofferEnabled {
@@ -127,47 +119,21 @@ func (c *coffer) LoadAssets() error {
 		}
 
 		if cfg.AssetMinified {
-			if c.minifier == nil {
-				c.minifier = minify.New()
-
-				c.minifier.Add("text/html", &html.Minifier{
-					KeepDefaultAttrVals: true,
-					KeepDocumentTags:    true,
-					KeepWhitespace:      true,
-				})
-
-				c.minifier.Add("text/css", &css.Minifier{
-					Decimals: -1,
-				})
-
-				c.minifier.Add("text/javascript", &js.Minifier{})
-
-				c.minifier.Add("application/json", &json.Minifier{})
-
-				c.minifier.Add("text/xml", &xml.Minifier{
-					KeepWhitespace: true,
-				})
-
-				c.minifier.Add("image/svg+xml", &svg.Minifier{
-					Decimals: -1,
-				})
-			}
-
 			buf := &bytes.Buffer{}
 
-			switch ext := filepath.Ext(filename); ext {
+			switch m := c.air.Minifier; filepath.Ext(filename) {
 			case ".html":
-				err = c.minifier.Minify("text/html", buf, bytes.NewReader(b))
+				err = m.Minify("text/html", buf, bytes.NewReader(b))
 			case ".css":
-				err = c.minifier.Minify("text/css", buf, bytes.NewReader(b))
+				err = m.Minify("text/css", buf, bytes.NewReader(b))
 			case ".js":
-				err = c.minifier.Minify("text/javascript", buf, bytes.NewReader(b))
+				err = m.Minify("text/javascript", buf, bytes.NewReader(b))
 			case ".json":
-				err = c.minifier.Minify("application/json", buf, bytes.NewReader(b))
+				err = m.Minify("application/json", buf, bytes.NewReader(b))
 			case ".xml":
-				err = c.minifier.Minify("text/xml", buf, bytes.NewReader(b))
+				err = m.Minify("text/xml", buf, bytes.NewReader(b))
 			case ".svg":
-				err = c.minifier.Minify("image/svg+xml", buf, bytes.NewReader(b))
+				err = m.Minify("image/svg+xml", buf, bytes.NewReader(b))
 			}
 
 			if err != nil {
@@ -215,7 +181,7 @@ func (c *coffer) watchAssets() {
 				c.watcher.Add(event.Name)
 			}
 
-			if err := c.LoadAssets(); err != nil {
+			if err := c.Init(); err != nil {
 				c.air.Logger.Error(err)
 			}
 		case err := <-c.watcher.Errors:

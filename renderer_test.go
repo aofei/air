@@ -105,12 +105,14 @@ func TestRendererParseTemplatesAndRender(t *testing.T) {
 	footerFile.WriteString(footer)
 
 	a := New()
+	a.Minifier.Init()
+
 	r := a.Renderer.(*renderer)
 	b := &bytes.Buffer{}
 
 	a.Config.TemplateMinified = true
 
-	assert.NoError(t, r.ParseTemplates())
+	assert.NoError(t, r.Init())
 	assert.NoError(t, r.Render(b, "index.html", nil))
 	assert.Equal(t, result, b.String())
 }
