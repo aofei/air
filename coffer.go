@@ -119,28 +119,16 @@ func (c *coffer) Init() error {
 		}
 
 		if cfg.AssetMinified {
-			buf := &bytes.Buffer{}
+			if mt := mimeTypeByExt(filepath.Ext(filename)); mt != "" {
+				buf := &bytes.Buffer{}
 
-			switch m := c.air.Minifier; filepath.Ext(filename) {
-			case ".html":
-				err = m.Minify("text/html", buf, bytes.NewReader(b))
-			case ".css":
-				err = m.Minify("text/css", buf, bytes.NewReader(b))
-			case ".js":
-				err = m.Minify("text/javascript", buf, bytes.NewReader(b))
-			case ".json":
-				err = m.Minify("application/json", buf, bytes.NewReader(b))
-			case ".xml":
-				err = m.Minify("text/xml", buf, bytes.NewReader(b))
-			case ".svg":
-				err = m.Minify("image/svg+xml", buf, bytes.NewReader(b))
+				err := c.air.Minifier.Minify(mt, buf, bytes.NewReader(b))
+				if err != nil {
+					return err
+				}
+
+				b = buf.Bytes()
 			}
-
-			if err != nil {
-				return err
-			}
-
-			b = buf.Bytes()
 		}
 
 		assets[filename] = NewAsset(filename, fi.ModTime(), b)
@@ -188,4 +176,23 @@ func (c *coffer) watchAssets() {
 			c.air.Logger.Error(err)
 		}
 	}
+}
+
+// mimeTypeByExt returns a MIME type by the ext.
+func mimeTypeByExt(ext string) string {
+	switch ext {
+	case ".html":
+		return MIMETextHTML
+	case ".css":
+		return MIMETextCSS
+	case ".js":
+		return MIMETextJavaScript
+	case ".json":
+		return MIMEApplicationJSON
+	case ".xml":
+		return MIMETextXML
+	case ".svg":
+		return MIMEImageSVG
+	}
+	return ""
 }

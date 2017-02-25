@@ -108,7 +108,7 @@ func (r *renderer) Init() error {
 		if c.TemplateMinified {
 			buf := &bytes.Buffer{}
 
-			err := r.air.Minifier.Minify("text/html", buf, bytes.NewReader(b))
+			err := r.air.Minifier.Minify(MIMETextHTML, buf, bytes.NewReader(b))
 			if err != nil {
 				return err
 			}
