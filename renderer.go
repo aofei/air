@@ -79,28 +79,31 @@ func (r *renderer) Init() error {
 		return err
 	}
 
-	dirs, err := walkDirs(tr)
+	dirs, files, err := walkFiles(tr, c.TemplateExts)
 	if err != nil {
 		return err
 	}
 
-	var filenames []string
-	for _, dir := range dirs {
-		for _, te := range c.TemplateExts {
-			fns, err := filepath.Glob(filepath.Join(dir, "*"+te))
-			if err != nil {
+	if r.watcher == nil {
+		if r.watcher, err = fsnotify.NewWatcher(); err != nil {
+			return err
+		}
+
+		for _, dir := range dirs {
+			if err := r.watcher.Add(dir); err != nil {
 				return err
 			}
-			filenames = append(filenames, fns...)
 		}
+
+		go r.watchTemplates()
 	}
 
 	t := template.New("template")
 	t.Funcs(r.templateFuncMap)
 	t.Delims(c.TemplateLeftDelim, c.TemplateRightDelim)
 
-	for _, filename := range filenames {
-		b, err := ioutil.ReadFile(filename)
+	for _, file := range files {
+		b, err := ioutil.ReadFile(file)
 		if err != nil {
 			return err
 		}
@@ -116,27 +119,13 @@ func (r *renderer) Init() error {
 			b = buf.Bytes()
 		}
 
-		name := filepath.ToSlash(filename[len(tr)+1:])
+		name := filepath.ToSlash(file[len(tr)+1:])
 		if _, err = t.New(name).Parse(string(b)); err != nil {
 			return err
 		}
 	}
 
 	r.template = t
-
-	if r.watcher == nil {
-		if r.watcher, err = fsnotify.NewWatcher(); err != nil {
-			return err
-		}
-
-		for _, dir := range dirs {
-			if err := r.watcher.Add(dir); err != nil {
-				return err
-			}
-		}
-
-		go r.watchTemplates()
-	}
 
 	return nil
 }
@@ -171,16 +160,29 @@ func (r *renderer) watchTemplates() {
 	}
 }
 
-// walkDirs walks all subdirs of the root recursively.
-func walkDirs(root string) ([]string, error) {
-	var dirs []string
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+// walkFiles walks all files with the exts in all subdirs of the root recursively.
+func walkFiles(root string, exts []string) (dirs []string, files []string, err error) {
+	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if info != nil && info.IsDir() {
 			dirs = append(dirs, path)
 		}
 		return err
 	})
-	return dirs, err
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, dir := range dirs {
+		for _, ext := range exts {
+			fs, err := filepath.Glob(filepath.Join(dir, "*"+ext))
+			if err != nil {
+				return nil, nil, err
+			}
+			files = append(files, fs...)
+		}
+	}
+
+	return
 }
 
 // strlen returns the number of chars in the s.
