@@ -12,7 +12,7 @@ func TestConfigNewConfig(t *testing.T) {
 	yaml := `
 app_name: "air"
 debug_mode: true
-log_enabled: true
+logger_enabled: true
 log_format: "air_log"
 address: "127.0.0.1:2333"
 read_timeout: 200
@@ -25,6 +25,10 @@ template_exts: [".tmpl"]
 template_left_delim: "<<"
 template_right_delim: ">>"
 template_minified: true
+coffer_enabled: true
+asset_root: "as"
+asset_exts: [".jpg"]
+asset_minified: true
 `
 
 	f, _ := os.Create("config.yml")
@@ -37,7 +41,7 @@ template_minified: true
 	c := NewConfig(f.Name())
 	assert.Equal(t, "air", c.AppName)
 	assert.Equal(t, true, c.DebugMode)
-	assert.Equal(t, true, c.LogEnabled)
+	assert.Equal(t, true, c.LoggerEnabled)
 	assert.Equal(t, "air_log", c.LogFormat)
 	assert.Equal(t, "127.0.0.1:2333", c.Address)
 	assert.Equal(t, 200*time.Millisecond, c.ReadTimeout)
@@ -50,6 +54,10 @@ template_minified: true
 	assert.Equal(t, "<<", c.TemplateLeftDelim)
 	assert.Equal(t, ">>", c.TemplateRightDelim)
 	assert.Equal(t, true, c.TemplateMinified)
+	assert.Equal(t, true, c.CofferEnabled)
+	assert.Equal(t, "as", c.AssetRoot)
+	assert.Equal(t, []string{".jpg"}, c.AssetExts)
+	assert.Equal(t, true, c.AssetMinified)
 	assert.NotNil(t, c.Data)
 }
 

@@ -25,6 +25,7 @@ type (
 		Logger           Logger
 		Binder           Binder
 		Renderer         Renderer
+		Coffer           Coffer
 		HTTPErrorHandler HTTPErrorHandler
 	}
 
@@ -156,6 +157,7 @@ func New() *Air {
 	a.Logger = newLogger(a)
 	a.Binder = newBinder()
 	a.Renderer = newRenderer(a)
+	a.Coffer = newCoffer(a)
 	a.HTTPErrorHandler = DefaultHTTPErrorHandler
 
 	return a
@@ -262,12 +264,16 @@ func (a *Air) URL(h Handler, params ...interface{}) string {
 // Serve starts the HTTP server.
 func (a *Air) Serve() error {
 	if a.Config.DebugMode {
-		a.Config.LogEnabled = true
+		a.Config.LoggerEnabled = true
 		a.Logger.Debug("serving in debug mode")
 	}
 
 	go func() {
 		if err := a.Renderer.ParseTemplates(); err != nil {
+			a.Logger.Error(err)
+		}
+
+		if err := a.Coffer.LoadAssets(); err != nil {
 			a.Logger.Error(err)
 		}
 	}()

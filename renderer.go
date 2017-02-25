@@ -61,7 +61,7 @@ func (r *renderer) SetTemplateFunc(name string, f interface{}) {
 
 // ParseTemplates implements the `Renderer#ParseTemplates()` by using the `template.Template`.
 //
-// e.g. r.air.Config.TemplateRoot == "templates" && r.air.Config.TemplateExt == [".html"]
+// e.g. r.air.Config.TemplateRoot == "templates" && r.air.Config.TemplateExt == []string{".html"}
 //
 // templates/
 //   index.html

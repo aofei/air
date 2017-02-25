@@ -16,26 +16,25 @@ type Config struct {
 	// It's called "app_name" in the config file.
 	AppName string
 
-	// DebugMode indicates whether to enable the debug mode when the HTTP server is started. It
-	// works only with the default `Logger`.
+	// DebugMode indicates whether to enable the debug mode when the HTTP server is started.
 	//
 	// The default value is false.
 	//
 	// It's called "debug_mode" in the config file.
 	DebugMode bool
 
-	// LogEnabled indicates whether to enable the `Logger` when the HTTP server is started. It
-	// works only with the default `Logger`.
+	// LoggerEnabled indicates whether to enable the `Logger` when the HTTP server is started.
+	// It works only with the default `Logger`.
 	//
 	// It will be forced to the true if the `DebugMode` is true.
 	//
 	// The default value is false.
 	//
-	// It's called "log_enabled" in the config file.
-	LogEnabled bool
+	// It's called "logger_enabled" in the config file.
+	LoggerEnabled bool
 
 	// LogFormat represents the format of the output content of the `Logger`. It works only with
-	// the default `Logger`.
+	// the default `Logger` and when the `LoggerEnabled` is true.
 	//
 	// The default value is:
 	// `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}","level":"{{.level}}",` +
@@ -133,6 +132,40 @@ type Config struct {
 	// It's called "template_minified" in the config file.
 	TemplateMinified bool
 
+	// CofferEnabled indicates whether to enable the `Coffer` when the HTTP server is started.
+	// It works only with the default `Coffer`.
+	//
+	// The default value is false.
+	//
+	// It's called "coffer_enabled" in the config file.
+	CofferEnabled bool
+
+	// AssetRoot represents the root directory of the asset files. It will be loaded into the
+	// `Coffer`. It works only with the default `Coffer` and when the `CofferEnabled` is true.
+	//
+	// The default value is "assets" that means a subdirectory of the runtime directory.
+	//
+	// It's called "asset_root" in the config file.
+	AssetRoot string
+
+	// AssetExts represents the file name extensions of the asset files. It will be used when
+	// loading the asset files. It works only with the default `Coffer` and when the
+	// `CofferEnabled` is true.
+	//
+	// The default value is [".html", ".css", ".js", ".json", ".xml", ".svg"].
+	//
+	// It's called "asset_exts" in the config file.
+	AssetExts []string
+
+	// AssetMinified indicates whether to minify the asset files before they being loaded into
+	// the `Coffer`. It works only with the default `Coffer` and when the `CofferEnabled` is
+	// true.
+	//
+	// The default value is false.
+	//
+	// It's called "asset_minified" in the config file.
+	AssetMinified bool
+
 	// Data represents the data that parsing from the config file. You can use it to access the
 	// values in the config file.
 	//
@@ -151,6 +184,8 @@ var DefaultConfig = Config{
 	TemplateExts:       []string{".html"},
 	TemplateLeftDelim:  "{{",
 	TemplateRightDelim: "}}",
+	AssetRoot:          "assets",
+	AssetExts:          []string{".html", ".css", ".js", ".json", ".xml", ".svg"},
 }
 
 // NewConfig returns a pointer of a new instance of the `Config` by parsing the config file found in
@@ -187,8 +222,8 @@ func (c *Config) fillData() {
 	if dm, ok := c.Data["debug_mode"].(bool); ok {
 		c.DebugMode = dm
 	}
-	if le, ok := c.Data["log_enabled"].(bool); ok {
-		c.LogEnabled = le
+	if le, ok := c.Data["logger_enabled"].(bool); ok {
+		c.LoggerEnabled = le
 	}
 	if lf, ok := c.Data["log_format"].(string); ok {
 		c.LogFormat = lf
@@ -228,5 +263,20 @@ func (c *Config) fillData() {
 	}
 	if tm, ok := c.Data["template_minified"].(bool); ok {
 		c.TemplateMinified = tm
+	}
+	if ce, ok := c.Data["coffer_enabled"].(bool); ok {
+		c.CofferEnabled = ce
+	}
+	if ar, ok := c.Data["asset_root"].(string); ok {
+		c.AssetRoot = ar
+	}
+	if aes, ok := c.Data["asset_exts"].([]interface{}); ok {
+		c.AssetExts = []string{}
+		for _, ae := range aes {
+			c.AssetExts = append(c.AssetExts, ae.(string))
+		}
+	}
+	if am, ok := c.Data["asset_minified"].(bool); ok {
+		c.AssetMinified = am
 	}
 }

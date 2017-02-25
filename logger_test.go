@@ -10,7 +10,7 @@ import (
 
 func TestLoggerLoggingMethods(t *testing.T) {
 	a := New()
-	a.Config.LogEnabled = true
+	a.Config.LoggerEnabled = true
 	l := a.Logger.(*logger)
 	b := &bytes.Buffer{}
 
@@ -126,7 +126,7 @@ func TestLoggerLoggingMethods(t *testing.T) {
 
 func TestLoggerLogFormat(t *testing.T) {
 	a := New()
-	a.Config.LogEnabled = true
+	a.Config.LoggerEnabled = true
 	a.Config.LogFormat = "I am the {{.app_name}}."
 	l := a.Logger.(*logger)
 	b := &bytes.Buffer{}

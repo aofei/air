@@ -47,7 +47,7 @@ func TestGroupStatic(t *testing.T) {
 	fn := "air.go"
 
 	g := NewGroup(a, prefix)
-	g.Static(secondPrefix, "./")
+	g.Static(secondPrefix, ".")
 
 	b, _ := ioutil.ReadFile(fn)
 	req, _ := http.NewRequest(GET, prefix+secondPrefix+"/"+fn, nil)
