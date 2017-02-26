@@ -12,6 +12,86 @@ High-performance? Fastest? Almost all the web frameworks are using these words t
 they are the best. Maybe they are, maybe not. This framework does not intend to follow the crowd.
 So, the Air web framework can only guarantee you one thing: **it can serve properly.**
 
+## Features
+
+* APIs
+	* As less as possible.
+	* As simple as possible.
+	* As expressive as possible.
+* HTTP Methods
+	* Only four:
+		* `GET`
+		* `POST`
+		* `PUT`
+		* `DELETE`
+* Server
+	* HTTP/2 support.
+	* SSL/TLS support.
+	* Gracefully shutdown.
+	* Powered by the Go `net/http`.
+* Router
+	* Based on the Radix Tree.
+	* Has a good inspection mechanism.
+	* Zero dynamic memory allocation.
+	* Group routes support.
+* Gas (also called middleware)
+	* Router level:
+		* Before router.
+		* After router.
+	* Route level.
+	* Group level.
+* Config
+	* For server.
+	* For logger.
+	* For renderer.
+	* For coffer.
+	* For anything.
+	* Configuration file support by using the [go-yaml](https://github.com/go-yaml/yaml).
+* Logger
+	* Customizable.
+	* Default implementation:
+		* Powered by the Go `text/template`.
+* Binder
+	* Customizable.
+	* Default implementation:
+		* Based on the `Content-Type` header.
+		* Supported MIME types:
+			* `application/json`.
+			* `application/xml`.
+			* `application/x-www-form-urlencoded`.
+* Minifier
+	* Customizable.
+	* Default implementation:
+		* Supported MIME types:
+			* `text/html`
+			* `text/css`
+			* `text/javascript`
+			* `application/json`
+			* `text/xml`
+			* `image/svg+xml`
+		* Powered by the [minify](https://github.com/tdewolff/minify).
+* Renderer
+	* Customizable.
+	* Default implementation:
+		* Rich template functions.
+		* Hot update support by using the [fsnotify](https://github.com/fsnotify/fsnotify).
+		* Powered by the Go `html/template`.
+* Coffer (accessing binray asset files by using the runtime memory)
+	* Customizable.
+	* Reduces the hard disk I/O and significantly improves the performance of the `Response#File()`.
+	* Default implementation:
+		* Asset files minimization:
+			* `.html`
+			* `.css`
+			* `.js`
+			* `.json`
+			* `.xml`
+			* `.svg`
+		* Hot update support by using the [fsnotify](https://github.com/fsnotify/fsnotify).
+* HTTPError
+	* Customizable.
+	* Centralized handling.
+
 ## Installation
 
 Open your terminal and execute
@@ -54,8 +134,9 @@ then visit `http://localhost:2333`.
 
 ## Documentation
 
-This framework is so concise that it only needs the [GoDoc](https://godoc.org/github.com/sheng/air)
-enough.
+* English (in progress...)
+* 简体中文 (编制中……)
+* [GoDoc](https://godoc.org/github.com/sheng/air)
 
 ## Gases
 
