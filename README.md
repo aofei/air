@@ -30,8 +30,8 @@ So, the Air web framework can only guarantee you one thing: **it can serve prope
 	* Powered by the Go `net/http`.
 * Router
 	* Based on the Radix Tree.
-	* Has a good inspection mechanism.
 	* Zero dynamic memory allocation.
+	* Has a good inspection mechanism.
 	* Group routes support.
 * Gas (also called middleware)
 	* Router level:
@@ -75,7 +75,7 @@ So, the Air web framework can only guarantee you one thing: **it can serve prope
 		* Rich template functions.
 		* Hot update support by using the [fsnotify](https://github.com/fsnotify/fsnotify).
 		* Powered by the Go `html/template`.
-* Coffer (accessing binray asset files by using the runtime memory)
+* Coffer (accessing binary asset files by using the runtime memory)
 	* Customizable.
 	* Reduces the hard disk I/O and significantly improves the performance of the `Response#File()`.
 	* Default implementation:
