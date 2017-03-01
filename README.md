@@ -18,16 +18,15 @@ So, the Air web framework can only guarantee you one thing: **it can serve prope
 	* As less as possible.
 	* As simple as possible.
 	* As expressive as possible.
-* HTTP Methods
-	* Only four:
-		* `GET`
-		* `POST`
-		* `PUT`
-		* `DELETE`
+* HTTP Methods (only four)
+	* `GET`
+	* `POST`
+	* `PUT`
+	* `DELETE`
 * Server
 	* HTTP/2 support.
 	* SSL/TLS support.
-	* Gracefully shutdown.
+	* Gracefully shutdown support.
 	* Powered by the Go `net/http`.
 * Router
 	* Based on the Radix Tree.
@@ -80,7 +79,7 @@ So, the Air web framework can only guarantee you one thing: **it can serve prope
 	* Customizable.
 	* Reduces the hard disk I/O and significantly improves the performance of the `Response#File()`.
 	* Default implementation:
-		* Asset files minimization:
+		* Asset file minimization:
 			* `.html`
 			* `.css`
 			* `.js`
