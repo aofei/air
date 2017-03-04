@@ -75,8 +75,8 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 				err = NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 		}
-	case strings.HasPrefix(ctype, MIMEApplicationForm), strings.HasPrefix(ctype,
-		MIMEMultipartForm):
+	case strings.HasPrefix(ctype, MIMEApplicationXWWWFormURLEncoded), strings.HasPrefix(ctype,
+		MIMEMultipartFormData):
 		if err = req.ParseForm(); err == nil {
 			if err = b.bindData(i, req.Form, "form"); err != nil {
 				err = NewHTTPError(http.StatusBadRequest, err.Error())
