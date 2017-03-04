@@ -201,9 +201,9 @@ func TestResponseYAML(t *testing.T) {
 
 	info := struct{ Name, Author string }{"Air", "Aofei Sheng"}
 	infoStr := "name: Air\nauthor: Aofei Sheng\n"
-	if err := c.YAML(info); assert.NoError(t, err) {
+	if assert.NoError(t, c.YAML(info)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMEApplicationYAML+CharsetUTF8,
+		assert.Equal(t, MIMEApplicationXYAML+CharsetUTF8,
 			rec.Header().Get(HeaderContentType))
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
@@ -248,9 +248,9 @@ func TestResponseStream(t *testing.T) {
 	c.feed(req, rec)
 
 	s := "response from a stream"
-	if assert.NoError(t, c.Stream(MIMEOctetStream+CharsetUTF8, strings.NewReader(s))) {
+	if assert.NoError(t, c.Stream(MIMEApplicationOctetStream, strings.NewReader(s))) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMEOctetStream+CharsetUTF8, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMEApplicationOctetStream, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, s, rec.Body.String())
 	}
 }

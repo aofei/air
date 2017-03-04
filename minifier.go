@@ -56,7 +56,7 @@ func (m *minifier) Init() error {
 		KeepWhitespace: true,
 	})
 
-	m.Add(MIMEImageSVG, &svg.Minifier{
+	m.Add(MIMEImageSVGXML, &svg.Minifier{
 		Decimals: -1,
 	})
 
