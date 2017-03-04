@@ -151,7 +151,7 @@ func (r *Response) YAML(i interface{}) error {
 	if err != nil {
 		return err
 	}
-	return r.Blob(MIMEApplicationYAML+CharsetUTF8, b)
+	return r.Blob(MIMEApplicationXYAML+CharsetUTF8, b)
 }
 
 // Blob sends a blob HTTP response with the contentType and the b.

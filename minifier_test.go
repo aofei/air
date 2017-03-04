@@ -19,5 +19,5 @@ func TestMinifierInit(t *testing.T) {
 	assert.NoError(t, a.Minifier.Minify(MIMETextJavaScript, w, r))
 	assert.NoError(t, a.Minifier.Minify(MIMEApplicationJSON, w, r))
 	assert.NoError(t, a.Minifier.Minify(MIMETextXML, w, r))
-	assert.NoError(t, a.Minifier.Minify(MIMEImageSVG, w, r))
+	assert.NoError(t, a.Minifier.Minify(MIMEImageSVGXML, w, r))
 }

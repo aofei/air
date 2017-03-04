@@ -95,7 +95,7 @@ func TestRequestBind(t *testing.T) {
 	assert.Equal(t, *raw, *i)
 
 	req, _ = http.NewRequest(POST, "/", strings.NewReader(vs.Encode()))
-	req.Header.Add(HeaderContentType, MIMEApplicationForm)
+	req.Header.Add(HeaderContentType, MIMEApplicationXWWWFormURLEncoded)
 
 	c.reset()
 	c.feed(req, nil)
@@ -130,7 +130,7 @@ func TestRequestFormFile(t *testing.T) {
 	a := New()
 	c := NewContext(a)
 	req, _ := http.NewRequest(POST, "/", nil)
-	req.Header.Add(HeaderContentType, MIMEMultipartForm)
+	req.Header.Add(HeaderContentType, MIMEMultipartFormData)
 	c.feed(req, nil)
 	f, fh, err := c.FormFile("air")
 	assert.Nil(t, f)
@@ -168,7 +168,7 @@ func TestRequestOthers(t *testing.T) {
 	vs.Set("author", "Aofei Sheng")
 
 	req, _ := http.NewRequest(POST, "/?"+vs.Encode(), strings.NewReader(vs.Encode()))
-	req.Header.Add(HeaderContentType, MIMEApplicationForm)
+	req.Header.Add(HeaderContentType, MIMEApplicationXWWWFormURLEncoded)
 
 	c.feed(req, nil)
 
