@@ -248,9 +248,9 @@ func TestResponseStream(t *testing.T) {
 	c.feed(req, rec)
 
 	s := "response from a stream"
-	if assert.NoError(t, c.Stream(MIMEApplicationOctetStream, strings.NewReader(s))) {
+	if assert.NoError(t, c.Stream(MIMEApplicationJavaScript, strings.NewReader(s))) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMEApplicationOctetStream, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, MIMEApplicationJavaScript, rec.Header().Get(HeaderContentType))
 		assert.Equal(t, s, rec.Body.String())
 	}
 }
