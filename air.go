@@ -49,24 +49,10 @@ type (
 	Map map[string]interface{}
 )
 
-// HTTP methods
-const (
-	GET    = "GET"
-	POST   = "POST"
-	PUT    = "PUT"
-	DELETE = "DELETE"
-)
-
-// For easy for-range
-var methods = [4]string{GET, POST, PUT, DELETE}
-
 // MIME types
 const (
 	MIMEApplicationJSON               = "application/json"
 	MIMEApplicationJavaScript         = "application/javascript"
-	MIMEApplicationMSGPack            = "application/msgpack"
-	MIMEApplicationOctetStream        = "application/octet-stream"
-	MIMEApplicationProtoBuf           = "application/protobuf"
 	MIMEApplicationXML                = "application/xml"
 	MIMEApplicationXWWWFormURLEncoded = "application/x-www-form-urlencoded"
 	MIMEApplicationXYAML              = "application/x-yaml"
@@ -81,7 +67,18 @@ const (
 	CharsetUTF8 = "; charset=utf-8"
 )
 
-// HTTP Headers
+// HTTP methods
+const (
+	GET    = "GET"
+	POST   = "POST"
+	PUT    = "PUT"
+	DELETE = "DELETE"
+)
+
+// For easy for-range
+var methods = [4]string{GET, POST, PUT, DELETE}
+
+// HTTP headers
 const (
 	HeaderAccept                          = "Accept"
 	HeaderAcceptCharset                   = "Accept-Charset"
@@ -155,7 +152,7 @@ const (
 	HeaderXXSSProtection                  = "X-XSS-Protection"
 )
 
-// HTTP Errors
+// HTTP errors
 var (
 	ErrUnauthorized                = NewHTTPError(http.StatusUnauthorized)          // 401
 	ErrNotFound                    = NewHTTPError(http.StatusNotFound)              // 404
