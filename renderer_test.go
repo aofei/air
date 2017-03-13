@@ -20,37 +20,33 @@ func TestRendererInitAndRender(t *testing.T) {
 	index := `
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>The Air Web Framework</title>
-	</head>
+<head>
+<title>The Air Web Framework</title>
+</head>
 
-	<body>
-		{{template "parts/header.html" .}}
-		{{template "parts/main.html" .}}
-		{{template "parts/footer.html" .}}
-	</body>
+<body>
+{{template "parts/header.html" .}}
+{{template "parts/main.html" .}}
+{{template "parts/footer.html" .}}
+</body>
 </html>
 `
 	header := `
 <header>
-	<p>Here is the header.</p>
+<p>Here is the header.</p>
 </header>
 `
 	main := `
 <main>
-	<p>Here is the main.</p>
+<p>Here is the main.</p>
 </main>
 `
 	footer := `
 <footer>
-	<p>Here is the footer.</p>
+<p>Here is the footer.</p>
 </footer>
 `
-	result := `<!doctype html><html>
-<head>
-<title>The Air Web Framework</title>
-</head>
-<body>
+	result := `<!doctype html><title>The Air Web Framework</title>
 <header>
 <p>Here is the header.
 </header>
@@ -60,8 +56,7 @@ func TestRendererInitAndRender(t *testing.T) {
 <footer>
 <p>Here is the footer.
 </footer>
-</body>
-</html>`
+`
 
 	templates := "templates"
 	templatesParts := templates + "/parts"
