@@ -39,9 +39,7 @@ func newMinifier() *minifier {
 // Init implements the `Minifier#Init()` by using the "github.com/tdewolff/minify".
 func (m *minifier) Init() error {
 	m.Add(MIMETextHTML, &html.Minifier{
-		KeepDefaultAttrVals: true,
-		KeepDocumentTags:    true,
-		KeepWhitespace:      true,
+		KeepWhitespace: true,
 	})
 
 	m.Add(MIMETextCSS, &css.Minifier{
