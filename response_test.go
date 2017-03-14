@@ -235,8 +235,8 @@ func TestResponseBlob(t *testing.T) {
 
 	c.Response.WriteHeader(http.StatusInternalServerError)
 
-	assert.Equal(t, http.StatusOK, c.Response.StatusCode())
-	assert.Equal(t, len(b), c.Response.Size())
+	assert.Equal(t, http.StatusOK, c.Response.StatusCode)
+	assert.Equal(t, len(b), c.Response.Size)
 }
 
 func TestResponseStream(t *testing.T) {
