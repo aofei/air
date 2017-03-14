@@ -27,55 +27,40 @@ type Response struct {
 
 	context *Context
 
-	statusCode int
-	size       int
-	written    bool
-
-	Data Map
+	StatusCode int
+	Size       int
+	Written    bool
+	Data       Map
 }
 
 // NewResponse returns a pointer of a new instance of the `Response`.
 func NewResponse(c *Context) *Response {
 	return &Response{
-		context: c,
-		Data:    make(Map),
+		context:    c,
+		StatusCode: http.StatusOK,
+		Data:       make(Map),
 	}
 }
 
 // Write implements the `http.ResponseWriter#Write()`.
 func (r *Response) Write(b []byte) (int, error) {
-	if !r.written {
-		r.WriteHeader(http.StatusOK)
+	if !r.Written {
+		r.WriteHeader(r.StatusCode)
 	}
 	n, err := r.ResponseWriter.Write(b)
-	r.size += n
+	r.Size += n
 	return n, err
 }
 
 // WriteHeader implements the `http.ResponseWriter#WriteHeader()`.
 func (r *Response) WriteHeader(statusCode int) {
-	if r.written {
+	if r.Written {
 		r.context.Air.Logger.Warn("response already written")
 		return
 	}
-	r.statusCode = statusCode
 	r.ResponseWriter.WriteHeader(statusCode)
-	r.written = true
-}
-
-// StatusCode returns the HTTP status code of the r.
-func (r *Response) StatusCode() int {
-	return r.statusCode
-}
-
-// Size returns the number of bytes already written into the HTTP body of the r.
-func (r *Response) Size() int {
-	return r.size
-}
-
-// Written reports whether the HTTP body of the r is already written.
-func (r *Response) Written() bool {
-	return r.written
+	r.StatusCode = statusCode
+	r.Written = true
 }
 
 // SetCookie adds a "Set-Cookie" header in the r. The provided cookie must have a valid `Name`.
@@ -248,9 +233,9 @@ func (r *Response) feed(rw http.ResponseWriter) {
 // reset resets all fields in the r.
 func (r *Response) reset() {
 	r.ResponseWriter = nil
-	r.statusCode = 0
-	r.size = 0
-	r.written = false
+	r.StatusCode = http.StatusOK
+	r.Size = 0
+	r.Written = false
 	for k := range r.Data {
 		delete(r.Data, k)
 	}

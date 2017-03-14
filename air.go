@@ -385,8 +385,8 @@ func DefaultHTTPErrorHandler(err error, c *Context) {
 		he.Message = err.Error()
 	}
 
-	if !c.Response.Written() {
-		c.Response.WriteHeader(he.Code)
+	if !c.Response.Written {
+		c.Response.StatusCode = he.Code
 		c.String(he.Message)
 	}
 
