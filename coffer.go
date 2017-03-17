@@ -125,14 +125,9 @@ func (c *coffer) Init() error {
 
 		if cfg.AssetMinified {
 			if mt := mimeTypeByExt(filepath.Ext(file)); mt != "" {
-				buf := &bytes.Buffer{}
-
-				err := c.air.Minifier.Minify(mt, buf, bytes.NewReader(b))
-				if err != nil {
+				if b, err = c.air.Minifier.Minify(mt, b); err != nil {
 					return err
 				}
-
-				b = buf.Bytes()
 			}
 		}
 

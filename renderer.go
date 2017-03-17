@@ -1,7 +1,6 @@
 package air
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
 	"io"
@@ -109,14 +108,9 @@ func (r *renderer) Init() error {
 		}
 
 		if c.TemplateMinified {
-			buf := &bytes.Buffer{}
-
-			err := r.air.Minifier.Minify(MIMETextHTML, buf, bytes.NewReader(b))
-			if err != nil {
+			if b, err = r.air.Minifier.Minify(MIMETextHTML, b); err != nil {
 				return err
 			}
-
-			b = buf.Bytes()
 		}
 
 		name := filepath.ToSlash(file[len(tr)+1:])

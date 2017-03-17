@@ -1,7 +1,6 @@
 package air
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,13 +10,31 @@ func TestMinifierInit(t *testing.T) {
 	a := New()
 	a.Minifier.Init()
 
-	w := &bytes.Buffer{}
-	r := &bytes.Reader{}
+	_, err := a.Minifier.Minify(MIMETextHTML, []byte{})
+	assert.NoError(t, err)
 
-	assert.NoError(t, a.Minifier.Minify(MIMETextHTML, w, r))
-	assert.NoError(t, a.Minifier.Minify(MIMETextCSS, w, r))
-	assert.NoError(t, a.Minifier.Minify(MIMETextJavaScript, w, r))
-	assert.NoError(t, a.Minifier.Minify(MIMEApplicationJSON, w, r))
-	assert.NoError(t, a.Minifier.Minify(MIMETextXML, w, r))
-	assert.NoError(t, a.Minifier.Minify(MIMEImageSVGXML, w, r))
+	_, err = a.Minifier.Minify(MIMETextCSS, []byte{})
+	assert.NoError(t, err)
+
+	_, err = a.Minifier.Minify(MIMETextJavaScript, []byte{})
+	assert.NoError(t, err)
+
+	_, err = a.Minifier.Minify(MIMEApplicationJSON, []byte{})
+	assert.NoError(t, err)
+
+	_, err = a.Minifier.Minify(MIMETextXML, []byte{})
+	assert.NoError(t, err)
+
+	_, err = a.Minifier.Minify(MIMEImageSVGXML, []byte{})
+	assert.NoError(t, err)
+}
+
+func TestMinifierMinifyError(t *testing.T) {
+	a := New()
+	a.Minifier.Init()
+
+	b, err := a.Minifier.Minify("error", []byte{})
+
+	assert.Nil(t, b)
+	assert.Error(t, err)
 }
