@@ -67,8 +67,10 @@ So, the Air web framework can only guarantee you one thing: **it can serve prope
 			* `text/javascript`
 			* `application/json`
 			* `text/xml`
+			* `image/jpeg`
+			* `image/png`
 			* `image/svg+xml`
-		* Powered by the [minify](https://github.com/tdewolff/minify).
+		* Powered by the Go `image` and the [minify](https://github.com/tdewolff/minify).
 * Renderer
 	* Customizable.
 	* Default implementation:
