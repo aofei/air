@@ -46,17 +46,9 @@ func TestRendererInitAndRender(t *testing.T) {
 <p>Here is the footer.</p>
 </footer>
 `
-	result := `<!doctype html><title>The Air Web Framework</title>
-<header>
-<p>Here is the header.
-</header>
-<main>
-<p>Here is the main.
-</main>
-<footer>
-<p>Here is the footer.
-</footer>
-`
+	result := "<!doctype html><title>The Air Web Framework</title><header><p>Here is the " +
+		"header.</header>\n<main><p>Here is the main.</main>\n<footer><p>Here is the " +
+		"footer.</footer>"
 
 	templates := "templates"
 	templatesParts := templates + "/parts"
