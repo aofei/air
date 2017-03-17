@@ -1,7 +1,7 @@
 package air
 
 import (
-	"io"
+	"bytes"
 
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
@@ -19,8 +19,8 @@ type (
 		// Init initializes the `Minifier`. It will be called in the `Air#Serve()`.
 		Init() error
 
-		// Minify minifies the r into the w by the MIMEType.
-		Minify(MIMEType string, w io.Writer, r io.Reader) error
+		// Minify minifies the b by the mimeType.
+		Minify(mimeType string, b []byte) ([]byte, error)
 	}
 
 	// minifier implements the `Minifier` by using the "github.com/tdewolff/minify".
@@ -59,4 +59,15 @@ func (m *minifier) Init() error {
 	})
 
 	return nil
+}
+
+// Minify implements the `Minifier#Minify()` by using the "github.com/tdewolff/minify".
+func (m *minifier) Minify(mimeType string, b []byte) ([]byte, error) {
+	buf := &bytes.Buffer{}
+
+	if err := m.M.Minify(mimeType, buf, bytes.NewReader(b)); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }

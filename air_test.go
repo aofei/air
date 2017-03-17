@@ -153,8 +153,8 @@ func (*failingMinifier) Init() error {
 	return errors.New("failingMinifier")
 }
 
-func (*failingMinifier) Minify(MIMEType string, w io.Writer, r io.Reader) error {
-	return nil
+func (*failingMinifier) Minify(mimeType string, b []byte) ([]byte, error) {
+	return nil, nil
 }
 
 type failingRenderer struct{}
