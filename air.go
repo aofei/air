@@ -56,6 +56,8 @@ const (
 	MIMEApplicationXML                = "application/xml"
 	MIMEApplicationXWWWFormURLEncoded = "application/x-www-form-urlencoded"
 	MIMEApplicationXYAML              = "application/x-yaml"
+	MIMEImageJPEG                     = "image/jpeg"
+	MIMEImagePNG                      = "image/png"
 	MIMEImageSVGXML                   = "image/svg+xml"
 	MIMEMultipartFormData             = "multipart/form-data"
 	MIMETextCSS                       = "text/css"
