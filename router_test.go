@@ -69,6 +69,11 @@ func TestRouterMatchStatic(t *testing.T) {
 	r.route(GET, path, c)
 	c.Handler(c)
 	assert.Equal(t, path, c.Value("path"))
+
+	c = a.contextPool.Get().(*Context)
+	r.route(GET, path+"/", c)
+	c.Handler(c)
+	assert.Equal(t, path, c.Value("path"))
 }
 
 func TestRouterMatchParam(t *testing.T) {
@@ -91,6 +96,13 @@ func TestRouterMatchParam(t *testing.T) {
 
 	c = a.contextPool.Get().(*Context)
 	r.route(GET, "/users/search/"+url.PathEscape("Air / 盛傲飞+男"), c)
+	assert.Equal(t, "keyword", c.ParamNames[0])
+	assert.Equal(t, "Air / 盛傲飞 男", c.ParamValues[0])
+	assert.Equal(t, "Air / 盛傲飞 男", c.Param("keyword"))
+	assert.Empty(t, c.Param("unknown"))
+
+	c = a.contextPool.Get().(*Context)
+	r.route(GET, "/users/search/"+url.PathEscape("Air / 盛傲飞+男")+"/", c)
 	assert.Equal(t, "keyword", c.ParamNames[0])
 	assert.Equal(t, "Air / 盛傲飞 男", c.ParamValues[0])
 	assert.Equal(t, "Air / 盛傲飞 男", c.Param("keyword"))
@@ -126,7 +138,18 @@ func TestRouterMatchAny(t *testing.T) {
 	assert.Equal(t, "any", c.ParamValues[0])
 	assert.Equal(t, "any", c.Param("*"))
 
+	c = a.contextPool.Get().(*Context)
+	r.route(GET, "/any/", c)
+	assert.Equal(t, "any/", c.ParamValues[0])
+	assert.Equal(t, "any/", c.Param("*"))
+
+	r.add(GET, "/users", func(*Context) error {
+		c.SetValue("kind", "static")
+		return nil
+	})
+
 	r.add(GET, "/users/*", func(*Context) error {
+		c.SetValue("kind", "any")
 		return nil
 	})
 
@@ -136,15 +159,16 @@ func TestRouterMatchAny(t *testing.T) {
 
 	c = a.contextPool.Get().(*Context)
 	r.route(GET, "/users/", c)
-	assert.Equal(t, "*", c.ParamNames[0])
-	assert.Equal(t, "", c.ParamValues[0])
-	assert.Equal(t, "", c.Param("*"))
+	c.Handler(c)
+	assert.Equal(t, "static", c.Value("kind"))
 
 	c = a.contextPool.Get().(*Context)
 	r.route(GET, "/users/1", c)
+	c.Handler(c)
 	assert.Equal(t, "*", c.ParamNames[0])
 	assert.Equal(t, "1", c.ParamValues[0])
 	assert.Equal(t, "1", c.Param("*"))
+	assert.Equal(t, "any", c.Value("kind"))
 }
 
 func TestRouterMixMatchParamAndAny(t *testing.T) {
