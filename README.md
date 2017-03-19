@@ -45,7 +45,7 @@ So, the Air web framework can only guarantee you one thing: **it can serve prope
 	* For renderer.
 	* For coffer.
 	* For anything.
-	* Configuration file support by using the [go-yaml](https://github.com/go-yaml/yaml).
+	* Configuration file support by using the [toml](https://github.com/BurntSushi/toml).
 * Logger
 	* Customizable.
 	* Default implementation:

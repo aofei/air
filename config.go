@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
+	"github.com/BurntSushi/toml"
 )
 
 // Config is a global set of configs that for an instance of the `Air` for customization.
@@ -198,7 +198,7 @@ func NewConfig(filename string) *Config {
 
 // Parse parses the src into the c.
 func (c *Config) Parse(src string) error {
-	if err := yaml.Unmarshal([]byte(src), &c.Data); err != nil {
+	if err := toml.Unmarshal([]byte(src), &c.Data); err != nil {
 		return err
 	}
 	c.fillData()
@@ -231,14 +231,14 @@ func (c *Config) fillData() {
 	if a, ok := c.Data["address"].(string); ok {
 		c.Address = a
 	}
-	if rt, ok := c.Data["read_timeout"].(int); ok {
+	if rt, ok := c.Data["read_timeout"].(int64); ok {
 		c.ReadTimeout = time.Duration(rt) * time.Millisecond
 	}
-	if wt, ok := c.Data["write_timeout"].(int); ok {
+	if wt, ok := c.Data["write_timeout"].(int64); ok {
 		c.WriteTimeout = time.Duration(wt) * time.Millisecond
 	}
-	if mhb, ok := c.Data["max_header_bytes"].(int); ok {
-		c.MaxHeaderBytes = mhb
+	if mhb, ok := c.Data["max_header_bytes"].(int64); ok {
+		c.MaxHeaderBytes = int(mhb)
 	}
 	if tcf, ok := c.Data["tls_cert_file"].(string); ok {
 		c.TLSCertFile = tcf
