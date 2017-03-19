@@ -3,6 +3,7 @@ package air
 import (
 	"fmt"
 	"strings"
+	"unsafe"
 )
 
 type (
@@ -72,6 +73,8 @@ func (r *router) checkPath(path string) {
 		panic("the path must start with the /")
 	} else if path != "/" && hasLastSlash(path) {
 		panic("the path cannot end with the /, except the root path")
+	} else if strings.Contains(path, "//") {
+		panic("the path cannot have the //")
 	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
 		for _, p := range ps {
@@ -251,7 +254,7 @@ func (r *router) route(method, path string, c *Context) {
 	cn := r.tree // Current node as root
 
 	var (
-		search = pathWithoutLastSlash(path)
+		search = pathClean(path)
 		nn     *node    // Next node
 		nk     nodeKind // Next kind
 		sn     *node    // Saved node
@@ -285,23 +288,11 @@ func (r *router) route(method, path string, c *Context) {
 			}
 		}
 
-		if ll == pl {
-			search = search[ll:]
-		} else {
-			cn = sn
-			search = ss
-
-			switch nk {
-			case paramKind:
-				goto Param
-			case anyKind:
-				goto Any
-			}
-
-			return
+		if ll != pl {
+			goto Struggle
 		}
 
-		if search == "" {
+		if search = search[ll:]; search == "" {
 			break
 		}
 
@@ -344,7 +335,9 @@ func (r *router) route(method, path string, c *Context) {
 	Any:
 		if cn = cn.childByKind(anyKind); cn != nil {
 			if hasLastSlash(path) {
-				search += "/"
+				for si = len(path) - 1; si > 0 && path[si] == '/'; si-- {
+				}
+				search += path[si+1:]
 			}
 
 			if len(c.ParamValues) < len(cn.paramNames) {
@@ -356,6 +349,8 @@ func (r *router) route(method, path string, c *Context) {
 			break
 		}
 
+		// Struggle for the former node
+	Struggle:
 		if sn != nil {
 			cn = sn
 			sn = nil
@@ -387,15 +382,7 @@ func hasLastSlash(s string) bool {
 	return len(s) > 0 && s[len(s)-1] == '/'
 }
 
-// pathWithoutLastSlash returns the path from the p without the last '/'.
-func pathWithoutLastSlash(p string) string {
-	if hasLastSlash(p) {
-		return p[:len(p)-1]
-	}
-	return p
-}
-
-// pathWithoutParamNames returns the path from the p without the param names.
+// pathWithoutParamNames returns a path from the p without the param names.
 func pathWithoutParamNames(p string) string {
 	for i, l := 0, len(p); i < l; i++ {
 		if p[i] == ':' {
@@ -413,6 +400,28 @@ func pathWithoutParamNames(p string) string {
 		}
 	}
 	return p
+}
+
+// pathClean returns a clean path from the p.
+func pathClean(p string) string {
+	if p == "" {
+		return "/"
+	}
+
+	b := make([]byte, 0, len(p))
+
+	for i, l := 1, len(p); i < l; {
+		if p[i] == '/' {
+			i++
+		} else {
+			b = append(b, '/')
+			for ; i < l && p[i] != '/'; i++ {
+				b = append(b, p[i])
+			}
+		}
+	}
+
+	return *(*string)(unsafe.Pointer(&b))
 }
 
 // unescape return a normal string unescaped from the s.
