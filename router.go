@@ -70,7 +70,7 @@ func (r *router) checkPath(path string) {
 		panic("the path cannot be empty")
 	} else if path[0] != '/' {
 		panic("the path must start with the /")
-	} else if path != "/" && path[len(path)-1] == '/' {
+	} else if path != "/" && hasLastSlash(path) {
 		panic("the path cannot end with the /, except the root path")
 	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
@@ -251,7 +251,7 @@ func (r *router) route(method, path string, c *Context) {
 	cn := r.tree // Current node as root
 
 	var (
-		search = path
+		search = pathWithoutLastSlash(path)
 		nn     *node    // Next node
 		nk     nodeKind // Next kind
 		sn     *node    // Saved node
@@ -260,7 +260,7 @@ func (r *router) route(method, path string, c *Context) {
 		pl     int      // Prefix length
 		ll     int      // LCP length
 		max    int      // Max number of sl and pl
-		i, l   int      // Temp vars
+		si     int      // Start index
 	)
 
 	// Search order: static > param > any
@@ -308,7 +308,7 @@ func (r *router) route(method, path string, c *Context) {
 		// Static node
 		if nn = cn.child(search[0], staticKind); nn != nil {
 			// Save next
-			if cn.prefix[len(cn.prefix)-1] == '/' {
+			if hasLastSlash(cn.prefix) {
 				nk = paramKind
 				sn = cn
 				ss = search
@@ -323,7 +323,7 @@ func (r *router) route(method, path string, c *Context) {
 	Param:
 		if nn = cn.childByKind(paramKind); nn != nil {
 			// Save next
-			if cn.prefix[len(cn.prefix)-1] == '/' {
+			if hasLastSlash(cn.prefix) {
 				nk = anyKind
 				sn = cn
 				ss = search
@@ -331,11 +331,11 @@ func (r *router) route(method, path string, c *Context) {
 
 			cn = nn
 
-			for i, l = 0, len(search); i < l && search[i] != '/'; i++ {
+			for si = 0; si < len(search) && search[si] != '/'; si++ {
 			}
 
-			c.ParamValues = append(c.ParamValues, unescape(search[:i]))
-			search = search[i:]
+			c.ParamValues = append(c.ParamValues, unescape(search[:si]))
+			search = search[si:]
 
 			continue
 		}
@@ -343,6 +343,10 @@ func (r *router) route(method, path string, c *Context) {
 		// Any node
 	Any:
 		if cn = cn.childByKind(anyKind); cn != nil {
+			if hasLastSlash(path) {
+				search += "/"
+			}
+
 			if len(c.ParamValues) < len(cn.paramNames) {
 				c.ParamValues = append(c.ParamValues, unescape(search))
 			} else {
@@ -368,28 +372,27 @@ func (r *router) route(method, path string, c *Context) {
 		return
 	}
 
-	if c.Handler = cn.handler(method); c.Handler == nil {
+	if c.Handler = cn.handler(method); c.Handler != nil {
+		c.PristinePath = cn.pristinePath
+		c.ParamNames = cn.paramNames
+	} else {
 		c.Handler = cn.checkMethodNotAllowed()
-
-		// Dig further for any, might have an empty value for the *.
-
-		if cn = cn.childByKind(anyKind); cn == nil {
-			return
-		}
-
-		if h := cn.handler(method); h != nil {
-			c.Handler = h
-		} else {
-			c.Handler = cn.checkMethodNotAllowed()
-		}
-
-		c.ParamValues = append(c.ParamValues, "")
 	}
 
-	c.PristinePath = cn.pristinePath
-	c.ParamNames = cn.paramNames
-
 	return
+}
+
+// hasLastSlash reports whether the s has the last '/'.
+func hasLastSlash(s string) bool {
+	return len(s) > 0 && s[len(s)-1] == '/'
+}
+
+// pathWithoutLastSlash returns the path from the p without the last '/'.
+func pathWithoutLastSlash(p string) string {
+	if hasLastSlash(p) {
+		return p[:len(p)-1]
+	}
+	return p
 }
 
 // pathWithoutParamNames returns the path from the p without the param names.
