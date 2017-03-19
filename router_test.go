@@ -99,6 +99,10 @@ func TestRouterMatchParam(t *testing.T) {
 	})
 
 	c = a.contextPool.Get().(*Context)
+	r.route(GET, "/users/search/frameworks/air", c)
+	assert.Equal(t, NotFoundHandler(c), c.Handler(c))
+
+	c = a.contextPool.Get().(*Context)
 	r.route(GET, "/users/search/"+url.PathEscape("Air / 盛傲飞+男"), c)
 	assert.Equal(t, "keyword", c.ParamNames[0])
 	assert.Equal(t, "Air / 盛傲飞 男", c.ParamValues[0])
@@ -344,4 +348,23 @@ func TestRouterMatchMethodNotAllowed(t *testing.T) {
 
 	a.server.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusMethodNotAllowed, rec.Code)
+}
+
+func TestRouterPathClean(t *testing.T) {
+	assert.Equal(t, "/", pathClean(""))
+	assert.Equal(t, "/users", pathClean("users"))
+}
+
+func TestRouterUnescape(t *testing.T) {
+	assert.Empty(t, unescape("%%%%"))
+}
+
+func TestRouterIshex(t *testing.T) {
+	assert.True(t, ishex('a'))
+	assert.False(t, ishex(' '))
+}
+
+func TestRouterUnhex(t *testing.T) {
+	assert.Equal(t, byte(10), unhex('a'))
+	assert.Equal(t, byte(0), unhex(' '))
 }
