@@ -410,7 +410,12 @@ func pathClean(p string) string {
 
 	b := make([]byte, 0, len(p))
 
-	for i, l := 1, len(p); i < l; {
+	i, l := 0, len(p)
+	if p[0] == '/' {
+		i = 1
+	}
+
+	for i < l {
 		if p[i] == '/' {
 			i++
 		} else {
@@ -551,9 +556,8 @@ func (n *node) handler(method string) Handler {
 		return n.methodHandler.put
 	case DELETE:
 		return n.methodHandler.delete
-	default:
-		return nil
 	}
+	return nil
 }
 
 // addHandler adds the h into the filed `methodHandler` of the n with the provided method.
