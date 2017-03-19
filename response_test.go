@@ -2,7 +2,6 @@ package air
 
 import (
 	"encoding/xml"
-	"errors"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -183,38 +182,6 @@ func TestResponseXML(t *testing.T) {
 	c.feed(req, rec)
 
 	assert.Error(t, c.XML(Air{}))
-}
-
-type failingYAMLMarshaler struct{}
-
-func (*failingYAMLMarshaler) MarshalYAML() (interface{}, error) {
-	return nil, errors.New("error")
-}
-
-func TestResponseYAML(t *testing.T) {
-	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
-	rec := httptest.NewRecorder()
-	c := NewContext(a)
-
-	c.feed(req, rec)
-
-	info := struct{ Name, Author string }{"Air", "Aofei Sheng"}
-	infoStr := "name: Air\nauthor: Aofei Sheng\n"
-	if assert.NoError(t, c.YAML(info)) {
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMEApplicationXYAML+CharsetUTF8,
-			rec.Header().Get(HeaderContentType))
-		assert.Equal(t, infoStr, rec.Body.String())
-	}
-
-	req, _ = http.NewRequest(GET, "/", nil)
-	rec = httptest.NewRecorder()
-
-	c.reset()
-	c.feed(req, rec)
-
-	assert.Equal(t, "error", c.YAML(&failingYAMLMarshaler{}).Error())
 }
 
 func TestResponseBlob(t *testing.T) {

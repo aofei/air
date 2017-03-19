@@ -180,11 +180,6 @@ func (c *Context) XML(i interface{}) error {
 	return c.Response.XML(i)
 }
 
-// YAML is an alias for the `Response#YAML()` of the c.
-func (c *Context) YAML(i interface{}) error {
-	return c.Response.YAML(i)
-}
-
 // Blob is an alias for the `Response#Blob()` of the c.
 func (c *Context) Blob(contentType string, b []byte) error {
 	return c.Response.Blob(contentType, b)

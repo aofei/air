@@ -55,7 +55,6 @@ const (
 	MIMEApplicationJavaScript         = "application/javascript"
 	MIMEApplicationXML                = "application/xml"
 	MIMEApplicationXWWWFormURLEncoded = "application/x-www-form-urlencoded"
-	MIMEApplicationXYAML              = "application/x-yaml"
 	MIMEImageJPEG                     = "image/jpeg"
 	MIMEImagePNG                      = "image/png"
 	MIMEImageSVGXML                   = "image/svg+xml"
@@ -193,7 +192,7 @@ func New() *Air {
 	a.server = newServer(a)
 	a.router = newRouter(a)
 
-	a.Config = NewConfig("config.yml")
+	a.Config = NewConfig("config.toml")
 	a.Logger = newLogger(a)
 	a.Binder = newBinder()
 	a.Minifier = newMinifier()
