@@ -9,34 +9,34 @@ import (
 )
 
 func TestConfigNewConfig(t *testing.T) {
-	yaml := `
-app_name: "air"
-debug_mode: true
-logger_enabled: true
-log_format: "air_log"
-address: "127.0.0.1:2333"
-read_timeout: 200
-write_timeout: 200
-max_header_bytes: 65536
-tls_cert_file: "path_to_tls_cert_file"
-tls_key_file: "path_to_tls_key_file"
-template_root: "ts"
-template_exts: [".tmpl"]
-template_left_delim: "<<"
-template_right_delim: ">>"
-template_minified: true
-coffer_enabled: true
-asset_root: "as"
-asset_exts: [".jpg"]
-asset_minified: true
+	toml := `
+app_name = "air"
+debug_mode = true
+logger_enabled = true
+log_format = "air_log"
+address = "127.0.0.1:2333"
+read_timeout = 200
+write_timeout = 200
+max_header_bytes = 65536
+tls_cert_file = "path_to_tls_cert_file"
+tls_key_file = "path_to_tls_key_file"
+template_root = "ts"
+template_exts = [".tmpl"]
+template_left_delim = "<<"
+template_right_delim = ">>"
+template_minified = true
+coffer_enabled = true
+asset_root = "as"
+asset_exts = [".jpg"]
+asset_minified = true
 `
 
-	f, _ := os.Create("config.yml")
+	f, _ := os.Create("config.toml")
 	defer func() {
 		f.Close()
 		os.Remove(f.Name())
 	}()
-	f.WriteString(yaml)
+	f.WriteString(toml)
 
 	c := NewConfig(f.Name())
 	assert.Equal(t, "air", c.AppName)
@@ -63,10 +63,10 @@ asset_minified: true
 
 func TestConfigParseError(t *testing.T) {
 	c := &Config{}
-	assert.Error(t, c.Parse("\t"))
+	assert.Error(t, c.Parse("[air"))
 }
 
 func TestConfigParseFileError(t *testing.T) {
 	c := &Config{}
-	assert.Error(t, c.ParseFile("config_not_exist.yml"))
+	assert.Error(t, c.ParseFile("config_not_exist.toml"))
 }
