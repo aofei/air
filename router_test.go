@@ -22,6 +22,10 @@ func TestRouterCheckPath(t *testing.T) {
 	path = "/foobar/"
 	assert.Panics(t, func() { r.checkPath(path) })
 
+	path = "//foobar"
+	assert.Panics(t, func() { r.checkPath(path) })
+
+	path = "/:foo:bar"
 	path = "/:foo:bar"
 	assert.Panics(t, func() { r.checkPath(path) })
 
@@ -139,9 +143,9 @@ func TestRouterMatchAny(t *testing.T) {
 	assert.Equal(t, "any", c.Param("*"))
 
 	c = a.contextPool.Get().(*Context)
-	r.route(GET, "/any/", c)
-	assert.Equal(t, "any/", c.ParamValues[0])
-	assert.Equal(t, "any/", c.Param("*"))
+	r.route(GET, "/any//", c)
+	assert.Equal(t, "any//", c.ParamValues[0])
+	assert.Equal(t, "any//", c.Param("*"))
 
 	r.add(GET, "/users", func(*Context) error {
 		c.SetValue("kind", "static")
