@@ -10,7 +10,7 @@ natural as breathing.
 
 High-performance? Fastest? Almost all the web frameworks are using these words to tell people that
 they are the best. Maybe they are, maybe not. This framework does not intend to follow the crowd.
-So, the Air web framework can only guarantee you one thing: **it can serve properly.**
+So, Air web framework can only guarantee you one thing: **it can serve properly.**
 
 ## Features
 
