@@ -44,7 +44,7 @@ So, the Air web framework can only guarantee you one thing: **it can serve prope
 	* For logger.
 	* For renderer.
 	* For coffer.
-	* For anything.
+	* For everything.
 	* Configuration file support by using the [toml](https://github.com/BurntSushi/toml).
 * Logger
 	* Customizable.
@@ -77,8 +77,9 @@ So, the Air web framework can only guarantee you one thing: **it can serve prope
 		* Rich template functions.
 		* Hot update support by using the [fsnotify](https://github.com/fsnotify/fsnotify).
 		* Powered by the Go `html/template`.
-* Coffer (accessing binary asset files by using the runtime memory)
+* Coffer
 	* Customizable.
+	* Accesses binary asset files by using the runtime memory.
 	* Reduces the hard disk I/O and significantly improves the performance of the `Response#File()`.
 	* Default implementation:
 		* Asset file minimization:
