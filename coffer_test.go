@@ -13,7 +13,7 @@ func TestCofferInit(t *testing.T) {
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>The Air Web Framework</title>
+		<title>Air Web Framework</title>
 	</head>
 
 	<body>
