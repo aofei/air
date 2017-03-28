@@ -21,7 +21,7 @@ func TestRendererInitAndRender(t *testing.T) {
 <!DOCTYPE html>
 <html>
 <head>
-<title>The Air Web Framework</title>
+<title>Air Web Framework</title>
 </head>
 
 <body>
@@ -46,7 +46,7 @@ func TestRendererInitAndRender(t *testing.T) {
 <p>Here is the footer.</p>
 </footer>
 `
-	result := "<!doctype html><title>The Air Web Framework</title><header><p>Here is the " +
+	result := "<!doctype html><title>Air Web Framework</title><header><p>Here is the " +
 		"header.</header>\n<main><p>Here is the main.</main>\n<footer><p>Here is the " +
 		"footer.</footer>"
 
@@ -108,7 +108,7 @@ func TestRendererInitAndRender(t *testing.T) {
 
 func TestRendererTemplateFuncs(t *testing.T) {
 	assert.Equal(t, 9, strlen("Hello, 世界"))
-	assert.Equal(t, "The Air Web Framework", strcat("The ", "Air ", "Web ", "Framework"))
+	assert.Equal(t, "Air Web Framework", strcat("Air ", "Web ", "Framework"))
 	assert.Equal(t, "世界", substr("Hello, 世界", 7, 9))
 
 	str := "2016-07-20T12:13:54Z"
