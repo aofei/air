@@ -377,12 +377,9 @@ func (he *HTTPError) Error() string {
 // DefaultHTTPErrorHandler is the default HTTP error handler.
 func DefaultHTTPErrorHandler(err error, c *Context) {
 	he := ErrInternalServerError
-
 	if che, ok := err.(*HTTPError); ok {
 		he = che
-	}
-
-	if c.Air.Config.DebugMode {
+	} else if c.Air.Config.DebugMode {
 		he.Message = err.Error()
 	}
 
