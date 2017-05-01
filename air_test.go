@@ -353,8 +353,22 @@ func TestAirDefaultHTTPErrorHandler(t *testing.T) {
 
 	c.feed(req, rec)
 
-	DefaultHTTPErrorHandler(NewHTTPError(http.StatusInternalServerError, "error"), c)
+	he := NewHTTPError(http.StatusInternalServerError, "error")
+	DefaultHTTPErrorHandler(he, c)
 
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Equal(t, "error", rec.Body.String())
+	assert.Equal(t, he.Error(), rec.Body.String())
+
+	c = a.contextPool.Get().(*Context)
+
+	req, _ = http.NewRequest(GET, "/", nil)
+	rec = httptest.NewRecorder()
+
+	c.feed(req, rec)
+
+	err := errors.New("error")
+	DefaultHTTPErrorHandler(err, c)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Equal(t, err.Error(), rec.Body.String())
 }
