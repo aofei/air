@@ -136,8 +136,8 @@ then visit `http://localhost:2333`.
 
 ## Documentation
 
-* English (in progress...)
-* 简体中文 (编制中……)
+* [English](https://github.com/sheng/air/wiki/Documentation)
+* [简体中文](https://github.com/sheng/air/wiki/文档)
 * [GoDoc](https://godoc.org/github.com/sheng/air)
 
 ## Gases
