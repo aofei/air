@@ -160,8 +160,8 @@ If you want to discuss this framework, or ask questions about it, simply post qu
 
 ## Contributing
 
-If you want to help build this framework, simply follow the
-[specifications](https://github.com/sheng/air/issues/1) to send pull requests
+If you want to help build this framework, simply follow
+[these](https://github.com/sheng/air/wiki/Contributing) to send pull requests
 [here](https://github.com/sheng/air/pulls).
 
 ## License
