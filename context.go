@@ -113,6 +113,11 @@ func (c *Context) QueryValues() url.Values {
 	return c.Request.QueryValues()
 }
 
+// HasQueryValue is an alias for the `Request#HasQueryValue()` of the c.
+func (c *Context) HasQueryValue(key string) bool {
+	return c.Request.HasQueryValue(key)
+}
+
 // FormValue is an alias for the `Request#FormValue()` of the c.
 func (c *Context) FormValue(key string) string {
 	return c.Request.FormValue(key)
@@ -121,6 +126,11 @@ func (c *Context) FormValue(key string) string {
 // FormValues is an alias for the `Request#FormValues()` of the c.
 func (c *Context) FormValues() url.Values {
 	return c.Request.FormValues()
+}
+
+// HasFormValue is an alias for the `Request#HasFormValue()` of the c.
+func (c *Context) HasFormValue(key string) bool {
+	return c.Request.HasFormValue(key)
 }
 
 // FormFile is an alias for the `Request#FormFile()` of the c.

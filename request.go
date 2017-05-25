@@ -37,6 +37,16 @@ func (r *Request) FormValues() url.Values {
 	return r.Form
 }
 
+// HasFormValue reports whether the form values contains the form value for the provided key.
+func (r *Request) HasFormValue(key string) bool {
+	for k, _ := range r.FormValues() {
+		if k == key {
+			return true
+		}
+	}
+	return false
+}
+
 // feed feeds the req into where it should be.
 func (r *Request) feed(req *http.Request) {
 	r.Request = req
@@ -59,4 +69,9 @@ func (r *Request) QueryValue(key string) string {
 // QueryValues is an alias for the `URL#QueryValues()` of the r.
 func (r *Request) QueryValues() url.Values {
 	return r.URL.QueryValues()
+}
+
+// HasQueryValue is an alias for the `URL#HasQueryValue()` of the r.
+func (r *Request) HasQueryValue(key string) bool {
+	return r.URL.HasQueryValue(key)
 }

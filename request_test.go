@@ -172,10 +172,12 @@ func TestRequestOthers(t *testing.T) {
 
 	c.feed(req, nil)
 
+	assert.True(t, c.HasQueryValue("name"))
 	assert.Equal(t, vs.Get("name"), c.QueryValues().Get("name"))
 	assert.Equal(t, "Air", c.QueryValue("name"))
 	assert.Equal(t, "Aofei Sheng", c.QueryValue("author"))
 
+	assert.True(t, c.HasFormValue("name"))
 	assert.Equal(t, vs.Get("name"), c.FormValues().Get("name"))
 	assert.Equal(t, "Air", c.FormValue("name"))
 	assert.Equal(t, "Aofei Sheng", c.FormValue("author"))
