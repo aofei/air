@@ -147,7 +147,7 @@ func (r *Response) File(file string) error {
 	if fi, err := os.Stat(file); os.IsNotExist(err) {
 		return ErrNotFound
 	} else if fi.IsDir() {
-		file = filepath.Join("index.html")
+		file = filepath.Join(file, "index.html")
 		if _, err := os.Stat(file); os.IsNotExist(err) {
 			return ErrNotFound
 		}
