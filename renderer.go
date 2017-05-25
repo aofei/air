@@ -69,7 +69,7 @@ func newRenderer(a *Air) *renderer {
 func (r *renderer) Init() error {
 	c := r.air.Config
 
-	if _, err := os.Stat(c.TemplateRoot); err != nil && os.IsNotExist(err) {
+	if _, err := os.Stat(c.TemplateRoot); os.IsNotExist(err) {
 		return nil
 	}
 

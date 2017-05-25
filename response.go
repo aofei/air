@@ -144,11 +144,11 @@ func (r *Response) Stream(contentType string, reader io.Reader) error {
 
 // File sends a file HTTP response with the file.
 func (r *Response) File(file string) error {
-	if fi, err := os.Stat(file); err != nil && os.IsNotExist(err) {
+	if fi, err := os.Stat(file); os.IsNotExist(err) {
 		return ErrNotFound
 	} else if fi.IsDir() {
 		file = filepath.Join("index.html")
-		if _, err := os.Stat(file); err != nil && os.IsNotExist(err) {
+		if _, err := os.Stat(file); os.IsNotExist(err) {
 			return ErrNotFound
 		}
 	}
