@@ -82,7 +82,7 @@ func (c *coffer) Init() error {
 
 	if !cfg.CofferEnabled {
 		return nil
-	} else if _, err := os.Stat(cfg.AssetRoot); err != nil && os.IsNotExist(err) {
+	} else if _, err := os.Stat(cfg.AssetRoot); os.IsNotExist(err) {
 		return nil
 	}
 
