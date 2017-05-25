@@ -33,6 +33,16 @@ func (u *URL) QueryValues() url.Values {
 	return u.queryValues
 }
 
+// HasQueryValue reports whether the query values contains the query value for the provided key.
+func (u *URL) HasQueryValue(key string) bool {
+	for k, _ := range u.QueryValues() {
+		if k == key {
+			return true
+		}
+	}
+	return false
+}
+
 // feed feeds the url into where it should be.
 func (u *URL) feed(url *url.URL) {
 	u.URL = url
