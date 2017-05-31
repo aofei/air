@@ -144,13 +144,8 @@ func (r *Response) Stream(contentType string, reader io.Reader) error {
 
 // File sends a file HTTP response with the file.
 func (r *Response) File(file string) error {
-	if fi, err := os.Stat(file); os.IsNotExist(err) {
+	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return ErrNotFound
-	} else if fi.IsDir() {
-		file = filepath.Join(file, "index.html")
-		if _, err := os.Stat(file); os.IsNotExist(err) {
-			return ErrNotFound
-		}
 	}
 
 	abs, err := filepath.Abs(file)
@@ -161,18 +156,7 @@ func (r *Response) File(file string) error {
 	if a := r.context.Air.Coffer.Asset(abs); a != nil {
 		http.ServeContent(r, r.context.Request.Request, a.Name(), a.ModTime(), a)
 	} else {
-		f, err := os.Open(abs)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-
-		fi, err := f.Stat()
-		if err != nil {
-			return err
-		}
-
-		http.ServeContent(r, r.context.Request.Request, fi.Name(), fi.ModTime(), f)
+		http.ServeFile(r, r.context.Request.Request, abs)
 	}
 
 	return nil
