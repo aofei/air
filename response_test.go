@@ -246,14 +246,6 @@ func TestResponseFile(t *testing.T) {
 
 	assert.Equal(t, ErrNotFound, c.File("file_not_exist.html"))
 
-	req, _ = http.NewRequest(GET, "/", nil)
-	rec = httptest.NewRecorder()
-
-	c.reset()
-	c.feed(req, rec)
-
-	assert.Equal(t, ErrNotFound, c.File("."))
-
 	file, _ := os.Create("index.html")
 	defer func() {
 		file.Close()
