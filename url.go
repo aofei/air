@@ -35,7 +35,7 @@ func (u *URL) QueryValues() url.Values {
 
 // HasQueryValue reports whether the query values contains the query value for the provided key.
 func (u *URL) HasQueryValue(key string) bool {
-	for k, _ := range u.QueryValues() {
+	for k := range u.QueryValues() {
 		if k == key {
 			return true
 		}
