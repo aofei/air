@@ -39,7 +39,7 @@ func (r *Request) FormValues() url.Values {
 
 // HasFormValue reports whether the form values contains the form value for the provided key.
 func (r *Request) HasFormValue(key string) bool {
-	for k, _ := range r.FormValues() {
+	for k := range r.FormValues() {
 		if k == key {
 			return true
 		}
