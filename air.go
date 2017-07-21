@@ -155,11 +155,11 @@ const (
 
 // HTTP errors
 var (
-	ErrUnauthorized                = NewHTTPError(http.StatusUnauthorized)          // 401
-	ErrNotFound                    = NewHTTPError(http.StatusNotFound)              // 404
-	ErrMethodNotAllowed            = NewHTTPError(http.StatusMethodNotAllowed)      // 405
-	ErrStatusRequestEntityTooLarge = NewHTTPError(http.StatusRequestEntityTooLarge) // 413
-	ErrUnsupportedMediaType        = NewHTTPError(http.StatusUnsupportedMediaType)  // 415
+	ErrUnauthorized          = NewHTTPError(http.StatusUnauthorized)          // 401
+	ErrNotFound              = NewHTTPError(http.StatusNotFound)              // 404
+	ErrMethodNotAllowed      = NewHTTPError(http.StatusMethodNotAllowed)      // 405
+	ErrRequestEntityTooLarge = NewHTTPError(http.StatusRequestEntityTooLarge) // 413
+	ErrUnsupportedMediaType  = NewHTTPError(http.StatusUnsupportedMediaType)  // 415
 
 	ErrInternalServerError = NewHTTPError(http.StatusInternalServerError) // 500
 	ErrBadGateway          = NewHTTPError(http.StatusBadGateway)          // 502
