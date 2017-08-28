@@ -45,8 +45,8 @@ type (
 	// HTTPErrorHandler is a centralized HTTP error handler.
 	HTTPErrorHandler func(error, *Context)
 
-	// Map is the `map[string]interface{}`.
-	Map map[string]interface{}
+	// Map is an alias of the `map[string]interface{}`.
+	Map = map[string]interface{}
 )
 
 // MIME types
