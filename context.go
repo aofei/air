@@ -216,8 +216,8 @@ func (c *Context) Inline(file, filename string) error {
 }
 
 // NoContent is an alias for the `Response#NoContent()` of the c.
-func (c *Context) NoContent() error {
-	return c.Response.NoContent()
+func (c *Context) NoContent(statusCode int) error {
+	return c.Response.NoContent(statusCode)
 }
 
 // Redirect is an alias for the `Response#Redirect()` of the c.

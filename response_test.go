@@ -326,7 +326,7 @@ func TestResponseNoContent(t *testing.T) {
 
 	c.feed(req, rec)
 
-	c.NoContent()
+	c.NoContent(http.StatusOK)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "", rec.Header().Get(HeaderContentDisposition))
 	assert.Equal(t, "", rec.Body.String())
