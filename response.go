@@ -181,8 +181,11 @@ func (r *Response) contentDisposition(dispositionType, file, filename string) er
 	return r.File(file)
 }
 
-// NoContent sends an HTTP response with no body.
-func (r *Response) NoContent() error { return nil }
+// NoContent sends an HTTP response with the statusCode and no body.
+func (r *Response) NoContent(statusCode int) error {
+	r.WriteHeader(statusCode)
+	return nil
+}
 
 // Redirect redirects the current HTTP request to the url with the statusCode.
 func (r *Response) Redirect(statusCode int, url string) error {

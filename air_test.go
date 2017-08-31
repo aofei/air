@@ -129,7 +129,7 @@ func TestAirFile(t *testing.T) {
 
 func TestAirURL(t *testing.T) {
 	a := New()
-	h := func(c *Context) error { return c.NoContent() }
+	h := func(c *Context) error { return c.NoContent(http.StatusOK) }
 	a.GET("/:first/:second", h)
 	assert.Equal(t, "/foo/bar", a.URL(h, "foo", "bar"))
 }
