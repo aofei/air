@@ -39,6 +39,7 @@ type Context struct {
 // NewContext returns a pointer of a new instance of the `Context`.
 func NewContext(a *Air) *Context {
 	c := &Context{Air: a}
+	c.Context = context.Background()
 	c.Request = NewRequest(c)
 	c.Response = NewResponse(c)
 	c.ParamValues = make([]string, 0, a.paramCap)
@@ -86,13 +87,14 @@ func (c *Context) feed(req *http.Request, rw http.ResponseWriter) {
 
 // reset resets all fields in the c.
 func (c *Context) reset() {
-	c.Context = nil
+	c.Context = context.Background()
 	c.Request.reset()
 	c.Response.reset()
 	c.PristinePath = ""
 	c.ParamNames = c.ParamNames[:0]
 	c.ParamValues = c.ParamValues[:0]
 	c.Handler = NotFoundHandler
+	c.Cancel = nil
 	c.Data = c.Response.Data
 }
 
