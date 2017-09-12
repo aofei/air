@@ -332,7 +332,7 @@ func (a *Air) Close() error {
 
 // Shutdown gracefully shuts down the HTTP server without interrupting any active connections.
 func (a *Air) Shutdown(c *Context) error {
-	return a.server.Shutdown(c.Context)
+	return a.server.Shutdown(c)
 }
 
 // handlerName returns the func name of the h.
