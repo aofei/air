@@ -20,10 +20,9 @@ type Context struct {
 	Request  *Request
 	Response *Response
 
-	PristinePath string
-	ParamNames   []string
-	ParamValues  []string
-	Handler      Handler
+	ParamNames  []string
+	ParamValues []string
+	Handler     Handler
 
 	// Cancel is non-nil if one of the `SetCancel()`, the `SetDeadline()` or the `SetTimeout()`
 	// is called. It will be called when the HTTP server finishes the current cycle if it is
@@ -90,7 +89,6 @@ func (c *Context) reset() {
 	c.Context = context.Background()
 	c.Request.reset()
 	c.Response.reset()
-	c.PristinePath = ""
 	c.ParamNames = c.ParamNames[:0]
 	c.ParamValues = c.ParamValues[:0]
 	c.Handler = NotFoundHandler

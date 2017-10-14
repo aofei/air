@@ -15,7 +15,7 @@ func TestRequestBind(t *testing.T) {
 	a := New()
 	c := NewContext(a)
 
-	vs := make(url.Values)
+	vs := url.Values{}
 
 	vs.Set("name", "Air")
 	vs.Set("author", "Aofei Sheng")
@@ -163,7 +163,7 @@ func TestRequestOthers(t *testing.T) {
 	a := New()
 	c := NewContext(a)
 
-	vs := make(url.Values)
+	vs := url.Values{}
 	vs.Set("name", "Air")
 	vs.Set("author", "Aofei Sheng")
 

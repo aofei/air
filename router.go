@@ -12,7 +12,7 @@ type (
 	router struct {
 		air *Air
 
-		routes map[string]*route
+		routes []*route
 		tree   *node
 	}
 
@@ -20,36 +20,22 @@ type (
 	route struct {
 		method  string
 		path    string
-		handler string
+		handler Handler
 	}
 
 	// node is the node of the field `tree` of the `router`.
 	node struct {
-		kind          nodeKind
-		label         byte
-		prefix        string
-		methodHandler *methodHandler
-		parent        *node
-		children      []*node
-		pristinePath  string
-		paramNames    []string
+		kind       nodeKind
+		label      byte
+		prefix     string
+		handlers   map[string]Handler
+		parent     *node
+		children   []*node
+		paramNames []string
 	}
 
 	// nodekind is the kind of the `node`.
 	nodeKind uint8
-
-	// methodHandler is a set of the `Handler` distinguish by method.
-	methodHandler struct {
-		get     Handler
-		head    Handler
-		post    Handler
-		put     Handler
-		patch   Handler
-		delete  Handler
-		connect Handler
-		options Handler
-		trace   Handler
-	}
 )
 
 // node kinds
@@ -62,16 +48,15 @@ const (
 // newRouter returns a pointer of a new instance of the `router`.
 func newRouter(a *Air) *router {
 	return &router{
-		air:    a,
-		routes: make(map[string]*route),
+		air: a,
 		tree: &node{
-			methodHandler: &methodHandler{},
+			handlers: map[string]Handler{},
 		},
 	}
 }
 
-// checkPath checks whether the path is valid.
-func (r *router) checkPath(path string) {
+// add registers a new route for the method and the path with the matching h.
+func (r *router) add(method, path string, h Handler) {
 	if path == "" {
 		panic("air: the path cannot be empty")
 	} else if path[0] != '/' {
@@ -95,76 +80,72 @@ func (r *router) checkPath(path string) {
 		} else if strings.Contains(path[strings.LastIndex(path, "/"):], ":") {
 			panic("air: adjacent param and the * in the path must be separated by the /")
 		}
-	}
-}
-
-// checkRoute checks whether the route [method path] is valid.
-func (r *router) checkRoute(method, path string) {
-	if r.routes[method+path] != nil {
-		panic(fmt.Sprintf("air: the route [%s %s] is already registered", method, path))
-	}
-
-	for _, route := range r.routes {
-		if route.method == method &&
-			pathWithoutParamNames(route.path) == pathWithoutParamNames(path) {
-			panic(fmt.Sprintf(
-				"air: the route [%s %s] and the route [%s %s] are ambiguous",
-				method, path, route.method, route.path),
-			)
+	} else {
+		for _, route := range r.routes {
+			if route.method == method {
+				if route.path == path {
+					panic(fmt.Sprintf(
+						"air: the route [%s %s] is already registered",
+						method, path,
+					))
+				} else if pathWithoutParamNames(route.path) == pathWithoutParamNames(path) {
+					panic(fmt.Sprintf(
+						"air: the route [%s %s] and the route [%s %s] are ambiguous",
+						method, path, route.method, route.path,
+					))
+				}
+			}
 		}
 	}
-}
 
-// add registers a new route for the method and the path with the matching h.
-func (r *router) add(method, path string, h Handler) {
-	// Checks
-	r.checkPath(path)
-	r.checkRoute(method, path)
+	r.routes = append(r.routes, &route{
+		method:  method,
+		path:    path,
+		handler: h,
+	})
 
-	ppath := path        // Pristine path
-	pnames := []string{} // Param names
+	paramNames := []string{}
 
 	for i, l := 0, len(path); i < l; i++ {
 		if path[i] == ':' {
 			j := i + 1
 
-			r.insert(method, path[:i], nil, staticKind, "", nil)
+			r.insert(method, path[:i], nil, staticKind, nil)
 
 			for ; i < l && path[i] != '/'; i++ {
 			}
 
-			pname := path[j:i]
+			paramName := path[j:i]
 
-			for _, pn := range pnames {
-				if pn == pname {
+			for _, pn := range paramNames {
+				if pn == paramName {
 					panic("air: the path cannot have duplicate param names")
 				}
 			}
 
-			pnames = append(pnames, pname)
+			paramNames = append(paramNames, paramName)
 			path = path[:j] + path[i:]
 
 			if i, l = j, len(path); i == l {
-				r.insert(method, path, h, paramKind, ppath, pnames)
+				r.insert(method, path, h, paramKind, paramNames)
 				return
 			}
 
-			r.insert(method, path[:i], nil, paramKind, ppath, pnames)
+			r.insert(method, path[:i], nil, paramKind, paramNames)
 		} else if path[i] == '*' {
-			r.insert(method, path[:i], nil, staticKind, "", nil)
-			pnames = append(pnames, "*")
-			r.insert(method, path[:i+1], h, anyKind, ppath, pnames)
+			r.insert(method, path[:i], nil, staticKind, nil)
+			paramNames = append(paramNames, "*")
+			r.insert(method, path[:i+1], h, anyKind, paramNames)
 			return
 		}
 	}
 
-	r.insert(method, path, h, staticKind, ppath, pnames)
+	r.insert(method, path, h, staticKind, paramNames)
 }
 
 // insert inserts a new route into the tree of the r.
-func (r *router) insert(method, path string, h Handler, k nodeKind, ppath string,
-	pnames []string) {
-	if l := len(pnames); l > r.air.paramCap {
+func (r *router) insert(method, path string, h Handler, nk nodeKind, paramNames []string) {
+	if l := len(paramNames); l > r.air.paramCap {
 		r.air.paramCap = l
 	}
 
@@ -197,39 +178,48 @@ func (r *router) insert(method, path string, h Handler, k nodeKind, ppath string
 			cn.label = search[0]
 			cn.prefix = search
 			if h != nil {
-				cn.kind = k
-				cn.addHandler(method, h)
-				cn.pristinePath = ppath
-				cn.paramNames = pnames
+				cn.kind = nk
+				cn.handlers[method] = h
+				cn.paramNames = paramNames
 			}
 		} else if ll < pl {
 			// Split node
-			nn = newNode(cn.kind, cn.prefix[ll:], cn.methodHandler, cn, cn.children,
-				cn.pristinePath, cn.paramNames)
+			nn = &node{
+				kind:       cn.kind,
+				label:      cn.prefix[ll],
+				prefix:     cn.prefix[ll:],
+				handlers:   cn.handlers,
+				parent:     cn,
+				children:   cn.children,
+				paramNames: cn.paramNames,
+			}
 
 			// Reset parent node
 			cn.kind = staticKind
 			cn.label = cn.prefix[0]
 			cn.prefix = cn.prefix[:ll]
 			cn.children = nil
-			cn.methodHandler = &methodHandler{}
-			cn.pristinePath = ""
+			cn.handlers = map[string]Handler{}
 			cn.paramNames = nil
-
-			cn.addChild(nn)
+			cn.children = append(cn.children, nn)
 
 			if ll == sl {
 				// At parent node
-				cn.kind = k
-				cn.addHandler(method, h)
-				cn.pristinePath = ppath
-				cn.paramNames = pnames
+				cn.kind = nk
+				cn.handlers[method] = h
+				cn.paramNames = paramNames
 			} else {
 				// Create child node
-				nn = newNode(k, search[ll:], &methodHandler{}, cn, nil, ppath,
-					pnames)
-				nn.addHandler(method, h)
-				cn.addChild(nn)
+				nn = &node{
+					kind:       nk,
+					label:      search[ll],
+					prefix:     search[ll:],
+					handlers:   map[string]Handler{},
+					parent:     cn,
+					paramNames: paramNames,
+				}
+				nn.handlers[method] = h
+				cn.children = append(cn.children, nn)
 			}
 		} else if ll < sl {
 			search = search[ll:]
@@ -241,14 +231,20 @@ func (r *router) insert(method, path string, h Handler, k nodeKind, ppath string
 			}
 
 			// Create child node
-			nn = newNode(k, search, &methodHandler{}, cn, nil, ppath, pnames)
-			nn.addHandler(method, h)
-			cn.addChild(nn)
+			nn = &node{
+				kind:       nk,
+				label:      search[0],
+				prefix:     search,
+				handlers:   map[string]Handler{},
+				parent:     cn,
+				paramNames: paramNames,
+			}
+			nn.handlers[method] = h
+			cn.children = append(cn.children, nn)
 		} else if h != nil {
 			// Node already exists
-			cn.addHandler(method, h)
-			cn.pristinePath = ppath
-			cn.paramNames = pnames
+			cn.handlers[method] = h
+			cn.paramNames = paramNames
 		}
 
 		return
@@ -374,11 +370,12 @@ func (r *router) route(method, path string, c *Context) {
 		return
 	}
 
-	if c.Handler = cn.handler(method); c.Handler != nil {
-		c.PristinePath = cn.pristinePath
+	if c.Handler = cn.handlers[method]; c.Handler != nil {
 		c.ParamNames = cn.paramNames
+	} else if len(cn.handlers) != 0 {
+		c.Handler = MethodNotAllowedHandler
 	} else {
-		c.Handler = cn.checkMethodNotAllowed()
+		c.Handler = NotFoundHandler
 	}
 
 	return
@@ -502,25 +499,10 @@ func unhex(c byte) byte {
 	return 0
 }
 
-// newNode returns a pointer of a new instance of the `node` with the provided values.
-func newNode(k nodeKind, pre string, mh *methodHandler, p *node, c []*node, ppath string,
-	pnames []string) *node {
-	return &node{
-		kind:          k,
-		label:         pre[0],
-		prefix:        pre,
-		methodHandler: mh,
-		parent:        p,
-		children:      c,
-		pristinePath:  ppath,
-		paramNames:    pnames,
-	}
-}
-
 // child returns a child `node` of the n by the provided label l and the kind t.
-func (n *node) child(l byte, t nodeKind) *node {
+func (n *node) child(l byte, nk nodeKind) *node {
 	for _, c := range n.children {
-		if c.label == l && c.kind == t {
+		if c.label == l && c.kind == nk {
 			return c
 		}
 	}
@@ -538,75 +520,11 @@ func (n *node) childByLabel(l byte) *node {
 }
 
 // childByKind returns a child `node` of the n by the provided kind t.
-func (n *node) childByKind(t nodeKind) *node {
+func (n *node) childByKind(nk nodeKind) *node {
 	for _, c := range n.children {
-		if c.kind == t {
+		if c.kind == nk {
 			return c
 		}
 	}
 	return nil
-}
-
-// addChild adds the c into the children nodes of the n.
-func (n *node) addChild(c *node) {
-	n.children = append(n.children, c)
-}
-
-// handler returns a `Handler` by the provided method.
-func (n *node) handler(method string) Handler {
-	switch method {
-	case GET:
-		return n.methodHandler.get
-	case HEAD:
-		return n.methodHandler.head
-	case POST:
-		return n.methodHandler.post
-	case PUT:
-		return n.methodHandler.put
-	case PATCH:
-		return n.methodHandler.patch
-	case DELETE:
-		return n.methodHandler.delete
-	case CONNECT:
-		return n.methodHandler.connect
-	case OPTIONS:
-		return n.methodHandler.options
-	case TRACE:
-		return n.methodHandler.trace
-	}
-	return nil
-}
-
-// addHandler adds the h into the filed `methodHandler` of the n with the provided method.
-func (n *node) addHandler(method string, h Handler) {
-	switch method {
-	case GET:
-		n.methodHandler.get = h
-	case HEAD:
-		n.methodHandler.head = h
-	case POST:
-		n.methodHandler.post = h
-	case PUT:
-		n.methodHandler.put = h
-	case PATCH:
-		n.methodHandler.patch = h
-	case DELETE:
-		n.methodHandler.delete = h
-	case CONNECT:
-		n.methodHandler.connect = h
-	case OPTIONS:
-		n.methodHandler.options = h
-	case TRACE:
-		n.methodHandler.trace = h
-	}
-}
-
-// checkMethodNotAllowed returns a `Handler` by checked methods.
-func (n *node) checkMethodNotAllowed() Handler {
-	for _, m := range methods {
-		if h := n.handler(m); h != nil {
-			return MethodNotAllowedHandler
-		}
-	}
-	return NotFoundHandler
 }

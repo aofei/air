@@ -9,54 +9,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRouterCheckPath(t *testing.T) {
+func TestRouterAdd(t *testing.T) {
 	a := New()
 	r := a.router
 
-	path := ""
-	assert.Panics(t, func() { r.checkPath(path) })
+	assert.Panics(t, func() { r.add(GET, "", nil) })
+	assert.Panics(t, func() { r.add(GET, "foobar", nil) })
+	assert.Panics(t, func() { r.add(GET, "/foobar/", nil) })
+	assert.Panics(t, func() { r.add(GET, "//foobar", nil) })
+	assert.Panics(t, func() { r.add(GET, "/:foo:bar", nil) })
+	assert.Panics(t, func() { r.add(GET, "/:foobar/:foobar", nil) })
+	assert.Panics(t, func() { r.add(GET, "/foo*/bar", nil) })
+	assert.Panics(t, func() { r.add(GET, "/foo*/bar*", nil) })
+	assert.Panics(t, func() { r.add(GET, "/:foobar*", nil) })
 
-	path = "foobar"
-	assert.Panics(t, func() { r.checkPath(path) })
-
-	path = "/foobar/"
-	assert.Panics(t, func() { r.checkPath(path) })
-
-	path = "//foobar"
-	assert.Panics(t, func() { r.checkPath(path) })
-
-	path = "/:foo:bar"
-	path = "/:foo:bar"
-	assert.Panics(t, func() { r.checkPath(path) })
-
-	path = "/foo*/bar*"
-	assert.Panics(t, func() { r.checkPath(path) })
-
-	path = "/foo*/bar"
-	assert.Panics(t, func() { r.checkPath(path) })
-
-	path = "/:foobar*"
-	assert.Panics(t, func() { r.checkPath(path) })
-}
-
-func TestRouterCheckRoute(t *testing.T) {
-	a := New()
-	r := a.router
-
-	method := GET
-	path := "/:foo"
-
-	a.add(method, path, func(*Context) error { return nil })
-
-	assert.Panics(t, func() { r.checkRoute(method, path) })
-
-	path = "/:bar"
-
-	assert.Panics(t, func() { r.checkRoute(method, path) })
-
-	path = "/:foobar/:foobar"
-
-	assert.Panics(t, func() { r.add(method, path, func(*Context) error { return nil }) })
+	r.add(GET, "/:foo", nil)
+	assert.Panics(t, func() { r.add(GET, "/:bar", nil) })
 }
 
 func TestRouterMatchStatic(t *testing.T) {
@@ -323,15 +291,10 @@ func TestRouterMatchingPriority(t *testing.T) {
 	c.Handler(c)
 	assert.Equal(t, 6, c.Value("f"))
 
-	r.add(GET, "/users/*", func(c *Context) error {
-		c.SetValue("h", 7)
-		return nil
-	})
-
 	c = a.contextPool.Get().(*Context)
 	r.route(GET, "/users/1/followers", c)
 	c.Handler(c)
-	assert.Equal(t, 7, c.Value("h"))
+	assert.Equal(t, 7, c.Value("g"))
 	assert.Equal(t, "1/followers", c.Param("*"))
 }
 

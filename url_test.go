@@ -12,7 +12,7 @@ func TestURLQueryValue(t *testing.T) {
 	a := New()
 	c := NewContext(a)
 
-	vs := make(url.Values)
+	vs := url.Values{}
 	vs.Set("name", "Air")
 	vs.Set("author", "Aofei Sheng")
 	req, _ := http.NewRequest(GET, "/?"+vs.Encode(), nil)
