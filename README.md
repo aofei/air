@@ -18,11 +18,16 @@ So, Air web framework can only guarantee you one thing: **it can serve properly.
 	* As less as possible.
 	* As simple as possible.
 	* As expressive as possible.
-* HTTP Methods (only four)
+* HTTP Methods
 	* `GET`
+	* `HEAD`
 	* `POST`
 	* `PUT`
+	* `PATCH`
 	* `DELETE`
+	* `CONNECT`
+	* `OPTIONS`
+	* `TRACE`
 * Server
 	* HTTP/2 support.
 	* SSL/TLS support.

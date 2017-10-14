@@ -33,9 +33,14 @@ func TestGroupRESTfulMethods(t *testing.T) {
 	h := func(*Context) error { return nil }
 
 	g.GET("/", h)
+	g.HEAD("/", h)
 	g.POST("/", h)
 	g.PUT("/", h)
+	g.PATCH("/", h)
 	g.DELETE("/", h)
+	g.CONNECT("/", h)
+	g.OPTIONS("/", h)
+	g.TRACE("/", h)
 }
 
 func TestGroupStatic(t *testing.T) {
