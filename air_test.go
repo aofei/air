@@ -67,10 +67,20 @@ func TestAirMethods(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	a.GET(path, func(c *Context) error { return c.String(GET) })
+	a.HEAD(path, func(c *Context) error { return c.String(HEAD) })
 	a.POST(path, func(c *Context) error { return c.String(POST) })
 	a.PUT(path, func(c *Context) error { return c.String(PUT) })
+	a.PATCH(path, func(c *Context) error { return c.String(PATCH) })
 	a.DELETE(path, func(c *Context) error { return c.String(DELETE) })
+	a.CONNECT(path, func(c *Context) error { return c.String(CONNECT) })
+	a.OPTIONS(path, func(c *Context) error { return c.String(OPTIONS) })
+	a.TRACE(path, func(c *Context) error { return c.String(TRACE) })
 
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, GET, rec.Body.String())
+
+	req.Method = GET
+	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
 	assert.Equal(t, GET, rec.Body.String())
 
@@ -84,10 +94,30 @@ func TestAirMethods(t *testing.T) {
 	a.server.ServeHTTP(rec, req)
 	assert.Equal(t, PUT, rec.Body.String())
 
+	req.Method = PATCH
+	rec = httptest.NewRecorder()
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, PATCH, rec.Body.String())
+
 	req.Method = DELETE
 	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
 	assert.Equal(t, DELETE, rec.Body.String())
+
+	req.Method = CONNECT
+	rec = httptest.NewRecorder()
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, CONNECT, rec.Body.String())
+
+	req.Method = OPTIONS
+	rec = httptest.NewRecorder()
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, OPTIONS, rec.Body.String())
+
+	req.Method = TRACE
+	rec = httptest.NewRecorder()
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, TRACE, rec.Body.String())
 }
 
 func TestAirStatic(t *testing.T) {

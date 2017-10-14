@@ -70,14 +70,19 @@ const (
 
 // HTTP methods
 const (
-	GET    = "GET"
-	POST   = "POST"
-	PUT    = "PUT"
-	DELETE = "DELETE"
+	GET     = "GET"
+	HEAD    = "HEAD"
+	POST    = "POST"
+	PUT     = "PUT"
+	PATCH   = "PATCH"
+	DELETE  = "DELETE"
+	CONNECT = "CONNECT"
+	OPTIONS = "OPTIONS"
+	TRACE   = "TRACE"
 )
 
-// For easy for-range
-var methods = [4]string{GET, POST, PUT, DELETE}
+// methods is an array containing all the HTTP methods for easy for-range.
+var methods = [...]string{GET, HEAD, POST, PUT, PATCH, DELETE, CONNECT, OPTIONS, TRACE}
 
 // HTTP headers
 const (
@@ -219,6 +224,12 @@ func (a *Air) GET(path string, h Handler, gases ...Gas) {
 	a.add(GET, path, h, gases...)
 }
 
+// HEAD registers a new HEAD route for the path with the matching h in the router with the optional
+// route-level gases.
+func (a *Air) HEAD(path string, h Handler, gases ...Gas) {
+	a.add(HEAD, path, h, gases...)
+}
+
 // POST registers a new POST route for the path with the matching h in the router with the optional
 // route-level gases.
 func (a *Air) POST(path string, h Handler, gases ...Gas) {
@@ -231,10 +242,34 @@ func (a *Air) PUT(path string, h Handler, gases ...Gas) {
 	a.add(PUT, path, h, gases...)
 }
 
+// PATCH registers a new PATCH route for the path with the matching h in the router with the
+// optional route-level gases.
+func (a *Air) PATCH(path string, h Handler, gases ...Gas) {
+	a.add(PATCH, path, h, gases...)
+}
+
 // DELETE registers a new DELETE route for the path with the matching h in the router with the
 // optional route-level gases.
 func (a *Air) DELETE(path string, h Handler, gases ...Gas) {
 	a.add(DELETE, path, h, gases...)
+}
+
+// CONNECT registers a new CONNECT route for the path with the matching h in the router with the
+// optional route-level gases.
+func (a *Air) CONNECT(path string, h Handler, gases ...Gas) {
+	a.add(CONNECT, path, h, gases...)
+}
+
+// OPTIONS registers a new OPTIONS route for the path with the matching h in the router with the
+// optional route-level gases.
+func (a *Air) OPTIONS(path string, h Handler, gases ...Gas) {
+	a.add(OPTIONS, path, h, gases...)
+}
+
+// TRACE registers a new TRACE route for the path with the matching h in the router with the
+// optional route-level gases.
+func (a *Air) TRACE(path string, h Handler, gases ...Gas) {
+	a.add(TRACE, path, h, gases...)
 }
 
 // Static registers a new route with the path prefix to serve the static files from the provided

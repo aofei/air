@@ -16,18 +16,8 @@ func TestServerMethodAllowed(t *testing.T) {
 		assert.True(t, methodAllowed(m))
 	}
 
-	others := []string{
-		"HEAD",
-		"PATCH",
-		"CONNECT",
-		"OPTIONS",
-		"TRACE",
-	}
-
-	for _, m := range others {
-		req, _ := http.NewRequest(m, "/", nil)
-		rec := httptest.NewRecorder()
-		a.server.ServeHTTP(rec, req)
-		assert.Equal(t, http.StatusMethodNotAllowed, rec.Code)
-	}
+	req, _ := http.NewRequest("INVALID", "/", nil)
+	rec := httptest.NewRecorder()
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 }

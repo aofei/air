@@ -40,10 +40,15 @@ type (
 
 	// methodHandler is a set of the `Handler` distinguish by method.
 	methodHandler struct {
-		get    Handler
-		post   Handler
-		put    Handler
-		delete Handler
+		get     Handler
+		head    Handler
+		post    Handler
+		put     Handler
+		patch   Handler
+		delete  Handler
+		connect Handler
+		options Handler
+		trace   Handler
 	}
 )
 
@@ -552,12 +557,22 @@ func (n *node) handler(method string) Handler {
 	switch method {
 	case GET:
 		return n.methodHandler.get
+	case HEAD:
+		return n.methodHandler.head
 	case POST:
 		return n.methodHandler.post
 	case PUT:
 		return n.methodHandler.put
+	case PATCH:
+		return n.methodHandler.patch
 	case DELETE:
 		return n.methodHandler.delete
+	case CONNECT:
+		return n.methodHandler.connect
+	case OPTIONS:
+		return n.methodHandler.options
+	case TRACE:
+		return n.methodHandler.trace
 	}
 	return nil
 }
@@ -567,12 +582,22 @@ func (n *node) addHandler(method string, h Handler) {
 	switch method {
 	case GET:
 		n.methodHandler.get = h
+	case HEAD:
+		n.methodHandler.head = h
 	case POST:
 		n.methodHandler.post = h
 	case PUT:
 		n.methodHandler.put = h
+	case PATCH:
+		n.methodHandler.patch = h
 	case DELETE:
 		n.methodHandler.delete = h
+	case CONNECT:
+		n.methodHandler.connect = h
+	case OPTIONS:
+		n.methodHandler.options = h
+	case TRACE:
+		n.methodHandler.trace = h
 	}
 }
 
