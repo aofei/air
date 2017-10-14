@@ -1,13 +1,10 @@
 package air
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"net/http"
 	"path"
-	"reflect"
-	"runtime"
 	"sync"
 )
 
@@ -290,8 +287,6 @@ func (a *Air) File(path, file string) {
 // add registers a new route for the path with the method and the matching h in the router with the
 // optional route-level gases.
 func (a *Air) add(method, path string, h Handler, gases ...Gas) {
-	hn := handlerName(h)
-
 	a.router.add(method, path, func(c *Context) error {
 		h := h
 		for i := len(gases) - 1; i >= 0; i-- {
@@ -299,41 +294,6 @@ func (a *Air) add(method, path string, h Handler, gases ...Gas) {
 		}
 		return h(c)
 	})
-
-	a.router.routes[method+path] = &route{
-		method:  method,
-		path:    path,
-		handler: hn,
-	}
-}
-
-// URL returns an URL generated from the h with the optional params.
-func (a *Air) URL(h Handler, params ...interface{}) string {
-	url := &bytes.Buffer{}
-	hn := handlerName(h)
-	ln := len(params)
-	n := 0
-
-	for _, r := range a.router.routes {
-		if r.handler == hn {
-			for i, l := 0, len(r.path); i < l; i++ {
-				if r.path[i] == ':' && n < ln {
-					for ; i < l && r.path[i] != '/'; i++ {
-					}
-					url.WriteString(fmt.Sprintf("%v", params[n]))
-					n++
-				}
-
-				if i < l {
-					url.WriteByte(r.path[i])
-				}
-			}
-
-			break
-		}
-	}
-
-	return url.String()
 }
 
 // Serve starts the HTTP server.
@@ -368,11 +328,6 @@ func (a *Air) Close() error {
 // Shutdown gracefully shuts down the HTTP server without interrupting any active connections.
 func (a *Air) Shutdown(c *Context) error {
 	return a.server.Shutdown(c)
-}
-
-// handlerName returns the func name of the h.
-func handlerName(h Handler) string {
-	return runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
 }
 
 // WrapHandler wraps the h into the `Handler`.

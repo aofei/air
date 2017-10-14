@@ -157,13 +157,6 @@ func TestAirFile(t *testing.T) {
 	assert.Equal(t, b, rec.Body.Bytes())
 }
 
-func TestAirURL(t *testing.T) {
-	a := New()
-	h := func(c *Context) error { return c.NoContent(http.StatusOK) }
-	a.GET("/:first/:second", h)
-	assert.Equal(t, "/foo/bar", a.URL(h, "foo", "bar"))
-}
-
 func TestAirServe(t *testing.T) {
 	a := New()
 	ok := make(chan struct{})

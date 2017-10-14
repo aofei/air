@@ -258,7 +258,7 @@ func (l *logger) log(lvl loggerLevel, format string, args ...interface{}) {
 
 	_, file, line, _ := runtime.Caller(3)
 
-	data := make(Map)
+	data := Map{}
 	data["app_name"] = l.air.Config.AppName
 	data["time_rfc3339"] = time.Now().Format(time.RFC3339)
 	data["level"] = l.levels[lvl]

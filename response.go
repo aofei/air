@@ -36,7 +36,7 @@ func NewResponse(c *Context) *Response {
 	return &Response{
 		context:    c,
 		StatusCode: http.StatusOK,
-		Data:       make(Map),
+		Data:       Map{},
 	}
 }
 

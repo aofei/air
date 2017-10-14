@@ -72,7 +72,7 @@ func (a *Asset) Seek(offset int64, whence int) (int64, error) {
 func newCoffer(a *Air) *coffer {
 	return &coffer{
 		air:    a,
-		assets: make(map[string]*Asset),
+		assets: map[string]*Asset{},
 	}
 }
 
@@ -110,7 +110,7 @@ func (c *coffer) Init() error {
 		go c.watchAssets()
 	}
 
-	assets := make(map[string]*Asset)
+	assets := map[string]*Asset{}
 
 	for _, file := range files {
 		fi, err := os.Stat(file)
