@@ -68,27 +68,27 @@ func newRouter(a *Air) *router {
 // checkPath checks whether the path is valid.
 func (r *router) checkPath(path string) {
 	if path == "" {
-		panic("the path cannot be empty")
+		panic("air: the path cannot be empty")
 	} else if path[0] != '/' {
-		panic("the path must start with the /")
+		panic("air: the path must start with the /")
 	} else if path != "/" && hasLastSlash(path) {
-		panic("the path cannot end with the /, except the root path")
+		panic("air: the path cannot end with the /, except the root path")
 	} else if strings.Contains(path, "//") {
-		panic("the path cannot have the //")
+		panic("air: the path cannot have the //")
 	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
 		for _, p := range ps {
 			if strings.Count(p, ":") > 1 {
-				panic("adjacent params in the path must be separated by the /")
+				panic("air: adjacent params in the path must be separated by the /")
 			}
 		}
 	} else if strings.Contains(path, "*") {
 		if strings.Count(path, "*") > 1 {
-			panic("only one * is allowed in the path")
+			panic("air: only one * is allowed in the path")
 		} else if path[len(path)-1] != '*' {
-			panic("the * can only appear at the end of the path")
+			panic("air: the * can only appear at the end of the path")
 		} else if strings.Contains(path[strings.LastIndex(path, "/"):], ":") {
-			panic("adjacent param and the * in the path must be separated by the /")
+			panic("air: adjacent param and the * in the path must be separated by the /")
 		}
 	}
 }
@@ -96,14 +96,16 @@ func (r *router) checkPath(path string) {
 // checkRoute checks whether the route [method path] is valid.
 func (r *router) checkRoute(method, path string) {
 	if r.routes[method+path] != nil {
-		panic(fmt.Sprintf("the route [%s %s] is already registered", method, path))
+		panic(fmt.Sprintf("air: the route [%s %s] is already registered", method, path))
 	}
 
 	for _, route := range r.routes {
 		if route.method == method &&
 			pathWithoutParamNames(route.path) == pathWithoutParamNames(path) {
-			panic(fmt.Sprintf("the route [%s %s] and the route [%s %s] are ambiguous",
-				method, path, route.method, route.path))
+			panic(fmt.Sprintf(
+				"air: the route [%s %s] and the route [%s %s] are ambiguous",
+				method, path, route.method, route.path),
+			)
 		}
 	}
 }
@@ -130,7 +132,7 @@ func (r *router) add(method, path string, h Handler) {
 
 			for _, pn := range pnames {
 				if pn == pname {
-					panic("the path cannot have duplicate param names")
+					panic("air: the path cannot have duplicate param names")
 				}
 			}
 
