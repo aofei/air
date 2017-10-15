@@ -7,8 +7,8 @@ import (
 )
 
 type (
-	// router is the registry of all registered routes for an `Air` instance for the HTTP
-	// request matching and the HTTP URL path params parsing.
+	// router is the registry of all registered routes for an `Air` instance
+	// for the HTTP request matching and the HTTP URL path params parsing.
 	router struct {
 		air *Air
 
@@ -16,7 +16,8 @@ type (
 		tree   *node
 	}
 
-	// route contains a handler and information for matching against the HTTP requests.
+	// route contains a handler and information for matching against the
+	// HTTP requests.
 	route struct {
 		method  string
 		path    string
@@ -62,36 +63,51 @@ func (r *router) add(method, path string, h Handler) {
 	} else if path[0] != '/' {
 		panic("air: the path must start with the /")
 	} else if path != "/" && hasLastSlash(path) {
-		panic("air: the path cannot end with the /, except the root path")
+		panic("air: the path cannot end with the /, except the root " +
+			"path")
 	} else if strings.Contains(path, "//") {
 		panic("air: the path cannot have the //")
 	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
 		for _, p := range ps {
 			if strings.Count(p, ":") > 1 {
-				panic("air: adjacent params in the path must be separated by the /")
+				panic("air: adjacent params in the path must " +
+					"be separated by the /")
 			}
 		}
 	} else if strings.Contains(path, "*") {
 		if strings.Count(path, "*") > 1 {
 			panic("air: only one * is allowed in the path")
 		} else if path[len(path)-1] != '*' {
-			panic("air: the * can only appear at the end of the path")
-		} else if strings.Contains(path[strings.LastIndex(path, "/"):], ":") {
-			panic("air: adjacent param and the * in the path must be separated by the /")
+			panic("air: the * can only appear at the end of the " +
+				"path")
+		} else if strings.Contains(
+			path[strings.LastIndex(path, "/"):],
+			":",
+		) {
+			panic("air: adjacent param and the * in the path " +
+				"must be separated by the /")
 		}
 	} else {
 		for _, route := range r.routes {
 			if route.method == method {
 				if route.path == path {
 					panic(fmt.Sprintf(
-						"air: the route [%s %s] is already registered",
-						method, path,
+						"air: the route [%s %s] is "+
+							"already registered",
+						method,
+						path,
 					))
-				} else if pathWithoutParamNames(route.path) == pathWithoutParamNames(path) {
+				} else if pathWithoutParamNames(route.path) ==
+					pathWithoutParamNames(path) {
 					panic(fmt.Sprintf(
-						"air: the route [%s %s] and the route [%s %s] are ambiguous",
-						method, path, route.method, route.path,
+						"air: the route [%s %s] and "+
+							"the route [%s %s] "+
+							"are ambiguous",
+						method,
+						path,
+						route.method,
+						route.path,
 					))
 				}
 			}
@@ -119,7 +135,8 @@ func (r *router) add(method, path string, h Handler) {
 
 			for _, pn := range paramNames {
 				if pn == paramName {
-					panic("air: the path cannot have duplicate param names")
+					panic("air: the path cannot have " +
+						"duplicate param names")
 				}
 			}
 
@@ -144,7 +161,13 @@ func (r *router) add(method, path string, h Handler) {
 }
 
 // insert inserts a new route into the tree of the r.
-func (r *router) insert(method, path string, h Handler, nk nodeKind, paramNames []string) {
+func (r *router) insert(
+	method,
+	path string,
+	h Handler,
+	nk nodeKind,
+	paramNames []string,
+) {
 	if l := len(paramNames); l > r.air.paramCap {
 		r.air.paramCap = l
 	}
@@ -152,16 +175,16 @@ func (r *router) insert(method, path string, h Handler, nk nodeKind, paramNames 
 	cn := r.tree // Current node as root
 
 	var (
-		search = path
-		nn     *node // Next node
-		sl     int   // Search length
-		pl     int   // Prefix length
-		ll     int   // LCP length
-		max    int   // Max number of sl and pl
+		s   = path // Search
+		nn  *node  // Next node
+		sl  int    // Search length
+		pl  int    // Prefix length
+		ll  int    // LCP length
+		max int    // Max number of sl and pl
 	)
 
 	for {
-		sl = len(search)
+		sl = len(s)
 		pl = len(cn.prefix)
 		ll = 0
 
@@ -170,13 +193,13 @@ func (r *router) insert(method, path string, h Handler, nk nodeKind, paramNames 
 			max = sl
 		}
 
-		for ; ll < max && search[ll] == cn.prefix[ll]; ll++ {
+		for ; ll < max && s[ll] == cn.prefix[ll]; ll++ {
 		}
 
 		if ll == 0 {
 			// At root node
-			cn.label = search[0]
-			cn.prefix = search
+			cn.label = s[0]
+			cn.prefix = s
 			if h != nil {
 				cn.kind = nk
 				cn.handlers[method] = h
@@ -212,8 +235,8 @@ func (r *router) insert(method, path string, h Handler, nk nodeKind, paramNames 
 				// Create child node
 				nn = &node{
 					kind:       nk,
-					label:      search[ll],
-					prefix:     search[ll:],
+					label:      s[ll],
+					prefix:     s[ll:],
 					handlers:   map[string]Handler{},
 					parent:     cn,
 					paramNames: paramNames,
@@ -222,9 +245,9 @@ func (r *router) insert(method, path string, h Handler, nk nodeKind, paramNames 
 				cn.children = append(cn.children, nn)
 			}
 		} else if ll < sl {
-			search = search[ll:]
+			s = s[ll:]
 
-			if nn = cn.childByLabel(search[0]); nn != nil {
+			if nn = cn.childByLabel(s[0]); nn != nil {
 				// Go deeper
 				cn = nn
 				continue
@@ -233,8 +256,8 @@ func (r *router) insert(method, path string, h Handler, nk nodeKind, paramNames 
 			// Create child node
 			nn = &node{
 				kind:       nk,
-				label:      search[0],
-				prefix:     search,
+				label:      s[0],
+				prefix:     s,
 				handlers:   map[string]Handler{},
 				parent:     cn,
 				paramNames: paramNames,
@@ -251,27 +274,27 @@ func (r *router) insert(method, path string, h Handler, nk nodeKind, paramNames 
 	}
 }
 
-// route routes a handler registered for the method and the path. It also parses the HTTP URL for
-// the path params and load them into the c.
+// route routes a handler registered for the method and the path. It also parses
+// the HTTP URL for the path params and load them into the c.
 func (r *router) route(method, path string, c *Context) {
 	cn := r.tree // Current node as root
 
 	var (
-		search = pathClean(path)
-		nn     *node    // Next node
-		nk     nodeKind // Next kind
-		sn     *node    // Saved node
-		ss     string   // Saved search
-		sl     int      // Search length
-		pl     int      // Prefix length
-		ll     int      // LCP length
-		max    int      // Max number of sl and pl
-		si     int      // Start index
+		s   = pathClean(path) // Search
+		nn  *node             // Next node
+		nk  nodeKind          // Next kind
+		sn  *node             // Saved node
+		ss  string            // Saved search
+		sl  int               // Search length
+		pl  int               // Prefix length
+		ll  int               // LCP length
+		max int               // Max number of sl and pl
+		si  int               // Start index
 	)
 
 	// Search order: static > param > any
 	for {
-		if search == "" {
+		if s == "" {
 			break
 		}
 
@@ -279,7 +302,7 @@ func (r *router) route(method, path string, c *Context) {
 		ll = 0
 
 		if cn.label != ':' {
-			sl = len(search)
+			sl = len(s)
 			pl = len(cn.prefix)
 
 			max = pl
@@ -287,7 +310,7 @@ func (r *router) route(method, path string, c *Context) {
 				max = sl
 			}
 
-			for ; ll < max && search[ll] == cn.prefix[ll]; ll++ {
+			for ; ll < max && s[ll] == cn.prefix[ll]; ll++ {
 			}
 		}
 
@@ -295,17 +318,17 @@ func (r *router) route(method, path string, c *Context) {
 			goto Struggle
 		}
 
-		if search = search[ll:]; search == "" {
+		if s = s[ll:]; s == "" {
 			break
 		}
 
 		// Static node
-		if nn = cn.child(search[0], staticKind); nn != nil {
+		if nn = cn.child(s[0], staticKind); nn != nil {
 			// Save next
 			if hasLastSlash(cn.prefix) {
 				nk = paramKind
 				sn = cn
-				ss = search
+				ss = s
 			}
 
 			cn = nn
@@ -320,16 +343,16 @@ func (r *router) route(method, path string, c *Context) {
 			if hasLastSlash(cn.prefix) {
 				nk = anyKind
 				sn = cn
-				ss = search
+				ss = s
 			}
 
 			cn = nn
 
-			for si = 0; si < len(search) && search[si] != '/'; si++ {
+			for si = 0; si < len(s) && s[si] != '/'; si++ {
 			}
 
-			c.ParamValues = append(c.ParamValues, unescape(search[:si]))
-			search = search[si:]
+			c.ParamValues = append(c.ParamValues, unescape(s[:si]))
+			s = s[si:]
 
 			continue
 		}
@@ -338,15 +361,17 @@ func (r *router) route(method, path string, c *Context) {
 	Any:
 		if cn = cn.childByKind(anyKind); cn != nil {
 			if hasLastSlash(path) {
-				for si = len(path) - 1; si > 0 && path[si] == '/'; si-- {
+				si = len(path) - 1
+				for ; si > 0 && path[si] == '/'; si-- {
 				}
-				search += path[si+1:]
+				s += path[si+1:]
 			}
 
+			pv := unescape(s)
 			if len(c.ParamValues) < len(cn.paramNames) {
-				c.ParamValues = append(c.ParamValues, unescape(search))
+				c.ParamValues = append(c.ParamValues, pv)
 			} else {
-				c.ParamValues[len(cn.paramNames)-1] = unescape(search)
+				c.ParamValues[len(cn.paramNames)-1] = pv
 			}
 
 			break
@@ -357,7 +382,7 @@ func (r *router) route(method, path string, c *Context) {
 		if sn != nil {
 			cn = sn
 			sn = nil
-			search = ss
+			s = ss
 
 			switch nk {
 			case paramKind:

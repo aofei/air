@@ -13,13 +13,15 @@ import (
 )
 
 type (
-	// Renderer is used to provide a `Render()` method for an `Air` instance for renders a
-	// "text/html" HTTP response.
+	// Renderer is used to provide a `Render()` method for an `Air` instance
+	// for renders a "text/html" HTTP response.
 	Renderer interface {
-		// Init initializes the `Renderer`. It will be called in the `Air#Serve()`.
+		// Init initializes the `Renderer`. It will be called in the
+		// `Air#Serve()`.
 		Init() error
 
-		// SetTemplateFunc sets the func f into the `Renderer` with the name.
+		// SetTemplateFunc sets the func f into the `Renderer` with the
+		// name.
 		SetTemplateFunc(name string, f interface{})
 
 		// Render renders the data into the w with the templateName.
@@ -52,7 +54,8 @@ func newRenderer(a *Air) *renderer {
 
 // Init implements the `Renderer#Init()` by using the `template.Template`.
 //
-// e.g. r.air.Config.TemplateRoot == "templates" && r.air.Config.TemplateExt == []string{".html"}
+// e.g. r.air.Config.TemplateRoot == "templates" && r.air.Config.TemplateExt ==
+// []string{".html"}
 //
 // templates/
 //   index.html
@@ -65,7 +68,8 @@ func newRenderer(a *Air) *renderer {
 //
 // will be parsed into:
 //
-// "index.html", "login.html", "register.html", "parts/header.html", "parts/footer.html".
+// "index.html", "login.html", "register.html", "parts/header.html",
+// "parts/footer.html".
 func (r *renderer) Init() error {
 	c := r.air.Config
 
@@ -108,7 +112,8 @@ func (r *renderer) Init() error {
 		}
 
 		if c.TemplateMinified {
-			if b, err = r.air.Minifier.Minify(MIMETextHTML, b); err != nil {
+			b, err = r.air.Minifier.Minify(MIMETextHTML, b)
+			if err != nil {
 				return err
 			}
 		}
@@ -124,7 +129,8 @@ func (r *renderer) Init() error {
 	return nil
 }
 
-// SetTemplateFunc implements the `Renderer#SetTemplateFunc()` by using the `template.Template`.
+// SetTemplateFunc implements the `Renderer#SetTemplateFunc()` by using the
+// `template.Template`.
 func (r *renderer) SetTemplateFunc(name string, f interface{}) {
 	r.templateFuncMap[name] = f
 }
@@ -154,15 +160,25 @@ func (r *renderer) watchTemplates() {
 	}
 }
 
-// walkFiles walks all files with the exts in all subdirs of the root recursively.
-func walkFiles(root string, exts []string) (dirs []string, files []string, err error) {
-	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if info != nil && info.IsDir() {
-			dirs = append(dirs, path)
-		}
-		return err
-	})
-	if err != nil {
+// walkFiles walks all files with the exts in all subdirs of the root
+// recursively.
+func walkFiles(
+	root string,
+	exts []string,
+) (
+	dirs []string,
+	files []string,
+	err error,
+) {
+	if err = filepath.Walk(
+		root,
+		func(path string, info os.FileInfo, err error) error {
+			if info != nil && info.IsDir() {
+				dirs = append(dirs, path)
+			}
+			return err
+		},
+	); err != nil {
 		return nil, nil, err
 	}
 
@@ -192,14 +208,15 @@ func strcat(s string, ss ...string) string {
 	return s
 }
 
-// substr returns the substring consisting of the chars of the s starting at the index i and
-// continuing up to, but not including, the char at the index j.
+// substr returns the substring consisting of the chars of the s starting at the
+// index i and continuing up to, but not including, the char at the index j.
 func substr(s string, i, j int) string {
 	rs := []rune(s)
 	return string(rs[i:j])
 }
 
-// timefmt returns a textual representation of the t formatted according to the layout.
+// timefmt returns a textual representation of the t formatted according to the
+// layout.
 func timefmt(t time.Time, layout string) string {
 	return t.Format(layout)
 }

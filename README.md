@@ -5,12 +5,13 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/sheng/air)](https://goreportcard.com/report/github.com/sheng/air)
 [![GoDoc](https://godoc.org/github.com/sheng/air?status.svg)](https://godoc.org/github.com/sheng/air)
 
-An ideal RESTful web framework for Go. You can use it to develop a RESTful web application as
-natural as breathing.
+An ideal RESTful web framework for Go. You can use it to develop a RESTful web
+application as natural as breathing.
 
-High-performance? Fastest? Almost all the web frameworks are using these words to tell people that
-they are the best. Maybe they are, maybe not. This framework does not intend to follow the crowd.
-So, Air web framework can only guarantee you one thing: **it can serve properly.**
+High-performance? Fastest? Almost all the web frameworks are using these words
+to tell people that they are the best. Maybe they are, maybe not. This framework
+does not intend to follow the crowd. So, Air web framework can only guarantee
+you one thing: **it can serve properly.**
 
 ## Features
 
@@ -147,11 +148,12 @@ then visit `http://localhost:2333`.
 
 ## Gases
 
-As we all know that the air is a mixture of gases. So the same is that this framework adopts the
-gas as its composition. Everyone can create new gas and use it within this framework simply.
+As we all know that the air is a mixture of gases. So the same is that this
+framework adopts the gas as its composition. Everyone can create new gas and use
+it within this framework simply.
 
-If you want to learn more about the gases, or create your own gas for this framework, simply visit
-[here](https://github.com/sheng/gases).
+If you want to learn more about the gases, or create your own gas for this
+framework, simply visit [here](https://github.com/sheng/gases).
 
 ## Examples
 
@@ -160,8 +162,8 @@ If you want to be familiar with this framework as soon as possible, simply visit
 
 ## Community
 
-If you want to discuss this framework, or ask questions about it, simply post questions or ideas
-[here](https://github.com/sheng/air/issues).
+If you want to discuss this framework, or ask questions about it, simply post
+questions or ideas [here](https://github.com/sheng/air/issues).
 
 ## Contributing
 

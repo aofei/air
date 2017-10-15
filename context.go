@@ -24,9 +24,10 @@ type Context struct {
 	ParamValues []string
 	Handler     Handler
 
-	// Cancel is non-nil if one of the `SetCancel()`, the `SetDeadline()` or the `SetTimeout()`
-	// is called. It will be called when the HTTP server finishes the current cycle if it is
-	// non-nil and has never been called.
+	// Cancel is non-nil if one of the `SetCancel()`, the `SetDeadline()` or
+	// the `SetTimeout()` is called. It will be called when the HTTP server
+	// finishes the current cycle if it is non-nil and has never been
+	// called.
 	Cancel context.CancelFunc
 
 	// MARK: Alias fields for the `Response`.
@@ -57,7 +58,8 @@ func (c *Context) SetDeadline(deadline time.Time) {
 	c.Context, c.Cancel = context.WithDeadline(c.Context, deadline)
 }
 
-// SetTimeout sets a new deadline based on the timeout into the `Context` of the c.
+// SetTimeout sets a new deadline based on the timeout into the `Context` of the
+// c.
 func (c *Context) SetTimeout(timeout time.Duration) {
 	c.Context, c.Cancel = context.WithTimeout(c.Context, timeout)
 }
@@ -134,7 +136,13 @@ func (c *Context) HasFormValue(key string) bool {
 }
 
 // FormFile is an alias for the `Request#FormFile()` of the c.
-func (c *Context) FormFile(key string) (multipart.File, *multipart.FileHeader, error) {
+func (c *Context) FormFile(
+	key string,
+) (
+	multipart.File,
+	*multipart.FileHeader,
+	error,
+) {
 	return c.Request.FormFile(key)
 }
 

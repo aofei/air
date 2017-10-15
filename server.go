@@ -44,7 +44,11 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// Gases
 	h := func(c *Context) error {
 		if methodAllowed(c.Request.Method) {
-			s.air.router.route(c.Request.Method, c.Request.URL.EscapedPath(), c)
+			s.air.router.route(
+				c.Request.Method,
+				c.Request.URL.EscapedPath(),
+				c,
+			)
 		} else {
 			c.Handler = MethodNotAllowedHandler
 		}

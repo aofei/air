@@ -2,9 +2,9 @@ package air
 
 import "path"
 
-// Group is a set of sub-routes for a specified route. It can be used for inner routes that share a
-// common gas or functionality that should be separate from the parent `Air` instance while still
-// inheriting from it.
+// Group is a set of sub-routes for a specified route. It can be used for inner
+// routes that share a common gas or functionality that should be separate from
+// the parent `Air` instance while still inheriting from it.
 type Group struct {
 	air *Air
 
@@ -12,8 +12,8 @@ type Group struct {
 	gases  []Gas
 }
 
-// NewGroup returns a pointer of a new router group with the prefix and the optional group-level
-// gases.
+// NewGroup returns a pointer of a new router group with the prefix and the
+// optional group-level gases.
 func NewGroup(a *Air, prefix string, gases ...Gas) *Group {
 	return &Group{
 		air:    a,
@@ -22,8 +22,8 @@ func NewGroup(a *Air, prefix string, gases ...Gas) *Group {
 	}
 }
 
-// NewSubGroup creates a pointer of a new sub-group with the prefix and the optional sub-group-level
-// gases.
+// NewSubGroup creates a pointer of a new sub-group with the prefix and the
+// optional sub-group-level gases.
 func (g *Group) NewSubGroup(prefix string, gases ...Gas) *Group {
 	return NewGroup(g.air, g.prefix+prefix, append(g.gases, gases...)...)
 }

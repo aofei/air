@@ -167,7 +167,11 @@ func TestRequestOthers(t *testing.T) {
 	vs.Set("name", "Air")
 	vs.Set("author", "Aofei Sheng")
 
-	req, _ := http.NewRequest(POST, "/?"+vs.Encode(), strings.NewReader(vs.Encode()))
+	req, _ := http.NewRequest(
+		POST,
+		"/?"+vs.Encode(),
+		strings.NewReader(vs.Encode()),
+	)
 	req.Header.Add(HeaderContentType, MIMEApplicationXWWWFormURLEncoded)
 
 	c.feed(req, nil)

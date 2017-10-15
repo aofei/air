@@ -11,15 +11,18 @@ import (
 )
 
 type (
-	// Coffer is used to provide an `Asset()` method for an `Air` instance for accesses binary
-	// asset files by using the runtime memory.
+	// Coffer is used to provide an `Asset()` method for an `Air` instance
+	// for accesses binary asset files by using the runtime memory.
 	Coffer interface {
-		// Init initializes the `Coffer`. It will be called in the `Air#Serve()`.
+		// Init initializes the `Coffer`. It will be called in the
+		// `Air#Serve()`.
 		Init() error
 
-		// Asset returns an `Asset` in the `Coffer` for the provided name.
+		// Asset returns an `Asset` in the `Coffer` for the provided
+		// name.
 		//
-		// **Please use the `filepath.Abs()` to process the name before calling.**
+		// **Please use the `filepath.Abs()` to process the name before
+		// calling.**
 		Asset(name string) *Asset
 	}
 
@@ -125,7 +128,8 @@ func (c *coffer) Init() error {
 
 		if cfg.AssetMinified {
 			if mt := mimeTypeByExt(filepath.Ext(file)); mt != "" {
-				if b, err = c.air.Minifier.Minify(mt, b); err != nil {
+				b, err = c.air.Minifier.Minify(mt, b)
+				if err != nil {
 					return err
 				}
 			}

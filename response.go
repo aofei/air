@@ -14,8 +14,8 @@ import (
 
 // Response represents the current HTTP response.
 //
-// It's embedded with the `http.ResponseWriter`, the `http.Hijacker`, the `http.CloseNotifier`,
-// the `http.Flusher` and the `http.Pusher`.
+// It's embedded with the `http.ResponseWriter`, the `http.Hijacker`, the
+// `http.CloseNotifier`, the `http.Flusher` and the `http.Pusher`.
 type Response struct {
 	http.ResponseWriter
 	http.Hijacker
@@ -61,21 +61,23 @@ func (r *Response) WriteHeader(statusCode int) {
 	r.Written = true
 }
 
-// SetCookie adds a "Set-Cookie" header in the r. The provided cookie must have a valid `Name`.
-// Invalid cookies may be silently dropped.
+// SetCookie adds a "Set-Cookie" header in the r. The provided cookie must have
+// a valid `Name`. Invalid cookies may be silently dropped.
 func (r *Response) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(r, cookie)
 }
 
-// Render renders one or more HTML templates with the `Data` of the r and sends a "text/html" HTTP
-// response. The default `Renderer` does it by using the `template.Template`. the rults rendered by
-// the former can be inherited by accessing the `Data["InheritedHTML"]` of the r.
+// Render renders one or more HTML templates with the `Data` of the r and sends
+// a "text/html" HTTP response. The default `Renderer` does it by using the
+// `template.Template`. the rults rendered by the former can be inherited by
+// accessing the `Data["InheritedHTML"]` of the r.
 func (r *Response) Render(templates ...string) error {
 	buf := &bytes.Buffer{}
 	for _, t := range templates {
 		r.Data["InheritedHTML"] = template.HTML(buf.Bytes())
 		buf.Reset()
-		if err := r.context.Air.Renderer.Render(buf, t, r.Data); err != nil {
+		err := r.context.Air.Renderer.Render(buf, t, r.Data)
+		if err != nil {
 			return err
 		}
 	}
@@ -104,8 +106,8 @@ func (r *Response) JSON(i interface{}) error {
 	return r.Blob(MIMEApplicationJSON+CharsetUTF8, b)
 }
 
-// JSONP sends an "application/javascript" HTTP response with the type i. It uses the callback to
-// construct the JSONP payload.
+// JSONP sends an "application/javascript" HTTP response with the type i. It
+// uses the callback to construct the JSONP payload.
 func (r *Response) JSONP(i interface{}, callback string) error {
 	b, err := json.Marshal(i)
 	if err != nil {
@@ -125,7 +127,10 @@ func (r *Response) XML(i interface{}) error {
 	if err != nil {
 		return err
 	}
-	return r.Blob(MIMEApplicationXML+CharsetUTF8, append([]byte(xml.Header), b...))
+	return r.Blob(
+		MIMEApplicationXML+CharsetUTF8,
+		append([]byte(xml.Header), b...),
+	)
 }
 
 // Blob sends a blob HTTP response with the contentType and the b.
@@ -154,7 +159,13 @@ func (r *Response) File(file string) error {
 	}
 
 	if a := r.context.Air.Coffer.Asset(abs); a != nil {
-		http.ServeContent(r, r.context.Request.Request, a.Name(), a.ModTime(), a)
+		http.ServeContent(
+			r,
+			r.context.Request.Request,
+			a.Name(),
+			a.ModTime(),
+			a,
+		)
 	} else {
 		http.ServeFile(r, r.context.Request.Request, abs)
 	}
@@ -162,20 +173,25 @@ func (r *Response) File(file string) error {
 	return nil
 }
 
-// Attachment sends an HTTP response with the file and the filename as attachment, prompting client
-// to save the file.
+// Attachment sends an HTTP response with the file and the filename as
+// attachment, prompting client to save the file.
 func (r *Response) Attachment(file, filename string) error {
 	return r.contentDisposition("attachment", file, filename)
 }
 
-// Inline sends an HTTP response with the file and the filename as inline, opening the file in the
-// browser.
+// Inline sends an HTTP response with the file and the filename as inline,
+// opening the file in the browser.
 func (r *Response) Inline(file, filename string) error {
 	return r.contentDisposition("inline", file, filename)
 }
 
-// contentDisposition sends an HTTP response with the file and the filename as the dispositionType.
-func (r *Response) contentDisposition(dispositionType, file, filename string) error {
+// contentDisposition sends an HTTP response with the file and the filename as
+// the dispositionType.
+func (r *Response) contentDisposition(
+	dispositionType,
+	file,
+	filename string,
+) error {
 	r.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s",
 		dispositionType, filename))
 	return r.File(file)

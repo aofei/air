@@ -43,7 +43,7 @@ alert("Hello, I am the Air.");
 `
 	svg := `
 <svg width="100%" height="100%" version="1.1" xmlns="http://www.w3.org/2000/svg">
-	<rect width="10" height="10" style="fill:rgb(0,0,255);stroke-width:1; stroke:rgb(0,0,0)"/>
+	<rect width="10" height="10" style="fill:rgb(0,0,255);stroke-width:1; stroke:rgb(0,0,0)" />
 </svg>
 `
 	txt := `
@@ -110,7 +110,15 @@ Hello, I am the Air.
 	a.Minifier.Init()
 
 	a.Config.CofferEnabled = true
-	a.Config.AssetExts = []string{".html", ".css", ".js", ".json", ".xml", ".svg", ".txt"}
+	a.Config.AssetExts = []string{
+		".html",
+		".css",
+		".js",
+		".json",
+		".xml",
+		".svg",
+		".txt",
+	}
 	a.Config.AssetMinified = true
 
 	assert.NoError(t, a.Coffer.Init())
