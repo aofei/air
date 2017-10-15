@@ -1,7 +1,6 @@
 package air
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"path"
@@ -195,8 +194,6 @@ var (
 	ErrLoopDetected                  = NewHTTPError(http.StatusLoopDetected)                  // 508
 	ErrNotExtended                   = NewHTTPError(http.StatusNotExtended)                   // 510
 	ErrNetworkAuthenticationRequired = NewHTTPError(http.StatusNetworkAuthenticationRequired) // 511
-
-	ErrInvalidRedirectCode = errors.New("invalid redirect status code")
 )
 
 // HTTP error handlers

@@ -346,6 +346,4 @@ func TestResponseRedirect(t *testing.T) {
 		assert.Equal(t, url, rec.Header().Get(HeaderLocation))
 		assert.Equal(t, "", rec.Body.String())
 	}
-
-	assert.Equal(t, ErrInvalidRedirectCode, c.Redirect(http.StatusIMUsed, url))
 }
