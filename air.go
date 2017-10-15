@@ -391,7 +391,7 @@ func (he *HTTPError) Error() string {
 
 // DefaultHTTPErrorHandler is the default HTTP error handler.
 func DefaultHTTPErrorHandler(err error, c *Context) {
-	he := ErrInternalServerError
+	he := NewHTTPError(http.StatusInternalServerError)
 	if che, ok := err.(*HTTPError); ok {
 		he = che
 	} else if c.Air.Config.DebugMode {
