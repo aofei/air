@@ -189,9 +189,6 @@ func (r *Response) NoContent(statusCode int) error {
 
 // Redirect redirects the current HTTP request to the url with the statusCode.
 func (r *Response) Redirect(statusCode int, url string) error {
-	if statusCode < http.StatusMultipleChoices || statusCode > http.StatusTemporaryRedirect {
-		return ErrInvalidRedirectCode
-	}
 	r.Header().Set(HeaderLocation, url)
 	r.WriteHeader(statusCode)
 	return nil
