@@ -157,16 +157,44 @@ const (
 
 // HTTP errors
 var (
-	ErrUnauthorized          = NewHTTPError(http.StatusUnauthorized)          // 401
-	ErrNotFound              = NewHTTPError(http.StatusNotFound)              // 404
-	ErrMethodNotAllowed      = NewHTTPError(http.StatusMethodNotAllowed)      // 405
-	ErrRequestEntityTooLarge = NewHTTPError(http.StatusRequestEntityTooLarge) // 413
-	ErrUnsupportedMediaType  = NewHTTPError(http.StatusUnsupportedMediaType)  // 415
-
-	ErrInternalServerError = NewHTTPError(http.StatusInternalServerError) // 500
-	ErrBadGateway          = NewHTTPError(http.StatusBadGateway)          // 502
-	ErrServiceUnavailable  = NewHTTPError(http.StatusServiceUnavailable)  // 503
-	ErrGatewayTimeout      = NewHTTPError(http.StatusGatewayTimeout)      // 504
+	ErrBadRequest                    = NewHTTPError(http.StatusBadRequest)                    // 400
+	ErrUnauthorized                  = NewHTTPError(http.StatusUnauthorized)                  // 401
+	ErrPaymentRequired               = NewHTTPError(http.StatusPaymentRequired)               // 402
+	ErrForbidden                     = NewHTTPError(http.StatusForbidden)                     // 403
+	ErrNotFound                      = NewHTTPError(http.StatusNotFound)                      // 404
+	ErrMethodNotAllowed              = NewHTTPError(http.StatusMethodNotAllowed)              // 405
+	ErrNotAcceptable                 = NewHTTPError(http.StatusNotAcceptable)                 // 406
+	ErrProxyAuthRequired             = NewHTTPError(http.StatusProxyAuthRequired)             // 407
+	ErrRequestTimeout                = NewHTTPError(http.StatusRequestTimeout)                // 408
+	ErrConflict                      = NewHTTPError(http.StatusConflict)                      // 409
+	ErrGone                          = NewHTTPError(http.StatusGone)                          // 410
+	ErrLengthRequired                = NewHTTPError(http.StatusLengthRequired)                // 411
+	ErrPreconditionFailed            = NewHTTPError(http.StatusPreconditionFailed)            // 412
+	ErrRequestEntityTooLarge         = NewHTTPError(http.StatusRequestEntityTooLarge)         // 413
+	ErrRequestURITooLong             = NewHTTPError(http.StatusRequestURITooLong)             // 414
+	ErrUnsupportedMediaType          = NewHTTPError(http.StatusUnsupportedMediaType)          // 415
+	ErrRequestedRangeNotSatisfiable  = NewHTTPError(http.StatusRequestedRangeNotSatisfiable)  // 416
+	ErrExpectationFailed             = NewHTTPError(http.StatusExpectationFailed)             // 417
+	ErrTeapot                        = NewHTTPError(http.StatusTeapot)                        // 418
+	ErrUnprocessableEntity           = NewHTTPError(http.StatusUnprocessableEntity)           // 422
+	ErrLocked                        = NewHTTPError(http.StatusLocked)                        // 423
+	ErrFailedDependency              = NewHTTPError(http.StatusFailedDependency)              // 424
+	ErrUpgradeRequired               = NewHTTPError(http.StatusUpgradeRequired)               // 426
+	ErrPreconditionRequired          = NewHTTPError(http.StatusPreconditionRequired)          // 428
+	ErrTooManyRequests               = NewHTTPError(http.StatusTooManyRequests)               // 429
+	ErrRequestHeaderFieldsTooLarge   = NewHTTPError(http.StatusRequestHeaderFieldsTooLarge)   // 431
+	ErrUnavailableForLegalReasons    = NewHTTPError(http.StatusUnavailableForLegalReasons)    // 451
+	ErrInternalServerError           = NewHTTPError(http.StatusInternalServerError)           // 500
+	ErrNotImplemented                = NewHTTPError(http.StatusNotImplemented)                // 501
+	ErrBadGateway                    = NewHTTPError(http.StatusBadGateway)                    // 502
+	ErrServiceUnavailable            = NewHTTPError(http.StatusServiceUnavailable)            // 503
+	ErrGatewayTimeout                = NewHTTPError(http.StatusGatewayTimeout)                // 504
+	ErrHTTPVersionNotSupported       = NewHTTPError(http.StatusHTTPVersionNotSupported)       // 505
+	ErrVariantAlsoNegotiates         = NewHTTPError(http.StatusVariantAlsoNegotiates)         // 506
+	ErrInsufficientStorage           = NewHTTPError(http.StatusInsufficientStorage)           // 507
+	ErrLoopDetected                  = NewHTTPError(http.StatusLoopDetected)                  // 508
+	ErrNotExtended                   = NewHTTPError(http.StatusNotExtended)                   // 510
+	ErrNetworkAuthenticationRequired = NewHTTPError(http.StatusNetworkAuthenticationRequired) // 511
 
 	ErrInvalidRedirectCode = errors.New("invalid redirect status code")
 )
