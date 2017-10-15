@@ -26,55 +26,70 @@ type (
 		// Print prints the log info with the provided type i.
 		Print(i ...interface{})
 
-		// Printf prints the log info in the format with the provided args.
+		// Printf prints the log info in the format with the provided
+		// args.
 		Printf(format string, args ...interface{})
 
-		// Printj prints the log info in the JSON format with the provided m.
+		// Printj prints the log info in the JSON format with the
+		// provided m.
 		Printj(m Map)
 
-		// Debug prints the DEBUG level log info with the provided type i.
+		// Debug prints the DEBUG level log info with the provided type
+		// i.
 		Debug(i ...interface{})
 
-		// Debugf prints the DEBUG level log info in the format with the provided args.
+		// Debugf prints the DEBUG level log info in the format with the
+		// provided args.
 		Debugf(format string, args ...interface{})
 
-		// Debugj prints the DEBUG level log info in the JSON format with the provided m.
+		// Debugj prints the DEBUG level log info in the JSON format
+		// with the provided m.
 		Debugj(m Map)
 
 		// Info prints the INFO level log info with the provided type i.
 		Info(i ...interface{})
 
-		// Infof prints the INFO level log info in the format with the provided args.
+		// Infof prints the INFO level log info in the format with the
+		// provided args.
 		Infof(format string, args ...interface{})
 
-		// Infoj prints the INFO level log info in the JSON format with the provided m.
+		// Infoj prints the INFO level log info in the JSON format with
+		// the provided m.
 		Infoj(m Map)
 
 		// Warn prints the WARN level log info with the provided type i.
 		Warn(i ...interface{})
 
-		// Warnf prints the WARN level log info in the format with the provided args.
+		// Warnf prints the WARN level log info in the format with the
+		// provided args.
 		Warnf(format string, args ...interface{})
 
-		// Warnj prints the WARN level log info in the JSON format with the provided m.
+		// Warnj prints the WARN level log info in the JSON format with
+		// the provided m.
 		Warnj(m Map)
 
-		// Error prints the ERROR level log info with the provided type i.
+		// Error prints the ERROR level log info with the provided type
+		// i.
 		Error(i ...interface{})
 
-		// Errorf prints the ERROR level log info in the format with the provided args.
+		// Errorf prints the ERROR level log info in the format with the
+		// provided args.
 		Errorf(format string, args ...interface{})
 
-		// Errorj prints the ERROR level log info in the JSON format with the provided m.
+		// Errorj prints the ERROR level log info in the JSON format
+		// with the provided m.
 		Errorj(m Map)
 
-		// Fatal prints the FATAL level log info with the provided type i.
+		// Fatal prints the FATAL level log info with the provided type
+		// i.
 		Fatal(i ...interface{})
 
-		// Fatalf prints the FATAL level log info in the format with the provided args.
+		// Fatalf prints the FATAL level log info in the format with the
+		// provided args.
 		Fatalf(format string, args ...interface{})
 
-		// Fatalj prints the FATAL level log info in the JSON format with the provided m.
+		// Fatalj prints the FATAL level log info in the JSON format
+		// with the provided m.
 		Fatalj(m Map)
 	}
 
@@ -236,7 +251,9 @@ func (l *logger) log(lvl loggerLevel, format string, args ...interface{}) {
 	if !l.air.Config.LoggerEnabled {
 		return
 	} else if l.template == nil {
-		l.template = template.Must(template.New("logger").Parse(l.air.Config.LogFormat))
+		l.template = template.Must(
+			template.New("logger").Parse(l.air.Config.LogFormat),
+		)
 	}
 
 	l.mutex.Lock()

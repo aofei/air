@@ -16,10 +16,11 @@ import (
 )
 
 type (
-	// Minifier is used to provide a `Minify()` method for an `Air` instance for minifies a
-	// content by a MIME type.
+	// Minifier is used to provide a `Minify()` method for an `Air` instance
+	// for minifies a content by a MIME type.
 	Minifier interface {
-		// Init initializes the `Minifier`. It will be called in the `Air#Serve()`.
+		// Init initializes the `Minifier`. It will be called in the
+		// `Air#Serve()`.
 		Init() error
 
 		// Minify minifies the b by the mimeType.
@@ -108,7 +109,8 @@ func (m *minifier) minifyPNG(b []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// minifyOthers minifies the b by the mimeType by using the "github.com/tdewolff/minify".
+// minifyOthers minifies the b by the mimeType by using the
+// "github.com/tdewolff/minify".
 func (m *minifier) minifyOthers(mimeType string, b []byte) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	if err := m.m.Minify(mimeType, buf, bytes.NewReader(b)); err != nil {

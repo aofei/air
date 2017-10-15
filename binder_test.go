@@ -28,7 +28,11 @@ func TestBinderBindError(t *testing.T) {
 
 	assert.Error(t, b.Bind(&Map{}, c.Request))
 
-	req, _ = http.NewRequest(POST, "/", strings.NewReader("{\"num\":999e999}"))
+	req, _ = http.NewRequest(
+		POST,
+		"/",
+		strings.NewReader("{\"num\":999e999}"),
+	)
 	req.Header.Set(HeaderContentType, MIMEApplicationJSON)
 
 	c.reset()

@@ -170,39 +170,39 @@ func TestAirServe(t *testing.T) {
 	assert.NoError(t, a.Close())
 }
 
-type failingMinifier struct{}
+type badMinifier struct{}
 
-func (*failingMinifier) Init() error {
-	return errors.New("failingMinifier")
+func (*badMinifier) Init() error {
+	return errors.New("badMinifier")
 }
 
-func (*failingMinifier) Minify(mimeType string, b []byte) ([]byte, error) {
+func (*badMinifier) Minify(mimeType string, b []byte) ([]byte, error) {
 	return nil, nil
 }
 
-type failingRenderer struct{}
+type badRenderer struct{}
 
-func (*failingRenderer) SetTemplateFunc(name string, f interface{}) {}
+func (*badRenderer) SetTemplateFunc(name string, f interface{}) {}
 
-func (*failingRenderer) Init() error {
-	return errors.New("failingRenderer")
+func (*badRenderer) Init() error {
+	return errors.New("badRenderer")
 }
 
-func (*failingRenderer) Render(w io.Writer, templateName string, data Map) error {
+func (*badRenderer) Render(w io.Writer, templateName string, data Map) error {
 	return nil
 }
 
-type failingCoffer struct{}
+type badCoffer struct{}
 
-func (*failingCoffer) Init() error {
-	return errors.New("failingCoffer")
+func (*badCoffer) Init() error {
+	return errors.New("badCoffer")
 }
 
-func (*failingCoffer) Asset(name string) *Asset {
+func (*badCoffer) Asset(name string) *Asset {
 	return nil
 }
 
-func (*failingCoffer) SetAsset(a *Asset) {}
+func (*badCoffer) SetAsset(a *Asset) {}
 
 func TestAirServeParseTemplatesError(t *testing.T) {
 	a := New()
@@ -211,9 +211,9 @@ func TestAirServeParseTemplatesError(t *testing.T) {
 
 	a.Logger.SetOutput(buf)
 	a.Config.LoggerEnabled = true
-	a.Minifier = &failingMinifier{}
-	a.Renderer = &failingRenderer{}
-	a.Coffer = &failingCoffer{}
+	a.Minifier = &badMinifier{}
+	a.Renderer = &badRenderer{}
+	a.Coffer = &badCoffer{}
 
 	go func() {
 		close(ok)
@@ -222,9 +222,9 @@ func TestAirServeParseTemplatesError(t *testing.T) {
 
 	<-ok
 	time.Sleep(time.Millisecond) // Wait for logger
-	assert.Contains(t, buf.String(), "failingMinifier")
-	assert.Contains(t, buf.String(), "failingRenderer")
-	assert.Contains(t, buf.String(), "failingCoffer")
+	assert.Contains(t, buf.String(), "badMinifier")
+	assert.Contains(t, buf.String(), "badRenderer")
+	assert.Contains(t, buf.String(), "badCoffer")
 	assert.NoError(t, a.Close())
 }
 

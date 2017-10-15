@@ -23,8 +23,8 @@ func NewRequest(c *Context) *Request {
 	return r
 }
 
-// Bind binds the HTTP body of the r into the provided type i. The default `Binder` does it based
-// on the "Content-Type" header.
+// Bind binds the HTTP body of the r into the provided type i. The default
+// `Binder` does it based on the "Content-Type" header.
 func (r *Request) Bind(i interface{}) error {
 	return r.context.Air.Binder.Bind(i, r)
 }
@@ -37,7 +37,8 @@ func (r *Request) FormValues() url.Values {
 	return r.Form
 }
 
-// HasFormValue reports whether the form values contains the form value for the provided key.
+// HasFormValue reports whether the form values contains the form value for the
+// provided key.
 func (r *Request) HasFormValue(key string) bool {
 	for k := range r.FormValues() {
 		if k == key {
