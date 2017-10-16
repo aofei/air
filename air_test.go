@@ -17,48 +17,21 @@ import (
 func TestAirNew(t *testing.T) {
 	a := New()
 
-	assert.Equal(t, 0, len(a.pregases))
-	assert.Equal(t, 0, len(a.gases))
 	assert.Equal(t, 0, a.paramCap)
-	assert.NotNil(t, a.contextPool)
-	assert.NotNil(t, a.server)
 	assert.NotNil(t, a.router)
 
 	assert.NotNil(t, a.Config)
 	assert.NotNil(t, a.Logger)
+	assert.NotNil(t, a.Server)
 	assert.NotNil(t, a.Binder)
 	assert.NotNil(t, a.Minifier)
 	assert.NotNil(t, a.Renderer)
 	assert.NotNil(t, a.Coffer)
-	assert.NotNil(t, a.HTTPErrorHandler)
-}
-
-func TestAirPrecontain(t *testing.T) {
-	a := New()
-	req, _ := http.NewRequest("GET", "/", nil)
-	rec := httptest.NewRecorder()
-
-	pregas := WrapGas(func(c *Context) error { return c.String("pregas") })
-
-	a.Precontain(pregas)
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, "pregas", rec.Body.String())
-}
-
-func TestAirContain(t *testing.T) {
-	a := New()
-	req, _ := http.NewRequest("GET", "/", nil)
-	rec := httptest.NewRecorder()
-
-	gas := WrapGas(func(c *Context) error { return c.String("gas") })
-
-	a.Contain(gas)
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, "gas", rec.Body.String())
 }
 
 func TestAirMethods(t *testing.T) {
 	a := New()
+	s := a.Server.(*server)
 	path := "/methods"
 	req, _ := http.NewRequest("GET", path, nil)
 	rec := httptest.NewRecorder()
@@ -73,52 +46,53 @@ func TestAirMethods(t *testing.T) {
 	a.OPTIONS(path, func(c *Context) error { return c.String("OPTIONS") })
 	a.TRACE(path, func(c *Context) error { return c.String("TRACE") })
 
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, "GET", rec.Body.String())
 
 	req.Method = "GET"
 	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, "GET", rec.Body.String())
 
 	req.Method = "POST"
 	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, "POST", rec.Body.String())
 
 	req.Method = "PUT"
 	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, "PUT", rec.Body.String())
 
 	req.Method = "PATCH"
 	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, "PATCH", rec.Body.String())
 
 	req.Method = "DELETE"
 	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, "DELETE", rec.Body.String())
 
 	req.Method = "CONNECT"
 	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, "CONNECT", rec.Body.String())
 
 	req.Method = "OPTIONS"
 	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, "OPTIONS", rec.Body.String())
 
 	req.Method = "TRACE"
 	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, "TRACE", rec.Body.String())
 }
 
 func TestAirStatic(t *testing.T) {
 	a := New()
+	s := a.Server.(*server)
 	prefix := "/air"
 	fn := "air.go"
 	b, _ := ioutil.ReadFile(fn)
@@ -127,19 +101,20 @@ func TestAirStatic(t *testing.T) {
 
 	a.Static(prefix, ".")
 
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, b, rec.Body.Bytes())
 
 	fn = "air_test.go"
 	b, _ = ioutil.ReadFile(fn)
 	req, _ = http.NewRequest("GET", prefix+"/"+fn, nil)
 	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, b, rec.Body.Bytes())
 }
 
 func TestAirFile(t *testing.T) {
 	a := New()
+	s := a.Server.(*server)
 	path := "/air"
 	fn := "air.go"
 	b, _ := ioutil.ReadFile(fn)
@@ -148,7 +123,7 @@ func TestAirFile(t *testing.T) {
 
 	a.File(path, fn)
 
-	a.ServeHTTP(rec, req)
+	s.ServeHTTP(rec, req)
 	assert.Equal(t, b, rec.Body.Bytes())
 }
 
@@ -299,7 +274,7 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	}()
 
 	<-ok
-	assert.NoError(t, a.Shutdown(NewContext(a)))
+	assert.NoError(t, a.Shutdown(-1))
 }
 
 func TestAirServeDebugMode(t *testing.T) {
@@ -330,7 +305,7 @@ func (*httpHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 func TestAirWrapHandler(t *testing.T) {
 	a := New()
-	c := a.contextPool.Get().(*Context)
+	c := NewContext(a)
 	h := WrapHandler(&httpHandler{})
 
 	req, _ := http.NewRequest("GET", "/", nil)
@@ -346,34 +321,4 @@ func TestAirWrapGasError(t *testing.T) {
 	g := WrapGas(func(*Context) error { return errors.New("gas error") })
 	h := g(func(*Context) error { return nil })
 	assert.Equal(t, "gas error", h(nil).Error())
-}
-
-func TestAirDefaultHTTPErrorHandler(t *testing.T) {
-	a := New()
-	a.Config.DebugMode = true
-	c := a.contextPool.Get().(*Context)
-
-	req, _ := http.NewRequest("GET", "/", nil)
-	rec := httptest.NewRecorder()
-
-	c.feed(req, rec)
-
-	he := NewHTTPError(http.StatusInternalServerError, "error")
-	DefaultHTTPErrorHandler(he, c)
-
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Equal(t, he.Error(), rec.Body.String())
-
-	c = a.contextPool.Get().(*Context)
-
-	req, _ = http.NewRequest("GET", "/", nil)
-	rec = httptest.NewRecorder()
-
-	c.feed(req, rec)
-
-	err := errors.New("error")
-	DefaultHTTPErrorHandler(err, c)
-
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Equal(t, err.Error(), rec.Body.String())
 }

@@ -29,11 +29,6 @@ you one thing: **it can serve properly.**
 	* `CONNECT`
 	* `OPTIONS`
 	* `TRACE`
-* Server
-	* HTTP/2 support.
-	* SSL/TLS support.
-	* Gracefully shutdown support.
-	* Powered by the Go `net/http`.
 * Router
 	* Based on the Radix Tree.
 	* Zero dynamic memory allocation.
@@ -57,6 +52,13 @@ you one thing: **it can serve properly.**
 	* Customizable.
 	* Default implementation:
 		* Powered by the Go `text/template`.
+* Server
+	* Customizable.
+	* Default implementation:
+	  * HTTP/2 support.
+	  * SSL/TLS support.
+	  * Gracefully shutdown support.
+	  * Powered by the Go `net/http`.
 * Binder
 	* Customizable.
 	* Default implementation:
