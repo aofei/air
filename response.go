@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"html/template"
 	"io"
 	"net/http"
@@ -67,34 +66,23 @@ func (r *Response) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(r, cookie)
 }
 
-// Render renders one or more HTML templates with the `Data` of the r and sends
-// a "text/html" HTTP response. The default `Renderer` does it by using the
-// `template.Template`. the rults rendered by the former can be inherited by
-// accessing the `Data["InheritedHTML"]` of the r.
-func (r *Response) Render(templates ...string) error {
-	buf := &bytes.Buffer{}
-	for _, t := range templates {
-		r.Data["InheritedHTML"] = template.HTML(buf.String())
-		buf.Reset()
-		err := r.context.Air.Renderer.Render(buf, t, r.Data)
-		if err != nil {
-			return err
-		}
-	}
-	return r.HTML(buf.String())
+// NoContent sends an HTTP response with the statusCode and no body.
+func (r *Response) NoContent(statusCode int) error {
+	r.WriteHeader(statusCode)
+	return nil
 }
 
-// HTML sends a "text/html" HTTP response with the html.
-func (r *Response) HTML(html string) error {
-	b := []byte(html)
-	if r.context.Air.Config.MinifierEnabled {
-		var err error
-		b, err = r.context.Air.Minifier.Minify("text/html", b)
-		if err != nil {
-			return err
-		}
-	}
-	return r.Blob("text/html; charset=utf-8", b)
+// Redirect redirects the current HTTP request to the url with the statusCode.
+func (r *Response) Redirect(statusCode int, url string) error {
+	r.Header().Set("Location", url)
+	return r.NoContent(statusCode)
+}
+
+// Blob sends a blob HTTP response with the contentType and the b.
+func (r *Response) Blob(contentType string, b []byte) error {
+	r.Header().Set("Content-Type", contentType)
+	_, err := r.Write(b)
+	return err
 }
 
 // String sends a "text/plain" HTTP response with the s.
@@ -139,11 +127,34 @@ func (r *Response) XML(i interface{}) error {
 	return r.Blob("application/xml; charset=utf-8", b)
 }
 
-// Blob sends a blob HTTP response with the contentType and the b.
-func (r *Response) Blob(contentType string, b []byte) error {
-	r.Header().Set("Content-Type", contentType)
-	_, err := r.Write(b)
-	return err
+// HTML sends a "text/html" HTTP response with the html.
+func (r *Response) HTML(html string) error {
+	b := []byte(html)
+	if r.context.Air.Config.MinifierEnabled {
+		var err error
+		b, err = r.context.Air.Minifier.Minify("text/html", b)
+		if err != nil {
+			return err
+		}
+	}
+	return r.Blob("text/html; charset=utf-8", b)
+}
+
+// Render renders one or more HTML templates with the `Data` of the r and sends
+// a "text/html" HTTP response. The default `Renderer` does it by using the
+// `template.Template`. the results rendered by the former can be inherited by
+// accessing the `Data["InheritedHTML"]` of the r.
+func (r *Response) Render(templates ...string) error {
+	buf := &bytes.Buffer{}
+	for _, t := range templates {
+		r.Data["InheritedHTML"] = template.HTML(buf.String())
+		buf.Reset()
+		err := r.context.Air.Renderer.Render(buf, t, r.Data)
+		if err != nil {
+			return err
+		}
+	}
+	return r.HTML(buf.String())
 }
 
 // Stream sends a streaming HTTP response with the contentType and the reader.
@@ -182,39 +193,15 @@ func (r *Response) File(file string) error {
 // Attachment sends an HTTP response with the file and the filename as
 // attachment, prompting client to save the file.
 func (r *Response) Attachment(file, filename string) error {
-	return r.contentDisposition("attachment", file, filename)
+	r.Header().Set("Content-Disposition", "attachment; filename="+filename)
+	return r.File(file)
 }
 
 // Inline sends an HTTP response with the file and the filename as inline,
 // opening the file in the browser.
 func (r *Response) Inline(file, filename string) error {
-	return r.contentDisposition("inline", file, filename)
-}
-
-// contentDisposition sends an HTTP response with the file and the filename as
-// the dispositionType.
-func (r *Response) contentDisposition(
-	dispositionType,
-	file,
-	filename string,
-) error {
-	r.Header().Set(
-		"Content-Disposition",
-		fmt.Sprintf("%s; filename=%s", dispositionType, filename),
-	)
+	r.Header().Set("Content-Disposition", "inline; filename="+filename)
 	return r.File(file)
-}
-
-// NoContent sends an HTTP response with the statusCode and no body.
-func (r *Response) NoContent(statusCode int) error {
-	r.WriteHeader(statusCode)
-	return nil
-}
-
-// Redirect redirects the current HTTP request to the url with the statusCode.
-func (r *Response) Redirect(statusCode int, url string) error {
-	r.Header().Set("Location", url)
-	return r.NoContent(statusCode)
 }
 
 // feed feeds the rw into where it should be.
