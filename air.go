@@ -1,11 +1,13 @@
 package air
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"path"
 	"sync"
+	"time"
 )
 
 type (
@@ -217,8 +219,16 @@ func (a *Air) Close() error {
 }
 
 // Shutdown gracefully shuts down the HTTP server without interrupting any
-// active connections.
-func (a *Air) Shutdown(c *Context) error {
+// active connections until timeout. It waits indefinitely for connections to
+// return to idle and then shut down when the timeout is negative.
+func (a *Air) Shutdown(timeout time.Duration) error {
+	if timeout < 0 {
+		return a.server.Shutdown(context.Background())
+	}
+
+	c, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	return a.server.Shutdown(c)
 }
 
