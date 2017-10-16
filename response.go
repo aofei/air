@@ -120,24 +120,6 @@ func (r *Response) JSON(i interface{}) error {
 	return r.Blob("application/json; charset=utf-8", b)
 }
 
-// JSONP sends an "application/javascript" HTTP response with the type i. It
-// uses the callback to construct the JSONP payload.
-func (r *Response) JSONP(i interface{}, callback string) error {
-	b, err := json.Marshal(i)
-	if err != nil {
-		return err
-	}
-	b = append([]byte(callback+"("), b...)
-	b = append(b, []byte(");")...)
-	if r.context.Air.Config.MinifierEnabled {
-		b, err = r.context.Air.Minifier.Minify("text/javascript", b)
-		if err != nil {
-			return err
-		}
-	}
-	return r.Blob("application/javascript; charset=utf-8", b)
-}
-
 // XML sends an "application/xml" HTTP response with the type i.
 func (r *Response) XML(i interface{}) error {
 	b, err := xml.Marshal(i)

@@ -188,11 +188,6 @@ func (c *Context) JSON(i interface{}) error {
 	return c.Response.JSON(i)
 }
 
-// JSONP is an alias for the `Response#JSONP()` of the c.
-func (c *Context) JSONP(i interface{}, callback string) error {
-	return c.Response.JSONP(i, callback)
-}
-
 // XML is an alias for the `Response#XML()` of the c.
 func (c *Context) XML(i interface{}) error {
 	return c.Response.XML(i)
