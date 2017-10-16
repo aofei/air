@@ -35,33 +35,30 @@ func TestAirNew(t *testing.T) {
 
 func TestAirPrecontain(t *testing.T) {
 	a := New()
-	a.server = newServer(a)
 	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 
 	pregas := WrapGas(func(c *Context) error { return c.String("pregas") })
 
 	a.Precontain(pregas)
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, "pregas", rec.Body.String())
 }
 
 func TestAirContain(t *testing.T) {
 	a := New()
-	a.server = newServer(a)
 	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 
 	gas := WrapGas(func(c *Context) error { return c.String("gas") })
 
 	a.Contain(gas)
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, "gas", rec.Body.String())
 }
 
 func TestAirMethods(t *testing.T) {
 	a := New()
-	a.server = newServer(a)
 	path := "/methods"
 	req, _ := http.NewRequest("GET", path, nil)
 	rec := httptest.NewRecorder()
@@ -76,53 +73,52 @@ func TestAirMethods(t *testing.T) {
 	a.OPTIONS(path, func(c *Context) error { return c.String("OPTIONS") })
 	a.TRACE(path, func(c *Context) error { return c.String("TRACE") })
 
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, "GET", rec.Body.String())
 
 	req.Method = "GET"
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, "GET", rec.Body.String())
 
 	req.Method = "POST"
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, "POST", rec.Body.String())
 
 	req.Method = "PUT"
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, "PUT", rec.Body.String())
 
 	req.Method = "PATCH"
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, "PATCH", rec.Body.String())
 
 	req.Method = "DELETE"
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, "DELETE", rec.Body.String())
 
 	req.Method = "CONNECT"
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, "CONNECT", rec.Body.String())
 
 	req.Method = "OPTIONS"
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, "OPTIONS", rec.Body.String())
 
 	req.Method = "TRACE"
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, "TRACE", rec.Body.String())
 }
 
 func TestAirStatic(t *testing.T) {
 	a := New()
-	a.server = newServer(a)
 	prefix := "/air"
 	fn := "air.go"
 	b, _ := ioutil.ReadFile(fn)
@@ -131,20 +127,19 @@ func TestAirStatic(t *testing.T) {
 
 	a.Static(prefix, ".")
 
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, b, rec.Body.Bytes())
 
 	fn = "air_test.go"
 	b, _ = ioutil.ReadFile(fn)
 	req, _ = http.NewRequest("GET", prefix+"/"+fn, nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, b, rec.Body.Bytes())
 }
 
 func TestAirFile(t *testing.T) {
 	a := New()
-	a.server = newServer(a)
 	path := "/air"
 	fn := "air.go"
 	b, _ := ioutil.ReadFile(fn)
@@ -153,7 +148,7 @@ func TestAirFile(t *testing.T) {
 
 	a.File(path, fn)
 
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, b, rec.Body.Bytes())
 }
 
@@ -204,28 +199,15 @@ func (*badCoffer) Asset(name string) *Asset {
 
 func (*badCoffer) SetAsset(a *Asset) {}
 
-func TestAirServeParseTemplatesError(t *testing.T) {
+func TestAirServePanics(t *testing.T) {
 	a := New()
-	buf := &bytes.Buffer{}
-	ok := make(chan struct{})
 
-	a.Logger.SetOutput(buf)
 	a.Config.LoggerEnabled = true
 	a.Minifier = &badMinifier{}
 	a.Renderer = &badRenderer{}
 	a.Coffer = &badCoffer{}
 
-	go func() {
-		close(ok)
-		a.Serve()
-	}()
-
-	<-ok
-	time.Sleep(time.Millisecond) // Wait for logger
-	assert.Contains(t, buf.String(), "badMinifier")
-	assert.Contains(t, buf.String(), "badRenderer")
-	assert.Contains(t, buf.String(), "badCoffer")
-	assert.NoError(t, a.Close())
+	assert.Panics(t, func() { a.Serve() })
 }
 
 func TestAirServeTLS(t *testing.T) {

@@ -304,7 +304,6 @@ func TestRouterMatchingPriority(t *testing.T) {
 
 func TestRouterMatchMethodNotAllowed(t *testing.T) {
 	a := New()
-	a.server = newServer(a)
 	r := a.router
 
 	path := "/"
@@ -313,7 +312,7 @@ func TestRouterMatchMethodNotAllowed(t *testing.T) {
 	req, _ := http.NewRequest("POST", path, nil)
 	rec := httptest.NewRecorder()
 
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 }
 

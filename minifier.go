@@ -110,7 +110,8 @@ func (m *minifier) minifyPNG(b []byte) ([]byte, error) {
 // "github.com/tdewolff/minify".
 func (m *minifier) minifyOthers(mimeType string, b []byte) ([]byte, error) {
 	buf := &bytes.Buffer{}
-	if err := m.m.Minify(mimeType, buf, bytes.NewReader(b)); err == minify.ErrNotExist {
+	err := m.m.Minify(mimeType, buf, bytes.NewReader(b))
+	if err == minify.ErrNotExist {
 		return nil, errors.New("unsupported mime type")
 	} else if err != nil {
 		return nil, err

@@ -15,7 +15,7 @@ type (
 		gases       []Gas
 		paramCap    int
 		contextPool *sync.Pool
-		server      *server
+		server      *http.Server
 		router      *router
 
 		Config           *Config
@@ -67,7 +67,7 @@ func New() *Air {
 			return NewContext(a)
 		},
 	}
-	a.server = newServer(a)
+	a.server = &http.Server{}
 	a.router = newRouter(a)
 
 	a.Config = NewConfig("config.toml")
@@ -182,26 +182,33 @@ func (a *Air) add(method, path string, h Handler, gases ...Gas) {
 
 // Serve starts the HTTP server.
 func (a *Air) Serve() error {
-	if a.Config.DebugMode {
-		a.Config.LoggerEnabled = true
+	s := a.server
+	c := a.Config
+
+	s.Addr = c.Address
+	s.Handler = a
+	s.ReadTimeout = c.ReadTimeout
+	s.WriteTimeout = c.WriteTimeout
+	s.MaxHeaderBytes = c.MaxHeaderBytes
+
+	if err := a.Minifier.Init(); err != nil {
+		panic(err)
+	} else if err := a.Renderer.Init(); err != nil {
+		panic(err)
+	} else if err := a.Coffer.Init(); err != nil {
+		panic(err)
+	}
+
+	if c.DebugMode {
+		c.LoggerEnabled = true
 		a.Logger.Debug("serving in debug mode")
 	}
 
-	go func() {
-		if err := a.Minifier.Init(); err != nil {
-			a.Logger.Error(err)
-		}
+	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
+		return s.ListenAndServeTLS(c.TLSCertFile, c.TLSKeyFile)
+	}
 
-		if err := a.Renderer.Init(); err != nil {
-			a.Logger.Error(err)
-		}
-
-		if err := a.Coffer.Init(); err != nil {
-			a.Logger.Error(err)
-		}
-	}()
-
-	return a.server.serve()
+	return s.ListenAndServe()
 }
 
 // Close closes the HTTP server immediately.
@@ -213,6 +220,37 @@ func (a *Air) Close() error {
 // active connections.
 func (a *Air) Shutdown(c *Context) error {
 	return a.server.Shutdown(c)
+}
+
+// ServeHTTP implements the `http.Handler`.
+func (a *Air) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	c := a.contextPool.Get().(*Context)
+	c.feed(req, rw)
+
+	// Gases
+	h := func(c *Context) error {
+		a.router.route(c.Request.Method, c.Request.URL.EscapedPath(), c)
+
+		h := c.Handler
+		for i := len(a.gases) - 1; i >= 0; i-- {
+			h = a.gases[i](h)
+		}
+
+		return h(c)
+	}
+
+	// Pregases
+	for i := len(a.pregases) - 1; i >= 0; i-- {
+		h = a.pregases[i](h)
+	}
+
+	// Execute chain
+	if err := h(c); err != nil {
+		a.HTTPErrorHandler(err, c)
+	}
+
+	c.reset()
+	a.contextPool.Put(c)
 }
 
 // WrapHandler wraps the h into the `Handler`.
