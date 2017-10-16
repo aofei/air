@@ -45,9 +45,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 	}
 
 	ctype := req.Header.Get("Content-Type")
-
-	var err error
-	err = ErrUnsupportedMediaType
+	err := error(NewHTTPError(http.StatusUnsupportedMediaType))
 
 	switch {
 	case strings.HasPrefix(ctype, "application/json"):

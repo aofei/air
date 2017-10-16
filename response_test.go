@@ -283,7 +283,7 @@ func TestResponseFile(t *testing.T) {
 	c.reset()
 	c.feed(req, rec)
 
-	assert.Equal(t, ErrNotFound, c.File("file_not_exist.html"))
+	assert.True(t, os.IsNotExist(c.File("file_not_exist.html")))
 
 	file, _ := os.Create("index.html")
 	defer func() {

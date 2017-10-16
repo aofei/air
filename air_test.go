@@ -361,9 +361,9 @@ func TestAirWrapHandler(t *testing.T) {
 }
 
 func TestAirWrapGasError(t *testing.T) {
-	g := WrapGas(func(*Context) error { return ErrInternalServerError })
+	g := WrapGas(func(*Context) error { return errors.New("gas error") })
 	h := g(func(*Context) error { return nil })
-	assert.Equal(t, ErrInternalServerError, h(nil))
+	assert.Equal(t, "gas error", h(nil).Error())
 }
 
 func TestAirDefaultHTTPErrorHandler(t *testing.T) {
