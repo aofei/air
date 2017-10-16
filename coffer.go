@@ -126,7 +126,7 @@ func (c *coffer) Init() error {
 			return err
 		}
 
-		if cfg.AssetMinified {
+		if cfg.MinifierEnabled {
 			if mt := mimeTypeByExt(filepath.Ext(file)); mt != "" {
 				b, err = c.air.Minifier.Minify(mt, b)
 				if err != nil {

@@ -97,6 +97,14 @@ type Config struct {
 	// It's called "tls_key_file" in the config file.
 	TLSKeyFile string
 
+	// MinifierEnabled indicates whether to enable the `Minifier` when the
+	// HTTP server is started. It works only with the default `Minifier`.
+	//
+	// The default value is false.
+	//
+	// It's called "minifier_enabled" in the config file.
+	MinifierEnabled bool
+
 	// TemplateRoot represents the root directory of the HTML templates. It
 	// will be parsed into the `Renderer`. It works only with the default
 	// `Renderer`.
@@ -134,15 +142,6 @@ type Config struct {
 	// It's called "template_right_delim" in the config file.
 	TemplateRightDelim string
 
-	// TemplateMinified indicates whether to minify the HTML templates
-	// before they being parsed into the `Renderer`. It works only with the
-	// default `Renderer`.
-	//
-	// The default value is false.
-	//
-	// It's called "template_minified" in the config file.
-	TemplateMinified bool
-
 	// CofferEnabled indicates whether to enable the `Coffer` when the HTTP
 	// server is started. It works only with the default `Coffer`.
 	//
@@ -170,15 +169,6 @@ type Config struct {
 	//
 	// It's called "asset_exts" in the config file.
 	AssetExts []string
-
-	// AssetMinified indicates whether to minify the asset files before they
-	// being loaded into the `Coffer`. It works only with the default
-	// `Coffer` and when the `CofferEnabled` is true.
-	//
-	// The default value is false.
-	//
-	// It's called "asset_minified" in the config file.
-	AssetMinified bool
 
 	// Data represents the data that parsing from the config file. You can
 	// use it to access the values in the config file.
@@ -270,11 +260,14 @@ func (c *Config) fillData() {
 	if tkf, ok := c.Data["tls_key_file"].(string); ok {
 		c.TLSKeyFile = tkf
 	}
+	if me, ok := c.Data["minifier_enabled"].(bool); ok {
+		c.MinifierEnabled = me
+	}
 	if tr, ok := c.Data["template_root"].(string); ok {
 		c.TemplateRoot = tr
 	}
 	if tes, ok := c.Data["template_exts"].([]interface{}); ok {
-		c.TemplateExts = []string{}
+		c.TemplateExts = nil
 		for _, te := range tes {
 			c.TemplateExts = append(c.TemplateExts, te.(string))
 		}
@@ -285,9 +278,6 @@ func (c *Config) fillData() {
 	if trd, ok := c.Data["template_right_delim"].(string); ok {
 		c.TemplateRightDelim = trd
 	}
-	if tm, ok := c.Data["template_minified"].(bool); ok {
-		c.TemplateMinified = tm
-	}
 	if ce, ok := c.Data["coffer_enabled"].(bool); ok {
 		c.CofferEnabled = ce
 	}
@@ -295,12 +285,9 @@ func (c *Config) fillData() {
 		c.AssetRoot = ar
 	}
 	if aes, ok := c.Data["asset_exts"].([]interface{}); ok {
-		c.AssetExts = []string{}
+		c.AssetExts = nil
 		for _, ae := range aes {
 			c.AssetExts = append(c.AssetExts, ae.(string))
 		}
-	}
-	if am, ok := c.Data["asset_minified"].(bool); ok {
-		c.AssetMinified = am
 	}
 }

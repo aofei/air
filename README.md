@@ -48,6 +48,7 @@ you one thing: **it can serve properly.**
 * Config
 	* For server.
 	* For logger.
+	* For minifier.
 	* For renderer.
 	* For coffer.
 	* For everything.

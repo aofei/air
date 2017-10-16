@@ -86,7 +86,15 @@ func (r *Response) Render(templates ...string) error {
 
 // HTML sends a "text/html" HTTP response with the html.
 func (r *Response) HTML(html string) error {
-	return r.Blob("text/html; charset=utf-8", []byte(html))
+	b := []byte(html)
+	if r.context.Air.Config.MinifierEnabled {
+		var err error
+		b, err = r.context.Air.Minifier.Minify("text/html", b)
+		if err != nil {
+			return err
+		}
+	}
+	return r.Blob("text/html; charset=utf-8", b)
 }
 
 // String sends a "text/plain" HTTP response with the s.
@@ -103,6 +111,12 @@ func (r *Response) JSON(i interface{}) error {
 	if err != nil {
 		return err
 	}
+	if r.context.Air.Config.MinifierEnabled {
+		b, err = r.context.Air.Minifier.Minify("application/json", b)
+		if err != nil {
+			return err
+		}
+	}
 	return r.Blob("application/json; charset=utf-8", b)
 }
 
@@ -115,6 +129,12 @@ func (r *Response) JSONP(i interface{}, callback string) error {
 	}
 	b = append([]byte(callback+"("), b...)
 	b = append(b, []byte(");")...)
+	if r.context.Air.Config.MinifierEnabled {
+		b, err = r.context.Air.Minifier.Minify("text/javascript", b)
+		if err != nil {
+			return err
+		}
+	}
 	return r.Blob("application/javascript; charset=utf-8", b)
 }
 
@@ -128,6 +148,12 @@ func (r *Response) XML(i interface{}) error {
 		return err
 	}
 	b = append([]byte(xml.Header), b...)
+	if r.context.Air.Config.MinifierEnabled {
+		b, err = r.context.Air.Minifier.Minify("text/xml", b)
+		if err != nil {
+			return err
+		}
+	}
 	return r.Blob("application/xml; charset=utf-8", b)
 }
 
