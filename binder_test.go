@@ -33,7 +33,7 @@ func TestBinderBindError(t *testing.T) {
 		"/",
 		strings.NewReader("{\"num\":999e999}"),
 	)
-	req.Header.Set(HeaderContentType, "application/json")
+	req.Header.Set("Content-Type", "application/json")
 
 	c.reset()
 	c.feed(req, nil)
@@ -41,7 +41,7 @@ func TestBinderBindError(t *testing.T) {
 	assert.Error(t, b.Bind(&Map{}, c.Request))
 
 	req, _ = http.NewRequest(POST, "/", strings.NewReader("{,}"))
-	req.Header.Set(HeaderContentType, "application/json")
+	req.Header.Set("Content-Type", "application/json")
 
 	c.reset()
 	c.feed(req, nil)
@@ -52,7 +52,7 @@ func TestBinderBindError(t *testing.T) {
 		<Num>1</Num>`
 
 	req, _ = http.NewRequest(POST, "/", strings.NewReader(x))
-	req.Header.Set(HeaderContentType, "application/xml")
+	req.Header.Set("Content-Type", "application/xml")
 
 	c.reset()
 	c.feed(req, nil)
@@ -66,7 +66,7 @@ func TestBinderBindError(t *testing.T) {
 	</Info>`
 
 	req, _ = http.NewRequest(POST, "/", strings.NewReader(x))
-	req.Header.Set(HeaderContentType, "application/xml")
+	req.Header.Set("Content-Type", "application/xml")
 
 	c.reset()
 	c.feed(req, nil)

@@ -31,7 +31,7 @@ func TestResponseSetCookie(t *testing.T) {
 	assert.Equal(
 		t,
 		cookie.String(),
-		c.Response.Header().Get(HeaderSetCookie),
+		c.Response.Header().Get("Set-Cookie"),
 	)
 }
 
@@ -65,7 +65,7 @@ func TestResponseRender(t *testing.T) {
 		assert.Equal(
 			t,
 			"text/html; charset=utf-8",
-			rec.Header().Get(HeaderContentType),
+			rec.Header().Get("Content-Type"),
 		)
 		assert.Equal(t, "Air by Aofei Sheng.", rec.Body.String())
 	}
@@ -88,7 +88,7 @@ func TestResponseHTML(t *testing.T) {
 		assert.Equal(
 			t,
 			"text/html; charset=utf-8",
-			rec.Header().Get(HeaderContentType),
+			rec.Header().Get("Content-Type"),
 		)
 		assert.Equal(t, "Air", rec.Body.String())
 	}
@@ -107,7 +107,7 @@ func TestResponseString(t *testing.T) {
 		assert.Equal(
 			t,
 			"text/plain; charset=utf-8",
-			rec.Header().Get(HeaderContentType),
+			rec.Header().Get("Content-Type"),
 		)
 		assert.Equal(t, "Air", rec.Body.String())
 	}
@@ -133,7 +133,7 @@ func TestResponseJSON(t *testing.T) {
 		assert.Equal(
 			t,
 			"application/json; charset=utf-8",
-			rec.Header().Get(HeaderContentType),
+			rec.Header().Get("Content-Type"),
 		)
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
@@ -163,7 +163,7 @@ func TestResponseJSONP(t *testing.T) {
 		assert.Equal(
 			t,
 			"application/javascript; charset=utf-8",
-			rec.Header().Get(HeaderContentType),
+			rec.Header().Get("Content-Type"),
 		)
 		assert.Equal(t, cb+"("+infoStr+");", rec.Body.String())
 	}
@@ -198,7 +198,7 @@ func TestResponseXML(t *testing.T) {
 		assert.Equal(
 			t,
 			"application/xml; charset=utf-8",
-			rec.Header().Get(HeaderContentType),
+			rec.Header().Get("Content-Type"),
 		)
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
@@ -224,7 +224,7 @@ func TestResponseBlob(t *testing.T) {
 	b := []byte("blob")
 	if err := c.Blob(ct, b); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, ct, rec.Header().Get(HeaderContentType))
+		assert.Equal(t, ct, rec.Header().Get("Content-Type"))
 		assert.Equal(t, b, rec.Body.Bytes())
 	}
 
@@ -251,7 +251,7 @@ func TestResponseStream(t *testing.T) {
 		assert.Equal(
 			t,
 			"application/javascript",
-			rec.Header().Get(HeaderContentType),
+			rec.Header().Get("Content-Type"),
 		)
 		assert.Equal(t, s, rec.Body.String())
 	}
@@ -272,7 +272,7 @@ func TestResponseFile(t *testing.T) {
 		assert.Equal(
 			t,
 			"text/plain; charset=utf-8",
-			rec.Header().Get(HeaderContentType),
+			rec.Header().Get("Content-Type"),
 		)
 		assert.Equal(t, b, rec.Body.Bytes())
 	}
@@ -303,7 +303,7 @@ func TestResponseFile(t *testing.T) {
 		assert.Equal(
 			t,
 			"text/html; charset=utf-8",
-			rec.Header().Get(HeaderContentType),
+			rec.Header().Get("Content-Type"),
 		)
 		assert.Equal(t, "<html></html>", rec.Body.String())
 	}
@@ -323,7 +323,7 @@ func TestResponseFile(t *testing.T) {
 		assert.Equal(
 			t,
 			"text/html; charset=utf-8",
-			rec.Header().Get(HeaderContentType),
+			rec.Header().Get("Content-Type"),
 		)
 		assert.Equal(t, "<html></html>", rec.Body.String())
 	}
@@ -342,7 +342,7 @@ func TestResponseAttachment(t *testing.T) {
 	b, _ := ioutil.ReadFile(f)
 	if err := c.Attachment(f, f); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, h, rec.Header().Get(HeaderContentDisposition))
+		assert.Equal(t, h, rec.Header().Get("Content-Disposition"))
 		assert.Equal(t, b, rec.Body.Bytes())
 	}
 }
@@ -360,7 +360,7 @@ func TestResponseInline(t *testing.T) {
 	b, _ := ioutil.ReadFile(f)
 	if err := c.Inline(f, f); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, h, rec.Header().Get(HeaderContentDisposition))
+		assert.Equal(t, h, rec.Header().Get("Content-Disposition"))
 		assert.Equal(t, b, rec.Body.Bytes())
 	}
 }
@@ -375,7 +375,7 @@ func TestResponseNoContent(t *testing.T) {
 
 	c.NoContent(http.StatusOK)
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "", rec.Header().Get(HeaderContentDisposition))
+	assert.Equal(t, "", rec.Header().Get("Content-Disposition"))
 	assert.Equal(t, "", rec.Body.String())
 }
 
@@ -391,7 +391,7 @@ func TestResponseRedirect(t *testing.T) {
 	err := c.Redirect(http.StatusMovedPermanently, url)
 	if assert.NoError(t, err) {
 		assert.Equal(t, http.StatusMovedPermanently, rec.Code)
-		assert.Equal(t, url, rec.Header().Get(HeaderLocation))
+		assert.Equal(t, url, rec.Header().Get("Location"))
 		assert.Equal(t, "", rec.Body.String())
 	}
 }
