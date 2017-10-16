@@ -168,14 +168,19 @@ func (c *Context) Push(target string, pos *http.PushOptions) error {
 	return c.Response.Push(target, pos)
 }
 
-// Render is an alias for the `Response#Render()` of the c.
-func (c *Context) Render(templates ...string) error {
-	return c.Response.Render(templates...)
+// NoContent is an alias for the `Response#NoContent()` of the c.
+func (c *Context) NoContent(statusCode int) error {
+	return c.Response.NoContent(statusCode)
 }
 
-// HTML is an alias for the `Response#HTML()` of the c.
-func (c *Context) HTML(html string) error {
-	return c.Response.HTML(html)
+// Redirect is an alias for the `Response#Redirect()` of the c.
+func (c *Context) Redirect(statusCode int, url string) error {
+	return c.Response.Redirect(statusCode, url)
+}
+
+// Blob is an alias for the `Response#Blob()` of the c.
+func (c *Context) Blob(contentType string, b []byte) error {
+	return c.Response.Blob(contentType, b)
 }
 
 // String is an alias for the `Response#String()` of the c.
@@ -193,9 +198,14 @@ func (c *Context) XML(i interface{}) error {
 	return c.Response.XML(i)
 }
 
-// Blob is an alias for the `Response#Blob()` of the c.
-func (c *Context) Blob(contentType string, b []byte) error {
-	return c.Response.Blob(contentType, b)
+// HTML is an alias for the `Response#HTML()` of the c.
+func (c *Context) HTML(html string) error {
+	return c.Response.HTML(html)
+}
+
+// Render is an alias for the `Response#Render()` of the c.
+func (c *Context) Render(templates ...string) error {
+	return c.Response.Render(templates...)
 }
 
 // Stream is an alias for the `Response#Stream()` of the c.
@@ -216,14 +226,4 @@ func (c *Context) Attachment(file, filename string) error {
 // Inline is an alias for the `Response#Inline()` of the c.
 func (c *Context) Inline(file, filename string) error {
 	return c.Response.Inline(file, filename)
-}
-
-// NoContent is an alias for the `Response#NoContent()` of the c.
-func (c *Context) NoContent(statusCode int) error {
-	return c.Response.NoContent(statusCode)
-}
-
-// Redirect is an alias for the `Response#Redirect()` of the c.
-func (c *Context) Redirect(statusCode int, url string) error {
-	return c.Response.Redirect(statusCode, url)
 }
