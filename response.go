@@ -147,8 +147,8 @@ func (r *Response) Stream(contentType string, reader io.Reader) error {
 
 // File sends a file HTTP response with the file.
 func (r *Response) File(file string) error {
-	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return ErrNotFound
+	if _, err := os.Stat(file); err != nil {
+		return err
 	}
 
 	abs, err := filepath.Abs(file)
