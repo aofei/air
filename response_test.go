@@ -147,36 +147,6 @@ func TestResponseJSON(t *testing.T) {
 	assert.Error(t, c.JSON(Air{}))
 }
 
-func TestResponseJSONP(t *testing.T) {
-	a := New()
-	req, _ := http.NewRequest("GET", "/", nil)
-	rec := httptest.NewRecorder()
-	c := NewContext(a)
-
-	c.feed(req, rec)
-
-	info := struct{ Name, Author string }{"Air", "Aofei Sheng"}
-	infoStr := `{"Name":"Air","Author":"Aofei Sheng"}`
-	cb := "callback"
-	if err := c.JSONP(info, cb); assert.NoError(t, err) {
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(
-			t,
-			"application/javascript; charset=utf-8",
-			rec.Header().Get("Content-Type"),
-		)
-		assert.Equal(t, cb+"("+infoStr+");", rec.Body.String())
-	}
-
-	req, _ = http.NewRequest("GET", "/", nil)
-	rec = httptest.NewRecorder()
-
-	c.reset()
-	c.feed(req, rec)
-
-	assert.Error(t, c.JSONP(Air{}, cb))
-}
-
 func TestResponseXML(t *testing.T) {
 	a := New()
 	a.Config.DebugMode = true
