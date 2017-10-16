@@ -133,14 +133,14 @@ func (r *Response) XML(i interface{}) error {
 
 // Blob sends a blob HTTP response with the contentType and the b.
 func (r *Response) Blob(contentType string, b []byte) error {
-	r.Header().Set(HeaderContentType, contentType)
+	r.Header().Set("Content-Type", contentType)
 	_, err := r.Write(b)
 	return err
 }
 
 // Stream sends a streaming HTTP response with the contentType and the reader.
 func (r *Response) Stream(contentType string, reader io.Reader) error {
-	r.Header().Set(HeaderContentType, contentType)
+	r.Header().Set("Content-Type", contentType)
 	_, err := io.Copy(r, reader)
 	return err
 }
@@ -191,7 +191,7 @@ func (r *Response) contentDisposition(
 	filename string,
 ) error {
 	r.Header().Set(
-		HeaderContentDisposition,
+		"Content-Disposition",
 		fmt.Sprintf("%s; filename=%s", dispositionType, filename),
 	)
 	return r.File(file)
@@ -205,7 +205,7 @@ func (r *Response) NoContent(statusCode int) error {
 
 // Redirect redirects the current HTTP request to the url with the statusCode.
 func (r *Response) Redirect(statusCode int, url string) error {
-	r.Header().Set(HeaderLocation, url)
+	r.Header().Set("Location", url)
 	return r.NoContent(statusCode)
 }
 
