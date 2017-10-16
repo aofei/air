@@ -144,7 +144,7 @@ func TestResponseJSON(t *testing.T) {
 	c.reset()
 	c.feed(req, rec)
 
-	assert.Error(t, c.JSON(Air{}))
+	assert.Error(t, c.JSON(func() {}))
 }
 
 func TestResponseXML(t *testing.T) {
@@ -179,7 +179,7 @@ func TestResponseXML(t *testing.T) {
 	c.reset()
 	c.feed(req, rec)
 
-	assert.Error(t, c.XML(Air{}))
+	assert.Error(t, c.XML(func() {}))
 }
 
 func TestResponseBlob(t *testing.T) {

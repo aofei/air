@@ -1,49 +1,30 @@
 package air
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"path"
-	"sync"
 	"time"
 )
 
 type (
 	// Air is the top-level framework struct.
 	Air struct {
-		pregases    []Gas
-		gases       []Gas
-		paramCap    int
-		contextPool *sync.Pool
-		server      *http.Server
-		router      *router
+		paramCap int
+		router   *router
 
-		Config           *Config
-		Logger           Logger
-		Binder           Binder
-		Minifier         Minifier
-		Renderer         Renderer
-		Coffer           Coffer
-		HTTPErrorHandler HTTPErrorHandler
+		Config   *Config
+		Logger   Logger
+		Server   Server
+		Binder   Binder
+		Minifier Minifier
+		Renderer Renderer
+		Coffer   Coffer
 	}
 
 	// Handler defines a function to serve HTTP requests.
 	Handler func(*Context) error
-
-	// Gas defines a function to process gases.
-	Gas func(Handler) Handler
-
-	// HTTPError represents an error that occurred while handling an HTTP
-	// request.
-	HTTPError struct {
-		Code    int
-		Message string
-	}
-
-	// HTTPErrorHandler is a centralized HTTP error handler.
-	HTTPErrorHandler func(error, *Context)
 
 	// Map is an alias of the `map[string]interface{}`.
 	Map = map[string]interface{}
@@ -51,11 +32,11 @@ type (
 
 // HTTP error handlers
 var (
-	NotFoundHandler = func(c *Context) error {
+	NotFoundHandler = func(*Context) error {
 		return NewHTTPError(http.StatusNotFound)
 	}
 
-	MethodNotAllowedHandler = func(c *Context) error {
+	MethodNotAllowedHandler = func(*Context) error {
 		return NewHTTPError(http.StatusMethodNotAllowed)
 	}
 )
@@ -64,33 +45,17 @@ var (
 func New() *Air {
 	a := &Air{}
 
-	a.contextPool = &sync.Pool{
-		New: func() interface{} {
-			return NewContext(a)
-		},
-	}
-	a.server = &http.Server{}
 	a.router = newRouter(a)
 
 	a.Config = NewConfig("config.toml")
 	a.Logger = newLogger(a)
+	a.Server = newServer(a)
 	a.Binder = newBinder()
 	a.Minifier = newMinifier()
 	a.Renderer = newRenderer(a)
 	a.Coffer = newCoffer(a)
-	a.HTTPErrorHandler = DefaultHTTPErrorHandler
 
 	return a
-}
-
-// Precontain adds the gases to the chain which is perform before the router.
-func (a *Air) Precontain(gases ...Gas) {
-	a.pregases = append(a.pregases, gases...)
-}
-
-// Contain adds the gases to the chain which is perform after the router.
-func (a *Air) Contain(gases ...Gas) {
-	a.gases = append(a.gases, gases...)
 }
 
 // GET registers a new GET route for the path with the matching h in the router
@@ -182,85 +147,29 @@ func (a *Air) add(method, path string, h Handler, gases ...Gas) {
 	})
 }
 
-// Serve starts the HTTP server.
+// Precontain is an alias for the `Server#Precontain()` of the a.
+func (a *Air) Precontain(gases ...Gas) {
+	a.Server.Precontain(gases...)
+}
+
+// Contain is an alias for the `Server#Contain()` of the a.
+func (a *Air) Contain(gases ...Gas) {
+	a.Server.Contain(gases...)
+}
+
+// Serve is an alias for the `Server#Serve()` of the a.
 func (a *Air) Serve() error {
-	s := a.server
-	c := a.Config
-
-	s.Addr = c.Address
-	s.Handler = a
-	s.ReadTimeout = c.ReadTimeout
-	s.WriteTimeout = c.WriteTimeout
-	s.MaxHeaderBytes = c.MaxHeaderBytes
-
-	if err := a.Minifier.Init(); err != nil {
-		panic(err)
-	} else if err := a.Renderer.Init(); err != nil {
-		panic(err)
-	} else if err := a.Coffer.Init(); err != nil {
-		panic(err)
-	}
-
-	if c.DebugMode {
-		c.LoggerEnabled = true
-		a.Logger.Debug("serving in debug mode")
-	}
-
-	if c.TLSCertFile != "" && c.TLSKeyFile != "" {
-		return s.ListenAndServeTLS(c.TLSCertFile, c.TLSKeyFile)
-	}
-
-	return s.ListenAndServe()
+	return a.Server.Serve()
 }
 
-// Close closes the HTTP server immediately.
+// Close is an alias for the `Server#CLose()` of the a.
 func (a *Air) Close() error {
-	return a.server.Close()
+	return a.Server.Close()
 }
 
-// Shutdown gracefully shuts down the HTTP server without interrupting any
-// active connections until timeout. It waits indefinitely for connections to
-// return to idle and then shut down when the timeout is negative.
+// Shutdown is an alias for the `Server#Shutdown()` of the a.
 func (a *Air) Shutdown(timeout time.Duration) error {
-	if timeout < 0 {
-		return a.server.Shutdown(context.Background())
-	}
-
-	c, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	return a.server.Shutdown(c)
-}
-
-// ServeHTTP implements the `http.Handler`.
-func (a *Air) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	c := a.contextPool.Get().(*Context)
-	c.feed(req, rw)
-
-	// Gases
-	h := func(c *Context) error {
-		a.router.route(c.Request.Method, c.Request.URL.EscapedPath(), c)
-
-		h := c.Handler
-		for i := len(a.gases) - 1; i >= 0; i-- {
-			h = a.gases[i](h)
-		}
-
-		return h(c)
-	}
-
-	// Pregases
-	for i := len(a.pregases) - 1; i >= 0; i-- {
-		h = a.pregases[i](h)
-	}
-
-	// Execute chain
-	if err := h(c); err != nil {
-		a.HTTPErrorHandler(err, c)
-	}
-
-	c.reset()
-	a.contextPool.Put(c)
+	return a.Server.Shutdown(timeout)
 }
 
 // WrapHandler wraps the h into the `Handler`.
@@ -283,6 +192,12 @@ func WrapGas(h Handler) Gas {
 	}
 }
 
+// HTTPError represents an error that occurred while handling an HTTP request.
+type HTTPError struct {
+	Code    int
+	Message string
+}
+
 // NewHTTPError returns a pointer of a new instance of the `HTTPError`.
 func NewHTTPError(code int, messages ...interface{}) *HTTPError {
 	he := &HTTPError{Code: code, Message: http.StatusText(code)}
@@ -295,21 +210,4 @@ func NewHTTPError(code int, messages ...interface{}) *HTTPError {
 // Error implements the `error#Error()`.
 func (he *HTTPError) Error() string {
 	return he.Message
-}
-
-// DefaultHTTPErrorHandler is the default HTTP error handler.
-func DefaultHTTPErrorHandler(err error, c *Context) {
-	he := NewHTTPError(http.StatusInternalServerError)
-	if che, ok := err.(*HTTPError); ok {
-		he = che
-	} else if c.Air.Config.DebugMode {
-		he.Message = err.Error()
-	}
-
-	if !c.Response.Written {
-		c.Response.StatusCode = he.Code
-		c.String(he.Message)
-	}
-
-	c.Air.Logger.Error(err)
 }
