@@ -20,15 +20,14 @@ write_timeout = 200
 max_header_bytes = 65536
 tls_cert_file = "path_to_tls_cert_file"
 tls_key_file = "path_to_tls_key_file"
+minifier_enabled = true
 template_root = "ts"
 template_exts = [".tmpl"]
 template_left_delim = "<<"
 template_right_delim = ">>"
-template_minified = true
 coffer_enabled = true
 asset_root = "as"
 asset_exts = [".jpg"]
-asset_minified = true
 `
 
 	f, _ := os.Create("config.toml")
@@ -49,15 +48,14 @@ asset_minified = true
 	assert.Equal(t, 65536, c.MaxHeaderBytes)
 	assert.Equal(t, "path_to_tls_cert_file", c.TLSCertFile)
 	assert.Equal(t, "path_to_tls_key_file", c.TLSKeyFile)
+	assert.Equal(t, true, c.MinifierEnabled)
 	assert.Equal(t, "ts", c.TemplateRoot)
 	assert.Equal(t, []string{".tmpl"}, c.TemplateExts)
 	assert.Equal(t, "<<", c.TemplateLeftDelim)
 	assert.Equal(t, ">>", c.TemplateRightDelim)
-	assert.Equal(t, true, c.TemplateMinified)
 	assert.Equal(t, true, c.CofferEnabled)
 	assert.Equal(t, "as", c.AssetRoot)
 	assert.Equal(t, []string{".jpg"}, c.AssetExts)
-	assert.Equal(t, true, c.AssetMinified)
 	assert.NotNil(t, c.Data)
 }
 

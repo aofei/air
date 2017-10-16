@@ -109,6 +109,7 @@ Hello, I am the Air.
 	a := New()
 	a.Minifier.Init()
 
+	a.Config.MinifierEnabled = true
 	a.Config.CofferEnabled = true
 	a.Config.AssetExts = []string{
 		".html",
@@ -119,7 +120,6 @@ Hello, I am the Air.
 		".svg",
 		".txt",
 	}
-	a.Config.AssetMinified = true
 
 	assert.NoError(t, a.Coffer.Init())
 

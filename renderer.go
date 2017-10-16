@@ -111,13 +111,6 @@ func (r *renderer) Init() error {
 			return err
 		}
 
-		if c.TemplateMinified {
-			b, err = r.air.Minifier.Minify("text/html", b)
-			if err != nil {
-				return err
-			}
-		}
-
 		name := filepath.ToSlash(file[len(tr)+1:])
 		if _, err = t.New(name).Parse(string(b)); err != nil {
 			return err

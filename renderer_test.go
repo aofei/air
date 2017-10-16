@@ -48,9 +48,11 @@ func TestRendererInitAndRender(t *testing.T) {
 <p>Here is the footer.</p>
 </footer>
 `
-	result := "<!doctype html><title>Air Web Framework</title><header><p>" +
-		"Here is the header.</header>\n<main><p>Here is the main." +
-		"</main>\n<footer><p>Here is the footer.</footer>"
+	result := "\n<!DOCTYPE html>\n<html>\n<head>\n<title>Air Web " +
+		"Framework</title>\n</head>\n\n<body>\n\n<header>\n<p>Here " +
+		"is the header.</p>\n</header>\n\n\n<main>\n<p>Here is the " +
+		"main.</p>\n</main>\n\n\n<footer>\n<p>Here is the footer." +
+		"</p>\n</footer>\n\n</body>\n</html>\n"
 	templates := "templates"
 	templatesParts := templates + "/parts"
 
@@ -88,7 +90,7 @@ func TestRendererInitAndRender(t *testing.T) {
 	a := New()
 	a.Minifier.Init()
 
-	a.Config.TemplateMinified = true
+	a.Config.MinifierEnabled = true
 
 	b := &bytes.Buffer{}
 
