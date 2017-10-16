@@ -74,24 +74,24 @@ func (r *Response) SetCookie(cookie *http.Cookie) {
 func (r *Response) Render(templates ...string) error {
 	buf := &bytes.Buffer{}
 	for _, t := range templates {
-		r.Data["InheritedHTML"] = template.HTML(buf.Bytes())
+		r.Data["InheritedHTML"] = template.HTML(buf.String())
 		buf.Reset()
 		err := r.context.Air.Renderer.Render(buf, t, r.Data)
 		if err != nil {
 			return err
 		}
 	}
-	return r.Blob(MIMETextHTML+CharsetUTF8, buf.Bytes())
+	return r.HTML(buf.String())
 }
 
 // HTML sends a "text/html" HTTP response with the html.
 func (r *Response) HTML(html string) error {
-	return r.Blob(MIMETextHTML+CharsetUTF8, []byte(html))
+	return r.Blob("text/html; charset=utf-8", []byte(html))
 }
 
 // String sends a "text/plain" HTTP response with the s.
 func (r *Response) String(s string) error {
-	return r.Blob(MIMETextPlain+CharsetUTF8, []byte(s))
+	return r.Blob("text/plain; charset=utf-8", []byte(s))
 }
 
 // JSON sends an "application/json" HTTP response with the type i.
@@ -103,7 +103,7 @@ func (r *Response) JSON(i interface{}) error {
 	if err != nil {
 		return err
 	}
-	return r.Blob(MIMEApplicationJSON+CharsetUTF8, b)
+	return r.Blob("application/json; charset=utf-8", b)
 }
 
 // JSONP sends an "application/javascript" HTTP response with the type i. It
@@ -115,7 +115,7 @@ func (r *Response) JSONP(i interface{}, callback string) error {
 	}
 	b = append([]byte(callback+"("), b...)
 	b = append(b, []byte(");")...)
-	return r.Blob(MIMEApplicationJavaScript+CharsetUTF8, b)
+	return r.Blob("application/javascript; charset=utf-8", b)
 }
 
 // XML sends an "application/xml" HTTP response with the type i.
@@ -127,10 +127,8 @@ func (r *Response) XML(i interface{}) error {
 	if err != nil {
 		return err
 	}
-	return r.Blob(
-		MIMEApplicationXML+CharsetUTF8,
-		append([]byte(xml.Header), b...),
-	)
+	b = append([]byte(xml.Header), b...)
+	return r.Blob("application/xml; charset=utf-8", b)
 }
 
 // Blob sends a blob HTTP response with the contentType and the b.
@@ -192,8 +190,10 @@ func (r *Response) contentDisposition(
 	file,
 	filename string,
 ) error {
-	r.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s",
-		dispositionType, filename))
+	r.Header().Set(
+		HeaderContentDisposition,
+		fmt.Sprintf("%s; filename=%s", dispositionType, filename),
+	)
 	return r.File(file)
 }
 
@@ -206,8 +206,7 @@ func (r *Response) NoContent(statusCode int) error {
 // Redirect redirects the current HTTP request to the url with the statusCode.
 func (r *Response) Redirect(statusCode int, url string) error {
 	r.Header().Set(HeaderLocation, url)
-	r.WriteHeader(statusCode)
-	return nil
+	return r.NoContent(statusCode)
 }
 
 // feed feeds the rw into where it should be.

@@ -64,7 +64,7 @@ func TestResponseRender(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(
 			t,
-			MIMETextHTML+CharsetUTF8,
+			"text/html; charset=utf-8",
 			rec.Header().Get(HeaderContentType),
 		)
 		assert.Equal(t, "Air by Aofei Sheng.", rec.Body.String())
@@ -87,7 +87,7 @@ func TestResponseHTML(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(
 			t,
-			MIMETextHTML+CharsetUTF8,
+			"text/html; charset=utf-8",
 			rec.Header().Get(HeaderContentType),
 		)
 		assert.Equal(t, "Air", rec.Body.String())
@@ -106,7 +106,7 @@ func TestResponseString(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(
 			t,
-			MIMETextPlain+CharsetUTF8,
+			"text/plain; charset=utf-8",
 			rec.Header().Get(HeaderContentType),
 		)
 		assert.Equal(t, "Air", rec.Body.String())
@@ -130,8 +130,11 @@ func TestResponseJSON(t *testing.T) {
 
 	if err := c.JSON(info); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMEApplicationJSON+CharsetUTF8,
-			rec.Header().Get(HeaderContentType))
+		assert.Equal(
+			t,
+			"application/json; charset=utf-8",
+			rec.Header().Get(HeaderContentType),
+		)
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
 
@@ -157,8 +160,11 @@ func TestResponseJSONP(t *testing.T) {
 	cb := "callback"
 	if err := c.JSONP(info, cb); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, MIMEApplicationJavaScript+CharsetUTF8,
-			rec.Header().Get(HeaderContentType))
+		assert.Equal(
+			t,
+			"application/javascript; charset=utf-8",
+			rec.Header().Get(HeaderContentType),
+		)
 		assert.Equal(t, cb+"("+infoStr+");", rec.Body.String())
 	}
 
@@ -191,7 +197,7 @@ func TestResponseXML(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(
 			t,
-			MIMEApplicationXML+CharsetUTF8,
+			"application/xml; charset=utf-8",
 			rec.Header().Get(HeaderContentType),
 		)
 		assert.Equal(t, infoStr, rec.Body.String())
@@ -239,12 +245,12 @@ func TestResponseStream(t *testing.T) {
 	s := "response from a stream"
 	if assert.NoError(
 		t,
-		c.Stream(MIMEApplicationJavaScript, strings.NewReader(s)),
+		c.Stream("application/javascript", strings.NewReader(s)),
 	) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(
 			t,
-			MIMEApplicationJavaScript,
+			"application/javascript",
 			rec.Header().Get(HeaderContentType),
 		)
 		assert.Equal(t, s, rec.Body.String())
@@ -265,7 +271,7 @@ func TestResponseFile(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(
 			t,
-			MIMETextPlain+CharsetUTF8,
+			"text/plain; charset=utf-8",
 			rec.Header().Get(HeaderContentType),
 		)
 		assert.Equal(t, b, rec.Body.Bytes())
@@ -296,7 +302,7 @@ func TestResponseFile(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(
 			t,
-			MIMETextHTML+CharsetUTF8,
+			"text/html; charset=utf-8",
 			rec.Header().Get(HeaderContentType),
 		)
 		assert.Equal(t, "<html></html>", rec.Body.String())
@@ -316,7 +322,7 @@ func TestResponseFile(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(
 			t,
-			MIMETextHTML+CharsetUTF8,
+			"text/html; charset=utf-8",
 			rec.Header().Get(HeaderContentType),
 		)
 		assert.Equal(t, "<html></html>", rec.Body.String())
