@@ -84,7 +84,7 @@ func TestRequestBind(t *testing.T) {
 	j, _ := json.Marshal(raw)
 	x, _ := xml.Marshal(raw)
 
-	req, _ := http.NewRequest(GET, "/?"+vs.Encode(), nil)
+	req, _ := http.NewRequest("GET", "/?"+vs.Encode(), nil)
 
 	c.reset()
 	c.feed(req, nil)
@@ -94,7 +94,7 @@ func TestRequestBind(t *testing.T) {
 	c.Bind(i)
 	assert.Equal(t, *raw, *i)
 
-	req, _ = http.NewRequest(POST, "/", strings.NewReader(vs.Encode()))
+	req, _ = http.NewRequest("POST", "/", strings.NewReader(vs.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	c.reset()
@@ -105,7 +105,7 @@ func TestRequestBind(t *testing.T) {
 	c.Bind(i)
 	assert.Equal(t, *raw, *i)
 
-	req, _ = http.NewRequest(POST, "/", strings.NewReader(string(j)))
+	req, _ = http.NewRequest("POST", "/", strings.NewReader(string(j)))
 	req.Header.Add("Content-Type", "application/json")
 
 	c.feed(req, nil)
@@ -115,7 +115,7 @@ func TestRequestBind(t *testing.T) {
 	c.Bind(i)
 	assert.Equal(t, *raw, *i)
 
-	req, _ = http.NewRequest(POST, "/", strings.NewReader(string(x)))
+	req, _ = http.NewRequest("POST", "/", strings.NewReader(string(x)))
 	req.Header.Add("Content-Type", "application/xml")
 
 	c.feed(req, nil)
@@ -129,7 +129,7 @@ func TestRequestBind(t *testing.T) {
 func TestRequestFormFile(t *testing.T) {
 	a := New()
 	c := NewContext(a)
-	req, _ := http.NewRequest(POST, "/", nil)
+	req, _ := http.NewRequest("POST", "/", nil)
 	req.Header.Add("Content-Type", "multipart/form-data")
 	c.feed(req, nil)
 	f, fh, err := c.FormFile("air")
@@ -147,7 +147,7 @@ func TestRequestCookie(t *testing.T) {
 		Value: "Aofei Sheng",
 	}
 
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	req.Header.Add("Cookie", cookie.String())
 
 	c.feed(req, nil)
@@ -168,7 +168,7 @@ func TestRequestOthers(t *testing.T) {
 	vs.Set("author", "Aofei Sheng")
 
 	req, _ := http.NewRequest(
-		POST,
+		"POST",
 		"/?"+vs.Encode(),
 		strings.NewReader(vs.Encode()),
 	)

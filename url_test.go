@@ -15,7 +15,7 @@ func TestURLQueryValue(t *testing.T) {
 	vs := url.Values{}
 	vs.Set("name", "Air")
 	vs.Set("author", "Aofei Sheng")
-	req, _ := http.NewRequest(GET, "/?"+vs.Encode(), nil)
+	req, _ := http.NewRequest("GET", "/?"+vs.Encode(), nil)
 
 	c.feed(req, nil)
 

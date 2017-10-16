@@ -31,7 +31,7 @@ func newBinder() *binder {
 
 // Bind implements the `Binder#Bind()` based on the "Content-Type" header.
 func (b *binder) Bind(i interface{}, req *Request) error {
-	if req.Method == GET {
+	if req.Method == "GET" {
 		err := b.bindData(i, req.URL.Query(), "query")
 		if err != nil {
 			err = NewHTTPError(http.StatusBadRequest, err.Error())

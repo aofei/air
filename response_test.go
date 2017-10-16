@@ -15,7 +15,7 @@ import (
 
 func TestResponseSetCookie(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -37,7 +37,7 @@ func TestResponseSetCookie(t *testing.T) {
 
 func TestRequestPush(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 	c.feed(req, rec)
@@ -46,7 +46,7 @@ func TestRequestPush(t *testing.T) {
 
 func TestResponseRender(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -77,7 +77,7 @@ func TestResponseRender(t *testing.T) {
 
 func TestResponseHTML(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -96,7 +96,7 @@ func TestResponseHTML(t *testing.T) {
 
 func TestResponseString(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -116,7 +116,7 @@ func TestResponseString(t *testing.T) {
 func TestResponseJSON(t *testing.T) {
 	a := New()
 	a.Config.DebugMode = true
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -138,7 +138,7 @@ func TestResponseJSON(t *testing.T) {
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
 
-	req, _ = http.NewRequest(GET, "/", nil)
+	req, _ = http.NewRequest("GET", "/", nil)
 	rec = httptest.NewRecorder()
 
 	c.reset()
@@ -149,7 +149,7 @@ func TestResponseJSON(t *testing.T) {
 
 func TestResponseJSONP(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -168,7 +168,7 @@ func TestResponseJSONP(t *testing.T) {
 		assert.Equal(t, cb+"("+infoStr+");", rec.Body.String())
 	}
 
-	req, _ = http.NewRequest(GET, "/", nil)
+	req, _ = http.NewRequest("GET", "/", nil)
 	rec = httptest.NewRecorder()
 
 	c.reset()
@@ -180,7 +180,7 @@ func TestResponseJSONP(t *testing.T) {
 func TestResponseXML(t *testing.T) {
 	a := New()
 	a.Config.DebugMode = true
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -203,7 +203,7 @@ func TestResponseXML(t *testing.T) {
 		assert.Equal(t, infoStr, rec.Body.String())
 	}
 
-	req, _ = http.NewRequest(GET, "/", nil)
+	req, _ = http.NewRequest("GET", "/", nil)
 	rec = httptest.NewRecorder()
 
 	c.reset()
@@ -214,7 +214,7 @@ func TestResponseXML(t *testing.T) {
 
 func TestResponseBlob(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -236,7 +236,7 @@ func TestResponseBlob(t *testing.T) {
 
 func TestResponseStream(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -259,7 +259,7 @@ func TestResponseStream(t *testing.T) {
 
 func TestResponseFile(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -277,7 +277,7 @@ func TestResponseFile(t *testing.T) {
 		assert.Equal(t, b, rec.Body.Bytes())
 	}
 
-	req, _ = http.NewRequest(GET, "/", nil)
+	req, _ = http.NewRequest("GET", "/", nil)
 	rec = httptest.NewRecorder()
 
 	c.reset()
@@ -292,7 +292,7 @@ func TestResponseFile(t *testing.T) {
 	}()
 	file.WriteString("<html></html>")
 
-	req, _ = http.NewRequest(GET, "/", nil)
+	req, _ = http.NewRequest("GET", "/", nil)
 	rec = httptest.NewRecorder()
 
 	c.reset()
@@ -312,7 +312,7 @@ func TestResponseFile(t *testing.T) {
 	a.Config.AssetRoot = "."
 	a.Coffer.Init()
 
-	req, _ = http.NewRequest(GET, "/", nil)
+	req, _ = http.NewRequest("GET", "/", nil)
 	rec = httptest.NewRecorder()
 
 	c.reset()
@@ -331,7 +331,7 @@ func TestResponseFile(t *testing.T) {
 
 func TestResponseAttachment(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -349,7 +349,7 @@ func TestResponseAttachment(t *testing.T) {
 
 func TestResponseInline(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -367,7 +367,7 @@ func TestResponseInline(t *testing.T) {
 
 func TestResponseNoContent(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 
@@ -381,7 +381,7 @@ func TestResponseNoContent(t *testing.T) {
 
 func TestResponseRedirect(t *testing.T) {
 	a := New()
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 	c := NewContext(a)
 

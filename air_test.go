@@ -36,7 +36,7 @@ func TestAirNew(t *testing.T) {
 func TestAirPrecontain(t *testing.T) {
 	a := New()
 	a.server = newServer(a)
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 
 	pregas := WrapGas(func(c *Context) error { return c.String("pregas") })
@@ -49,7 +49,7 @@ func TestAirPrecontain(t *testing.T) {
 func TestAirContain(t *testing.T) {
 	a := New()
 	a.server = newServer(a)
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 
 	gas := WrapGas(func(c *Context) error { return c.String("gas") })
@@ -63,61 +63,61 @@ func TestAirMethods(t *testing.T) {
 	a := New()
 	a.server = newServer(a)
 	path := "/methods"
-	req, _ := http.NewRequest(GET, path, nil)
+	req, _ := http.NewRequest("GET", path, nil)
 	rec := httptest.NewRecorder()
 
-	a.GET(path, func(c *Context) error { return c.String(GET) })
-	a.HEAD(path, func(c *Context) error { return c.String(HEAD) })
-	a.POST(path, func(c *Context) error { return c.String(POST) })
-	a.PUT(path, func(c *Context) error { return c.String(PUT) })
-	a.PATCH(path, func(c *Context) error { return c.String(PATCH) })
-	a.DELETE(path, func(c *Context) error { return c.String(DELETE) })
-	a.CONNECT(path, func(c *Context) error { return c.String(CONNECT) })
-	a.OPTIONS(path, func(c *Context) error { return c.String(OPTIONS) })
-	a.TRACE(path, func(c *Context) error { return c.String(TRACE) })
+	a.GET(path, func(c *Context) error { return c.String("GET") })
+	a.HEAD(path, func(c *Context) error { return c.String("HEAD") })
+	a.POST(path, func(c *Context) error { return c.String("POST") })
+	a.PUT(path, func(c *Context) error { return c.String("PUT") })
+	a.PATCH(path, func(c *Context) error { return c.String("PATCH") })
+	a.DELETE(path, func(c *Context) error { return c.String("DELETE") })
+	a.CONNECT(path, func(c *Context) error { return c.String("CONNECT") })
+	a.OPTIONS(path, func(c *Context) error { return c.String("OPTIONS") })
+	a.TRACE(path, func(c *Context) error { return c.String("TRACE") })
 
 	a.server.ServeHTTP(rec, req)
-	assert.Equal(t, GET, rec.Body.String())
+	assert.Equal(t, "GET", rec.Body.String())
 
-	req.Method = GET
+	req.Method = "GET"
 	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
-	assert.Equal(t, GET, rec.Body.String())
+	assert.Equal(t, "GET", rec.Body.String())
 
-	req.Method = POST
+	req.Method = "POST"
 	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
-	assert.Equal(t, POST, rec.Body.String())
+	assert.Equal(t, "POST", rec.Body.String())
 
-	req.Method = PUT
+	req.Method = "PUT"
 	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
-	assert.Equal(t, PUT, rec.Body.String())
+	assert.Equal(t, "PUT", rec.Body.String())
 
-	req.Method = PATCH
+	req.Method = "PATCH"
 	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
-	assert.Equal(t, PATCH, rec.Body.String())
+	assert.Equal(t, "PATCH", rec.Body.String())
 
-	req.Method = DELETE
+	req.Method = "DELETE"
 	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
-	assert.Equal(t, DELETE, rec.Body.String())
+	assert.Equal(t, "DELETE", rec.Body.String())
 
-	req.Method = CONNECT
+	req.Method = "CONNECT"
 	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
-	assert.Equal(t, CONNECT, rec.Body.String())
+	assert.Equal(t, "CONNECT", rec.Body.String())
 
-	req.Method = OPTIONS
+	req.Method = "OPTIONS"
 	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
-	assert.Equal(t, OPTIONS, rec.Body.String())
+	assert.Equal(t, "OPTIONS", rec.Body.String())
 
-	req.Method = TRACE
+	req.Method = "TRACE"
 	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
-	assert.Equal(t, TRACE, rec.Body.String())
+	assert.Equal(t, "TRACE", rec.Body.String())
 }
 
 func TestAirStatic(t *testing.T) {
@@ -126,7 +126,7 @@ func TestAirStatic(t *testing.T) {
 	prefix := "/air"
 	fn := "air.go"
 	b, _ := ioutil.ReadFile(fn)
-	req, _ := http.NewRequest(GET, prefix+"/"+fn, nil)
+	req, _ := http.NewRequest("GET", prefix+"/"+fn, nil)
 	rec := httptest.NewRecorder()
 
 	a.Static(prefix, ".")
@@ -136,7 +136,7 @@ func TestAirStatic(t *testing.T) {
 
 	fn = "air_test.go"
 	b, _ = ioutil.ReadFile(fn)
-	req, _ = http.NewRequest(GET, prefix+"/"+fn, nil)
+	req, _ = http.NewRequest("GET", prefix+"/"+fn, nil)
 	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
 	assert.Equal(t, b, rec.Body.Bytes())
@@ -148,7 +148,7 @@ func TestAirFile(t *testing.T) {
 	path := "/air"
 	fn := "air.go"
 	b, _ := ioutil.ReadFile(fn)
-	req, _ := http.NewRequest(GET, path, nil)
+	req, _ := http.NewRequest("GET", path, nil)
 	rec := httptest.NewRecorder()
 
 	a.File(path, fn)
@@ -351,7 +351,7 @@ func TestAirWrapHandler(t *testing.T) {
 	c := a.contextPool.Get().(*Context)
 	h := WrapHandler(&httpHandler{})
 
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 
 	c.feed(req, rec)
@@ -371,7 +371,7 @@ func TestAirDefaultHTTPErrorHandler(t *testing.T) {
 	a.Config.DebugMode = true
 	c := a.contextPool.Get().(*Context)
 
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 
 	c.feed(req, rec)
@@ -384,7 +384,7 @@ func TestAirDefaultHTTPErrorHandler(t *testing.T) {
 
 	c = a.contextPool.Get().(*Context)
 
-	req, _ = http.NewRequest(GET, "/", nil)
+	req, _ = http.NewRequest("GET", "/", nil)
 	rec = httptest.NewRecorder()
 
 	c.feed(req, rec)
