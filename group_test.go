@@ -20,7 +20,7 @@ func TestGroupContain(t *testing.T) {
 
 	g.GET("/", func(*Context) error { return nil })
 
-	req, _ := http.NewRequest(GET, "/group", nil)
+	req, _ := http.NewRequest("GET", "/group", nil)
 	rec := httptest.NewRecorder()
 
 	a.server.ServeHTTP(rec, req)
@@ -55,7 +55,7 @@ func TestGroupStatic(t *testing.T) {
 	g.Static(secondPrefix, ".")
 
 	b, _ := ioutil.ReadFile(fn)
-	req, _ := http.NewRequest(GET, prefix+secondPrefix+"/"+fn, nil)
+	req, _ := http.NewRequest("GET", prefix+secondPrefix+"/"+fn, nil)
 	rec := httptest.NewRecorder()
 
 	a.server.ServeHTTP(rec, req)
@@ -64,7 +64,7 @@ func TestGroupStatic(t *testing.T) {
 	fn = "air_test.go"
 
 	b, _ = ioutil.ReadFile(fn)
-	req, _ = http.NewRequest(GET, prefix+secondPrefix+"/"+fn, nil)
+	req, _ = http.NewRequest("GET", prefix+secondPrefix+"/"+fn, nil)
 	rec = httptest.NewRecorder()
 
 	a.server.ServeHTTP(rec, req)
@@ -85,7 +85,7 @@ func TestGroupFile(t *testing.T) {
 	sg.File(path, fn)
 
 	b, _ := ioutil.ReadFile(fn)
-	req, _ := http.NewRequest(GET, prefix+secondPrefix+path, nil)
+	req, _ := http.NewRequest("GET", prefix+secondPrefix+path, nil)
 	rec := httptest.NewRecorder()
 
 	a.server.ServeHTTP(rec, req)

@@ -35,47 +35,47 @@ func (g *Group) Contain(gases ...Gas) {
 
 // GET implements the `Air#GET()`.
 func (g *Group) GET(path string, h Handler, gases ...Gas) {
-	g.add(GET, path, h, gases...)
+	g.add("GET", path, h, gases...)
 }
 
 // HEAD implements the `Air#HEAD()`.
 func (g *Group) HEAD(path string, h Handler, gases ...Gas) {
-	g.add(HEAD, path, h, gases...)
+	g.add("HEAD", path, h, gases...)
 }
 
 // POST implements the `Air#POST()`.
 func (g *Group) POST(path string, h Handler, gases ...Gas) {
-	g.add(POST, path, h, gases...)
+	g.add("POST", path, h, gases...)
 }
 
 // PUT implements the `Air#PUT()`.
 func (g *Group) PUT(path string, h Handler, gases ...Gas) {
-	g.add(PUT, path, h, gases...)
+	g.add("PUT", path, h, gases...)
 }
 
 // PATCH implements the `Air#PATCH()`.
 func (g *Group) PATCH(path string, h Handler, gases ...Gas) {
-	g.add(PATCH, path, h, gases...)
+	g.add("PATCH", path, h, gases...)
 }
 
 // DELETE implements the `Air#DELETE()`.
 func (g *Group) DELETE(path string, h Handler, gases ...Gas) {
-	g.add(DELETE, path, h, gases...)
+	g.add("DELETE", path, h, gases...)
 }
 
 // CONNECT implements the `Air#CONNECT()`.
 func (g *Group) CONNECT(path string, h Handler, gases ...Gas) {
-	g.add(CONNECT, path, h, gases...)
+	g.add("CONNECT", path, h, gases...)
 }
 
 // OPTIONS implements the `Air#OPTIONS()`.
 func (g *Group) OPTIONS(path string, h Handler, gases ...Gas) {
-	g.add(OPTIONS, path, h, gases...)
+	g.add("OPTIONS", path, h, gases...)
 }
 
 // TRACE implements the `Air#TRACE()`.
 func (g *Group) TRACE(path string, h Handler, gases ...Gas) {
-	g.add(TRACE, path, h, gases...)
+	g.add("TRACE", path, h, gases...)
 }
 
 // Static implements the `Air#Static()`.

@@ -15,13 +15,13 @@ func TestBinderBindError(t *testing.T) {
 	b := a.Binder.(*binder)
 	c := NewContext(a)
 
-	req, _ := http.NewRequest(GET, "/", nil)
+	req, _ := http.NewRequest("GET", "/", nil)
 
 	c.feed(req, nil)
 
 	assert.Error(t, b.Bind(&Map{}, c.Request))
 
-	req, _ = http.NewRequest(POST, "/", nil)
+	req, _ = http.NewRequest("POST", "/", nil)
 
 	c.reset()
 	c.feed(req, nil)
@@ -29,7 +29,7 @@ func TestBinderBindError(t *testing.T) {
 	assert.Error(t, b.Bind(&Map{}, c.Request))
 
 	req, _ = http.NewRequest(
-		POST,
+		"POST",
 		"/",
 		strings.NewReader("{\"num\":999e999}"),
 	)
@@ -40,7 +40,7 @@ func TestBinderBindError(t *testing.T) {
 
 	assert.Error(t, b.Bind(&Map{}, c.Request))
 
-	req, _ = http.NewRequest(POST, "/", strings.NewReader("{,}"))
+	req, _ = http.NewRequest("POST", "/", strings.NewReader("{,}"))
 	req.Header.Set("Content-Type", "application/json")
 
 	c.reset()
@@ -51,7 +51,7 @@ func TestBinderBindError(t *testing.T) {
 	x := xml.Header + `<Info>
 		<Num>1</Num>`
 
-	req, _ = http.NewRequest(POST, "/", strings.NewReader(x))
+	req, _ = http.NewRequest("POST", "/", strings.NewReader(x))
 	req.Header.Set("Content-Type", "application/xml")
 
 	c.reset()
@@ -65,7 +65,7 @@ func TestBinderBindError(t *testing.T) {
 		<Num>foobar</Num>
 	</Info>`
 
-	req, _ = http.NewRequest(POST, "/", strings.NewReader(x))
+	req, _ = http.NewRequest("POST", "/", strings.NewReader(x))
 	req.Header.Set("Content-Type", "application/xml")
 
 	c.reset()
