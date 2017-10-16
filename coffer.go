@@ -172,17 +172,17 @@ func (c *coffer) watchAssets() {
 func mimeTypeByExt(ext string) string {
 	switch ext {
 	case ".html":
-		return MIMETextHTML
+		return "text/html"
 	case ".css":
-		return MIMETextCSS
+		return "text/css"
 	case ".js":
-		return MIMETextJavaScript
+		return "text/javascript"
 	case ".json":
-		return MIMEApplicationJSON
+		return "application/json"
 	case ".xml":
-		return MIMETextXML
+		return "text/xml"
 	case ".svg":
-		return MIMEImageSVGXML
+		return "image/svg+xml"
 	}
 	return ""
 }

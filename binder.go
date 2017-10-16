@@ -50,7 +50,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 	err = ErrUnsupportedMediaType
 
 	switch {
-	case strings.HasPrefix(ctype, MIMEApplicationJSON):
+	case strings.HasPrefix(ctype, "application/json"):
 		if err = json.NewDecoder(req.Body).Decode(i); err != nil {
 			if ute, ok := err.(*json.UnmarshalTypeError); ok {
 				err = NewHTTPError(
@@ -81,7 +81,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 				)
 			}
 		}
-	case strings.HasPrefix(ctype, MIMEApplicationXML):
+	case strings.HasPrefix(ctype, "application/xml"):
 		if err = xml.NewDecoder(req.Body).Decode(i); err != nil {
 			if ute, ok := err.(*xml.UnsupportedTypeError); ok {
 				err = NewHTTPError(
@@ -110,8 +110,8 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 				)
 			}
 		}
-	case strings.HasPrefix(ctype, MIMEApplicationXWWWFormURLEncoded),
-		strings.HasPrefix(ctype, MIMEMultipartFormData):
+	case strings.HasPrefix(ctype, "application/x-www-form-urlencoded"),
+		strings.HasPrefix(ctype, "multipart/form-data"):
 		if err = req.ParseForm(); err == nil {
 			if err = b.bindData(i, req.Form, "form"); err != nil {
 				err = NewHTTPError(

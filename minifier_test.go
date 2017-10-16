@@ -17,27 +17,27 @@ func TestMinifierInit(t *testing.T) {
 	a := New()
 	a.Minifier.Init()
 
-	b, err := a.Minifier.Minify(MIMETextHTML, []byte("<air></air>"))
+	b, err := a.Minifier.Minify("text/html", []byte("<air></air>"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify(MIMETextCSS, []byte(".air{}"))
+	b, err = a.Minifier.Minify("text/css", []byte(".air{}"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify(MIMETextJavaScript, []byte("alert('air')"))
+	b, err = a.Minifier.Minify("text/javascript", []byte("alert('air')"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify(MIMEApplicationJSON, []byte("{}"))
+	b, err = a.Minifier.Minify("application/json", []byte("{}"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify(MIMETextXML, []byte("<air></air>"))
+	b, err = a.Minifier.Minify("text/xml", []byte("<air></air>"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify(MIMEImageSVGXML, []byte("<air></air>"))
+	b, err = a.Minifier.Minify("image/svg+xml", []byte("<air></air>"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 }
@@ -64,25 +64,25 @@ func TestMinifierMinify(t *testing.T) {
 	png.Encode(p, m)
 	p.Close()
 
-	b, err := a.Minifier.Minify(MIMEImageJPEG, []byte("encoding error"))
+	b, err := a.Minifier.Minify("image/jpeg", []byte("encoding error"))
 	assert.Nil(t, b)
 	assert.Error(t, err)
 
 	b, _ = ioutil.ReadFile(j.Name())
-	b, err = a.Minifier.Minify(MIMEImageJPEG, b)
+	b, err = a.Minifier.Minify("image/jpeg", b)
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify(MIMEImagePNG, []byte("encoding error"))
+	b, err = a.Minifier.Minify("image/png", []byte("encoding error"))
 	assert.Nil(t, b)
 	assert.Error(t, err)
 
 	b, _ = ioutil.ReadFile(p.Name())
-	b, err = a.Minifier.Minify(MIMEImagePNG, b)
+	b, err = a.Minifier.Minify("image/png", b)
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify(MIMETextCSS, []byte("error"))
+	b, err = a.Minifier.Minify("text/css", []byte("error"))
 	assert.Nil(t, b)
 	assert.Error(t, err)
 

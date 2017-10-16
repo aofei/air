@@ -46,19 +46,19 @@ func newMinifier() *minifier {
 
 // Init implements the `Minifier#Init()`.
 func (m *minifier) Init() error {
-	m.m.Add(MIMETextHTML, &html.Minifier{})
+	m.m.Add("text/html", &html.Minifier{})
 
-	m.m.Add(MIMETextCSS, &css.Minifier{
+	m.m.Add("text/css", &css.Minifier{
 		Decimals: -1,
 	})
 
-	m.m.Add(MIMETextJavaScript, &js.Minifier{})
+	m.m.Add("text/javascript", &js.Minifier{})
 
-	m.m.Add(MIMEApplicationJSON, &json.Minifier{})
+	m.m.Add("application/json", &json.Minifier{})
 
-	m.m.Add(MIMETextXML, &xml.Minifier{})
+	m.m.Add("text/xml", &xml.Minifier{})
 
-	m.m.Add(MIMEImageSVGXML, &svg.Minifier{
+	m.m.Add("image/svg+xml", &svg.Minifier{
 		Decimals: -1,
 	})
 
@@ -68,15 +68,12 @@ func (m *minifier) Init() error {
 // Minify implements the `Minifier#Minify()`.
 func (m *minifier) Minify(mimeType string, b []byte) ([]byte, error) {
 	switch mimeType {
-	case MIMEImageJPEG:
+	case "image/jpeg":
 		return m.minifyJPEG(b)
-	case MIMEImagePNG:
+	case "image/png":
 		return m.minifyPNG(b)
-	case MIMETextHTML, MIMETextCSS, MIMETextJavaScript,
-		MIMEApplicationJSON, MIMETextXML, MIMEImageSVGXML:
-		return m.minifyOthers(mimeType, b)
 	}
-	return nil, errors.New("unsupported mime type")
+	return m.minifyOthers(mimeType, b)
 }
 
 // minifyJPEG minifies the b by using the "image/jpeg".
@@ -113,7 +110,9 @@ func (m *minifier) minifyPNG(b []byte) ([]byte, error) {
 // "github.com/tdewolff/minify".
 func (m *minifier) minifyOthers(mimeType string, b []byte) ([]byte, error) {
 	buf := &bytes.Buffer{}
-	if err := m.m.Minify(mimeType, buf, bytes.NewReader(b)); err != nil {
+	if err := m.m.Minify(mimeType, buf, bytes.NewReader(b)); err == minify.ErrNotExist {
+		return nil, errors.New("unsupported mime type")
+	} else if err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil

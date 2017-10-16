@@ -112,7 +112,7 @@ func (r *renderer) Init() error {
 		}
 
 		if c.TemplateMinified {
-			b, err = r.air.Minifier.Minify(MIMETextHTML, b)
+			b, err = r.air.Minifier.Minify("text/html", b)
 			if err != nil {
 				return err
 			}

@@ -72,25 +72,6 @@ var methods = [...]string{
 	TRACE,
 }
 
-// MIME types
-const (
-	MIMEApplicationJSON               = "application/json"
-	MIMEApplicationJavaScript         = "application/javascript"
-	MIMEApplicationXML                = "application/xml"
-	MIMEApplicationXWWWFormURLEncoded = "application/x-www-form-urlencoded"
-	MIMEImageJPEG                     = "image/jpeg"
-	MIMEImagePNG                      = "image/png"
-	MIMEImageSVGXML                   = "image/svg+xml"
-	MIMEMultipartFormData             = "multipart/form-data"
-	MIMETextCSS                       = "text/css"
-	MIMETextHTML                      = "text/html"
-	MIMETextJavaScript                = "text/javascript"
-	MIMETextPlain                     = "text/plain"
-	MIMETextXML                       = "text/xml"
-
-	CharsetUTF8 = "; charset=utf-8"
-)
-
 // HTTP headers
 const (
 	HeaderAccept                          = "Accept"

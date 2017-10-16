@@ -95,7 +95,7 @@ func TestRequestBind(t *testing.T) {
 	assert.Equal(t, *raw, *i)
 
 	req, _ = http.NewRequest(POST, "/", strings.NewReader(vs.Encode()))
-	req.Header.Add(HeaderContentType, MIMEApplicationXWWWFormURLEncoded)
+	req.Header.Add(HeaderContentType, "application/x-www-form-urlencoded")
 
 	c.reset()
 	c.feed(req, nil)
@@ -106,7 +106,7 @@ func TestRequestBind(t *testing.T) {
 	assert.Equal(t, *raw, *i)
 
 	req, _ = http.NewRequest(POST, "/", strings.NewReader(string(j)))
-	req.Header.Add(HeaderContentType, MIMEApplicationJSON)
+	req.Header.Add(HeaderContentType, "application/json")
 
 	c.feed(req, nil)
 
@@ -116,7 +116,7 @@ func TestRequestBind(t *testing.T) {
 	assert.Equal(t, *raw, *i)
 
 	req, _ = http.NewRequest(POST, "/", strings.NewReader(string(x)))
-	req.Header.Add(HeaderContentType, MIMEApplicationXML)
+	req.Header.Add(HeaderContentType, "application/xml")
 
 	c.feed(req, nil)
 
@@ -130,7 +130,7 @@ func TestRequestFormFile(t *testing.T) {
 	a := New()
 	c := NewContext(a)
 	req, _ := http.NewRequest(POST, "/", nil)
-	req.Header.Add(HeaderContentType, MIMEMultipartFormData)
+	req.Header.Add(HeaderContentType, "multipart/form-data")
 	c.feed(req, nil)
 	f, fh, err := c.FormFile("air")
 	assert.Nil(t, f)
@@ -172,7 +172,7 @@ func TestRequestOthers(t *testing.T) {
 		"/?"+vs.Encode(),
 		strings.NewReader(vs.Encode()),
 	)
-	req.Header.Add(HeaderContentType, MIMEApplicationXWWWFormURLEncoded)
+	req.Header.Add(HeaderContentType, "application/x-www-form-urlencoded")
 
 	c.feed(req, nil)
 
