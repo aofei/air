@@ -168,10 +168,6 @@ func (r *router) insert(
 	nk nodeKind,
 	paramNames []string,
 ) {
-	if l := len(paramNames); l > r.air.paramCap {
-		r.air.paramCap = l
-	}
-
 	cn := r.tree // Current node as root
 
 	var (
@@ -274,22 +270,22 @@ func (r *router) insert(
 	}
 }
 
-// route routes a handler registered for the method and the path. It also parses
-// the HTTP URL for the path params and load them into the c.
-func (r *router) route(method, path string, c *Context) {
+// route returns a handler registered for the req.
+func (r *router) route(req *Request) Handler {
 	cn := r.tree // Current node as root
 
 	var (
-		s   = pathClean(path) // Search
-		nn  *node             // Next node
-		nk  nodeKind          // Next kind
-		sn  *node             // Saved node
-		ss  string            // Saved search
-		sl  int               // Search length
-		pl  int               // Prefix length
-		ll  int               // LCP length
-		max int               // Max number of sl and pl
-		si  int               // Start index
+		s   = pathClean(req.URL.Path) // Search
+		nn  *node                     // Next node
+		nk  nodeKind                  // Next kind
+		sn  *node                     // Saved node
+		ss  string                    // Saved search
+		sl  int                       // Search length
+		pl  int                       // Prefix length
+		ll  int                       // LCP length
+		max int                       // Max number of sl and pl
+		si  int                       // Start index
+		pi  int                       // Param index
 	)
 
 	// Search order: static > param > any
@@ -351,7 +347,8 @@ func (r *router) route(method, path string, c *Context) {
 			for si = 0; si < len(s) && s[si] != '/'; si++ {
 			}
 
-			c.ParamValues = append(c.ParamValues, unescape(s[:si]))
+			req.PathParams[cn.paramNames[pi]] = unescape(s[:si])
+			pi++
 			s = s[si:]
 
 			continue
@@ -360,19 +357,14 @@ func (r *router) route(method, path string, c *Context) {
 		// Any node
 	Any:
 		if cn = cn.childByKind(anyKind); cn != nil {
-			if hasLastSlash(path) {
-				si = len(path) - 1
-				for ; si > 0 && path[si] == '/'; si-- {
+			if hasLastSlash(req.URL.Path) {
+				si = len(req.URL.Path) - 1
+				for ; si > 0 && req.URL.Path[si] == '/'; si-- {
 				}
-				s += path[si+1:]
+				s += req.URL.Path[si+1:]
 			}
 
-			pv := unescape(s)
-			if len(c.ParamValues) < len(cn.paramNames) {
-				c.ParamValues = append(c.ParamValues, pv)
-			} else {
-				c.ParamValues[len(cn.paramNames)-1] = pv
-			}
+			req.PathParams["*"] = unescape(s)
 
 			break
 		}
@@ -392,18 +384,16 @@ func (r *router) route(method, path string, c *Context) {
 			}
 		}
 
-		return
+		return NotFoundHandler
 	}
 
-	if c.Handler = cn.handlers[method]; c.Handler != nil {
-		c.ParamNames = cn.paramNames
+	if handler := cn.handlers[req.Method]; handler != nil {
+		return handler
 	} else if len(cn.handlers) != 0 {
-		c.Handler = MethodNotAllowedHandler
-	} else {
-		c.Handler = NotFoundHandler
+		return MethodNotAllowedHandler
 	}
 
-	return
+	return NotFoundHandler
 }
 
 // hasLastSlash reports whether the s has the last '/'.

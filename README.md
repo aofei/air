@@ -31,7 +31,6 @@ you one thing: **it can serve properly.**
 	* `TRACE`
 * Router
 	* Based on the Radix Tree.
-	* Zero dynamic memory allocation.
 	* Has a good inspection mechanism.
 	* Group routes support.
 * Gas (also called middleware)
@@ -49,58 +48,45 @@ you one thing: **it can serve properly.**
 	* For everything.
 	* Configuration file support by using the [toml](https://github.com/BurntSushi/toml).
 * Logger
-	* Customizable.
-	* Default implementation:
-		* Powered by the Go `text/template`.
+	* Powered by the Go `text/template`.
 * Server
-	* Customizable.
-	* Default implementation:
-	  * HTTP/2 support.
-	  * SSL/TLS support.
-	  * Gracefully shutdown support.
-	  * Powered by the Go `net/http`.
+	* HTTP/2 support.
+	* SSL/TLS support.
+	* Gracefully shutdown support.
+	* Powered by the Go `net/http`.
 * Binder
-	* Customizable.
-	* Default implementation:
-		* Based on the `Content-Type` header.
-		* Supported MIME types:
-			* `application/json`.
-			* `application/xml`.
-			* `application/x-www-form-urlencoded`.
+	* Based on the `Content-Type` header.
+	* Supported MIME types:
+		* `application/json`.
+		* `application/xml`.
+		* `application/x-www-form-urlencoded`.
 * Minifier
-	* Customizable.
-	* Default implementation:
-		* Supported MIME types:
-			* `text/html`
-			* `text/css`
-			* `text/javascript`
-			* `application/json`
-			* `text/xml`
-			* `image/jpeg`
-			* `image/png`
-			* `image/svg+xml`
-		* Powered by the Go `image` and the [minify](https://github.com/tdewolff/minify).
+	* Supported MIME types:
+		* `text/html`
+		* `text/css`
+		* `text/javascript`
+		* `application/json`
+		* `text/xml`
+		* `image/jpeg`
+		* `image/png`
+		* `image/svg+xml`
+	* Powered by the Go `image` and the [minify](https://github.com/tdewolff/minify).
 * Renderer
-	* Customizable.
-	* Default implementation:
-		* Rich template functions.
-		* Hot update support by using the [fsnotify](https://github.com/fsnotify/fsnotify).
-		* Powered by the Go `html/template`.
+	* Rich template functions.
+	* Hot update support by using the [fsnotify](https://github.com/fsnotify/fsnotify).
+	* Powered by the Go `html/template`.
 * Coffer
-	* Customizable.
 	* Accesses binary asset files by using the runtime memory.
 	* Reduces the hard disk I/O and significantly improves the performance of the `Response#File()`.
-	* Default implementation:
-		* Asset file minimization:
-			* `.html`
-			* `.css`
-			* `.js`
-			* `.json`
-			* `.xml`
-			* `.svg`
-		* Hot update support by using the [fsnotify](https://github.com/fsnotify/fsnotify).
-* HTTPError
-	* Customizable.
+	* Asset file minimization:
+		* `.html`
+		* `.css`
+		* `.js`
+		* `.json`
+		* `.xml`
+		* `.svg`
+	* Hot update support by using the [fsnotify](https://github.com/fsnotify/fsnotify).
+* Error
 	* Centralized handling.
 
 ## Installation
@@ -113,7 +99,7 @@ $ go get github.com/sheng/air
 
 done.
 
-> The only requirement is the [Go](https://golang.org/dl/), at least v1.9.
+> The only requirement is the [Go](https://golang.org/dl/), at least v1.8.
 
 ## Hello, 世界
 
@@ -126,12 +112,10 @@ import "github.com/sheng/air"
 
 func main() {
 	a := air.New()
-	a.GET("/", homeHandler)
+	a.GET("/", func(req *Request, res *Response error {
+		return res.String("Hello, 世界")
+	})
 	a.Serve()
-}
-
-func homeHandler(c *air.Context) error {
-	return c.String("Hello, 世界")
 }
 ```
 

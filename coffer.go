@@ -10,65 +10,13 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-type (
-	// Coffer is used to provide an `Asset()` method for an `Air` instance
-	// for accesses binary asset files by using the runtime memory.
-	Coffer interface {
-		// Init initializes the `Coffer`. It will be called in the
-		// `Air#Serve()`.
-		Init() error
+// coffer is used to provide an `asset()` method for an `Air` instance
+// for accesses binary asset files by using the runtime memory.
+type coffer struct {
+	air *Air
 
-		// Asset returns an `Asset` in the `Coffer` for the provided
-		// name.
-		//
-		// **Please use the `filepath.Abs()` to process the name before
-		// calling.**
-		Asset(name string) *Asset
-	}
-
-	// Asset is a binary asset file.
-	Asset struct {
-		name    string
-		modTime time.Time
-		reader  *bytes.Reader
-	}
-
-	// coffer implements the `Coffer` by using the `map[string]*Asset`.
-	coffer struct {
-		air *Air
-
-		assets  map[string]*Asset
-		watcher *fsnotify.Watcher
-	}
-)
-
-// NewAsset returns a pointer of a new instance of the `Asset`.
-func NewAsset(name string, modTime time.Time, content []byte) *Asset {
-	return &Asset{
-		name:    name,
-		modTime: modTime,
-		reader:  bytes.NewReader(content),
-	}
-}
-
-// Name returns the name of the a.
-func (a *Asset) Name() string {
-	return a.name
-}
-
-// ModTime returns the modTime of the a.
-func (a *Asset) ModTime() time.Time {
-	return a.modTime
-}
-
-// Read implements the `io.Reader`.
-func (a *Asset) Read(b []byte) (int, error) {
-	return a.reader.Read(b)
-}
-
-// Seek implements the `io.Seeker`.
-func (a *Asset) Seek(offset int64, whence int) (int64, error) {
-	return a.reader.Seek(offset, whence)
+	assets  map[string]*Asset
+	watcher *fsnotify.Watcher
 }
 
 // newCoffer returns a pointer of a new instance of the `coffer`.
@@ -79,22 +27,20 @@ func newCoffer(a *Air) *coffer {
 	}
 }
 
-// Init implements the `Coffer#Init()` by using the `map[string]*Asset`.
-func (c *coffer) Init() error {
-	cfg := c.air.Config
-
-	if !cfg.CofferEnabled {
+// init initializes the `Coffer`. It will be called in the `Air#Serve()`.
+func (c *coffer) init() error {
+	if !c.air.CofferEnabled {
 		return nil
-	} else if _, err := os.Stat(cfg.AssetRoot); os.IsNotExist(err) {
+	} else if _, err := os.Stat(c.air.AssetRoot); os.IsNotExist(err) {
 		return nil
 	}
 
-	ar, err := filepath.Abs(cfg.AssetRoot)
+	ar, err := filepath.Abs(c.air.AssetRoot)
 	if err != nil {
 		return err
 	}
 
-	dirs, files, err := walkFiles(ar, cfg.AssetExts)
+	dirs, files, err := walkFiles(ar, c.air.AssetExts)
 	if err != nil {
 		return err
 	}
@@ -126,9 +72,9 @@ func (c *coffer) Init() error {
 			return err
 		}
 
-		if cfg.MinifierEnabled {
+		if c.air.MinifierEnabled {
 			if mt := mimeTypeByExt(filepath.Ext(file)); mt != "" {
-				b, err = c.air.Minifier.Minify(mt, b)
+				b, err = c.air.minifier.minify(mt, b)
 				if err != nil {
 					return err
 				}
@@ -143,8 +89,10 @@ func (c *coffer) Init() error {
 	return nil
 }
 
-// Asset implements the `Coffer#Asset()` by using the `map[string]*Asset`.
-func (c *coffer) Asset(name string) *Asset {
+// asset returns an `Asset` in the `Coffer` for the provided name.
+//
+// **Please use the `filepath.Abs()` to process the name before calling.**
+func (c *coffer) asset(name string) *Asset {
 	return c.assets[name]
 }
 
@@ -159,7 +107,7 @@ func (c *coffer) watchAssets() {
 				c.watcher.Add(event.Name)
 			}
 
-			if err := c.Init(); err != nil {
+			if err := c.init(); err != nil {
 				c.air.Logger.Error(err)
 			}
 		case err := <-c.watcher.Errors:
@@ -185,4 +133,40 @@ func mimeTypeByExt(ext string) string {
 		return "image/svg+xml"
 	}
 	return ""
+}
+
+// Asset is a binary asset file.
+type Asset struct {
+	name    string
+	modTime time.Time
+	reader  *bytes.Reader
+}
+
+// NewAsset returns a pointer of a new instance of the `Asset`.
+func NewAsset(name string, modTime time.Time, content []byte) *Asset {
+	return &Asset{
+		name:    name,
+		modTime: modTime,
+		reader:  bytes.NewReader(content),
+	}
+}
+
+// Name returns the name of the a.
+func (a *Asset) Name() string {
+	return a.name
+}
+
+// ModTime returns the modTime of the a.
+func (a *Asset) ModTime() time.Time {
+	return a.modTime
+}
+
+// Read implements the `io.Reader`.
+func (a *Asset) Read(b []byte) (int, error) {
+	return a.reader.Read(b)
+}
+
+// Seek implements the `io.Seeker`.
+func (a *Asset) Seek(offset int64, whence int) (int64, error) {
+	return a.reader.Seek(offset, whence)
 }

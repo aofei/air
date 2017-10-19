@@ -6,52 +6,43 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
 )
 
-type (
-	// Binder is used to provide a `Bind()` method for an `Air` instance for
-	// binds an HTTP request body into privided type.
-	Binder interface {
-		// Bind binds the body of the req into the provided type i.
-		Bind(i interface{}, req *Request) error
-	}
-
-	// binder implements the `Binder` based on the "Content-Type" header.
-	binder struct{}
-)
+// binder is used to provide a `Bind()` method for an `Air` instance for
+// binds an HTTP request body into privided type.
+type binder struct{}
 
 // newBinder returns a pointer of a new instance of the `binder`.
 func newBinder() *binder {
 	return &binder{}
 }
 
-// Bind implements the `Binder#Bind()` based on the "Content-Type" header.
-func (b *binder) Bind(i interface{}, req *Request) error {
+// bind binds the body of the req into the provided type i.
+func (b *binder) bind(i interface{}, req *Request) error {
 	if req.Method == "GET" {
-		err := b.bindData(i, req.URL.Query(), "query")
+		err := b.bindData(i, req.QueryParams, "query")
 		if err != nil {
-			err = NewHTTPError(http.StatusBadRequest, err.Error())
+			err = NewError(http.StatusBadRequest, err.Error())
 		}
 		return err
 	} else if req.Body == nil {
-		return NewHTTPError(
+		return NewError(
 			http.StatusBadRequest,
 			"request body can't be empty",
 		)
 	}
 
-	ctype := req.Header.Get("Content-Type")
-	err := error(NewHTTPError(http.StatusUnsupportedMediaType))
+	ctype := req.Headers["Content-Type"]
+	err := error(NewError(http.StatusUnsupportedMediaType))
 
 	switch {
 	case strings.HasPrefix(ctype, "application/json"):
 		if err = json.NewDecoder(req.Body).Decode(i); err != nil {
 			if ute, ok := err.(*json.UnmarshalTypeError); ok {
-				err = NewHTTPError(
+				err = NewError(
 					http.StatusBadRequest,
 					fmt.Sprintf(
 						"unmarshal type error: "+
@@ -63,7 +54,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 					),
 				)
 			} else if se, ok := err.(*json.SyntaxError); ok {
-				err = NewHTTPError(
+				err = NewError(
 					http.StatusBadRequest,
 					fmt.Sprintf(
 						"syntax error: offset=%v, "+
@@ -73,7 +64,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 					),
 				)
 			} else {
-				err = NewHTTPError(
+				err = NewError(
 					http.StatusBadRequest,
 					err.Error(),
 				)
@@ -82,7 +73,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 	case strings.HasPrefix(ctype, "application/xml"):
 		if err = xml.NewDecoder(req.Body).Decode(i); err != nil {
 			if ute, ok := err.(*xml.UnsupportedTypeError); ok {
-				err = NewHTTPError(
+				err = NewError(
 					http.StatusBadRequest,
 					fmt.Sprintf(
 						"unsupported type error: "+
@@ -92,7 +83,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 					),
 				)
 			} else if se, ok := err.(*xml.SyntaxError); ok {
-				err = NewHTTPError(
+				err = NewError(
 					http.StatusBadRequest,
 					fmt.Sprintf(
 						"syntax error: line=%v, "+
@@ -102,7 +93,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 					),
 				)
 			} else {
-				err = NewHTTPError(
+				err = NewError(
 					http.StatusBadRequest,
 					err.Error(),
 				)
@@ -110,13 +101,8 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 		}
 	case strings.HasPrefix(ctype, "application/x-www-form-urlencoded"),
 		strings.HasPrefix(ctype, "multipart/form-data"):
-		if err = req.ParseForm(); err == nil {
-			if err = b.bindData(i, req.Form, "form"); err != nil {
-				err = NewHTTPError(
-					http.StatusBadRequest,
-					err.Error(),
-				)
-			}
+		if err = b.bindData(i, req.FormParams, "form"); err != nil {
+			err = NewError(http.StatusBadRequest, err.Error())
 		}
 	}
 
@@ -124,7 +110,7 @@ func (b *binder) Bind(i interface{}, req *Request) error {
 }
 
 // bindData binds the data into the type ptr with the tag.
-func (b *binder) bindData(ptr interface{}, data url.Values, tag string) error {
+func (b *binder) bindData(ptr interface{}, data map[string]string, tag string) error {
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
 
@@ -177,7 +163,7 @@ func (b *binder) bindData(ptr interface{}, data url.Values, tag string) error {
 			for i := 0; i < numElems; i++ {
 				if err := setWithProperType(
 					sliceOf,
-					inputValue[i],
+					inputValue,
 					slice.Index(i),
 				); err != nil {
 					return err
@@ -188,7 +174,7 @@ func (b *binder) bindData(ptr interface{}, data url.Values, tag string) error {
 		} else {
 			if err := setWithProperType(
 				typeField.Type.Kind(),
-				inputValue[0],
+				inputValue,
 				structField,
 			); err != nil {
 				return err

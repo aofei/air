@@ -3,7 +3,6 @@ package air
 import (
 	"bytes"
 	"errors"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -17,34 +16,49 @@ import (
 func TestAirNew(t *testing.T) {
 	a := New()
 
-	assert.Equal(t, 0, a.paramCap)
+	assert.NotNil(t, a.server)
 	assert.NotNil(t, a.router)
-
-	assert.NotNil(t, a.Config)
+	assert.NotNil(t, a.binder)
+	assert.NotNil(t, a.minifier)
+	assert.NotNil(t, a.renderer)
+	assert.NotNil(t, a.coffer)
 	assert.NotNil(t, a.Logger)
-	assert.NotNil(t, a.Server)
-	assert.NotNil(t, a.Binder)
-	assert.NotNil(t, a.Minifier)
-	assert.NotNil(t, a.Renderer)
-	assert.NotNil(t, a.Coffer)
 }
 
 func TestAirMethods(t *testing.T) {
 	a := New()
-	s := a.Server.(*server)
+	s := a.server
 	path := "/methods"
 	req, _ := http.NewRequest("GET", path, nil)
 	rec := httptest.NewRecorder()
 
-	a.GET(path, func(c *Context) error { return c.String("GET") })
-	a.HEAD(path, func(c *Context) error { return c.String("HEAD") })
-	a.POST(path, func(c *Context) error { return c.String("POST") })
-	a.PUT(path, func(c *Context) error { return c.String("PUT") })
-	a.PATCH(path, func(c *Context) error { return c.String("PATCH") })
-	a.DELETE(path, func(c *Context) error { return c.String("DELETE") })
-	a.CONNECT(path, func(c *Context) error { return c.String("CONNECT") })
-	a.OPTIONS(path, func(c *Context) error { return c.String("OPTIONS") })
-	a.TRACE(path, func(c *Context) error { return c.String("TRACE") })
+	a.GET(path, func(req *Request, res *Response) error {
+		return res.String("GET")
+	})
+	a.HEAD(path, func(req *Request, res *Response) error {
+		return res.String("HEAD")
+	})
+	a.POST(path, func(req *Request, res *Response) error {
+		return res.String("POST")
+	})
+	a.PUT(path, func(req *Request, res *Response) error {
+		return res.String("PUT")
+	})
+	a.PATCH(path, func(req *Request, res *Response) error {
+		return res.String("PATCH")
+	})
+	a.DELETE(path, func(req *Request, res *Response) error {
+		return res.String("DELETE")
+	})
+	a.CONNECT(path, func(req *Request, res *Response) error {
+		return res.String("CONNECT")
+	})
+	a.OPTIONS(path, func(req *Request, res *Response) error {
+		return res.String("OPTIONS")
+	})
+	a.TRACE(path, func(req *Request, res *Response) error {
+		return res.String("TRACE")
+	})
 
 	s.ServeHTTP(rec, req)
 	assert.Equal(t, "GET", rec.Body.String())
@@ -92,7 +106,7 @@ func TestAirMethods(t *testing.T) {
 
 func TestAirStatic(t *testing.T) {
 	a := New()
-	s := a.Server.(*server)
+	s := a.server
 	prefix := "/air"
 	fn := "air.go"
 	b, _ := ioutil.ReadFile(fn)
@@ -114,7 +128,7 @@ func TestAirStatic(t *testing.T) {
 
 func TestAirFile(t *testing.T) {
 	a := New()
-	s := a.Server.(*server)
+	s := a.server
 	path := "/air"
 	fn := "air.go"
 	b, _ := ioutil.ReadFile(fn)
@@ -138,51 +152,6 @@ func TestAirServe(t *testing.T) {
 
 	<-ok
 	assert.NoError(t, a.Close())
-}
-
-type badMinifier struct{}
-
-func (*badMinifier) Init() error {
-	return errors.New("badMinifier")
-}
-
-func (*badMinifier) Minify(mimeType string, b []byte) ([]byte, error) {
-	return nil, nil
-}
-
-type badRenderer struct{}
-
-func (*badRenderer) SetTemplateFunc(name string, f interface{}) {}
-
-func (*badRenderer) Init() error {
-	return errors.New("badRenderer")
-}
-
-func (*badRenderer) Render(w io.Writer, templateName string, data Map) error {
-	return nil
-}
-
-type badCoffer struct{}
-
-func (*badCoffer) Init() error {
-	return errors.New("badCoffer")
-}
-
-func (*badCoffer) Asset(name string) *Asset {
-	return nil
-}
-
-func (*badCoffer) SetAsset(a *Asset) {}
-
-func TestAirServePanics(t *testing.T) {
-	a := New()
-
-	a.Config.LoggerEnabled = true
-	a.Minifier = &badMinifier{}
-	a.Renderer = &badRenderer{}
-	a.Coffer = &badCoffer{}
-
-	assert.Panics(t, func() { a.Serve() })
 }
 
 func TestAirServeTLS(t *testing.T) {
@@ -265,8 +234,8 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	a := New()
 	ok := make(chan struct{})
 
-	a.Config.TLSCertFile = c.Name()
-	a.Config.TLSKeyFile = k.Name()
+	a.TLSCertFile = c.Name()
+	a.TLSKeyFile = k.Name()
 
 	go func() {
 		close(ok)
@@ -282,8 +251,8 @@ func TestAirServeDebugMode(t *testing.T) {
 	buf := &bytes.Buffer{}
 	ok := make(chan struct{})
 
-	a.Config.DebugMode = true
-	a.Logger.SetOutput(buf)
+	a.DebugMode = true
+	a.Logger.Output = buf
 
 	go func() {
 		close(ok)
@@ -292,7 +261,7 @@ func TestAirServeDebugMode(t *testing.T) {
 
 	<-ok
 	time.Sleep(time.Millisecond) // Wait for logger
-	assert.Equal(t, true, a.Config.LoggerEnabled)
+	assert.Equal(t, true, a.LoggerEnabled)
 	assert.NotEmpty(t, buf.String())
 	assert.NoError(t, a.Close())
 }
@@ -303,22 +272,12 @@ func (*httpHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 }
 
-func TestAirWrapHandler(t *testing.T) {
-	a := New()
-	c := NewContext(a)
-	h := WrapHandler(&httpHandler{})
-
-	req, _ := http.NewRequest("GET", "/", nil)
-	rec := httptest.NewRecorder()
-
-	c.feed(req, rec)
-	h(c)
-
-	assert.Equal(t, http.StatusOK, rec.Code)
-}
-
 func TestAirWrapGasError(t *testing.T) {
-	g := WrapGas(func(*Context) error { return errors.New("gas error") })
-	h := g(func(*Context) error { return nil })
-	assert.Equal(t, "gas error", h(nil).Error())
+	g := WrapGas(func(*Request, *Response) error {
+		return errors.New("gas error")
+	})
+	h := g(func(*Request, *Response) error {
+		return nil
+	})
+	assert.Equal(t, "gas error", h(nil, nil).Error())
 }
