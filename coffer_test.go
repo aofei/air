@@ -107,11 +107,11 @@ Hello, I am the Air.
 	txtFile.WriteString(txt)
 
 	a := New()
-	a.Minifier.Init()
+	a.minifier.init()
 
-	a.Config.MinifierEnabled = true
-	a.Config.CofferEnabled = true
-	a.Config.AssetExts = []string{
+	a.MinifierEnabled = true
+	a.CofferEnabled = true
+	a.AssetExts = []string{
 		".html",
 		".css",
 		".js",
@@ -121,33 +121,33 @@ Hello, I am the Air.
 		".txt",
 	}
 
-	assert.NoError(t, a.Coffer.Init())
+	assert.NoError(t, a.coffer.init())
 
 	abs, _ := filepath.Abs(htmlFile.Name())
-	assert.NotNil(t, a.Coffer.Asset(abs))
-	assert.True(t, a.Coffer.Asset(abs).reader.Len() < len(html))
+	assert.NotNil(t, a.coffer.asset(abs))
+	assert.True(t, a.coffer.asset(abs).reader.Len() < len(html))
 
 	abs, _ = filepath.Abs(cssFile.Name())
-	assert.NotNil(t, a.Coffer.Asset(abs))
-	assert.True(t, a.Coffer.Asset(abs).reader.Len() < len(css))
+	assert.NotNil(t, a.coffer.asset(abs))
+	assert.True(t, a.coffer.asset(abs).reader.Len() < len(css))
 
 	abs, _ = filepath.Abs(jsFile.Name())
-	assert.NotNil(t, a.Coffer.Asset(abs))
-	assert.True(t, a.Coffer.Asset(abs).reader.Len() < len(js))
+	assert.NotNil(t, a.coffer.asset(abs))
+	assert.True(t, a.coffer.asset(abs).reader.Len() < len(js))
 
 	abs, _ = filepath.Abs(jsonFile.Name())
-	assert.NotNil(t, a.Coffer.Asset(abs))
-	assert.True(t, a.Coffer.Asset(abs).reader.Len() < len(json))
+	assert.NotNil(t, a.coffer.asset(abs))
+	assert.True(t, a.coffer.asset(abs).reader.Len() < len(json))
 
 	abs, _ = filepath.Abs(xmlFile.Name())
-	assert.NotNil(t, a.Coffer.Asset(abs))
-	assert.True(t, a.Coffer.Asset(abs).reader.Len() < len(xml))
+	assert.NotNil(t, a.coffer.asset(abs))
+	assert.True(t, a.coffer.asset(abs).reader.Len() < len(xml))
 
 	abs, _ = filepath.Abs(svgFile.Name())
-	assert.NotNil(t, a.Coffer.Asset(abs))
-	assert.True(t, a.Coffer.Asset(abs).reader.Len() < len(svg))
+	assert.NotNil(t, a.coffer.asset(abs))
+	assert.True(t, a.coffer.asset(abs).reader.Len() < len(svg))
 
 	abs, _ = filepath.Abs(txtFile.Name())
-	assert.NotNil(t, a.Coffer.Asset(abs))
-	assert.True(t, a.Coffer.Asset(abs).reader.Len() == len(txt))
+	assert.NotNil(t, a.coffer.asset(abs))
+	assert.True(t, a.coffer.asset(abs).reader.Len() == len(txt))
 }

@@ -1,25 +1,22 @@
 package air
 
 import (
-	"net/http"
 	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestURLQueryValue(t *testing.T) {
-	a := New()
-	c := NewContext(a)
+func TestURL(t *testing.T) {
+	su, err := url.Parse("https://example.com/foo/bar?foo=bar#foobar")
+	assert.NotNil(t, su)
+	assert.Nil(t, err)
 
-	vs := url.Values{}
-	vs.Set("name", "Air")
-	vs.Set("author", "Aofei Sheng")
-	req, _ := http.NewRequest("GET", "/?"+vs.Encode(), nil)
-
-	c.feed(req, nil)
-
-	assert.Equal(t, "Air", c.Request.URL.QueryValue("name"))
-	assert.Equal(t, "Aofei Sheng", c.Request.URL.QueryValue("author"))
-	assert.Equal(t, vs, c.Request.URL.QueryValues())
+	u := newURL(su)
+	assert.Equal(t, su.Scheme, u.Scheme)
+	assert.Equal(t, su.Host, u.Host)
+	assert.Equal(t, su.EscapedPath(), u.Path)
+	assert.Equal(t, su.RawQuery, u.Query)
+	assert.Equal(t, su.Fragment, u.Fragment)
+	assert.Equal(t, su.String(), u.String())
 }

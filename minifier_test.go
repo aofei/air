@@ -15,36 +15,36 @@ import (
 
 func TestMinifierInit(t *testing.T) {
 	a := New()
-	a.Minifier.Init()
+	a.minifier.init()
 
-	b, err := a.Minifier.Minify("text/html", []byte("<air></air>"))
+	b, err := a.minifier.minify("text/html", []byte("<air></air>"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify("text/css", []byte(".air{}"))
+	b, err = a.minifier.minify("text/css", []byte(".air{}"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify("text/javascript", []byte("alert('air')"))
+	b, err = a.minifier.minify("text/javascript", []byte("alert('air')"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify("application/json", []byte("{}"))
+	b, err = a.minifier.minify("application/json", []byte("{}"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify("text/xml", []byte("<air></air>"))
+	b, err = a.minifier.minify("text/xml", []byte("<air></air>"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify("image/svg+xml", []byte("<air></air>"))
+	b, err = a.minifier.minify("image/svg+xml", []byte("<air></air>"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 }
 
 func TestMinifierMinify(t *testing.T) {
 	a := New()
-	a.Minifier.Init()
+	a.minifier.init()
 
 	m := image.NewRGBA(image.Rect(0, 0, 1, 1))
 	c := color.RGBA{0, 0, 0, 0}
@@ -64,29 +64,29 @@ func TestMinifierMinify(t *testing.T) {
 	png.Encode(p, m)
 	p.Close()
 
-	b, err := a.Minifier.Minify("image/jpeg", []byte("encoding error"))
+	b, err := a.minifier.minify("image/jpeg", []byte("encoding error"))
 	assert.Nil(t, b)
 	assert.Error(t, err)
 
 	b, _ = ioutil.ReadFile(j.Name())
-	b, err = a.Minifier.Minify("image/jpeg", b)
+	b, err = a.minifier.minify("image/jpeg", b)
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify("image/png", []byte("encoding error"))
+	b, err = a.minifier.minify("image/png", []byte("encoding error"))
 	assert.Nil(t, b)
 	assert.Error(t, err)
 
 	b, _ = ioutil.ReadFile(p.Name())
-	b, err = a.Minifier.Minify("image/png", b)
+	b, err = a.minifier.minify("image/png", b)
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
-	b, err = a.Minifier.Minify("text/css", []byte("error"))
+	b, err = a.minifier.minify("text/css", []byte("error"))
 	assert.Nil(t, b)
 	assert.Error(t, err)
 
-	b, err = a.Minifier.Minify("unsupported", []byte("unsupported"))
+	b, err = a.minifier.minify("unsupported", []byte("unsupported"))
 	assert.Nil(t, b)
 	assert.Error(t, err)
 }

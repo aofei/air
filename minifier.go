@@ -15,24 +15,12 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
-type (
-	// Minifier is used to provide a `Minify()` method for an `Air` instance
-	// for minifies a content by a MIME type.
-	Minifier interface {
-		// Init initializes the `Minifier`. It will be called in the
-		// `Air#Serve()`.
-		Init() error
-
-		// Minify minifies the b by the mimeType.
-		Minify(mimeType string, b []byte) ([]byte, error)
-	}
-
-	// minifier implements the `Minifier`.
-	minifier struct {
-		pngEncoder *png.Encoder
-		m          *minify.M
-	}
-)
+// minifier is used to provide a `Minify()` method for an `Air` instance
+// for minifies a content by a MIME type.
+type minifier struct {
+	pngEncoder *png.Encoder
+	m          *minify.M
+}
 
 // newMinifier returns a pointer of a new instance of the `minifier`.
 func newMinifier() *minifier {
@@ -44,8 +32,8 @@ func newMinifier() *minifier {
 	}
 }
 
-// Init implements the `Minifier#Init()`.
-func (m *minifier) Init() error {
+// init initializes the `Minifier`. It will be called in the `Air#Serve()`.
+func (m *minifier) init() error {
 	m.m.Add("text/html", &html.Minifier{})
 
 	m.m.Add("text/css", &css.Minifier{
@@ -65,8 +53,8 @@ func (m *minifier) Init() error {
 	return nil
 }
 
-// Minify implements the `Minifier#Minify()`.
-func (m *minifier) Minify(mimeType string, b []byte) ([]byte, error) {
+// minify minifies the b by the mimeType.
+func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 	switch mimeType {
 	case "image/jpeg":
 		return m.minifyJPEG(b)

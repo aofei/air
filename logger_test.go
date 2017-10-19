@@ -10,13 +10,13 @@ import (
 
 func TestLoggerLoggingMethods(t *testing.T) {
 	a := New()
-	a.Config.LoggerEnabled = true
-	l := a.Logger.(*logger)
+	a.LoggerEnabled = true
+	l := a.Logger
 	b := &bytes.Buffer{}
 
-	assert.Equal(t, os.Stdout, l.Output())
+	assert.Equal(t, os.Stdout, l.Output)
 
-	l.SetOutput(b)
+	l.Output = b
 
 	log := struct {
 		Name   string
@@ -28,7 +28,7 @@ func TestLoggerLoggingMethods(t *testing.T) {
 
 	format := "%s by %s."
 
-	m := Map{
+	m := map[string]interface{}{
 		"Name":   log.Name,
 		"Author": log.Author,
 	}
@@ -126,11 +126,11 @@ func TestLoggerLoggingMethods(t *testing.T) {
 
 func TestLoggerLogFormat(t *testing.T) {
 	a := New()
-	a.Config.LoggerEnabled = true
-	a.Config.LogFormat = "I am the {{.app_name}}."
-	l := a.Logger.(*logger)
+	a.LoggerEnabled = true
+	a.LoggerFormat = "I am the {{.app_name}}."
+	l := a.Logger
 	b := &bytes.Buffer{}
-	l.SetOutput(b)
+	l.Output = b
 	l.log(lvlInfo, "")
 	assert.Contains(t, b.String(), "I am the air.")
 }

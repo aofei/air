@@ -80,15 +80,15 @@ func (g *Group) TRACE(path string, h Handler, gases ...Gas) {
 
 // Static implements the `Air#Static()`.
 func (g *Group) Static(prefix, root string) {
-	g.GET(prefix+"*", func(c *Context) error {
-		return c.File(path.Join(root, c.Param("*")))
+	g.GET(prefix+"*", func(req *Request, res *Response) error {
+		return res.File(path.Join(root, req.PathParams["*"]))
 	})
 }
 
 // File implements the `Air#File()`.
 func (g *Group) File(path, file string) {
-	g.GET(path, func(c *Context) error {
-		return c.File(file)
+	g.GET(path, func(req *Request, res *Response) error {
+		return res.File(file)
 	})
 }
 

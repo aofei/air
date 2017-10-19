@@ -1,56 +1,54 @@
 package air
 
-import "net/url"
+import (
+	"bytes"
+	"net/url"
+)
 
-// URL represents the HTTP URL of the current HTTP request.
-//
-// It's embedded with the `url.URL`.
+// URL is an HTTP URL.
 type URL struct {
-	*url.URL
-
-	request *Request
-
-	queryValues url.Values
+	Scheme   string
+	Host     string
+	Path     string
+	Query    string
+	Fragment string
 }
 
-// NewURL returns a pointer of a new instance of the `URL`.
-func NewURL(r *Request) *URL {
+// newURL returns a new instance of the `URL`.
+func newURL(u *url.URL) *URL {
 	return &URL{
-		request: r,
+		Scheme:   u.Scheme,
+		Host:     u.Host,
+		Path:     u.EscapedPath(),
+		Query:    u.RawQuery,
+		Fragment: u.Fragment,
 	}
 }
 
-// QueryValue returns the query value in the u for the provided key.
-func (u *URL) QueryValue(key string) string {
-	return u.QueryValues().Get(key)
-}
-
-// QueryValues returns the query values in the u.
-func (u *URL) QueryValues() url.Values {
-	if u.queryValues == nil {
-		u.queryValues = u.Query()
+// String returns the serialization string of the u.
+func (u *URL) String() string {
+	buf := bytes.Buffer{}
+	if u.Scheme != "" {
+		buf.WriteString(u.Scheme)
+		buf.WriteByte(':')
 	}
-	return u.queryValues
-}
-
-// HasQueryValue reports whether the query values contains the query value for
-// the provided key.
-func (u *URL) HasQueryValue(key string) bool {
-	for k := range u.QueryValues() {
-		if k == key {
-			return true
+	if u.Scheme != "" || u.Host != "" {
+		buf.WriteString("//")
+		if u.Host != "" {
+			buf.WriteString(u.Host)
 		}
 	}
-	return false
-}
-
-// feed feeds the url into where it should be.
-func (u *URL) feed(url *url.URL) {
-	u.URL = url
-}
-
-// reset resets all fields in the u.
-func (u *URL) reset() {
-	u.URL = nil
-	u.queryValues = nil
+	if u.Path != "" && u.Path[0] != '/' && u.Host != "" {
+		buf.WriteByte('/')
+	}
+	buf.WriteString(u.Path)
+	if u.Query != "" {
+		buf.WriteByte('?')
+		buf.WriteString(u.Query)
+	}
+	if u.Fragment != "" {
+		buf.WriteByte('#')
+		buf.WriteString(u.Fragment)
+	}
+	return buf.String()
 }

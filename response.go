@@ -1,106 +1,97 @@
 package air
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"html/template"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 )
 
-// Response represents the current HTTP response.
-//
-// It's embedded with the `http.ResponseWriter`, the `http.Hijacker`, the
-// `http.CloseNotifier`, the `http.Flusher` and the `http.Pusher`.
+// Response is an HTTP response.
 type Response struct {
-	http.ResponseWriter
-	http.Hijacker
-	http.CloseNotifier
-	http.Flusher
-	http.Pusher
-
-	context *Context
+	air           *Air
+	request       *Request
+	writer        http.ResponseWriter
+	flusher       http.Flusher
+	hijacker      http.Hijacker
+	closeNotifier http.CloseNotifier
+	pusher        http.Pusher
 
 	StatusCode int
 	Size       int
 	Written    bool
-	Data       Map
 }
 
-// NewResponse returns a pointer of a new instance of the `Response`.
-func NewResponse(c *Context) *Response {
+// newResponse returns a new instance of the `Response`.
+func newResponse(r *Request, writer http.ResponseWriter) *Response {
+	flusher, _ := writer.(http.Flusher)
+	hijacker, _ := writer.(http.Hijacker)
+	closeNotifier, _ := writer.(http.CloseNotifier)
+	pusher, _ := writer.(http.Pusher)
+
 	return &Response{
-		context:    c,
-		StatusCode: http.StatusOK,
-		Data:       Map{},
+		air:           r.air,
+		request:       r,
+		writer:        writer,
+		flusher:       flusher,
+		hijacker:      hijacker,
+		closeNotifier: closeNotifier,
+		pusher:        pusher,
+		StatusCode:    http.StatusOK,
 	}
 }
 
-// Write implements the `http.ResponseWriter#Write()`.
-func (r *Response) Write(b []byte) (int, error) {
+// write writes the b to the HTTP client.
+func (r *Response) write(b []byte) error {
 	if !r.Written {
-		r.WriteHeader(r.StatusCode)
+		r.writer.WriteHeader(r.StatusCode)
+		r.Written = true
 	}
-	n, err := r.ResponseWriter.Write(b)
+	n, err := r.writer.Write(b)
 	r.Size += n
-	return n, err
-}
-
-// WriteHeader implements the `http.ResponseWriter#WriteHeader()`.
-func (r *Response) WriteHeader(statusCode int) {
-	if r.Written {
-		r.context.Air.Logger.Warn("response already written")
-		return
-	}
-	r.ResponseWriter.WriteHeader(statusCode)
-	r.StatusCode = statusCode
-	r.Written = true
-}
-
-// SetCookie adds a "Set-Cookie" header in the r. The provided cookie must have
-// a valid `Name`. Invalid cookies may be silently dropped.
-func (r *Response) SetCookie(cookie *http.Cookie) {
-	http.SetCookie(r, cookie)
-}
-
-// NoContent sends an HTTP response with the statusCode and no body.
-func (r *Response) NoContent(statusCode int) error {
-	r.WriteHeader(statusCode)
-	return nil
-}
-
-// Redirect redirects the current HTTP request to the url with the statusCode.
-func (r *Response) Redirect(statusCode int, url string) error {
-	r.Header().Set("Location", url)
-	return r.NoContent(statusCode)
-}
-
-// Blob sends a blob HTTP response with the contentType and the b.
-func (r *Response) Blob(contentType string, b []byte) error {
-	r.Header().Set("Content-Type", contentType)
-	_, err := r.Write(b)
 	return err
 }
 
-// String sends a "text/plain" HTTP response with the s.
+// NoContent responds to the HTTP client with no content.
+func (r *Response) NoContent() error {
+	return r.write(nil)
+}
+
+// Redirect responds to the HTTP client with a HTTP redirection to the url.
+func (r *Response) Redirect(url string) error {
+	r.writer.Header().Set("Location", url)
+	return r.NoContent()
+}
+
+// Blob responds to the HTTP client with a contentType content with the b.
+func (r *Response) Blob(contentType string, b []byte) error {
+	r.writer.Header().Set("Content-Type", contentType)
+	return r.write(b)
+}
+
+// String responds to the HTTP client with a "text/plain" content with the s.
 func (r *Response) String(s string) error {
 	return r.Blob("text/plain; charset=utf-8", []byte(s))
 }
 
-// JSON sends an "application/json" HTTP response with the type i.
-func (r *Response) JSON(i interface{}) error {
-	b, err := json.Marshal(i)
-	if r.context.Air.Config.DebugMode {
-		b, err = json.MarshalIndent(i, "", "\t")
+// JSON responds to the HTTP client with an "application/json" content with the
+// v.
+func (r *Response) JSON(v interface{}) error {
+	b, err := json.Marshal(v)
+	if r.air.DebugMode {
+		b, err = json.MarshalIndent(v, "", "\t")
 	}
 	if err != nil {
 		return err
 	}
-	if r.context.Air.Config.MinifierEnabled {
-		b, err = r.context.Air.Minifier.Minify("application/json", b)
+	if r.air.MinifierEnabled {
+		b, err = r.air.minifier.minify("application/json", b)
 		if err != nil {
 			return err
 		}
@@ -108,31 +99,31 @@ func (r *Response) JSON(i interface{}) error {
 	return r.Blob("application/json; charset=utf-8", b)
 }
 
-// XML sends an "application/xml" HTTP response with the type i.
-func (r *Response) XML(i interface{}) error {
-	b, err := xml.Marshal(i)
-	if r.context.Air.Config.DebugMode {
-		b, err = xml.MarshalIndent(i, "", "\t")
+// XML responds to the HTTP client with an "application/xml" content with the
+// type v.
+func (r *Response) XML(v interface{}) error {
+	b, err := xml.Marshal(v)
+	if r.air.DebugMode {
+		b, err = xml.MarshalIndent(v, "", "\t")
 	}
 	if err != nil {
 		return err
 	}
 	b = append([]byte(xml.Header), b...)
-	if r.context.Air.Config.MinifierEnabled {
-		b, err = r.context.Air.Minifier.Minify("text/xml", b)
-		if err != nil {
+	if r.air.MinifierEnabled {
+		if b, err = r.air.minifier.minify("text/xml", b); err != nil {
 			return err
 		}
 	}
 	return r.Blob("application/xml; charset=utf-8", b)
 }
 
-// HTML sends a "text/html" HTTP response with the html.
+// HTML responds to the HTTP client with a "text/html" content with the html.
 func (r *Response) HTML(html string) error {
 	b := []byte(html)
-	if r.context.Air.Config.MinifierEnabled {
+	if r.air.MinifierEnabled {
 		var err error
-		b, err = r.context.Air.Minifier.Minify("text/html", b)
+		b, err = r.air.minifier.minify("text/html", b)
 		if err != nil {
 			return err
 		}
@@ -140,31 +131,35 @@ func (r *Response) HTML(html string) error {
 	return r.Blob("text/html; charset=utf-8", b)
 }
 
-// Render renders one or more HTML templates with the `Data` of the r and sends
-// a "text/html" HTTP response. The default `Renderer` does it by using the
-// `template.Template`. the results rendered by the former can be inherited by
-// accessing the `Data["InheritedHTML"]` of the r.
-func (r *Response) Render(templates ...string) error {
+// Render renders one or more templates with the values and responds to the HTTP
+// client with a "text/html" content. The results rendered by the former can be
+// inherited by accessing the values["InheritedHTML"]`.
+func (r *Response) Render(
+	values map[string]interface{},
+	templates ...string,
+) error {
 	buf := &bytes.Buffer{}
 	for _, t := range templates {
-		r.Data["InheritedHTML"] = template.HTML(buf.String())
+		values["InheritedHTML"] = template.HTML(buf.String())
 		buf.Reset()
-		err := r.context.Air.Renderer.Render(buf, t, r.Data)
-		if err != nil {
+		if err := r.air.renderer.render(buf, t, values); err != nil {
 			return err
 		}
 	}
 	return r.HTML(buf.String())
 }
 
-// Stream sends a streaming HTTP response with the contentType and the reader.
+// Stream responds to the HTTP client with a contentType streaming content with
+// the reader.
 func (r *Response) Stream(contentType string, reader io.Reader) error {
-	r.Header().Set("Content-Type", contentType)
-	_, err := io.Copy(r, reader)
+	r.writer.Header().Set("Content-Type", contentType)
+	r.writer.WriteHeader(r.StatusCode)
+	r.Written = true
+	_, err := io.Copy(r.writer, reader)
 	return err
 }
 
-// File sends a file HTTP response with the file.
+// File responds to the HTTP client with a file content with the file.
 func (r *Response) File(file string) error {
 	if _, err := os.Stat(file); err != nil {
 		return err
@@ -175,51 +170,51 @@ func (r *Response) File(file string) error {
 		return err
 	}
 
-	if a := r.context.Air.Coffer.Asset(abs); a != nil {
+	if a := r.air.coffer.asset(abs); a != nil {
 		http.ServeContent(
-			r,
-			r.context.Request.Request,
+			r.writer,
+			r.request.request,
 			a.Name(),
 			a.ModTime(),
 			a,
 		)
 	} else {
-		http.ServeFile(r, r.context.Request.Request, abs)
+		http.ServeFile(r.writer, r.request.request, abs)
 	}
+
+	r.Written = true
 
 	return nil
 }
 
-// Attachment sends an HTTP response with the file and the filename as
-// attachment, prompting client to save the file.
-func (r *Response) Attachment(file, filename string) error {
-	r.Header().Set("Content-Disposition", "attachment; filename="+filename)
-	return r.File(file)
-}
-
-// Inline sends an HTTP response with the file and the filename as inline,
-// opening the file in the browser.
-func (r *Response) Inline(file, filename string) error {
-	r.Header().Set("Content-Disposition", "inline; filename="+filename)
-	return r.File(file)
-}
-
-// feed feeds the rw into where it should be.
-func (r *Response) feed(rw http.ResponseWriter) {
-	r.ResponseWriter = rw
-	r.Hijacker, _ = rw.(http.Hijacker)
-	r.CloseNotifier, _ = rw.(http.CloseNotifier)
-	r.Flusher, _ = rw.(http.Flusher)
-	r.Pusher, _ = rw.(http.Pusher)
-}
-
-// reset resets all fields in the r.
-func (r *Response) reset() {
-	r.ResponseWriter = nil
-	r.StatusCode = http.StatusOK
-	r.Size = 0
-	r.Written = false
-	for k := range r.Data {
-		delete(r.Data, k)
+// SetCookie adds a "Set-Cookie" header in the r. The c must have a valid Name.
+// Invalid cookies may be silently dropped.
+func (r *Response) SetCookie(c *Cookie) {
+	if v := c.String(); v != "" {
+		r.writer.Header().Add("Set-Cookie", v)
 	}
+}
+
+// Flush flushes buffered data to the HTTP client.
+func (r *Response) Flush() {
+	r.flusher.Flush()
+}
+
+// Hijack took over the HTTP connection from the HTTP server.
+func (r *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return r.hijacker.Hijack()
+}
+
+// CloseNotify returns a channel that receives at most a single value when the
+// HTTP connection has gone away.
+func (r *Response) CloseNotify() <-chan bool {
+	return r.closeNotifier.CloseNotify()
+}
+
+// Push initiates an HTTP/2 server push. This constructs a synthetic request
+// using the given target and pos, serializes that request into a PUSH_PROMISE
+// frame, then dispatches that request using the server's request handler. If
+// pos is nil, default options are used.
+func (r *Response) Push(target string, pos *http.PushOptions) error {
+	return r.pusher.Push(target, pos)
 }

@@ -1,78 +1,89 @@
 package air
 
 import (
+	"io"
 	"net/http"
-	"net/url"
 )
 
-// Request represents the current HTTP request.
-//
-// It's embedded with the `http.Request`.
+// Request is an HTTP request.
 type Request struct {
-	*http.Request
+	air     *Air
+	request *http.Request
 
-	context *Context
-
-	URL *URL
+	Method      string
+	URL         *URL
+	Proto       string
+	Headers     map[string]string
+	Body        io.Reader
+	Cookies     []*Cookie
+	PathParams  map[string]string
+	QueryParams map[string]string
+	FormParams  map[string]string
+	FormFiles   map[string]io.Reader
+	Values      map[string]interface{}
 }
 
-// NewRequest returns a pointer of a new instance of the `Request`.
-func NewRequest(c *Context) *Request {
-	r := &Request{context: c}
-	r.URL = NewURL(r)
-	return r
-}
-
-// Bind binds the HTTP body of the r into the provided type i. The default
-// `Binder` does it based on the "Content-Type" header.
-func (r *Request) Bind(i interface{}) error {
-	return r.context.Air.Binder.Bind(i, r)
-}
-
-// FormValues returns the form values.
-func (r *Request) FormValues() url.Values {
-	if r.Form == nil {
-		r.ParseMultipartForm(32 << 20) // The maxMemory is 32 MB
-	}
-	return r.Form
-}
-
-// HasFormValue reports whether the form values contains the form value for the
-// provided key.
-func (r *Request) HasFormValue(key string) bool {
-	for k := range r.FormValues() {
-		if k == key {
-			return true
+// newRequest returns a new instance of the `Request`.
+func newRequest(a *Air, r *http.Request) *Request {
+	headers := map[string]string{}
+	for k, v := range r.Header {
+		if len(v) > 0 {
+			headers[k] = v[0]
 		}
 	}
-	return false
+
+	cookies := []*Cookie{}
+	for _, c := range r.Cookies() {
+		cookies = append(cookies, newCookie(c))
+	}
+
+	queryParams := map[string]string{}
+	for k, v := range r.URL.Query() {
+		if len(v) > 0 {
+			queryParams[k] = v[0]
+		}
+	}
+
+	if r.Form == nil || r.MultipartForm == nil {
+		r.ParseMultipartForm(32 << 20)
+	}
+
+	formParams := map[string]string{}
+	for k, v := range r.Form {
+		if len(v) > 0 {
+			formParams[k] = v[0]
+		}
+	}
+
+	formFiles := map[string]io.Reader{}
+	if r.MultipartForm != nil {
+		for k, v := range r.MultipartForm.File {
+			if len(v) > 0 {
+				if f, err := v[0].Open(); err == nil {
+					formFiles[k] = f
+				}
+			}
+		}
+	}
+
+	return &Request{
+		air:         a,
+		request:     r,
+		Method:      r.Method,
+		URL:         newURL(r.URL),
+		Proto:       r.Proto,
+		Headers:     headers,
+		Body:        r.Body,
+		Cookies:     cookies,
+		PathParams:  map[string]string{},
+		QueryParams: queryParams,
+		FormParams:  formParams,
+		FormFiles:   formFiles,
+		Values:      map[string]interface{}{},
+	}
 }
 
-// feed feeds the req into where it should be.
-func (r *Request) feed(req *http.Request) {
-	r.Request = req
-	r.URL.feed(req.URL)
-}
-
-// reset resets all fields in the r.
-func (r *Request) reset() {
-	r.Request = nil
-	r.URL.reset()
-}
-
-// MARK: Alias methods for the `Request#URL`.
-
-// QueryValue is an alias for the `URL#QueryValue()` of the r.
-func (r *Request) QueryValue(key string) string {
-	return r.URL.QueryValue(key)
-}
-
-// QueryValues is an alias for the `URL#QueryValues()` of the r.
-func (r *Request) QueryValues() url.Values {
-	return r.URL.QueryValues()
-}
-
-// HasQueryValue is an alias for the `URL#HasQueryValue()` of the r.
-func (r *Request) HasQueryValue(key string) bool {
-	return r.URL.HasQueryValue(key)
+// Bind binds the `Body` of the r into the v.
+func (r *Request) Bind(v interface{}) error {
+	return r.air.binder.bind(v, r)
 }
