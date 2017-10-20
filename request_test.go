@@ -17,7 +17,7 @@ func TestRequest(t *testing.T) {
 		bytes.NewBufferString(`{"Foobar":"Foobar"}`),
 	)
 	sr.Header.Set("Content-Type", "application/json")
-	sr.Header.Set("Set-Cookie", "foo=bar")
+	sr.Header.Set("Cookie", "foo=bar")
 	sr.MultipartForm = &multipart.Form{
 		File: map[string][]*multipart.FileHeader{
 			"foobar": []*multipart.FileHeader{
