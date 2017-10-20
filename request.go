@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// Request is an HTTP request.
+// Request represents the HTTP request.
 type Request struct {
 	air     *Air
 	request *http.Request
@@ -59,9 +59,8 @@ func newRequest(a *Air, r *http.Request) *Request {
 	if r.MultipartForm != nil {
 		for k, v := range r.MultipartForm.File {
 			if len(v) > 0 {
-				if f, err := v[0].Open(); err == nil {
-					formFiles[k] = f
-				}
+				f, _ := v[0].Open()
+				formFiles[k] = f
 			}
 		}
 	}
