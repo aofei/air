@@ -21,6 +21,7 @@ func TestCookie(t *testing.T) {
 	}
 
 	c := newCookie(sc)
+	assert.NotNil(t, c)
 	assert.Equal(t, sc.Name, c.Name)
 	assert.Equal(t, sc.Value, c.Value)
 	assert.Equal(t, sc.Expires, c.Expires)

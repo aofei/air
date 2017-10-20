@@ -18,4 +18,7 @@ func TestURL(t *testing.T) {
 	assert.Equal(t, su.RawQuery, u.Query)
 	assert.Equal(t, su.Fragment, u.Fragment)
 	assert.Equal(t, su.String(), u.String())
+
+	u.Path = u.Path[1:]
+	assert.Equal(t, su.String(), u.String())
 }
