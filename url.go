@@ -5,7 +5,7 @@ import (
 	"net/url"
 )
 
-// URL is an HTTP URL.
+// URL represents the HTTP URL.
 type URL struct {
 	Scheme   string
 	Host     string
