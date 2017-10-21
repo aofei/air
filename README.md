@@ -29,6 +29,13 @@ you one thing: **it can serve properly.**
 	* `CONNECT`
 	* `OPTIONS`
 	* `TRACE`
+* Logger
+	* Powered by the Go `text/template`.
+* Server
+	* HTTP/2 support.
+	* SSL/TLS support.
+	* Gracefully shutdown support.
+	* Powered by the Go `net/http`.
 * Router
 	* Based on the Radix Tree.
 	* Has a good inspection mechanism.
@@ -39,21 +46,6 @@ you one thing: **it can serve properly.**
 		* After router.
 	* Route level.
 	* Group level.
-* Config
-	* For server.
-	* For logger.
-	* For minifier.
-	* For renderer.
-	* For coffer.
-	* For everything.
-	* Configuration file support by using the [toml](https://github.com/BurntSushi/toml).
-* Logger
-	* Powered by the Go `text/template`.
-* Server
-	* HTTP/2 support.
-	* SSL/TLS support.
-	* Gracefully shutdown support.
-	* Powered by the Go `net/http`.
 * Binder
 	* Based on the `Content-Type` header.
 	* Supported MIME types:
@@ -112,7 +104,7 @@ import "github.com/sheng/air"
 
 func main() {
 	a := air.New()
-	a.GET("/", func(req *Request, res *Response error {
+	a.GET("/", func(req *air.Request, res *air.Response) error {
 		return res.String("Hello, 世界")
 	})
 	a.Serve()
