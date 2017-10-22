@@ -10,16 +10,15 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-// coffer is used to provide an `asset()` method for an `Air` instance
-// for accesses binary asset files by using the runtime memory.
+// coffer is used to provide a way to access binary asset files through the
+// runtime memory.
 type coffer struct {
-	air *Air
-
+	air     *Air
 	assets  map[string]*Asset
 	watcher *fsnotify.Watcher
 }
 
-// newCoffer returns a pointer of a new instance of the `coffer`.
+// newCoffer returns a new instance of the `coffer`.
 func newCoffer(a *Air) *coffer {
 	return &coffer{
 		air:    a,
@@ -27,7 +26,7 @@ func newCoffer(a *Air) *coffer {
 	}
 }
 
-// init initializes the `Coffer`. It will be called in the `Air#Serve()`.
+// init initializes the c.
 func (c *coffer) init() error {
 	if !c.air.CofferEnabled {
 		return nil
@@ -81,7 +80,7 @@ func (c *coffer) init() error {
 			}
 		}
 
-		assets[file] = NewAsset(file, fi.ModTime(), b)
+		assets[file] = newAsset(file, fi.ModTime(), b)
 	}
 
 	c.assets = assets
@@ -91,7 +90,7 @@ func (c *coffer) init() error {
 
 // asset returns an `Asset` in the `Coffer` for the provided name.
 //
-// **Please use the `filepath.Abs()` to process the name before calling.**
+// **Please use the `filepath.Abs()` to process the name before using.**
 func (c *coffer) asset(name string) *Asset {
 	return c.assets[name]
 }
@@ -137,36 +136,16 @@ func mimeTypeByExt(ext string) string {
 
 // Asset is a binary asset file.
 type Asset struct {
-	name    string
-	modTime time.Time
-	reader  *bytes.Reader
+	Name    string
+	ModTime time.Time
+	Reader  *bytes.Reader
 }
 
-// NewAsset returns a pointer of a new instance of the `Asset`.
-func NewAsset(name string, modTime time.Time, content []byte) *Asset {
+// newAsset returns a new instance of the `Asset`.
+func newAsset(name string, modTime time.Time, content []byte) *Asset {
 	return &Asset{
-		name:    name,
-		modTime: modTime,
-		reader:  bytes.NewReader(content),
+		Name:    name,
+		ModTime: modTime,
+		Reader:  bytes.NewReader(content),
 	}
-}
-
-// Name returns the name of the a.
-func (a *Asset) Name() string {
-	return a.name
-}
-
-// ModTime returns the modTime of the a.
-func (a *Asset) ModTime() time.Time {
-	return a.modTime
-}
-
-// Read implements the `io.Reader`.
-func (a *Asset) Read(b []byte) (int, error) {
-	return a.reader.Read(b)
-}
-
-// Seek implements the `io.Seeker`.
-func (a *Asset) Seek(offset int64, whence int) (int64, error) {
-	return a.reader.Seek(offset, whence)
 }
