@@ -5,6 +5,7 @@ import (
 	"errors"
 	"image/jpeg"
 	"image/png"
+	"strings"
 
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
@@ -55,6 +56,9 @@ func (m *minifier) init() error {
 
 // minify minifies the b by the mimeType.
 func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
+	if ss := strings.Split(mimeType, ";"); len(ss) > 1 {
+		mimeType = ss[0]
+	}
 	switch mimeType {
 	case "image/jpeg":
 		return m.minifyJPEG(b)
