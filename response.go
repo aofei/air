@@ -181,9 +181,9 @@ func (r *Response) File(file string) error {
 		http.ServeContent(
 			r.writer,
 			r.request.request,
-			a.Name(),
-			a.ModTime(),
-			a,
+			a.Name,
+			a.ModTime,
+			a.Reader,
 		)
 	} else {
 		http.ServeFile(r.writer, r.request.request, abs)

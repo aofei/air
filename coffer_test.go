@@ -125,29 +125,29 @@ Hello, I am the Air.
 
 	abs, _ := filepath.Abs(htmlFile.Name())
 	assert.NotNil(t, a.coffer.asset(abs))
-	assert.True(t, a.coffer.asset(abs).reader.Len() < len(html))
+	assert.True(t, a.coffer.asset(abs).Reader.Len() < len(html))
 
 	abs, _ = filepath.Abs(cssFile.Name())
 	assert.NotNil(t, a.coffer.asset(abs))
-	assert.True(t, a.coffer.asset(abs).reader.Len() < len(css))
+	assert.True(t, a.coffer.asset(abs).Reader.Len() < len(css))
 
 	abs, _ = filepath.Abs(jsFile.Name())
 	assert.NotNil(t, a.coffer.asset(abs))
-	assert.True(t, a.coffer.asset(abs).reader.Len() < len(js))
+	assert.True(t, a.coffer.asset(abs).Reader.Len() < len(js))
 
 	abs, _ = filepath.Abs(jsonFile.Name())
 	assert.NotNil(t, a.coffer.asset(abs))
-	assert.True(t, a.coffer.asset(abs).reader.Len() < len(json))
+	assert.True(t, a.coffer.asset(abs).Reader.Len() < len(json))
 
 	abs, _ = filepath.Abs(xmlFile.Name())
 	assert.NotNil(t, a.coffer.asset(abs))
-	assert.True(t, a.coffer.asset(abs).reader.Len() < len(xml))
+	assert.True(t, a.coffer.asset(abs).Reader.Len() < len(xml))
 
 	abs, _ = filepath.Abs(svgFile.Name())
 	assert.NotNil(t, a.coffer.asset(abs))
-	assert.True(t, a.coffer.asset(abs).reader.Len() < len(svg))
+	assert.True(t, a.coffer.asset(abs).Reader.Len() < len(svg))
 
 	abs, _ = filepath.Abs(txtFile.Name())
 	assert.NotNil(t, a.coffer.asset(abs))
-	assert.True(t, a.coffer.asset(abs).reader.Len() == len(txt))
+	assert.True(t, a.coffer.asset(abs).Reader.Len() == len(txt))
 }
