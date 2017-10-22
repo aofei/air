@@ -13,9 +13,8 @@ import (
 	"path/filepath"
 )
 
-// Response is an HTTP response.
+// Response represents the HTTP response.
 type Response struct {
-	air           *Air
 	request       *Request
 	writer        http.ResponseWriter
 	flusher       http.Flusher
@@ -24,6 +23,8 @@ type Response struct {
 	pusher        http.Pusher
 
 	StatusCode int
+	Headers    map[string]string
+	Cookies    []*Cookie
 	Size       int
 	Written    bool
 }
@@ -36,7 +37,6 @@ func newResponse(r *Request, writer http.ResponseWriter) *Response {
 	pusher, _ := writer.(http.Pusher)
 
 	return &Response{
-		air:           r.air,
 		request:       r,
 		writer:        writer,
 		flusher:       flusher,
@@ -44,12 +44,21 @@ func newResponse(r *Request, writer http.ResponseWriter) *Response {
 		closeNotifier: closeNotifier,
 		pusher:        pusher,
 		StatusCode:    http.StatusOK,
+		Headers:       map[string]string{},
 	}
 }
 
 // write writes the b to the HTTP client.
 func (r *Response) write(b []byte) error {
 	if !r.Written {
+		for k, v := range r.Headers {
+			r.writer.Header().Set(k, v)
+		}
+		for _, c := range r.Cookies {
+			if v := c.String(); v != "" {
+				r.writer.Header().Add("Set-Cookie", v)
+			}
+		}
 		r.writer.WriteHeader(r.StatusCode)
 		r.Written = true
 	}
@@ -65,13 +74,19 @@ func (r *Response) NoContent() error {
 
 // Redirect responds to the HTTP client with a HTTP redirection to the url.
 func (r *Response) Redirect(url string) error {
-	r.writer.Header().Set("Location", url)
-	return r.NoContent()
+	r.Headers["Location"] = url
+	return r.write(nil)
 }
 
 // Blob responds to the HTTP client with a contentType content with the b.
 func (r *Response) Blob(contentType string, b []byte) error {
-	r.writer.Header().Set("Content-Type", contentType)
+	r.Headers["Content-Type"] = contentType
+	if r.request.air.MinifierEnabled {
+		nb, err := r.request.air.minifier.minify(contentType, b)
+		if err == nil {
+			b = nb
+		}
+	}
 	return r.write(b)
 }
 
@@ -84,17 +99,11 @@ func (r *Response) String(s string) error {
 // v.
 func (r *Response) JSON(v interface{}) error {
 	b, err := json.Marshal(v)
-	if r.air.DebugMode {
+	if r.request.air.DebugMode {
 		b, err = json.MarshalIndent(v, "", "\t")
 	}
 	if err != nil {
 		return err
-	}
-	if r.air.MinifierEnabled {
-		b, err = r.air.minifier.minify("application/json", b)
-		if err != nil {
-			return err
-		}
 	}
 	return r.Blob("application/json; charset=utf-8", b)
 }
@@ -103,32 +112,19 @@ func (r *Response) JSON(v interface{}) error {
 // type v.
 func (r *Response) XML(v interface{}) error {
 	b, err := xml.Marshal(v)
-	if r.air.DebugMode {
+	if r.request.air.DebugMode {
 		b, err = xml.MarshalIndent(v, "", "\t")
 	}
 	if err != nil {
 		return err
 	}
 	b = append([]byte(xml.Header), b...)
-	if r.air.MinifierEnabled {
-		if b, err = r.air.minifier.minify("text/xml", b); err != nil {
-			return err
-		}
-	}
 	return r.Blob("application/xml; charset=utf-8", b)
 }
 
 // HTML responds to the HTTP client with a "text/html" content with the html.
 func (r *Response) HTML(html string) error {
-	b := []byte(html)
-	if r.air.MinifierEnabled {
-		var err error
-		b, err = r.air.minifier.minify("text/html", b)
-		if err != nil {
-			return err
-		}
-	}
-	return r.Blob("text/html; charset=utf-8", b)
+	return r.Blob("text/html; charset=utf-8", []byte(html))
 }
 
 // Render renders one or more templates with the values and responds to the HTTP
@@ -142,7 +138,8 @@ func (r *Response) Render(
 	for _, t := range templates {
 		values["InheritedHTML"] = template.HTML(buf.String())
 		buf.Reset()
-		if err := r.air.renderer.render(buf, t, values); err != nil {
+		err := r.request.air.renderer.render(buf, t, values)
+		if err != nil {
 			return err
 		}
 	}
@@ -152,9 +149,9 @@ func (r *Response) Render(
 // Stream responds to the HTTP client with a contentType streaming content with
 // the reader.
 func (r *Response) Stream(contentType string, reader io.Reader) error {
-	r.writer.Header().Set("Content-Type", contentType)
-	r.writer.WriteHeader(r.StatusCode)
-	r.Written = true
+	if err := r.Blob(contentType, nil); err != nil {
+		return err
+	}
 	_, err := io.Copy(r.writer, reader)
 	return err
 }
@@ -170,7 +167,17 @@ func (r *Response) File(file string) error {
 		return err
 	}
 
-	if a := r.air.coffer.asset(abs); a != nil {
+	for k, v := range r.Headers {
+		r.writer.Header().Set(k, v)
+	}
+
+	for _, c := range r.Cookies {
+		if v := c.String(); v != "" {
+			r.writer.Header().Add("Set-Cookie", v)
+		}
+	}
+
+	if a := r.request.air.coffer.asset(abs); a != nil {
 		http.ServeContent(
 			r.writer,
 			r.request.request,
@@ -185,14 +192,6 @@ func (r *Response) File(file string) error {
 	r.Written = true
 
 	return nil
-}
-
-// SetCookie adds a "Set-Cookie" header in the r. The c must have a valid Name.
-// Invalid cookies may be silently dropped.
-func (r *Response) SetCookie(c *Cookie) {
-	if v := c.String(); v != "" {
-		r.writer.Header().Add("Set-Cookie", v)
-	}
 }
 
 // Flush flushes buffered data to the HTTP client.
