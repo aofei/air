@@ -12,17 +12,15 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-// renderer is used to provide a `Render()` method for an `Air` instance
-// for renders a "text/html" HTTP response.
+// renderer is used to provide a way to render templates.
 type renderer struct {
-	air *Air
-
+	air             *Air
 	template        *template.Template
 	templateFuncMap template.FuncMap
 	watcher         *fsnotify.Watcher
 }
 
-// newRenderer returns a pointer of a new instance of the `renderer`.
+// newRenderer returns a new instance of the `renderer`.
 func newRenderer(a *Air) *renderer {
 	return &renderer{
 		air:      a,
@@ -36,24 +34,7 @@ func newRenderer(a *Air) *renderer {
 	}
 }
 
-// init initializes the `Renderer`. It will be called in the `Air#Serve()`.
-//
-// e.g. r.air.Config.TemplateRoot == "templates" && r.air.Config.TemplateExt ==
-// []string{".html"}
-//
-// templates/
-//   index.html
-//   login.html
-//   register.html
-//
-// templates/parts/
-//   header.html
-//   footer.html
-//
-// will be parsed into:
-//
-// "index.html", "login.html", "register.html", "parts/header.html",
-// "parts/footer.html".
+// init initializes the r.
 func (r *renderer) init() error {
 	if _, err := os.Stat(r.air.TemplateRoot); os.IsNotExist(err) {
 		return nil
@@ -74,8 +55,8 @@ func (r *renderer) init() error {
 			return err
 		}
 
-		for _, dir := range dirs {
-			if err := r.watcher.Add(dir); err != nil {
+		for _, d := range dirs {
+			if err := r.watcher.Add(d); err != nil {
 				return err
 			}
 		}
@@ -87,14 +68,13 @@ func (r *renderer) init() error {
 	t.Funcs(r.templateFuncMap)
 	t.Delims(r.air.TemplateLeftDelim, r.air.TemplateRightDelim)
 
-	for _, file := range files {
-		b, err := ioutil.ReadFile(file)
+	for _, f := range files {
+		b, err := ioutil.ReadFile(f)
 		if err != nil {
 			return err
 		}
-
-		name := filepath.ToSlash(file[len(tr)+1:])
-		if _, err = t.New(name).Parse(string(b)); err != nil {
+		_, err = t.New(filepath.ToSlash(f[len(tr)+1:])).Parse(string(b))
+		if err != nil {
 			return err
 		}
 	}
@@ -104,15 +84,13 @@ func (r *renderer) init() error {
 	return nil
 }
 
-// setTemplateFunc sets the func f into the `Renderer` with the
-// name.
-func (r *renderer) setTemplateFunc(name string, f interface{}) {
-	r.templateFuncMap[name] = f
-}
-
-// render renders the data into the w with the templateName.
-func (r *renderer) render(w io.Writer, templateName string, data map[string]interface{}) error {
-	return r.template.ExecuteTemplate(w, templateName, data)
+// render renders the values into the w with the templateName.
+func (r *renderer) render(
+	w io.Writer,
+	templateName string,
+	values map[string]interface{},
+) error {
+	return r.template.ExecuteTemplate(w, templateName, values)
 }
 
 // watchTemplates watchs the changing of all template files.
@@ -121,11 +99,9 @@ func (r *renderer) watchTemplates() {
 		select {
 		case event := <-r.watcher.Events:
 			r.air.Logger.Info(event)
-
 			if event.Op == fsnotify.Create {
 				r.watcher.Add(event.Name)
 			}
-
 			if err := r.init(); err != nil {
 				r.air.Logger.Error(err)
 			}
