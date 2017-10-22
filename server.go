@@ -12,7 +12,7 @@ type server struct {
 	server *http.Server
 }
 
-// newServer returns a pointer of a new instance of the `server`.
+// newServer returns a new instance of the `server`.
 func newServer(a *Air) *server {
 	return &server{
 		air:    a,
@@ -20,7 +20,7 @@ func newServer(a *Air) *server {
 	}
 }
 
-// serve starts the HTTP server.
+// serve starts the s.
 func (s *server) serve() error {
 	s.server.Addr = s.air.Address
 	s.server.Handler = s
@@ -28,13 +28,17 @@ func (s *server) serve() error {
 	s.server.WriteTimeout = s.air.WriteTimeout
 	s.server.MaxHeaderBytes = s.air.MaxHeaderBytes
 
-	if err := s.air.minifier.init(); err != nil {
-		panic(err)
-	} else if err := s.air.renderer.init(); err != nil {
-		panic(err)
-	} else if err := s.air.coffer.init(); err != nil {
-		panic(err)
-	}
+	go func() {
+		if err := s.air.minifier.init(); err != nil {
+			s.air.Logger.Error(err)
+		}
+		if err := s.air.renderer.init(); err != nil {
+			s.air.Logger.Error(err)
+		}
+		if err := s.air.coffer.init(); err != nil {
+			s.air.Logger.Error(err)
+		}
+	}()
 
 	if s.air.DebugMode {
 		s.air.LoggerEnabled = true
@@ -42,21 +46,23 @@ func (s *server) serve() error {
 	}
 
 	if s.air.TLSCertFile != "" && s.air.TLSKeyFile != "" {
-		return s.server.ListenAndServeTLS(s.air.TLSCertFile, s.air.TLSKeyFile)
+		return s.server.ListenAndServeTLS(
+			s.air.TLSCertFile,
+			s.air.TLSKeyFile,
+		)
 	}
 
 	return s.server.ListenAndServe()
 }
 
-// close closes the HTTP server immediately.
+// close closes the s immediately.
 func (s *server) close() error {
 	return s.server.Close()
 }
 
-// shutdown gracefully shuts down the HTTP server without
-// interrupting any active connections until timeout. It waits
-// indefinitely for connections to return to idle and then shut
-// down when the timeout is negative.
+// shutdown gracefully shuts down the s without interrupting any active
+// connections until timeout. It waits indefinitely for connections to return to
+// idle and then shut down when the timeout is negative.
 func (s *server) shutdown(timeout time.Duration) error {
 	if timeout < 0 {
 		return s.server.Shutdown(context.Background())
