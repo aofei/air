@@ -9,16 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRendererSetTemplateFunc(t *testing.T) {
-	a := New()
-	r := a.renderer
-	r.setTemplateFunc("unixnano", func() int64 {
-		return time.Now().UnixNano()
-	})
-	assert.NotNil(t, r.templateFuncMap["unixnano"])
-}
-
 func TestRendererInitAndRender(t *testing.T) {
+	a := New()
+	a.MinifierEnabled = true
+	a.minifier.init()
+
 	index := `
 <!DOCTYPE html>
 <html>
@@ -87,11 +82,6 @@ func TestRendererInitAndRender(t *testing.T) {
 	}()
 	mainFile.WriteString(main)
 
-	a := New()
-	a.minifier.init()
-
-	a.MinifierEnabled = true
-
 	b := &bytes.Buffer{}
 
 	assert.NoError(t, a.renderer.init())
@@ -111,11 +101,7 @@ func TestRendererInitAndRender(t *testing.T) {
 
 func TestRendererTemplateFuncs(t *testing.T) {
 	assert.Equal(t, 9, strlen("Hello, 世界"))
-	assert.Equal(
-		t,
-		"Air Web Framework",
-		strcat("Air ", "Web ", "Framework"),
-	)
+	assert.Equal(t, "Hello, 世界", strcat("Hello, ", "世界"))
 	assert.Equal(t, "世界", substr("Hello, 世界", 7, 9))
 
 	str := "2016-07-20T12:13:54Z"
