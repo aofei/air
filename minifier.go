@@ -16,14 +16,13 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
-// minifier is used to provide a `Minify()` method for an `Air` instance
-// for minifies a content by a MIME type.
+// minifier is used to provide a way to minify contents.
 type minifier struct {
 	pngEncoder *png.Encoder
 	m          *minify.M
 }
 
-// newMinifier returns a pointer of a new instance of the `minifier`.
+// newMinifier returns a new instance of the `minifier`.
 func newMinifier() *minifier {
 	return &minifier{
 		pngEncoder: &png.Encoder{
@@ -33,24 +32,18 @@ func newMinifier() *minifier {
 	}
 }
 
-// init initializes the `Minifier`. It will be called in the `Air#Serve()`.
+// init initializes the m.
 func (m *minifier) init() error {
 	m.m.Add("text/html", &html.Minifier{})
-
 	m.m.Add("text/css", &css.Minifier{
 		Decimals: -1,
 	})
-
 	m.m.Add("text/javascript", &js.Minifier{})
-
 	m.m.Add("application/json", &json.Minifier{})
-
 	m.m.Add("text/xml", &xml.Minifier{})
-
 	m.m.Add("image/svg+xml", &svg.Minifier{
 		Decimals: -1,
 	})
-
 	return nil
 }
 
@@ -68,7 +61,7 @@ func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 	return m.minifyOthers(mimeType, b)
 }
 
-// minifyJPEG minifies the b by using the "image/jpeg".
+// minifyJPEG minifies the b.
 func (m *minifier) minifyJPEG(b []byte) ([]byte, error) {
 	img, err := jpeg.Decode(bytes.NewReader(b))
 	if err != nil {
@@ -83,7 +76,7 @@ func (m *minifier) minifyJPEG(b []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// minifyPNG minifies the b by using the "image/png".
+// minifyPNG minifies the b.
 func (m *minifier) minifyPNG(b []byte) ([]byte, error) {
 	img, err := png.Decode(bytes.NewReader(b))
 	if err != nil {
@@ -98,8 +91,7 @@ func (m *minifier) minifyPNG(b []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// minifyOthers minifies the b by the mimeType by using the
-// "github.com/tdewolff/minify".
+// minifyOthers minifies the b by the mimeType.
 func (m *minifier) minifyOthers(mimeType string, b []byte) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := m.m.Minify(mimeType, buf, bytes.NewReader(b))
