@@ -21,6 +21,10 @@ func TestMinifierInit(t *testing.T) {
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
 
+	b, err = a.minifier.minify("text/html; charset=utf-8", []byte(".air{}"))
+	assert.NotNil(t, b)
+	assert.NoError(t, err)
+
 	b, err = a.minifier.minify("text/css", []byte(".air{}"))
 	assert.NotNil(t, b)
 	assert.NoError(t, err)
