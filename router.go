@@ -6,47 +6,23 @@ import (
 	"unsafe"
 )
 
-type (
-	// router is the registry of all registered routes for an `Air` instance
-	// for the HTTP request matching and the HTTP URL path params parsing.
-	router struct {
-		air *Air
+// router is the registry of all registered routes.
+type router struct {
+	air      *Air
+	routes   []*route
+	tree     *node
+	maxParam int
+}
 
-		routes []*route
-		tree   *node
-	}
+// route contains a handler and information for matching against an HTTP
+// requests.
+type route struct {
+	method  string
+	path    string
+	handler Handler
+}
 
-	// route contains a handler and information for matching against the
-	// HTTP requests.
-	route struct {
-		method  string
-		path    string
-		handler Handler
-	}
-
-	// node is the node of the field `tree` of the `router`.
-	node struct {
-		kind       nodeKind
-		label      byte
-		prefix     string
-		handlers   map[string]Handler
-		parent     *node
-		children   []*node
-		paramNames []string
-	}
-
-	// nodekind is the kind of the `node`.
-	nodeKind uint8
-)
-
-// node kinds
-const (
-	staticKind nodeKind = iota
-	paramKind
-	anyKind
-)
-
-// newRouter returns a pointer of a new instance of the `router`.
+// newRouter returns a new instance of the `router`.
 func newRouter(a *Air) *router {
 	return &router{
 		air: a,
@@ -165,9 +141,13 @@ func (r *router) insert(
 	method,
 	path string,
 	h Handler,
-	nk nodeKind,
+	nk uint8,
 	paramNames []string,
 ) {
+	if l := len(paramNames); l > r.maxParam {
+		r.maxParam = l
+	}
+
 	cn := r.tree // Current node as root
 
 	var (
@@ -275,17 +255,17 @@ func (r *router) route(req *Request) Handler {
 	cn := r.tree // Current node as root
 
 	var (
-		s   = pathClean(req.URL.Path) // Search
-		nn  *node                     // Next node
-		nk  nodeKind                  // Next kind
-		sn  *node                     // Saved node
-		ss  string                    // Saved search
-		sl  int                       // Search length
-		pl  int                       // Prefix length
-		ll  int                       // LCP length
-		max int                       // Max number of sl and pl
-		si  int                       // Start index
-		pi  int                       // Param index
+		s   = pathClean(req.URL.Path)       // Search
+		nn  *node                           // Next node
+		nk  uint8                           // Next kind
+		sn  *node                           // Saved node
+		ss  string                          // Saved search
+		sl  int                             // Search length
+		pl  int                             // Prefix length
+		ll  int                             // LCP length
+		max int                             // Max number of sl and pl
+		si  int                             // Start index
+		pvs = make([]string, 0, r.maxParam) // Param values
 	)
 
 	// Search order: static > param > any
@@ -347,8 +327,7 @@ func (r *router) route(req *Request) Handler {
 			for si = 0; si < len(s) && s[si] != '/'; si++ {
 			}
 
-			req.PathParams[cn.paramNames[pi]] = unescape(s[:si])
-			pi++
+			pvs = append(pvs, unescape(s[:si]))
 			s = s[si:]
 
 			continue
@@ -364,7 +343,11 @@ func (r *router) route(req *Request) Handler {
 				s += req.URL.Path[si+1:]
 			}
 
-			req.PathParams["*"] = unescape(s)
+			if len(pvs) < len(cn.paramNames) {
+				pvs = append(pvs, unescape(s))
+			} else {
+				pvs[len(cn.paramNames)-1] = unescape(s)
+			}
 
 			break
 		}
@@ -388,6 +371,9 @@ func (r *router) route(req *Request) Handler {
 	}
 
 	if handler := cn.handlers[req.Method]; handler != nil {
+		for i := range pvs {
+			req.PathParams[cn.paramNames[i]] = pvs[i]
+		}
 		return handler
 	} else if len(cn.handlers) != 0 {
 		return MethodNotAllowedHandler
@@ -514,8 +500,26 @@ func unhex(c byte) byte {
 	return 0
 }
 
+// node is the node of the field `tree` of the `router`.
+type node struct {
+	kind       uint8
+	label      byte
+	prefix     string
+	handlers   map[string]Handler
+	parent     *node
+	children   []*node
+	paramNames []string
+}
+
+// node kinds
+const (
+	staticKind uint8 = iota
+	paramKind
+	anyKind
+)
+
 // child returns a child `node` of the n by the provided label l and the kind t.
-func (n *node) child(l byte, nk nodeKind) *node {
+func (n *node) child(l byte, nk uint8) *node {
 	for _, c := range n.children {
 		if c.label == l && c.kind == nk {
 			return c
@@ -535,7 +539,7 @@ func (n *node) childByLabel(l byte) *node {
 }
 
 // childByKind returns a child `node` of the n by the provided kind t.
-func (n *node) childByKind(nk nodeKind) *node {
+func (n *node) childByKind(nk uint8) *node {
 	for _, c := range n.children {
 		if c.kind == nk {
 			return c
