@@ -55,14 +55,14 @@ type Air struct {
 	// It's called "logger_format" in the config files.
 	LoggerFormat string
 
-	// Address is the TCP address that the `Server` to listen on.
+	// Address is the TCP address that the HTTP server to listen on.
 	//
 	// The default value is "localhost:2333".
 	//
 	// It's called "address" in the config files.
 	Address string
 
-	// ReadTimeout is the maximum duration before timing out the `Server`
+	// ReadTimeout is the maximum duration before timing out the HTTP server
 	// will read of an HTTP request.
 	//
 	// The default value is 0.
@@ -72,8 +72,8 @@ type Air struct {
 	// **It's unit in the config files is MILLISECONDS.**
 	ReadTimeout time.Duration
 
-	// WriteTimeout is the maximum duration before timing out the `Server`
-	// will write of an HTTP response.
+	// WriteTimeout is the maximum duration before timing out the HTTP
+	// server will write of an HTTP response.
 	//
 	// The default value is 0.
 	//
@@ -82,9 +82,10 @@ type Air struct {
 	// **It's unit in the config files is MILLISECONDS.**
 	WriteTimeout time.Duration
 
-	// MaxHeaderBytes is the maximum number of bytes the `Server` will read
-	// parsing an HTTP request header's keys and values, including the HTTP
-	// request line. It does not limit the size of the HTTP request body.
+	// MaxHeaderBytes is the maximum number of bytes the HTTP server will
+	// read parsing an HTTP request header's keys and values, including the
+	// HTTP request line. It does not limit the size of the HTTP request
+	// body.
 	//
 	// The default value is 1048576.
 	//
@@ -92,7 +93,7 @@ type Air struct {
 	MaxHeaderBytes int
 
 	// TLSCertFile is the path of the TLS certificate file that will be used
-	// by the `Server`.
+	// by the HTTP server.
 	//
 	// The default value is "".
 	//
@@ -100,24 +101,25 @@ type Air struct {
 	TLSCertFile string
 
 	// TLSKeyFile is the path of the TLS key file that will be used by the
-	// `Server`.
+	// HTTP server.
 	//
 	// The default value is "".
 	//
 	// It's called "tls_key_file" in the config files.
 	TLSKeyFile string
 
-	// ErrorHandler is the centralized HTTP error handler of the `Server`.
+	// ErrorHandler is the centralized HTTP error handler of the HTTP
+	// server.
 	ErrorHandler ErrorHandler
 
-	// PreGases is a `Gas` chain which is perform before the `Router`.
+	// PreGases is a `Gas` chain which is perform before the HTTP router.
 	PreGases []Gas
 
-	// Gases is a `Gas` chain which is perform after the `Router`.
+	// Gases is a `Gas` chain which is perform after the HTTP router.
 	Gases []Gas
 
-	// MinifierEnabled indicates whether to enable the `Minifier` when the
-	// HTTP server is started. It works only with the default `Minifier`.
+	// MinifierEnabled indicates whether to enable the minifier when the
+	// HTTP server is started.
 	//
 	// The default value is false.
 	//
@@ -125,8 +127,7 @@ type Air struct {
 	MinifierEnabled bool
 
 	// TemplateRoot represents the root directory of the HTML templates. It
-	// will be parsed into the `Renderer`. It works only with the default
-	// `Renderer`.
+	// will be parsed into the renderer.
 	//
 	// The default value is "templates" that means a subdirectory of the
 	// runtime directory.
@@ -135,8 +136,7 @@ type Air struct {
 	TemplateRoot string
 
 	// TemplateExts represents the file name extensions of the HTML
-	// templates. It will be used when parsing the HTML templates. It works
-	// only with the default `Renderer`.
+	// templates. It will be used when parsing the HTML templates.
 	//
 	// The default value is [".html"].
 	//
@@ -144,8 +144,7 @@ type Air struct {
 	TemplateExts []string
 
 	// TemplateLeftDelim represents the left side of the HTML template
-	// delimiter. It will be used when parsing the HTML templates. It works
-	// only with the default `Renderer`.
+	// delimiter. It will be used when parsing the HTML templates.
 	//
 	// The default value is "{{".
 	//
@@ -153,16 +152,15 @@ type Air struct {
 	TemplateLeftDelim string
 
 	// TemplateRightDelim represents the right side of the HTML template
-	// delimiter. It will be used when parsing the HTML templates. It works
-	// only with the default `Renderer`.
+	// delimiter. It will be used when parsing the HTML templates.
 	//
 	// The default value is "}}".
 	//
 	// It's called "template_right_delim" in the config file.
 	TemplateRightDelim string
 
-	// CofferEnabled indicates whether to enable the `Coffer` when the HTTP
-	// server is started. It works only with the default `Coffer`.
+	// CofferEnabled indicates whether to enable the coffer when the HTTP
+	// server is started.
 	//
 	// The default value is false.
 	//
@@ -170,8 +168,7 @@ type Air struct {
 	CofferEnabled bool
 
 	// AssetRoot represents the root directory of the asset files. It will
-	// be loaded into the `Coffer`. It works only with the default `Coffer`
-	// and when the `CofferEnabled` is true.
+	// be loaded into the coffer.
 	//
 	// The default value is "assets" that means a subdirectory of the
 	// runtime directory.
@@ -180,8 +177,7 @@ type Air struct {
 	AssetRoot string
 
 	// AssetExts represents the file name extensions of the asset files. It
-	// will be used when loading the asset files. It works only with the
-	// default `Coffer` and when the `CofferEnabled` is true.
+	// will be used when loading the asset files.
 	//
 	// The default value is [".html", ".css", ".js", ".json", ".xml",
 	// ".svg", ".jpg", ".png"].
@@ -197,7 +193,7 @@ type Air struct {
 	Config map[string]interface{}
 }
 
-// New returns a pointer of a new instance of the `Air`.
+// New returns a new instance of the `Air`.
 func New(configFiles ...string) *Air {
 	a := &Air{
 		AppName: "air",
@@ -207,7 +203,7 @@ func New(configFiles ...string) *Air {
 		Address:        "localhost:2333",
 		MaxHeaderBytes: 1 << 20,
 		ErrorHandler: func(err error, req *Request, res *Response) {
-			he := NewError(http.StatusInternalServerError)
+			he := NewError(500)
 			if che, ok := err.(*Error); ok {
 				he = che
 			} else if req.air.DebugMode {
@@ -316,17 +312,19 @@ func New(configFiles ...string) *Air {
 	return a
 }
 
-// Serve is an alias for the `Server#Serve()` of the a.
+// Serve starts the HTTP server.
 func (a *Air) Serve() error {
 	return a.server.serve()
 }
 
-// Close is an alias for the `Server#CLose()` of the a.
+// Close closes the HTTP server immediately.
 func (a *Air) Close() error {
 	return a.server.close()
 }
 
-// Shutdown is an alias for the `Server#Shutdown()` of the a.
+// Shutdown gracefully shuts down the HTTP server without interrupting any
+// active connections until timeout. It waits indefinitely for connections to
+// return to idle and then shut down when the timeout is negative.
 func (a *Air) Shutdown(timeout time.Duration) error {
 	return a.server.shutdown(timeout)
 }
@@ -425,12 +423,12 @@ type Handler func(*Request, *Response) error
 
 // NotFoundHandler is a `Handler` returns HTTP not found error.
 var NotFoundHandler = func(*Request, *Response) error {
-	return NewError(http.StatusNotFound)
+	return NewError(404)
 }
 
 // MethodNotAllowedHandler is a `Handler` returns HTTP method not allowed error.
 var MethodNotAllowedHandler = func(*Request, *Response) error {
-	return NewError(http.StatusMethodNotAllowed)
+	return NewError(405)
 }
 
 // Gas defines a function to process gases.
