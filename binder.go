@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
@@ -24,25 +23,22 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	if r.Method == "GET" {
 		err := b.bindValues(v, r.QueryParams, "query")
 		if err != nil {
-			err = NewError(http.StatusBadRequest, err.Error())
+			err = NewError(400, err.Error())
 		}
 		return err
 	} else if r.Body == nil {
-		return NewError(
-			http.StatusBadRequest,
-			"request body can't be empty",
-		)
+		return NewError(400, "request body can't be empty")
 	}
 
 	ctype := r.Headers["Content-Type"]
-	err := error(NewError(http.StatusUnsupportedMediaType))
+	err := error(NewError(415))
 
 	switch {
 	case strings.HasPrefix(ctype, "application/json"):
 		if err = json.NewDecoder(r.Body).Decode(v); err != nil {
 			if ute, ok := err.(*json.UnmarshalTypeError); ok {
 				err = NewError(
-					http.StatusBadRequest,
+					400,
 					fmt.Sprintf(
 						"unmarshal type error: "+
 							"expected=%v, got=%v, "+
@@ -54,7 +50,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 				)
 			} else if se, ok := err.(*json.SyntaxError); ok {
 				err = NewError(
-					http.StatusBadRequest,
+					400,
 					fmt.Sprintf(
 						"syntax error: offset=%v, "+
 							"error=%v",
@@ -63,17 +59,14 @@ func (b *binder) bind(v interface{}, r *Request) error {
 					),
 				)
 			} else {
-				err = NewError(
-					http.StatusBadRequest,
-					err.Error(),
-				)
+				err = NewError(400, err.Error())
 			}
 		}
 	case strings.HasPrefix(ctype, "application/xml"):
 		if err = xml.NewDecoder(r.Body).Decode(v); err != nil {
 			if ute, ok := err.(*xml.UnsupportedTypeError); ok {
 				err = NewError(
-					http.StatusBadRequest,
+					400,
 					fmt.Sprintf(
 						"unsupported type error: "+
 							"type=%v, error=%v",
@@ -83,7 +76,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 				)
 			} else if se, ok := err.(*xml.SyntaxError); ok {
 				err = NewError(
-					http.StatusBadRequest,
+					400,
 					fmt.Sprintf(
 						"syntax error: line=%v, "+
 							"error=%v",
@@ -93,7 +86,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 				)
 			} else {
 				err = NewError(
-					http.StatusBadRequest,
+					400,
 					err.Error(),
 				)
 			}
@@ -101,7 +94,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	case strings.HasPrefix(ctype, "application/x-www-form-urlencoded"),
 		strings.HasPrefix(ctype, "multipart/form-data"):
 		if err = b.bindValues(v, r.FormParams, "form"); err != nil {
-			err = NewError(http.StatusBadRequest, err.Error())
+			err = NewError(400, err.Error())
 		}
 	}
 

@@ -43,7 +43,7 @@ func newResponse(r *Request, writer http.ResponseWriter) *Response {
 		hijacker:      hijacker,
 		closeNotifier: closeNotifier,
 		pusher:        pusher,
-		StatusCode:    http.StatusOK,
+		StatusCode:    200,
 		Headers:       map[string]string{},
 	}
 }

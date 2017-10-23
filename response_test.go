@@ -2,7 +2,6 @@ package air
 
 import (
 	"bytes"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -26,7 +25,7 @@ func TestResponse(t *testing.T) {
 	assert.Nil(t, r.hijacker)
 	assert.Nil(t, r.closeNotifier)
 	assert.Nil(t, r.pusher)
-	assert.Equal(t, http.StatusOK, r.StatusCode)
+	assert.Equal(t, 200, r.StatusCode)
 	assert.NotNil(t, r.Headers)
 	assert.Zero(t, len(r.Cookies))
 	assert.Zero(t, r.Size)

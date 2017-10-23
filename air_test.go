@@ -269,7 +269,7 @@ func TestAirServeDebugMode(t *testing.T) {
 type httpHandler struct{}
 
 func (*httpHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
+	rw.WriteHeader(200)
 }
 
 func TestAirWrapGasError(t *testing.T) {
