@@ -10,17 +10,18 @@ type Request struct {
 	air     *Air
 	request *http.Request
 
-	Method      string
-	URL         *URL
-	Proto       string
-	Headers     map[string]string
-	Body        io.Reader
-	Cookies     []*Cookie
-	PathParams  map[string]string
-	QueryParams map[string]string
-	FormParams  map[string]string
-	FormFiles   map[string]io.Reader
-	Values      map[string]interface{}
+	Method        string
+	URL           *URL
+	Proto         string
+	Headers       map[string]string
+	ContentLength int64
+	Body          io.Reader
+	Cookies       []*Cookie
+	PathParams    map[string]string
+	QueryParams   map[string]string
+	FormParams    map[string]string
+	FormFiles     map[string]io.Reader
+	Values        map[string]interface{}
 }
 
 // newRequest returns a new instance of the `Request`.
@@ -66,19 +67,20 @@ func newRequest(a *Air, r *http.Request) *Request {
 	}
 
 	return &Request{
-		air:         a,
-		request:     r,
-		Method:      r.Method,
-		URL:         newURL(r.URL),
-		Proto:       r.Proto,
-		Headers:     headers,
-		Body:        r.Body,
-		Cookies:     cookies,
-		PathParams:  map[string]string{},
-		QueryParams: queryParams,
-		FormParams:  formParams,
-		FormFiles:   formFiles,
-		Values:      map[string]interface{}{},
+		air:           a,
+		request:       r,
+		Method:        r.Method,
+		URL:           newURL(r.URL),
+		Proto:         r.Proto,
+		Headers:       headers,
+		ContentLength: r.ContentLength,
+		Body:          r.Body,
+		Cookies:       cookies,
+		PathParams:    map[string]string{},
+		QueryParams:   queryParams,
+		FormParams:    formParams,
+		FormFiles:     formFiles,
+		Values:        map[string]interface{}{},
 	}
 }
 
