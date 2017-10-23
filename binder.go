@@ -11,36 +11,35 @@ import (
 	"strings"
 )
 
-// binder is used to provide a `Bind()` method for an `Air` instance for
-// binds an HTTP request body into privided type.
+// binder is used to provide a way to bind contents.
 type binder struct{}
 
-// newBinder returns a pointer of a new instance of the `binder`.
+// newBinder returns a new instance of the `binder`.
 func newBinder() *binder {
 	return &binder{}
 }
 
-// bind binds the body of the req into the provided type i.
-func (b *binder) bind(i interface{}, req *Request) error {
-	if req.Method == "GET" {
-		err := b.bindData(i, req.QueryParams, "query")
+// bind binds the `Body` of the r into the v.
+func (b *binder) bind(v interface{}, r *Request) error {
+	if r.Method == "GET" {
+		err := b.bindValues(v, r.QueryParams, "query")
 		if err != nil {
 			err = NewError(http.StatusBadRequest, err.Error())
 		}
 		return err
-	} else if req.Body == nil {
+	} else if r.Body == nil {
 		return NewError(
 			http.StatusBadRequest,
 			"request body can't be empty",
 		)
 	}
 
-	ctype := req.Headers["Content-Type"]
+	ctype := r.Headers["Content-Type"]
 	err := error(NewError(http.StatusUnsupportedMediaType))
 
 	switch {
 	case strings.HasPrefix(ctype, "application/json"):
-		if err = json.NewDecoder(req.Body).Decode(i); err != nil {
+		if err = json.NewDecoder(r.Body).Decode(v); err != nil {
 			if ute, ok := err.(*json.UnmarshalTypeError); ok {
 				err = NewError(
 					http.StatusBadRequest,
@@ -71,7 +70,7 @@ func (b *binder) bind(i interface{}, req *Request) error {
 			}
 		}
 	case strings.HasPrefix(ctype, "application/xml"):
-		if err = xml.NewDecoder(req.Body).Decode(i); err != nil {
+		if err = xml.NewDecoder(r.Body).Decode(v); err != nil {
 			if ute, ok := err.(*xml.UnsupportedTypeError); ok {
 				err = NewError(
 					http.StatusBadRequest,
@@ -101,7 +100,7 @@ func (b *binder) bind(i interface{}, req *Request) error {
 		}
 	case strings.HasPrefix(ctype, "application/x-www-form-urlencoded"),
 		strings.HasPrefix(ctype, "multipart/form-data"):
-		if err = b.bindData(i, req.FormParams, "form"); err != nil {
+		if err = b.bindValues(v, r.FormParams, "form"); err != nil {
 			err = NewError(http.StatusBadRequest, err.Error())
 		}
 	}
@@ -109,10 +108,14 @@ func (b *binder) bind(i interface{}, req *Request) error {
 	return err
 }
 
-// bindData binds the data into the type ptr with the tag.
-func (b *binder) bindData(ptr interface{}, data map[string]string, tag string) error {
-	typ := reflect.TypeOf(ptr).Elem()
-	val := reflect.ValueOf(ptr).Elem()
+// bindValues binds the values into the v with the tag.
+func (b *binder) bindValues(
+	v interface{},
+	values map[string]string,
+	tag string,
+) error {
+	typ := reflect.TypeOf(v).Elem()
+	val := reflect.ValueOf(v).Elem()
 
 	if typ.Kind() != reflect.Struct {
 		return errors.New("binding element must be a struct")
@@ -133,9 +136,9 @@ func (b *binder) bindData(ptr interface{}, data map[string]string, tag string) e
 			inputFieldName = typeField.Name
 			// If tag is nil, we inspect if the field is a struct.
 			if structFieldKind == reflect.Struct {
-				if err := b.bindData(
+				if err := b.bindValues(
 					structField.Addr().Interface(),
-					data,
+					values,
 					tag,
 				); err != nil {
 					return err
@@ -144,7 +147,7 @@ func (b *binder) bindData(ptr interface{}, data map[string]string, tag string) e
 			}
 		}
 
-		inputValue, exists := data[inputFieldName]
+		inputValue, exists := values[inputFieldName]
 
 		if !exists {
 			continue
