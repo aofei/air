@@ -3,34 +3,21 @@ package air
 import "path"
 
 // Group is a set of sub-routes for a specified route. It can be used for inner
-// routes that share a common gas or functionality that should be separate from
-// the parent `Air` instance while still inheriting from it.
+// routes that share common gases or functionality that should be separate from
+// the parent instance while still inheriting from it.
 type Group struct {
 	air *Air
 
-	prefix string
-	gases  []Gas
+	Prefix string
+	Gases  []Gas
 }
 
-// NewGroup returns a pointer of a new router group with the prefix and the
-// optional group-level gases.
-func NewGroup(a *Air, prefix string, gases ...Gas) *Group {
+// NewGroup returns a new instance of the `Group` with the prefix.
+func NewGroup(a *Air, prefix string) *Group {
 	return &Group{
 		air:    a,
-		prefix: prefix,
-		gases:  gases,
+		Prefix: prefix,
 	}
-}
-
-// NewSubGroup creates a pointer of a new sub-group with the prefix and the
-// optional sub-group-level gases.
-func (g *Group) NewSubGroup(prefix string, gases ...Gas) *Group {
-	return NewGroup(g.air, g.prefix+prefix, append(g.gases, gases...)...)
-}
-
-// Contain implements the `Air#Contain()`.
-func (g *Group) Contain(gases ...Gas) {
-	g.gases = append(g.gases, gases...)
 }
 
 // GET implements the `Air#GET()`.
@@ -97,5 +84,5 @@ func (g *Group) add(method, path string, h Handler, gases ...Gas) {
 	if path == "/" {
 		path = ""
 	}
-	g.air.add(method, g.prefix+path, h, append(g.gases, gases...)...)
+	g.air.add(method, g.Prefix+path, h, append(g.Gases, gases...)...)
 }
