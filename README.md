@@ -140,8 +140,9 @@ As we all know that the air is a mixture of gases. So the same is that this
 framework adopts the gas as its composition. Everyone can create new gas and use
 it within this framework simply.
 
-If you want to learn more about the gases, or create your own gas for this
-framework, simply visit [here](https://github.com/sheng/gases).
+A gas is a function chained in the HTTP request-response cycle with access to
+`air.Request` and `air.Response` which it uses to perform a specific action, for
+example, logging every request or recovering from panics.
 
 ## Examples
 
