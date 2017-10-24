@@ -30,7 +30,6 @@ you one thing: **it can serve properly.**
 	* `OPTIONS`
 	* `TRACE`
 * Logger
-	* `DEBUG`
 	* `INFO`
 	* `WARN`
 	* `ERROR`
