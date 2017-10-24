@@ -30,19 +30,19 @@ func (s *server) serve() error {
 
 	go func() {
 		if err := s.air.minifier.init(); err != nil {
-			s.air.Logger.Error(err)
+			s.air.Logger.ERROR(err)
 		}
 		if err := s.air.renderer.init(); err != nil {
-			s.air.Logger.Error(err)
+			s.air.Logger.ERROR(err)
 		}
 		if err := s.air.coffer.init(); err != nil {
-			s.air.Logger.Error(err)
+			s.air.Logger.ERROR(err)
 		}
 	}()
 
 	if s.air.DebugMode {
 		s.air.LoggerEnabled = true
-		s.air.Logger.Debug("serving in debug mode")
+		s.air.Logger.DEBUG("serving in debug mode")
 	}
 
 	if s.air.TLSCertFile != "" && s.air.TLSKeyFile != "" {
@@ -97,6 +97,6 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Execute chain
 	if err := h(req, res); err != nil {
 		s.air.ErrorHandler(err, req, res)
-		s.air.Logger.Error(err)
+		s.air.Logger.ERROR(err)
 	}
 }

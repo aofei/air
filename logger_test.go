@@ -20,26 +20,26 @@ func TestLoggerLoggingMethods(t *testing.T) {
 
 	log := "foobar"
 
-	l.Debug(log)
+	l.DEBUG(log)
 	assert.NotEmpty(t, b.String())
 
 	b.Reset()
 
-	l.Info(log)
+	l.INFO(log)
 	assert.NotEmpty(t, b.String())
 
 	b.Reset()
 
-	l.Warn(log)
+	l.WARN(log)
 	assert.NotEmpty(t, b.String())
 
 	b.Reset()
 
-	l.Error(log)
+	l.ERROR(log)
 	assert.NotEmpty(t, b.String())
 
 	b.Reset()
 
-	assert.Panics(t, func() { l.Panic(log) })
+	assert.Panics(t, func() { l.PANIC(log) })
 	assert.NotEmpty(t, b.String())
 }
