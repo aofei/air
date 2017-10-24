@@ -80,7 +80,11 @@ func (c *coffer) init() error {
 			}
 		}
 
-		assets[file] = newAsset(file, fi.ModTime(), b)
+		assets[file] = &Asset{
+			Name:    file,
+			ModTime: fi.ModTime(),
+			Reader:  bytes.NewReader(b),
+		}
 	}
 
 	c.assets = assets
@@ -139,13 +143,4 @@ type Asset struct {
 	Name    string
 	ModTime time.Time
 	Reader  *bytes.Reader
-}
-
-// newAsset returns a new instance of the `Asset`.
-func newAsset(name string, modTime time.Time, content []byte) *Asset {
-	return &Asset{
-		Name:    name,
-		ModTime: modTime,
-		Reader:  bytes.NewReader(content),
-	}
 }

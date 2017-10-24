@@ -15,18 +15,18 @@ import (
 
 // Response represents the HTTP response.
 type Response struct {
+	StatusCode int
+	Headers    map[string]string
+	Cookies    []*Cookie
+	Size       int
+	Written    bool
+
 	request       *Request
 	writer        http.ResponseWriter
 	flusher       http.Flusher
 	hijacker      http.Hijacker
 	closeNotifier http.CloseNotifier
 	pusher        http.Pusher
-
-	StatusCode int
-	Headers    map[string]string
-	Cookies    []*Cookie
-	Size       int
-	Written    bool
 }
 
 // newResponse returns a new instance of the `Response`.
@@ -37,14 +37,14 @@ func newResponse(r *Request, writer http.ResponseWriter) *Response {
 	pusher, _ := writer.(http.Pusher)
 
 	return &Response{
+		StatusCode:    200,
+		Headers:       map[string]string{},
 		request:       r,
 		writer:        writer,
 		flusher:       flusher,
 		hijacker:      hijacker,
 		closeNotifier: closeNotifier,
 		pusher:        pusher,
-		StatusCode:    200,
-		Headers:       map[string]string{},
 	}
 }
 

@@ -7,9 +7,6 @@ import (
 
 // Request represents the HTTP request.
 type Request struct {
-	air     *Air
-	request *http.Request
-
 	Method        string
 	URL           *URL
 	Proto         string
@@ -22,6 +19,9 @@ type Request struct {
 	FormParams    map[string]string
 	FormFiles     map[string]io.Reader
 	Values        map[string]interface{}
+
+	air     *Air
+	request *http.Request
 }
 
 // newRequest returns a new instance of the `Request`.
@@ -67,8 +67,6 @@ func newRequest(a *Air, r *http.Request) *Request {
 	}
 
 	return &Request{
-		air:           a,
-		request:       r,
 		Method:        r.Method,
 		URL:           newURL(r.URL),
 		Proto:         r.Proto,
@@ -81,6 +79,8 @@ func newRequest(a *Air, r *http.Request) *Request {
 		FormParams:    formParams,
 		FormFiles:     formFiles,
 		Values:        map[string]interface{}{},
+		air:           a,
+		request:       r,
 	}
 }
 

@@ -13,13 +13,6 @@ import (
 
 // Air is the top-level framework struct.
 type Air struct {
-	server   *server
-	router   *router
-	binder   *binder
-	minifier *minifier
-	renderer *renderer
-	coffer   *coffer
-
 	// AppName is the name of the current web application.
 	//
 	// The default value is "air".
@@ -191,6 +184,13 @@ type Air struct {
 	// e.g. Config["foobar"] will accesses the value in the config files
 	// named "foobar".
 	Config map[string]interface{}
+
+	server   *server
+	router   *router
+	binder   *binder
+	minifier *minifier
+	renderer *renderer
+	coffer   *coffer
 }
 
 // New returns a new instance of the `Air`.
@@ -234,14 +234,13 @@ func New(configFiles ...string) *Air {
 		},
 	}
 
+	a.Logger = newLogger(a)
 	a.server = newServer(a)
 	a.router = newRouter(a)
 	a.binder = newBinder()
 	a.minifier = newMinifier()
 	a.renderer = newRenderer(a)
 	a.coffer = newCoffer(a)
-
-	a.Logger = newLogger(a)
 
 	for _, cf := range configFiles {
 		b, _ := ioutil.ReadFile(cf)
