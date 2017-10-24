@@ -25,6 +25,56 @@ func TestAirNew(t *testing.T) {
 	assert.NotNil(t, a.coffer)
 }
 
+func TestAirNewConfigFiles(t *testing.T) {
+	toml := `
+app_name = "air"
+debug_mode = true
+logger_enabled = true
+logger_format = "air_log"
+address = "127.0.0.1:2333"
+read_timeout = 200
+write_timeout = 200
+max_header_bytes = 65536
+tls_cert_file = "path_to_tls_cert_file"
+tls_key_file = "path_to_tls_key_file"
+minifier_enabled = true
+template_root = "ts"
+template_exts = [".tmpl"]
+template_left_delim = "<<"
+template_right_delim = ">>"
+coffer_enabled = true
+asset_root = "as"
+asset_exts = [".jpg"]
+`
+
+	f, _ := os.Create("config.toml")
+	defer func() {
+		f.Close()
+		os.Remove(f.Name())
+	}()
+	f.WriteString(toml)
+
+	a := New("config.toml")
+	assert.Equal(t, "air", a.AppName)
+	assert.True(t, a.DebugMode)
+	assert.True(t, a.LoggerEnabled)
+	assert.Equal(t, "air_log", a.LoggerFormat)
+	assert.Equal(t, "127.0.0.1:2333", a.Address)
+	assert.Equal(t, 200*time.Millisecond, a.ReadTimeout)
+	assert.Equal(t, 200*time.Millisecond, a.WriteTimeout)
+	assert.Equal(t, 65536, a.MaxHeaderBytes)
+	assert.Equal(t, "path_to_tls_cert_file", a.TLSCertFile)
+	assert.Equal(t, "path_to_tls_key_file", a.TLSKeyFile)
+	assert.True(t, a.MinifierEnabled)
+	assert.Equal(t, "ts", a.TemplateRoot)
+	assert.Equal(t, []string{".tmpl"}, a.TemplateExts)
+	assert.Equal(t, "<<", a.TemplateLeftDelim)
+	assert.Equal(t, ">>", a.TemplateRightDelim)
+	assert.Equal(t, "as", a.AssetRoot)
+	assert.Equal(t, []string{".jpg"}, a.AssetExts)
+	assert.NotNil(t, a.Config)
+}
+
 func TestAirMethods(t *testing.T) {
 	a := New()
 	s := a.server
