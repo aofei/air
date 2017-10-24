@@ -381,9 +381,9 @@ func (a *Air) TRACE(path string, h Handler, gases ...Gas) {
 	a.add("TRACE", path, h, gases...)
 }
 
-// Static registers a new route with the path prefix to serve the static files
+// STATIC registers a new route with the path prefix to serve the static files
 // from the provided root directory.
-func (a *Air) Static(prefix, root string) {
+func (a *Air) STATIC(prefix, root string) {
 	a.GET(prefix+"*", func(req *Request, res *Response) error {
 		err := res.File(path.Join(root, req.PathParams["*"]))
 		if os.IsNotExist(err) {
@@ -393,8 +393,8 @@ func (a *Air) Static(prefix, root string) {
 	})
 }
 
-// File registers a new route with the path to serve a static file.
-func (a *Air) File(path, file string) {
+// FILE registers a new route with the path to serve a static file.
+func (a *Air) FILE(path, file string) {
 	a.GET(path, func(req *Request, res *Response) error {
 		err := res.File(file)
 		if os.IsNotExist(err) {

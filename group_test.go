@@ -27,7 +27,7 @@ func TestGroupRESTfulMethods(t *testing.T) {
 	g.TRACE("/", nil)
 }
 
-func TestGroupStatic(t *testing.T) {
+func TestGroupSTATIC(t *testing.T) {
 	a := New()
 	a.server = newServer(a)
 
@@ -39,7 +39,7 @@ func TestGroupStatic(t *testing.T) {
 		Air:    a,
 		Prefix: prefix,
 	}
-	g.Static(secondPrefix, ".")
+	g.STATIC(secondPrefix, ".")
 
 	b, _ := ioutil.ReadFile(fn)
 	req, _ := http.NewRequest("GET", prefix+secondPrefix+"/"+fn, nil)
@@ -58,7 +58,7 @@ func TestGroupStatic(t *testing.T) {
 	assert.Equal(t, b, rec.Body.Bytes())
 }
 
-func TestGroupFile(t *testing.T) {
+func TestGroupFILE(t *testing.T) {
 	a := New()
 	a.server = newServer(a)
 
@@ -70,7 +70,7 @@ func TestGroupFile(t *testing.T) {
 		Air:    a,
 		Prefix: prefix,
 	}
-	g.File(path, fn)
+	g.FILE(path, fn)
 
 	b, _ := ioutil.ReadFile(fn)
 	req, _ := http.NewRequest("GET", prefix+path, nil)
