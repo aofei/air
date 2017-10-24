@@ -34,11 +34,6 @@ func newLogger(a *Air) *Logger {
 	}
 }
 
-// DEBUG logs the v at the DEBUG level.
-func (l *Logger) DEBUG(v ...interface{}) {
-	l.log("DEBUG", v...)
-}
-
 // INFO logs the v at the INFO level.
 func (l *Logger) INFO(v ...interface{}) {
 	l.log("INFO", v...)

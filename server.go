@@ -42,7 +42,7 @@ func (s *server) serve() error {
 
 	if s.air.DebugMode {
 		s.air.LoggerEnabled = true
-		s.air.Logger.DEBUG("serving in debug mode")
+		s.air.Logger.INFO("serving in debug mode")
 	}
 
 	if s.air.TLSCertFile != "" && s.air.TLSKeyFile != "" {

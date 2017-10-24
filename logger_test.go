@@ -20,11 +20,6 @@ func TestLoggerLoggingMethods(t *testing.T) {
 
 	log := "foobar"
 
-	l.DEBUG(log)
-	assert.NotEmpty(t, b.String())
-
-	b.Reset()
-
 	l.INFO(log)
 	assert.NotEmpty(t, b.String())
 
