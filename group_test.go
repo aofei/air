@@ -11,7 +11,10 @@ import (
 
 func TestGroupRESTfulMethods(t *testing.T) {
 	a := New()
-	g := NewGroup(a, "/group")
+	g := &Group{
+		Air:    a,
+		Prefix: "/group",
+	}
 
 	g.GET("/", nil)
 	g.HEAD("/", nil)
@@ -32,7 +35,10 @@ func TestGroupStatic(t *testing.T) {
 	secondPrefix := "/air"
 	fn := "air.go"
 
-	g := NewGroup(a, prefix)
+	g := &Group{
+		Air:    a,
+		Prefix: prefix,
+	}
 	g.Static(secondPrefix, ".")
 
 	b, _ := ioutil.ReadFile(fn)
@@ -60,7 +66,10 @@ func TestGroupFile(t *testing.T) {
 	path := "/air"
 	fn := "air.go"
 
-	g := NewGroup(a, prefix)
+	g := &Group{
+		Air:    a,
+		Prefix: prefix,
+	}
 	g.File(path, fn)
 
 	b, _ := ioutil.ReadFile(fn)

@@ -15,22 +15,22 @@ import (
 
 // Logger is used to log information generated in the runtime.
 type Logger struct {
+	Output io.Writer
+
 	air      *Air
 	mutex    *sync.Mutex
 	template *template.Template
-
-	Output io.Writer
 }
 
 // newLogger returns a new instance of the `Logger`.
 func newLogger(a *Air) *Logger {
 	return &Logger{
-		air:   a,
-		mutex: &sync.Mutex{},
+		Output: os.Stdout,
+		air:    a,
+		mutex:  &sync.Mutex{},
 		template: template.Must(
 			template.New("logger").Parse(a.LoggerFormat),
 		),
-		Output: os.Stdout,
 	}
 }
 

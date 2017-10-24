@@ -16,13 +16,13 @@ import (
 func TestAirNew(t *testing.T) {
 	a := New()
 
+	assert.NotNil(t, a.Logger)
 	assert.NotNil(t, a.server)
 	assert.NotNil(t, a.router)
 	assert.NotNil(t, a.binder)
 	assert.NotNil(t, a.minifier)
 	assert.NotNil(t, a.renderer)
 	assert.NotNil(t, a.coffer)
-	assert.NotNil(t, a.Logger)
 }
 
 func TestAirMethods(t *testing.T) {

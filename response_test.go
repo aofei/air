@@ -19,17 +19,17 @@ func TestResponse(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	r := newResponse(req, rec)
+	assert.Equal(t, 200, r.StatusCode)
+	assert.NotNil(t, r.Headers)
+	assert.Zero(t, len(r.Cookies))
+	assert.Zero(t, r.Size)
+	assert.False(t, r.Written)
 	assert.Equal(t, req, r.request)
 	assert.Equal(t, rec, r.writer)
 	assert.Equal(t, rec, r.flusher)
 	assert.Nil(t, r.hijacker)
 	assert.Nil(t, r.closeNotifier)
 	assert.Nil(t, r.pusher)
-	assert.Equal(t, 200, r.StatusCode)
-	assert.NotNil(t, r.Headers)
-	assert.Zero(t, len(r.Cookies))
-	assert.Zero(t, r.Size)
-	assert.False(t, r.Written)
 }
 
 func TestResponseWrite(t *testing.T) {

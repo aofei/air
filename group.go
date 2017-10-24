@@ -6,18 +6,9 @@ import "path"
 // routes that share common gases or functionality that should be separate from
 // the parent instance while still inheriting from it.
 type Group struct {
-	air *Air
-
+	Air    *Air
 	Prefix string
 	Gases  []Gas
-}
-
-// NewGroup returns a new instance of the `Group` with the prefix.
-func NewGroup(a *Air, prefix string) *Group {
-	return &Group{
-		air:    a,
-		Prefix: prefix,
-	}
 }
 
 // GET implements the `Air#GET()`.
@@ -84,5 +75,5 @@ func (g *Group) add(method, path string, h Handler, gases ...Gas) {
 	if path == "/" {
 		path = ""
 	}
-	g.air.add(method, g.Prefix+path, h, append(g.Gases, gases...)...)
+	g.Air.add(method, g.Prefix+path, h, append(g.Gases, gases...)...)
 }

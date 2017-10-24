@@ -20,7 +20,7 @@ func TestRequest(t *testing.T) {
 	sr.Header.Set("Cookie", "foo=bar")
 	sr.MultipartForm = &multipart.Form{
 		File: map[string][]*multipart.FileHeader{
-			"foobar": []*multipart.FileHeader{
+			"foobar": {
 				&multipart.FileHeader{},
 			},
 		},
@@ -28,8 +28,6 @@ func TestRequest(t *testing.T) {
 
 	r := newRequest(a, sr)
 	assert.NotNil(t, r)
-	assert.Equal(t, a, r.air)
-	assert.Equal(t, sr, r.request)
 	assert.Equal(t, sr.Method, r.Method)
 	assert.Equal(t, sr.URL.String(), r.URL.String())
 	assert.Equal(t, sr.Proto, r.Proto)
@@ -41,6 +39,8 @@ func TestRequest(t *testing.T) {
 	assert.Equal(t, len(sr.Form), len(r.FormParams))
 	assert.Equal(t, len(sr.MultipartForm.File), len(r.FormFiles))
 	assert.Zero(t, len(r.Values))
+	assert.Equal(t, a, r.air)
+	assert.Equal(t, sr, r.request)
 
 	var s struct {
 		Foobar string
