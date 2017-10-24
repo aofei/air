@@ -1,25 +1,15 @@
 package air
 
 import (
-	"fmt"
 	"strings"
 	"unsafe"
 )
 
 // router is the registry of all registered routes.
 type router struct {
-	air      *Air
-	routes   []*route
-	tree     *node
-	maxParam int
-}
-
-// route contains a handler and information for matching against an HTTP
-// requests.
-type route struct {
-	method  string
-	path    string
-	handler Handler
+	air       *Air
+	tree      *node
+	maxParams int
 }
 
 // newRouter returns a new instance of the `router`.
@@ -39,8 +29,7 @@ func (r *router) add(method, path string, h Handler) {
 	} else if path[0] != '/' {
 		panic("air: the path must start with the /")
 	} else if path != "/" && hasLastSlash(path) {
-		panic("air: the path cannot end with the /, except the root " +
-			"path")
+		panic("air: only the root path can end with the /")
 	} else if strings.Contains(path, "//") {
 		panic("air: the path cannot have the //")
 	} else if strings.Count(path, ":") > 1 {
@@ -64,37 +53,7 @@ func (r *router) add(method, path string, h Handler) {
 			panic("air: adjacent param and the * in the path " +
 				"must be separated by the /")
 		}
-	} else {
-		for _, route := range r.routes {
-			if route.method == method {
-				if route.path == path {
-					panic(fmt.Sprintf(
-						"air: the route [%s %s] is "+
-							"already registered",
-						method,
-						path,
-					))
-				} else if pathWithoutParamNames(route.path) ==
-					pathWithoutParamNames(path) {
-					panic(fmt.Sprintf(
-						"air: the route [%s %s] and "+
-							"the route [%s %s] "+
-							"are ambiguous",
-						method,
-						path,
-						route.method,
-						route.path,
-					))
-				}
-			}
-		}
 	}
-
-	r.routes = append(r.routes, &route{
-		method:  method,
-		path:    path,
-		handler: h,
-	})
 
 	paramNames := []string{}
 
@@ -144,8 +103,8 @@ func (r *router) insert(
 	nk uint8,
 	paramNames []string,
 ) {
-	if l := len(paramNames); l > r.maxParam {
-		r.maxParam = l
+	if l := len(paramNames); l > r.maxParams {
+		r.maxParams = l
 	}
 
 	cn := r.tree // Current node as root
@@ -255,17 +214,17 @@ func (r *router) route(req *Request) Handler {
 	cn := r.tree // Current node as root
 
 	var (
-		s   = pathClean(req.URL.Path)       // Search
-		nn  *node                           // Next node
-		nk  uint8                           // Next kind
-		sn  *node                           // Saved node
-		ss  string                          // Saved search
-		sl  int                             // Search length
-		pl  int                             // Prefix length
-		ll  int                             // LCP length
-		max int                             // Max number of sl and pl
-		si  int                             // Start index
-		pvs = make([]string, 0, r.maxParam) // Param values
+		s   = pathClean(req.URL.Path)        // Search
+		nn  *node                            // Next node
+		nk  uint8                            // Next kind
+		sn  *node                            // Saved node
+		ss  string                           // Saved search
+		sl  int                              // Search length
+		pl  int                              // Prefix length
+		ll  int                              // LCP length
+		max int                              // Max number of sl and pl
+		si  int                              // Start index
+		pvs = make([]string, 0, r.maxParams) // Param values
 	)
 
 	// Search order: static > param > any
