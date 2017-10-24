@@ -98,15 +98,15 @@ func (r *renderer) watchTemplates() {
 	for {
 		select {
 		case event := <-r.watcher.Events:
-			r.air.Logger.Info(event)
+			r.air.Logger.INFO(event)
 			if event.Op == fsnotify.Create {
 				r.watcher.Add(event.Name)
 			}
 			if err := r.init(); err != nil {
-				r.air.Logger.Error(err)
+				r.air.Logger.ERROR(err)
 			}
 		case err := <-r.watcher.Errors:
-			r.air.Logger.Error(err)
+			r.air.Logger.ERROR(err)
 		}
 	}
 }

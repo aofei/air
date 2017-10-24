@@ -34,34 +34,34 @@ func newLogger(a *Air) *Logger {
 	}
 }
 
-// Debug logs the v at the DEBUG level.
-func (l *Logger) Debug(v ...interface{}) {
+// DEBUG logs the v at the DEBUG level.
+func (l *Logger) DEBUG(v ...interface{}) {
 	l.log("DEBUG", v...)
 }
 
-// Info logs the v at the INFO level.
-func (l *Logger) Info(v ...interface{}) {
+// INFO logs the v at the INFO level.
+func (l *Logger) INFO(v ...interface{}) {
 	l.log("INFO", v...)
 }
 
-// Warn logs the v at the WARN level.
-func (l *Logger) Warn(v ...interface{}) {
+// WARN logs the v at the WARN level.
+func (l *Logger) WARN(v ...interface{}) {
 	l.log("WARN", v...)
 }
 
-// Error logs the v at the ERROR level.
-func (l *Logger) Error(v ...interface{}) {
+// ERROR logs the v at the ERROR level.
+func (l *Logger) ERROR(v ...interface{}) {
 	l.log("ERROR", v...)
 }
 
-// Panic logs the v at the PANIC level.
-func (l *Logger) Panic(v ...interface{}) {
+// PANIC logs the v at the PANIC level.
+func (l *Logger) PANIC(v ...interface{}) {
 	l.log("PANIC", v...)
 	panic(fmt.Sprint(v...))
 }
 
-// Fatal logs the v at the FATAL level.
-func (l *Logger) Fatal(v ...interface{}) {
+// FATAL logs the v at the FATAL level.
+func (l *Logger) FATAL(v ...interface{}) {
 	l.log("FATAL", v...)
 	os.Exit(1)
 }

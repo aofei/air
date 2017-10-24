@@ -104,17 +104,17 @@ func (c *coffer) watchAssets() {
 	for {
 		select {
 		case event := <-c.watcher.Events:
-			c.air.Logger.Info(event)
+			c.air.Logger.INFO(event)
 
 			if event.Op == fsnotify.Create {
 				c.watcher.Add(event.Name)
 			}
 
 			if err := c.init(); err != nil {
-				c.air.Logger.Error(err)
+				c.air.Logger.ERROR(err)
 			}
 		case err := <-c.watcher.Errors:
-			c.air.Logger.Error(err)
+			c.air.Logger.ERROR(err)
 		}
 	}
 }
