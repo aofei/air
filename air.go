@@ -323,7 +323,8 @@ func (a *Air) Close() error {
 
 // Shutdown gracefully shuts down the HTTP server without interrupting any
 // active connections until timeout. It waits indefinitely for connections to
-// return to idle and then shut down when the timeout is negative.
+// return to idle and then shut down when the timeout is less than or equal to
+// 0.
 func (a *Air) Shutdown(timeout time.Duration) error {
 	return a.server.shutdown(timeout)
 }

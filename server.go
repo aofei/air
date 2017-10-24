@@ -62,9 +62,9 @@ func (s *server) close() error {
 
 // shutdown gracefully shuts down the s without interrupting any active
 // connections until timeout. It waits indefinitely for connections to return to
-// idle and then shut down when the timeout is negative.
+// idle and then shut down when the timeout is less than or equal to 0.
 func (s *server) shutdown(timeout time.Duration) error {
-	if timeout < 0 {
+	if timeout <= 0 {
 		return s.server.Shutdown(context.Background())
 	}
 
