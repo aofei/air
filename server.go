@@ -97,5 +97,6 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Execute chain
 	if err := h(req, res); err != nil {
 		s.air.ErrorHandler(err, req, res)
+		s.air.Logger.Error(err)
 	}
 }

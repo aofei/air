@@ -201,22 +201,20 @@ func New(configFiles ...string) *Air {
 		Address:        "localhost:2333",
 		MaxHeaderBytes: 1 << 20,
 		ErrorHandler: func(err error, req *Request, res *Response) {
-			he := &Error{
+			e := &Error{
 				Code:    500,
 				Message: "Internal Server Error",
 			}
-			if che, ok := err.(*Error); ok {
-				he = che
+			if ce, ok := err.(*Error); ok {
+				e = ce
 			} else if req.air.DebugMode {
-				he.Message = err.Error()
+				e.Message = err.Error()
 			}
 
 			if !res.Written {
-				res.StatusCode = he.Code
-				res.String(he.Message)
+				res.StatusCode = e.Code
+				res.String(e.Message)
 			}
-
-			req.air.Logger.Error(err)
 		},
 		TemplateRoot:       "templates",
 		TemplateExts:       []string{".html"},
@@ -452,7 +450,7 @@ func WrapGas(h Handler) Gas {
 	}
 }
 
-// Error represents an error that occurred while handling HTTP requests.
+// Error represents the HTTP error.
 type Error struct {
 	Code    int
 	Message string
@@ -463,5 +461,5 @@ func (e *Error) Error() string {
 	return e.Message
 }
 
-// ErrorHandler is a centralized HTTP error handler.
+// ErrorHandler represents the centralized error handler.
 type ErrorHandler func(error, *Request, *Response)
