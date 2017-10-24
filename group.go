@@ -56,15 +56,15 @@ func (g *Group) TRACE(path string, h Handler, gases ...Gas) {
 	g.add("TRACE", path, h, gases...)
 }
 
-// Static implements the `Air#Static()`.
-func (g *Group) Static(prefix, root string) {
+// STATIC implements the `Air#STATIC()`.
+func (g *Group) STATIC(prefix, root string) {
 	g.GET(prefix+"*", func(req *Request, res *Response) error {
 		return res.File(path.Join(root, req.PathParams["*"]))
 	})
 }
 
-// File implements the `Air#File()`.
-func (g *Group) File(path, file string) {
+// FILE implements the `Air#FILE()`.
+func (g *Group) FILE(path, file string) {
 	g.GET(path, func(req *Request, res *Response) error {
 		return res.File(file)
 	})

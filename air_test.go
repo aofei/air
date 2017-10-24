@@ -104,7 +104,7 @@ func TestAirMethods(t *testing.T) {
 	assert.Equal(t, "TRACE", rec.Body.String())
 }
 
-func TestAirStatic(t *testing.T) {
+func TestAirSTATIC(t *testing.T) {
 	a := New()
 	s := a.server
 	prefix := "/air"
@@ -113,7 +113,7 @@ func TestAirStatic(t *testing.T) {
 	req, _ := http.NewRequest("GET", prefix+"/"+fn, nil)
 	rec := httptest.NewRecorder()
 
-	a.Static(prefix, ".")
+	a.STATIC(prefix, ".")
 
 	s.ServeHTTP(rec, req)
 	assert.Equal(t, b, rec.Body.Bytes())
@@ -126,7 +126,7 @@ func TestAirStatic(t *testing.T) {
 	assert.Equal(t, b, rec.Body.Bytes())
 }
 
-func TestAirFile(t *testing.T) {
+func TestAirFILE(t *testing.T) {
 	a := New()
 	s := a.server
 	path := "/air"
@@ -135,7 +135,7 @@ func TestAirFile(t *testing.T) {
 	req, _ := http.NewRequest("GET", path, nil)
 	rec := httptest.NewRecorder()
 
-	a.File(path, fn)
+	a.FILE(path, fn)
 
 	s.ServeHTTP(rec, req)
 	assert.Equal(t, b, rec.Body.Bytes())
