@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRouterCheckPath(t *testing.T) {
+func TestRouterAdd(t *testing.T) {
 	a := New()
 	r := a.router
 
@@ -21,8 +21,6 @@ func TestRouterCheckPath(t *testing.T) {
 	assert.Panics(t, func() { r.add("GET", "/foo*/bar*", nil) })
 	assert.Panics(t, func() { r.add("GET", "/:foobar*", nil) })
 	assert.NotPanics(t, func() { r.add("GET", "/:foo", nil) })
-	assert.Panics(t, func() { r.add("GET", "/:foo", nil) })
-	assert.Panics(t, func() { r.add("GET", "/:bar", nil) })
 	assert.Panics(t, func() { r.add("GET", "/:foobar/:foobar", nil) })
 }
 
