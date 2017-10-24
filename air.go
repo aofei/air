@@ -171,7 +171,7 @@ type Air struct {
 	// will be used when loading the asset files.
 	//
 	// The default value is [".html", ".css", ".js", ".json", ".xml",
-	// ".svg", ".jpg", ".png"].
+	// ".svg", ".jpg", ".jpeg", ".png"].
 	//
 	// It's called "asset_exts" in the config file.
 	AssetExts []string
@@ -229,6 +229,7 @@ func New(configFiles ...string) *Air {
 			".xml",
 			".svg",
 			".jpg",
+			".jpeg",
 			".png",
 		},
 	}
