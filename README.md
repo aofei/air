@@ -15,11 +15,11 @@ you one thing: **it can serve properly.**
 
 ## Features
 
-* APIs
+* API
 	* As less as possible.
 	* As simple as possible.
 	* As expressive as possible.
-* HTTP Methods
+* Methods
 	* `GET`
 	* `HEAD`
 	* `POST`
@@ -35,12 +35,10 @@ you one thing: **it can serve properly.**
 	* `ERROR`
 	* `PANIC`
 	* `FATAL`
-	* Powered by the Go `text/template`.
 * Server
 	* HTTP/2 support.
 	* SSL/TLS support.
 	* Gracefully shutdown support.
-	* Powered by the Go `net/http`.
 * Router
 	* Based on the Radix Tree.
 	* Has a good inspection mechanism.
@@ -52,29 +50,24 @@ you one thing: **it can serve properly.**
 	* Route level.
 	* Group level.
 * Binder
-	* Based on the `Content-Type` header.
-	* Supported MIME types:
-		* `application/json`.
-		* `application/xml`.
-		* `application/x-www-form-urlencoded`.
+	* `application/json`.
+	* `application/xml`.
+	* `application/x-www-form-urlencoded`.
 * Minifier
-	* Supported MIME types:
-		* `text/html`
-		* `text/css`
-		* `text/javascript`
-		* `application/json`
-		* `text/xml`
-		* `image/svg+xml`
-		* `image/jpeg`
-		* `image/png`
-	* Powered by the Go `image` and the [minify](https://github.com/tdewolff/minify).
+	* `text/html`
+	* `text/css`
+	* `text/javascript`
+	* `application/json`
+	* `text/xml`
+	* `image/svg+xml`
+	* `image/jpeg`
+	* `image/png`
 * Renderer
 	* Rich template functions.
-	* Hot update support by using the [fsnotify](https://github.com/fsnotify/fsnotify).
-	* Powered by the Go `html/template`.
+	* Hot update support.
 * Coffer
 	* Accesses binary asset files by using the runtime memory.
-	* Reduces the hard disk I/O and significantly improves the performance of the `Response#File()`.
+	* Significantly improves the performance of the `air.Response#File()`.
 	* Asset file minimization:
 		* `.html`
 		* `.css`
@@ -85,7 +78,7 @@ you one thing: **it can serve properly.**
 		* `.jpg`
 		* `.jpeg`
 		* `.png`
-	* Hot update support by using the [fsnotify](https://github.com/fsnotify/fsnotify).
+	* Hot update support.
 * Error
 	* Centralized handling.
 
