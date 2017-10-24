@@ -1,9 +1,7 @@
 package air
 
 import (
-	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
 	"time"
@@ -203,7 +201,10 @@ func New(configFiles ...string) *Air {
 		Address:        "localhost:2333",
 		MaxHeaderBytes: 1 << 20,
 		ErrorHandler: func(err error, req *Request, res *Response) {
-			he := NewError(500)
+			he := &Error{
+				Code:    500,
+				Message: "Internal Server Error",
+			}
 			if che, ok := err.(*Error); ok {
 				he = che
 			} else if req.air.DebugMode {
@@ -422,12 +423,18 @@ type Handler func(*Request, *Response) error
 
 // NotFoundHandler is a `Handler` returns HTTP not found error.
 var NotFoundHandler = func(*Request, *Response) error {
-	return NewError(404)
+	return &Error{
+		Code:    404,
+		Message: "Not Found",
+	}
 }
 
 // MethodNotAllowedHandler is a `Handler` returns HTTP method not allowed error.
 var MethodNotAllowedHandler = func(*Request, *Response) error {
-	return NewError(405)
+	return &Error{
+		Code:    405,
+		Message: "Method Not Allowed",
+	}
 }
 
 // Gas defines a function to process gases.
@@ -449,15 +456,6 @@ func WrapGas(h Handler) Gas {
 type Error struct {
 	Code    int
 	Message string
-}
-
-// NewError returns a pointer of a new instance of the `Error`.
-func NewError(code int, messages ...interface{}) *Error {
-	e := &Error{Code: code, Message: http.StatusText(code)}
-	if len(messages) > 0 {
-		e.Message = fmt.Sprint(messages...)
-	}
-	return e
 }
 
 // Error implements the `error#Error()`.
