@@ -134,6 +134,10 @@ func mimeTypeByExt(ext string) string {
 		return "text/xml"
 	case ".svg":
 		return "image/svg+xml"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".png":
+		return "image/png"
 	}
 	return ""
 }

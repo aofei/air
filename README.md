@@ -30,6 +30,12 @@ you one thing: **it can serve properly.**
 	* `OPTIONS`
 	* `TRACE`
 * Logger
+	* `DEBUG`
+	* `INFO`
+	* `WARN`
+	* `ERROR`
+	* `PANIC`
+	* `FATAL`
 	* Powered by the Go `text/template`.
 * Server
 	* HTTP/2 support.
@@ -59,9 +65,9 @@ you one thing: **it can serve properly.**
 		* `text/javascript`
 		* `application/json`
 		* `text/xml`
+		* `image/svg+xml`
 		* `image/jpeg`
 		* `image/png`
-		* `image/svg+xml`
 	* Powered by the Go `image` and the [minify](https://github.com/tdewolff/minify).
 * Renderer
 	* Rich template functions.
@@ -77,6 +83,9 @@ you one thing: **it can serve properly.**
 		* `.json`
 		* `.xml`
 		* `.svg`
+		* `.jpg`
+		* `.jpeg`
+		* `.png`
 	* Hot update support by using the [fsnotify](https://github.com/fsnotify/fsnotify).
 * Error
 	* Centralized handling.
