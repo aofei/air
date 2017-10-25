@@ -22,8 +22,9 @@ func newRouter(a *Air) *router {
 	}
 }
 
-// add registers a new route for the method and the path with the matching h.
-func (r *router) add(method, path string, h Handler) {
+// register registers a new route for the method and the path with the matching
+// h.
+func (r *router) register(method, path string, h Handler) {
 	if path == "" {
 		panic("air: the path cannot be empty")
 	} else if path[0] != '/' {

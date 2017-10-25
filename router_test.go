@@ -8,20 +8,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRouterAdd(t *testing.T) {
+func TestRouterRegister(t *testing.T) {
 	a := New()
 	r := a.router
 
-	assert.Panics(t, func() { r.add("GET", "", nil) })
-	assert.Panics(t, func() { r.add("GET", "foobar", nil) })
-	assert.Panics(t, func() { r.add("GET", "/foobar/", nil) })
-	assert.Panics(t, func() { r.add("GET", "//foobar", nil) })
-	assert.Panics(t, func() { r.add("GET", "/:foo:bar", nil) })
-	assert.Panics(t, func() { r.add("GET", "/foo*/bar", nil) })
-	assert.Panics(t, func() { r.add("GET", "/foo*/bar*", nil) })
-	assert.Panics(t, func() { r.add("GET", "/:foobar*", nil) })
-	assert.NotPanics(t, func() { r.add("GET", "/:foo", nil) })
-	assert.Panics(t, func() { r.add("GET", "/:foobar/:foobar", nil) })
+	assert.Panics(t, func() { r.register("GET", "", nil) })
+	assert.Panics(t, func() { r.register("GET", "foobar", nil) })
+	assert.Panics(t, func() { r.register("GET", "/foobar/", nil) })
+	assert.Panics(t, func() { r.register("GET", "//foobar", nil) })
+	assert.Panics(t, func() { r.register("GET", "/:foo:bar", nil) })
+	assert.Panics(t, func() { r.register("GET", "/foo*/bar", nil) })
+	assert.Panics(t, func() { r.register("GET", "/foo*/bar*", nil) })
+	assert.Panics(t, func() { r.register("GET", "/:foobar*", nil) })
+	assert.NotPanics(t, func() { r.register("GET", "/:foo", nil) })
+	assert.Panics(t, func() { r.register("GET", "/:foobar/:foobar", nil) })
 }
 
 func TestRouterMatchStatic(t *testing.T) {
@@ -29,7 +29,7 @@ func TestRouterMatchStatic(t *testing.T) {
 	r := a.router
 
 	path := "/foo/bar.jpg"
-	r.add("GET", path, func(req *Request, res *Response) error {
+	r.register("GET", path, func(req *Request, res *Response) error {
 		req.Values["path"] = path
 		return nil
 	})
@@ -47,7 +47,7 @@ func TestRouterMatchParam(t *testing.T) {
 	a := New()
 	r := a.router
 
-	r.add("GET", "/users/:id", func(*Request, *Response) error {
+	r.register("GET", "/users/:id", func(*Request, *Response) error {
 		return nil
 	})
 
@@ -55,9 +55,13 @@ func TestRouterMatchParam(t *testing.T) {
 	r.route(req)
 	assert.Equal(t, "1", req.PathParams["id"])
 
-	r.add("GET", "/users/search/:keyword", func(*Request, *Response) error {
-		return nil
-	})
+	r.register(
+		"GET",
+		"/users/search/:keyword",
+		func(*Request, *Response) error {
+			return nil
+		},
+	)
 
 	req = newRequest(a, httptest.NewRequest(
 		"GET",
@@ -75,7 +79,7 @@ func TestRouterMatchParam(t *testing.T) {
 	assert.Equal(t, "Air / Hello 世界", req.PathParams["keyword"])
 	assert.Empty(t, req.PathParams["unknown"])
 
-	r.add(
+	r.register(
 		"GET",
 		"/users/:uid/posts/:pid/:anchor",
 		func(*Request, *Response) error {
@@ -98,7 +102,7 @@ func TestRouterMatchAny(t *testing.T) {
 	a := New()
 	r := a.router
 
-	r.add("GET", "/*", func(*Request, *Response) error {
+	r.register("GET", "/*", func(*Request, *Response) error {
 		return nil
 	})
 
@@ -110,12 +114,12 @@ func TestRouterMatchAny(t *testing.T) {
 	r.route(req)
 	assert.Equal(t, "any//", req.PathParams["*"])
 
-	r.add("GET", "/users", func(req *Request, res *Response) error {
+	r.register("GET", "/users", func(req *Request, res *Response) error {
 		req.Values["kind"] = "static"
 		return nil
 	})
 
-	r.add("GET", "/users/*", func(req *Request, res *Response) error {
+	r.register("GET", "/users/*", func(req *Request, res *Response) error {
 		req.Values["kind"] = "any"
 		return nil
 	})
@@ -141,7 +145,7 @@ func TestRouterMixMatchParamAndAny(t *testing.T) {
 	a := New()
 	r := a.router
 
-	r.add(
+	r.register(
 		"GET",
 		"/users/:id/posts/lucky",
 		func(req *Request, res *Response) error {
@@ -150,7 +154,7 @@ func TestRouterMixMatchParamAndAny(t *testing.T) {
 		},
 	)
 
-	r.add(
+	r.register(
 		"GET",
 		"/users/:id/posts/:pid",
 		func(req *Request, res *Response) error {
@@ -159,7 +163,7 @@ func TestRouterMixMatchParamAndAny(t *testing.T) {
 		},
 	)
 
-	r.add(
+	r.register(
 		"GET",
 		"/users/:id/posts/:pid/comments",
 		func(req *Request, res *Response) error {
@@ -168,7 +172,7 @@ func TestRouterMixMatchParamAndAny(t *testing.T) {
 		},
 	)
 
-	r.add(
+	r.register(
 		"GET",
 		"/users/:id/posts/*",
 		func(req *Request, res *Response) error {
@@ -225,7 +229,7 @@ func TestRouterMatchingPriority(t *testing.T) {
 	a := New()
 	r := a.router
 
-	r.add("GET", "/users", func(req *Request, res *Response) error {
+	r.register("GET", "/users", func(req *Request, res *Response) error {
 		req.Values["a"] = 1
 		return nil
 	})
@@ -234,43 +238,59 @@ func TestRouterMatchingPriority(t *testing.T) {
 	r.route(req)(req, nil)
 	assert.Equal(t, 1, req.Values["a"])
 
-	r.add("GET", "/users/new", func(req *Request, res *Response) error {
-		req.Values["b"] = 2
-		return nil
-	})
+	r.register(
+		"GET",
+		"/users/new",
+		func(req *Request, res *Response) error {
+			req.Values["b"] = 2
+			return nil
+		},
+	)
 
 	req = newRequest(a, httptest.NewRequest("GET", "/users/new", nil))
 	r.route(req)(req, nil)
 	assert.Equal(t, 2, req.Values["b"])
 
-	r.add("GET", "/users/:id", func(req *Request, res *Response) error {
-		req.Values["c"] = 3
-		return nil
-	})
+	r.register(
+		"GET",
+		"/users/:id",
+		func(req *Request, res *Response) error {
+			req.Values["c"] = 3
+			return nil
+		},
+	)
 
 	req = newRequest(a, httptest.NewRequest("GET", "/users/1", nil))
 	r.route(req)(req, nil)
 	assert.Equal(t, 3, req.Values["c"])
 
-	r.add("GET", "/users/update", func(req *Request, res *Response) error {
-		req.Values["d"] = 4
-		return nil
-	})
+	r.register(
+		"GET",
+		"/users/update",
+		func(req *Request, res *Response) error {
+			req.Values["d"] = 4
+			return nil
+		},
+	)
 
 	req = newRequest(a, httptest.NewRequest("GET", "/users/update", nil))
 	r.route(req)(req, nil)
 	assert.Equal(t, 4, req.Values["d"])
 
-	r.add("GET", "/users/delete", func(req *Request, res *Response) error {
-		req.Values["e"] = 5
-		return nil
-	})
+	r.register(
+		"GET",
+		"/users/delete",
+		func(req *Request, res *Response) error {
+			req.Values["e"] = 5
+			return nil
+		},
+	)
 
 	req = newRequest(a, httptest.NewRequest("GET", "/users/del", nil))
 	r.route(req)(req, nil)
 	assert.Equal(t, 3, req.Values["c"])
 
-	r.add(
+	r.register(
 		"GET",
 		"/users/:id/posts",
 		func(req *Request, res *Response) error {
@@ -283,7 +303,7 @@ func TestRouterMatchingPriority(t *testing.T) {
 	r.route(req)(req, nil)
 	assert.Equal(t, 6, req.Values["f"])
 
-	r.add("GET", "/users/*", func(req *Request, res *Response) error {
+	r.register("GET", "/users/*", func(req *Request, res *Response) error {
 		req.Values["g"] = 7
 		return nil
 	})
@@ -292,7 +312,7 @@ func TestRouterMatchingPriority(t *testing.T) {
 	r.route(req)(req, nil)
 	assert.Equal(t, 6, req.Values["f"])
 
-	r.add("GET", "/users/*", func(req *Request, res *Response) error {
+	r.register("GET", "/users/*", func(req *Request, res *Response) error {
 		req.Values["h"] = 8
 		return nil
 	})
