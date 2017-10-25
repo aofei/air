@@ -13,47 +13,47 @@ type Group struct {
 
 // GET implements the `Air#GET()`.
 func (g *Group) GET(path string, h Handler, gases ...Gas) {
-	g.add("GET", path, h, gases...)
+	g.register("GET", path, h, gases...)
 }
 
 // HEAD implements the `Air#HEAD()`.
 func (g *Group) HEAD(path string, h Handler, gases ...Gas) {
-	g.add("HEAD", path, h, gases...)
+	g.register("HEAD", path, h, gases...)
 }
 
 // POST implements the `Air#POST()`.
 func (g *Group) POST(path string, h Handler, gases ...Gas) {
-	g.add("POST", path, h, gases...)
+	g.register("POST", path, h, gases...)
 }
 
 // PUT implements the `Air#PUT()`.
 func (g *Group) PUT(path string, h Handler, gases ...Gas) {
-	g.add("PUT", path, h, gases...)
+	g.register("PUT", path, h, gases...)
 }
 
 // PATCH implements the `Air#PATCH()`.
 func (g *Group) PATCH(path string, h Handler, gases ...Gas) {
-	g.add("PATCH", path, h, gases...)
+	g.register("PATCH", path, h, gases...)
 }
 
 // DELETE implements the `Air#DELETE()`.
 func (g *Group) DELETE(path string, h Handler, gases ...Gas) {
-	g.add("DELETE", path, h, gases...)
+	g.register("DELETE", path, h, gases...)
 }
 
 // CONNECT implements the `Air#CONNECT()`.
 func (g *Group) CONNECT(path string, h Handler, gases ...Gas) {
-	g.add("CONNECT", path, h, gases...)
+	g.register("CONNECT", path, h, gases...)
 }
 
 // OPTIONS implements the `Air#OPTIONS()`.
 func (g *Group) OPTIONS(path string, h Handler, gases ...Gas) {
-	g.add("OPTIONS", path, h, gases...)
+	g.register("OPTIONS", path, h, gases...)
 }
 
 // TRACE implements the `Air#TRACE()`.
 func (g *Group) TRACE(path string, h Handler, gases ...Gas) {
-	g.add("TRACE", path, h, gases...)
+	g.register("TRACE", path, h, gases...)
 }
 
 // STATIC implements the `Air#STATIC()`.
@@ -70,10 +70,10 @@ func (g *Group) FILE(path, file string) {
 	})
 }
 
-// add implements the `Air#add()`.
-func (g *Group) add(method, path string, h Handler, gases ...Gas) {
+// register implements the `Air#register()`.
+func (g *Group) register(method, path string, h Handler, gases ...Gas) {
 	if path == "/" {
 		path = ""
 	}
-	g.Air.add(method, g.Prefix+path, h, append(g.Gases, gases...)...)
+	g.Air.register(method, g.Prefix+path, h, append(g.Gases, gases...)...)
 }
