@@ -20,12 +20,11 @@ type Request struct {
 	FormFiles     map[string]io.Reader
 	Values        map[string]interface{}
 
-	air     *Air
 	request *http.Request
 }
 
 // newRequest returns a new instance of the `Request`.
-func newRequest(a *Air, r *http.Request) *Request {
+func newRequest(r *http.Request) *Request {
 	headers := map[string]string{}
 	for k, v := range r.Header {
 		if len(v) > 0 {
@@ -79,12 +78,11 @@ func newRequest(a *Air, r *http.Request) *Request {
 		FormParams:    formParams,
 		FormFiles:     formFiles,
 		Values:        map[string]interface{}{},
-		air:           a,
 		request:       r,
 	}
 }
 
 // Bind binds the `Body` of the r into the v.
 func (r *Request) Bind(v interface{}) error {
-	return r.air.binder.bind(v, r)
+	return binderSingleton.bind(v, r)
 }

@@ -8,48 +8,41 @@ import (
 
 // server represents the HTTP server.
 type server struct {
-	air    *Air
 	server *http.Server
 }
 
-// newServer returns a new instance of the `server`.
-func newServer(a *Air) *server {
-	return &server{
-		air:    a,
-		server: &http.Server{},
-	}
+// serverSingleton is the singleton instance of the `server`.
+var serverSingleton = &server{
+	server: &http.Server{},
 }
 
 // serve starts the s.
 func (s *server) serve() error {
-	s.server.Addr = s.air.Address
+	s.server.Addr = Address
 	s.server.Handler = s
-	s.server.ReadTimeout = s.air.ReadTimeout
-	s.server.WriteTimeout = s.air.WriteTimeout
-	s.server.MaxHeaderBytes = s.air.MaxHeaderBytes
+	s.server.ReadTimeout = ReadTimeout
+	s.server.WriteTimeout = WriteTimeout
+	s.server.MaxHeaderBytes = MaxHeaderBytes
 
 	go func() {
-		if err := s.air.minifier.init(); err != nil {
-			s.air.Logger.ERROR(err)
+		if err := minifierSingleton.init(); err != nil {
+			ERROR(err)
 		}
-		if err := s.air.renderer.init(); err != nil {
-			s.air.Logger.ERROR(err)
+		if err := rendererSingleton.init(); err != nil {
+			ERROR(err)
 		}
-		if err := s.air.coffer.init(); err != nil {
-			s.air.Logger.ERROR(err)
+		if err := cofferSingleton.init(); err != nil {
+			ERROR(err)
 		}
 	}()
 
-	if s.air.DebugMode {
-		s.air.LoggerEnabled = true
-		s.air.Logger.INFO("serving in debug mode")
+	if DebugMode {
+		LoggerEnabled = true
+		INFO("serving in debug mode")
 	}
 
-	if s.air.TLSCertFile != "" && s.air.TLSKeyFile != "" {
-		return s.server.ListenAndServeTLS(
-			s.air.TLSCertFile,
-			s.air.TLSKeyFile,
-		)
+	if TLSCertFile != "" && TLSKeyFile != "" {
+		return s.server.ListenAndServeTLS(TLSCertFile, TLSKeyFile)
 	}
 
 	return s.server.ListenAndServe()
@@ -76,26 +69,26 @@ func (s *server) shutdown(timeout time.Duration) error {
 
 // ServeHTTP implements the `http.Handler`.
 func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	req := newRequest(s.air, r)
+	req := newRequest(r)
 	res := newResponse(req, rw)
 
 	// Gases
 	h := func(req *Request, res *Response) error {
-		h := s.air.router.route(req)
-		for i := len(s.air.Gases) - 1; i >= 0; i-- {
-			h = s.air.Gases[i](h)
+		h := routerSingleton.route(req)
+		for i := len(Gases) - 1; i >= 0; i-- {
+			h = Gases[i](h)
 		}
 		return h(req, res)
 	}
 
 	// PreGases
-	for i := len(s.air.PreGases) - 1; i >= 0; i-- {
-		h = s.air.PreGases[i](h)
+	for i := len(PreGases) - 1; i >= 0; i-- {
+		h = PreGases[i](h)
 	}
 
 	// Execute chain
 	if err := h(req, res); err != nil {
-		s.air.ErrorHandler(err, req, res)
-		s.air.Logger.ERROR(err)
+		ErrorHandler(err, req, res)
+		ERROR(err)
 	}
 }

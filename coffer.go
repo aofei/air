@@ -13,33 +13,29 @@ import (
 // coffer is used to provide a way to access binary asset files through the
 // runtime memory.
 type coffer struct {
-	air     *Air
 	assets  map[string]*Asset
 	watcher *fsnotify.Watcher
 }
 
-// newCoffer returns a new instance of the `coffer`.
-func newCoffer(a *Air) *coffer {
-	return &coffer{
-		air:    a,
-		assets: map[string]*Asset{},
-	}
+// cofferSingleton is the singleton instance of the `coffer`.
+var cofferSingleton = &coffer{
+	assets: map[string]*Asset{},
 }
 
 // init initializes the c.
 func (c *coffer) init() error {
-	if !c.air.CofferEnabled {
+	if !CofferEnabled {
 		return nil
-	} else if _, err := os.Stat(c.air.AssetRoot); os.IsNotExist(err) {
+	} else if _, err := os.Stat(AssetRoot); os.IsNotExist(err) {
 		return nil
 	}
 
-	ar, err := filepath.Abs(c.air.AssetRoot)
+	ar, err := filepath.Abs(AssetRoot)
 	if err != nil {
 		return err
 	}
 
-	dirs, files, err := walkFiles(ar, c.air.AssetExts)
+	dirs, files, err := walkFiles(ar, AssetExts)
 	if err != nil {
 		return err
 	}
@@ -71,9 +67,9 @@ func (c *coffer) init() error {
 			return err
 		}
 
-		if c.air.MinifierEnabled {
+		if MinifierEnabled {
 			if mt := mimeTypeByExt(filepath.Ext(file)); mt != "" {
-				b, err = c.air.minifier.minify(mt, b)
+				b, err = minifierSingleton.minify(mt, b)
 				if err != nil {
 					return err
 				}
@@ -104,17 +100,17 @@ func (c *coffer) watchAssets() {
 	for {
 		select {
 		case event := <-c.watcher.Events:
-			c.air.Logger.INFO(event)
+			INFO(event)
 
 			if event.Op == fsnotify.Create {
 				c.watcher.Add(event.Name)
 			}
 
 			if err := c.init(); err != nil {
-				c.air.Logger.ERROR(err)
+				ERROR(err)
 			}
 		case err := <-c.watcher.Errors:
-			c.air.Logger.ERROR(err)
+			ERROR(err)
 		}
 	}
 }
