@@ -85,11 +85,10 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		for i := len(s.air.Gases) - 1; i >= 0; i-- {
 			h = s.air.Gases[i](h)
 		}
-
 		return h(req, res)
 	}
 
-	// Pregases
+	// PreGases
 	for i := len(s.air.PreGases) - 1; i >= 0; i-- {
 		h = s.air.PreGases[i](h)
 	}
