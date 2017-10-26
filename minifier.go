@@ -22,14 +22,12 @@ type minifier struct {
 	m          *minify.M
 }
 
-// newMinifier returns a new instance of the `minifier`.
-func newMinifier() *minifier {
-	return &minifier{
-		pngEncoder: &png.Encoder{
-			CompressionLevel: png.BestCompression,
-		},
-		m: minify.New(),
-	}
+// minifierSingleton is the singleton instance of the `minifier`.
+var minifierSingleton = &minifier{
+	pngEncoder: &png.Encoder{
+		CompressionLevel: png.BestCompression,
+	},
+	m: minify.New(),
 }
 
 // init initializes the m.

@@ -11,18 +11,16 @@ type router struct {
 	maxParams int
 }
 
-// newRouter returns a new instance of the `router`.
-func newRouter() *router {
-	return &router{
-		tree: &node{
-			handlers: map[string]Handler{},
-		},
-	}
+// routerSingleton is the singleton instance of the `router`.
+var routerSingleton = &router{
+	tree: &node{
+		handlers: map[string]Handler{},
+	},
 }
 
 // register registers a new route for the method and the path with the matching
-// h.
-func (r *router) register(method, path string, h Handler) {
+// h in the r with the optional route-level gases..
+func (r *router) register(method, path string, h Handler, gases ...Gas) {
 	if path == "" {
 		panic("air: the path cannot be empty")
 	} else if path[0] != '/' {
@@ -54,6 +52,14 @@ func (r *router) register(method, path string, h Handler) {
 		}
 	}
 
+	nh := func(req *Request, res *Response) error {
+		h := h
+		for i := len(gases) - 1; i >= 0; i-- {
+			h = gases[i](h)
+		}
+		return h(req, res)
+	}
+
 	paramNames := []string{}
 
 	for i, l := 0, len(path); i < l; i++ {
@@ -78,7 +84,7 @@ func (r *router) register(method, path string, h Handler) {
 			path = path[:j] + path[i:]
 
 			if i, l = j, len(path); i == l {
-				r.insert(method, path, h, paramKind, paramNames)
+				r.insert(method, path, nh, paramKind, paramNames)
 				return
 			}
 
@@ -86,12 +92,12 @@ func (r *router) register(method, path string, h Handler) {
 		} else if path[i] == '*' {
 			r.insert(method, path[:i], nil, staticKind, nil)
 			paramNames = append(paramNames, "*")
-			r.insert(method, path[:i+1], h, anyKind, paramNames)
+			r.insert(method, path[:i+1], nh, anyKind, paramNames)
 			return
 		}
 	}
 
-	r.insert(method, path, h, staticKind, paramNames)
+	r.insert(method, path, nh, staticKind, paramNames)
 }
 
 // insert inserts a new route into the `tree` of the r.

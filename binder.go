@@ -13,10 +13,8 @@ import (
 // binder is used to provide a way to bind contents.
 type binder struct{}
 
-// newBinder returns a new instance of the `binder`.
-func newBinder() *binder {
-	return &binder{}
-}
+// binderSingleton is the singleton instance of the `binder`.
+var binderSingleton = &binder{}
 
 // bind binds the `Body` of the r into the v.
 func (b *binder) bind(v interface{}, r *Request) error {

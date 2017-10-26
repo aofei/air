@@ -81,8 +81,8 @@ func (r *Response) Redirect(url string) error {
 // Blob responds to the HTTP client with a contentType content with the b.
 func (r *Response) Blob(contentType string, b []byte) error {
 	r.Headers["Content-Type"] = contentType
-	if r.request.air.MinifierEnabled {
-		nb, err := r.request.air.minifier.minify(contentType, b)
+	if MinifierEnabled {
+		nb, err := minifierSingleton.minify(contentType, b)
 		if err == nil {
 			b = nb
 		}
@@ -99,7 +99,7 @@ func (r *Response) String(s string) error {
 // v.
 func (r *Response) JSON(v interface{}) error {
 	b, err := json.Marshal(v)
-	if r.request.air.DebugMode {
+	if DebugMode {
 		b, err = json.MarshalIndent(v, "", "\t")
 	}
 	if err != nil {
@@ -112,7 +112,7 @@ func (r *Response) JSON(v interface{}) error {
 // type v.
 func (r *Response) XML(v interface{}) error {
 	b, err := xml.Marshal(v)
-	if r.request.air.DebugMode {
+	if DebugMode {
 		b, err = xml.MarshalIndent(v, "", "\t")
 	}
 	if err != nil {
@@ -138,7 +138,7 @@ func (r *Response) Render(
 	for _, t := range templates {
 		values["InheritedHTML"] = template.HTML(buf.String())
 		buf.Reset()
-		err := r.request.air.renderer.render(buf, t, values)
+		err := rendererSingleton.render(buf, t, values)
 		if err != nil {
 			return err
 		}
@@ -177,7 +177,7 @@ func (r *Response) File(file string) error {
 		}
 	}
 
-	if a := r.request.air.coffer.asset(abs); a != nil {
+	if a := cofferSingleton.asset(abs); a != nil {
 		http.ServeContent(
 			r.writer,
 			r.request.request,

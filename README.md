@@ -104,11 +104,10 @@ package main
 import "github.com/sheng/air"
 
 func main() {
-	a := air.New()
-	a.GET("/", func(req *air.Request, res *air.Response) error {
+	air.GET("/", func(req *air.Request, res *air.Response) error {
 		return res.String("Hello, 世界")
 	})
-	a.Serve()
+	air.Serve()
 }
 ```
 

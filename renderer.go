@@ -14,38 +14,34 @@ import (
 
 // renderer is used to provide a way to render templates.
 type renderer struct {
-	air             *Air
 	template        *template.Template
 	templateFuncMap template.FuncMap
 	watcher         *fsnotify.Watcher
 }
 
-// newRenderer returns a new instance of the `renderer`.
-func newRenderer(a *Air) *renderer {
-	return &renderer{
-		air:      a,
-		template: template.New("template"),
-		templateFuncMap: template.FuncMap{
-			"strlen":  strlen,
-			"strcat":  strcat,
-			"substr":  substr,
-			"timefmt": timefmt,
-		},
-	}
+// rendererSingleton is the singleton instance of the `renderer`.
+var rendererSingleton = &renderer{
+	template: template.New("template"),
+	templateFuncMap: template.FuncMap{
+		"strlen":  strlen,
+		"strcat":  strcat,
+		"substr":  substr,
+		"timefmt": timefmt,
+	},
 }
 
 // init initializes the r.
 func (r *renderer) init() error {
-	if _, err := os.Stat(r.air.TemplateRoot); os.IsNotExist(err) {
+	if _, err := os.Stat(TemplateRoot); os.IsNotExist(err) {
 		return nil
 	}
 
-	tr, err := filepath.Abs(r.air.TemplateRoot)
+	tr, err := filepath.Abs(TemplateRoot)
 	if err != nil {
 		return err
 	}
 
-	dirs, files, err := walkFiles(tr, r.air.TemplateExts)
+	dirs, files, err := walkFiles(tr, TemplateExts)
 	if err != nil {
 		return err
 	}
@@ -66,7 +62,7 @@ func (r *renderer) init() error {
 
 	t := template.New("template")
 	t.Funcs(r.templateFuncMap)
-	t.Delims(r.air.TemplateLeftDelim, r.air.TemplateRightDelim)
+	t.Delims(TemplateLeftDelim, TemplateRightDelim)
 
 	for _, f := range files {
 		b, err := ioutil.ReadFile(f)
@@ -98,15 +94,15 @@ func (r *renderer) watchTemplates() {
 	for {
 		select {
 		case event := <-r.watcher.Events:
-			r.air.Logger.INFO(event)
+			INFO(event)
 			if event.Op == fsnotify.Create {
 				r.watcher.Add(event.Name)
 			}
 			if err := r.init(); err != nil {
-				r.air.Logger.ERROR(err)
+				ERROR(err)
 			}
 		case err := <-r.watcher.Errors:
-			r.air.Logger.ERROR(err)
+			ERROR(err)
 		}
 	}
 }
