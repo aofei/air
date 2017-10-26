@@ -5,21 +5,23 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/sheng/air)](https://goreportcard.com/report/github.com/sheng/air)
 [![GoDoc](https://godoc.org/github.com/sheng/air?status.svg)](https://godoc.org/github.com/sheng/air)
 
-An ideal RESTful web framework for Go. You can use it to develop a RESTful web
+An ideal RESTful web framework for Go. You can use it to build a RESTful web
 application as natural as breathing.
 
 High-performance? Fastest? Almost all the web frameworks are using these words
-to tell people that they are the best. Maybe they are, maybe not. This framework
-does not intend to follow the crowd. So, Air web framework can only guarantee
-you one thing: **it can serve properly.**
+to tell people that they are the best. Maybe they are, maybe not. Air does not
+intend to follow the crowd. It can only guarantee you one thing: **it can serve
+properly.**
 
 ## Features
 
+* Singleton
+  * Air is uncountable.
 * API
 	* As less as possible.
 	* As simple as possible.
 	* As expressive as possible.
-* Methods
+* Method
 	* `GET`
 	* `HEAD`
 	* `POST`
