@@ -25,9 +25,6 @@ func (s *server) serve() error {
 	s.server.MaxHeaderBytes = MaxHeaderBytes
 
 	go func() {
-		if err := minifierSingleton.init(); err != nil {
-			ERROR(err)
-		}
 		if err := rendererSingleton.init(); err != nil {
 			ERROR(err)
 		}
