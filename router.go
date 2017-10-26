@@ -21,12 +21,14 @@ var routerSingleton = &router{
 // register registers a new route for the method and the path with the matching
 // h in the r with the optional route-level gases..
 func (r *router) register(method, path string, h Handler, gases ...Gas) {
+	if path != "/" && hasLastSlash(path) {
+		path = path[:len(path)-1]
+	}
+
 	if path == "" {
 		panic("air: the path cannot be empty")
 	} else if path[0] != '/' {
 		panic("air: the path must start with the /")
-	} else if path != "/" && hasLastSlash(path) {
-		panic("air: only the root path can end with the /")
 	} else if strings.Contains(path, "//") {
 		panic("air: the path cannot have the //")
 	} else if strings.Count(path, ":") > 1 {
