@@ -5,6 +5,7 @@ import (
 	"errors"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"strings"
 
 	"github.com/tdewolff/minify"
@@ -16,33 +17,14 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
-// minifier is used to provide a way to minify contents.
+// minifier is used to minify contents by the MIME types.
 type minifier struct {
-	pngEncoder *png.Encoder
-	m          *minify.M
+	minifier *minify.M
 }
 
 // minifierSingleton is the singleton instance of the `minifier`.
 var minifierSingleton = &minifier{
-	pngEncoder: &png.Encoder{
-		CompressionLevel: png.BestCompression,
-	},
-	m: minify.New(),
-}
-
-// init initializes the m.
-func (m *minifier) init() error {
-	m.m.Add("text/html", &html.Minifier{})
-	m.m.Add("text/css", &css.Minifier{
-		Decimals: -1,
-	})
-	m.m.Add("text/javascript", &js.Minifier{})
-	m.m.Add("application/json", &json.Minifier{})
-	m.m.Add("text/xml", &xml.Minifier{})
-	m.m.Add("image/svg+xml", &svg.Minifier{
-		Decimals: -1,
-	})
-	return nil
+	minifier: minify.New(),
 }
 
 // minify minifies the b by the mimeType.
@@ -50,51 +32,57 @@ func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 	if ss := strings.Split(mimeType, ";"); len(ss) > 1 {
 		mimeType = ss[0]
 	}
-	switch mimeType {
-	case "image/jpeg":
-		return m.minifyJPEG(b)
-	case "image/png":
-		return m.minifyPNG(b)
-	}
-	return m.minifyOthers(mimeType, b)
-}
-
-// minifyJPEG minifies the b.
-func (m *minifier) minifyJPEG(b []byte) ([]byte, error) {
-	img, err := jpeg.Decode(bytes.NewReader(b))
-	if err != nil {
-		return nil, err
-	}
-
 	buf := &bytes.Buffer{}
-	if err := jpeg.Encode(buf, img, nil); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-// minifyPNG minifies the b.
-func (m *minifier) minifyPNG(b []byte) ([]byte, error) {
-	img, err := png.Decode(bytes.NewReader(b))
-	if err != nil {
-		return nil, err
-	}
-
-	buf := &bytes.Buffer{}
-	if err := m.pngEncoder.Encode(buf, img); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-// minifyOthers minifies the b by the mimeType.
-func (m *minifier) minifyOthers(mimeType string, b []byte) ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := m.m.Minify(mimeType, buf, bytes.NewReader(b))
-	if err == minify.ErrNotExist {
-		return nil, errors.New("unsupported mime type")
+	if err := m.minifier.Minify(
+		mimeType,
+		buf,
+		bytes.NewReader(b),
+	); err == minify.ErrNotExist {
+		switch mimeType {
+		case "text/html":
+			m.minifier.Add(mimeType, html.DefaultMinifier)
+		case "text/css":
+			m.minifier.Add(mimeType, css.DefaultMinifier)
+		case "text/javascript":
+			m.minifier.Add(mimeType, js.DefaultMinifier)
+		case "application/json":
+			m.minifier.Add(mimeType, json.DefaultMinifier)
+		case "text/xml":
+			m.minifier.Add(mimeType, xml.DefaultMinifier)
+		case "image/svg+xml":
+			m.minifier.Add(mimeType, svg.DefaultMinifier)
+		case "image/jpeg":
+			m.minifier.AddFunc(mimeType, func(
+				m *minify.M,
+				w io.Writer,
+				r io.Reader,
+				params map[string]string,
+			) error {
+				img, err := jpeg.Decode(r)
+				if err != nil {
+					return err
+				}
+				return jpeg.Encode(w, img, nil)
+			})
+		case "image/png":
+			m.minifier.AddFunc(mimeType, func(
+				m *minify.M,
+				w io.Writer,
+				r io.Reader,
+				params map[string]string,
+			) error {
+				img, err := png.Decode(r)
+				if err != nil {
+					return err
+				}
+				return (&png.Encoder{
+					CompressionLevel: png.BestCompression,
+				}).Encode(w, img)
+			})
+		default:
+			return nil, errors.New("unsupported mime type")
+		}
+		return m.minify(mimeType, b)
 	} else if err != nil {
 		return nil, err
 	}
