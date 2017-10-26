@@ -236,7 +236,7 @@ func New(configFiles ...string) *Air {
 
 	a.Logger = newLogger(a)
 	a.server = newServer(a)
-	a.router = newRouter(a)
+	a.router = newRouter()
 	a.binder = newBinder()
 	a.minifier = newMinifier()
 	a.renderer = newRenderer(a)

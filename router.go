@@ -7,15 +7,13 @@ import (
 
 // router is the registry of all registered routes.
 type router struct {
-	air       *Air
 	tree      *node
 	maxParams int
 }
 
 // newRouter returns a new instance of the `router`.
-func newRouter(a *Air) *router {
+func newRouter() *router {
 	return &router{
-		air: a,
 		tree: &node{
 			handlers: map[string]Handler{},
 		},
@@ -96,7 +94,7 @@ func (r *router) register(method, path string, h Handler) {
 	r.insert(method, path, h, staticKind, paramNames)
 }
 
-// insert inserts a new route into the tree of the r.
+// insert inserts a new route into the `tree` of the r.
 func (r *router) insert(
 	method,
 	path string,
@@ -108,7 +106,7 @@ func (r *router) insert(
 		r.maxParams = l
 	}
 
-	cn := r.tree // Current node as root
+	cn := r.tree // Current node as the root of the `tree` of the r
 
 	var (
 		s   = path // Search
@@ -212,7 +210,7 @@ func (r *router) insert(
 
 // route returns a handler registered for the req.
 func (r *router) route(req *Request) Handler {
-	cn := r.tree // Current node as root
+	cn := r.tree // Current node as root of the `tree` of the r
 
 	var (
 		s   = pathClean(req.URL.Path)        // Search
@@ -460,7 +458,7 @@ func unhex(c byte) byte {
 	return 0
 }
 
-// node is the node of the field `tree` of the `router`.
+// node is the node of the radix tree.
 type node struct {
 	kind       uint8
 	label      byte
@@ -478,17 +476,17 @@ const (
 	anyKind
 )
 
-// child returns a child `node` of the n by the provided label l and the kind t.
-func (n *node) child(l byte, nk uint8) *node {
+// child returns a child `node` of the n by the label and the kind.
+func (n *node) child(label byte, kind uint8) *node {
 	for _, c := range n.children {
-		if c.label == l && c.kind == nk {
+		if c.label == label && c.kind == kind {
 			return c
 		}
 	}
 	return nil
 }
 
-// childByLabel returns a child `node` of the n by the provided label l.
+// childByLabel returns a child `node` of the n by the l.
 func (n *node) childByLabel(l byte) *node {
 	for _, c := range n.children {
 		if c.label == l {
@@ -498,10 +496,10 @@ func (n *node) childByLabel(l byte) *node {
 	return nil
 }
 
-// childByKind returns a child `node` of the n by the provided kind t.
-func (n *node) childByKind(nk uint8) *node {
+// childByKind returns a child `node` of the n by the k.
+func (n *node) childByKind(k uint8) *node {
 	for _, c := range n.children {
-		if c.kind == nk {
+		if c.kind == k {
 			return c
 		}
 	}
