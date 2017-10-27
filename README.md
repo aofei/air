@@ -58,9 +58,9 @@ properly.**
 * Minifier
 	* `text/html`
 	* `text/css`
-	* `text/javascript`
+	* `application/javascript`
 	* `application/json`
-	* `text/xml`
+	* `application/xml`
 	* `image/svg+xml`
 	* `image/jpeg`
 	* `image/png`

@@ -18,16 +18,24 @@ func TestMinifier(t *testing.T) {
 	assert.NotNil(t, minifierSingleton)
 	assert.NotNil(t, minifierSingleton.minifier)
 
+	// Uneabled
+
+	b, err := minifierSingleton.minify("unenabled", []byte("uneabled"))
+	assert.Equal(t, "uneabled", string(b))
+	assert.NoError(t, err)
+
 	// HTML
 
-	b, err := minifierSingleton.minify(
+	MinifierEnabled = true
+
+	b, err = minifierSingleton.minify(
 		"text/html",
 		[]byte("<!DOCTYPE html>"),
 	)
 	assert.Equal(t, "<!doctype html>", string(b))
 	assert.NoError(t, err)
 
-	// HTML with charset
+	// HTML with parameters
 
 	b, err = minifierSingleton.minify(
 		"text/html; charset=utf-8",
@@ -48,7 +56,7 @@ func TestMinifier(t *testing.T) {
 	// JavaScript
 
 	b, err = minifierSingleton.minify(
-		"text/javascript",
+		"application/javascript",
 		[]byte("var foo = \"bar\";"),
 	)
 	assert.Equal(t, "var foo=\"bar\";", string(b))
@@ -66,7 +74,7 @@ func TestMinifier(t *testing.T) {
 	// XML
 
 	b, err = minifierSingleton.minify(
-		"text/xml",
+		"application/xml",
 		[]byte("<Foobar></Foobar>"),
 	)
 	assert.Equal(t, "<Foobar/>", string(b))
