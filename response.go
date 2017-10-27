@@ -80,13 +80,11 @@ func (r *Response) Redirect(url string) error {
 
 // Blob responds to the HTTP client with a contentType content with the b.
 func (r *Response) Blob(contentType string, b []byte) error {
-	r.Headers["Content-Type"] = contentType
-	if MinifierEnabled {
-		nb, err := minifierSingleton.minify(contentType, b)
-		if err == nil {
-			b = nb
-		}
+	var err error
+	if b, err = minifierSingleton.minify(contentType, b); err != nil {
+		return err
 	}
+	r.Headers["Content-Type"] = contentType
 	return r.write(b)
 }
 

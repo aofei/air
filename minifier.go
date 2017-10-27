@@ -6,7 +6,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
-	"strings"
+	"mime"
 
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
@@ -29,9 +29,10 @@ var minifierSingleton = &minifier{
 
 // minify minifies the b by the mimeType.
 func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
-	if ss := strings.Split(mimeType, ";"); len(ss) > 1 {
-		mimeType = ss[0]
+	if !MinifierEnabled {
+		return b, nil
 	}
+	mimeType, _, _ = mime.ParseMediaType(mimeType)
 	buf := &bytes.Buffer{}
 	if err := m.minifier.Minify(
 		mimeType,
@@ -43,11 +44,11 @@ func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 			m.minifier.Add(mimeType, html.DefaultMinifier)
 		case "text/css":
 			m.minifier.Add(mimeType, css.DefaultMinifier)
-		case "text/javascript":
+		case "application/javascript":
 			m.minifier.Add(mimeType, js.DefaultMinifier)
 		case "application/json":
 			m.minifier.Add(mimeType, json.DefaultMinifier)
-		case "text/xml":
+		case "application/xml":
 			m.minifier.Add(mimeType, xml.DefaultMinifier)
 		case "image/svg+xml":
 			m.minifier.Add(mimeType, svg.DefaultMinifier)

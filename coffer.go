@@ -3,6 +3,7 @@ package air
 import (
 	"bytes"
 	"io/ioutil"
+	"mime"
 	"os"
 	"path/filepath"
 	"time"
@@ -24,9 +25,7 @@ var cofferSingleton = &coffer{
 
 // init initializes the c.
 func (c *coffer) init() error {
-	if !CofferEnabled {
-		return nil
-	} else if _, err := os.Stat(AssetRoot); os.IsNotExist(err) {
+	if _, err := os.Stat(AssetRoot); os.IsNotExist(err) {
 		return nil
 	}
 
@@ -67,12 +66,10 @@ func (c *coffer) init() error {
 			return err
 		}
 
-		if MinifierEnabled {
-			if mt := mimeTypeByExt(filepath.Ext(file)); mt != "" {
-				b, err = minifierSingleton.minify(mt, b)
-				if err != nil {
-					return err
-				}
+		if mt := mime.TypeByExtension(filepath.Ext(file)); mt != "" {
+			b, err = minifierSingleton.minify(mt, b)
+			if err != nil {
+				return err
 			}
 		}
 
@@ -88,54 +85,38 @@ func (c *coffer) init() error {
 	return nil
 }
 
-// asset returns an `Asset` in the `Coffer` for the provided name.
-//
-// **Please use the `filepath.Abs()` to process the name before using.**
-func (c *coffer) asset(name string) *Asset {
-	return c.assets[name]
-}
-
 // watchTemplates watchs the changing of all asset files.
 func (c *coffer) watchAssets() {
 	for {
 		select {
 		case event := <-c.watcher.Events:
-			INFO(event)
+			if CofferEnabled {
+				INFO(event)
+			}
 
 			if event.Op == fsnotify.Create {
 				c.watcher.Add(event.Name)
 			}
 
-			if err := c.init(); err != nil {
+			if err := c.init(); err != nil && CofferEnabled {
 				ERROR(err)
 			}
 		case err := <-c.watcher.Errors:
-			ERROR(err)
+			if CofferEnabled {
+				ERROR(err)
+			}
 		}
 	}
 }
 
-// mimeTypeByExt returns a MIME type by the ext.
-func mimeTypeByExt(ext string) string {
-	switch ext {
-	case ".html":
-		return "text/html"
-	case ".css":
-		return "text/css"
-	case ".js":
-		return "text/javascript"
-	case ".json":
-		return "application/json"
-	case ".xml":
-		return "text/xml"
-	case ".svg":
-		return "image/svg+xml"
-	case ".jpg", ".jpeg":
-		return "image/jpeg"
-	case ".png":
-		return "image/png"
+// asset returns an `Asset` in the `Coffer` for the provided name.
+//
+// **Please use the `filepath.Abs()` to process the name before using.**
+func (c *coffer) asset(name string) *Asset {
+	if !CofferEnabled {
+		return nil
 	}
-	return ""
+	return c.assets[name]
 }
 
 // Asset is a binary asset file.
