@@ -21,18 +21,14 @@ type renderer struct {
 // rendererSingleton is the singleton instance of the `renderer`.
 var rendererSingleton = &renderer{}
 
-// render renders the values into the w with the templateName.
-func (r *renderer) render(
-	w io.Writer,
-	templateName string,
-	values map[string]interface{},
-) error {
+// render renders the v into the w with the template name.
+func (r *renderer) render(w io.Writer, name string, v interface{}) error {
 	if r.template == nil {
 		r.template.New("template").
 			Delims(TemplateLeftDelim, TemplateRightDelim).
 			Funcs(TemplateFuncMap)
-	} else if t := r.template.Lookup(templateName); t != nil {
-		return t.Execute(w, values)
+	} else if t := r.template.Lookup(name); t != nil {
+		return t.Execute(w, v)
 	}
 
 	tr, err := filepath.Abs(TemplateRoot)
@@ -40,7 +36,7 @@ func (r *renderer) render(
 		return err
 	}
 
-	tn := filepath.Join(tr, templateName)
+	tn := filepath.Join(tr, name)
 	if _, err := os.Stat(tn); os.IsNotExist(err) {
 		return err
 	}
@@ -76,12 +72,12 @@ func (r *renderer) render(
 		return err
 	}
 
-	t, err := r.template.New(templateName).ParseFiles(tn)
+	t, err := r.template.New(name).ParseFiles(tn)
 	if err != nil {
 		return err
 	}
 
-	return t.Execute(w, values)
+	return t.Execute(w, v)
 }
 
 // strlen returns the number of characters in the s.

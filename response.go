@@ -124,18 +124,15 @@ func (r *Response) HTML(html string) error {
 	return r.Blob("text/html; charset=utf-8", []byte(html))
 }
 
-// Render renders one or more templates with the values and responds to the HTTP
+// Render renders one or more templates with the m and responds to the HTTP
 // client with a "text/html" content. The results rendered by the former can be
-// inherited by accessing the values["InheritedHTML"]`.
-func (r *Response) Render(
-	values map[string]interface{},
-	templates ...string,
-) error {
+// inherited by accessing the m["InheritedHTML"]`.
+func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	buf := &bytes.Buffer{}
 	for _, t := range templates {
-		values["InheritedHTML"] = template.HTML(buf.String())
+		m["InheritedHTML"] = template.HTML(buf.String())
 		buf.Reset()
-		err := rendererSingleton.render(buf, t, values)
+		err := rendererSingleton.render(buf, t, m)
 		if err != nil {
 			return err
 		}
