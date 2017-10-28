@@ -116,6 +116,12 @@ func TestMinifier(t *testing.T) {
 	assert.NotEmpty(t, b)
 	assert.NoError(t, err)
 
+	// Unsupported
+
+	b, err = minifierSingleton.minify("unsupported", []byte("unsupported"))
+	assert.Equal(t, "unsupported", string(b))
+	assert.NoError(t, err)
+
 	// Errors
 
 	b, err = minifierSingleton.minify("application/json", []byte("{:}"))
@@ -127,10 +133,6 @@ func TestMinifier(t *testing.T) {
 	assert.Error(t, err)
 
 	b, err = minifierSingleton.minify("image/png", nil)
-	assert.Nil(t, b)
-	assert.Error(t, err)
-
-	b, err = minifierSingleton.minify("unsupported", nil)
 	assert.Nil(t, b)
 	assert.Error(t, err)
 }
