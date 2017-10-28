@@ -51,6 +51,17 @@ func (c *coffer) asset(name string) (*Asset, error) {
 		return nil, nil
 	}
 
+	ext := strings.ToLower(filepath.Ext(name))
+	isAsset := false
+	for _, ae := range AssetExts {
+		if strings.ToLower(ae) == ext {
+			isAsset = true
+		}
+	}
+	if !isAsset {
+		return nil, nil
+	}
+
 	fi, err := os.Stat(name)
 	if err != nil {
 		return nil, err
