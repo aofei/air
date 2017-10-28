@@ -130,6 +130,15 @@ var TemplateLeftDelim = "{{"
 // It's called "template_right_delim" in the config file.
 var TemplateRightDelim = "}}"
 
+// TemplateFuncMap represents the template function map that will be used when
+// parsing the HTML templates.
+var TemplateFuncMap = map[string]interface{}{
+	"strlen":  strlen,
+	"strcat":  strcat,
+	"substr":  substr,
+	"timefmt": timefmt,
+}
+
 // CofferEnabled indicates whether to enable the coffer.
 //
 // It's called "coffer_enabled" in the config file.
