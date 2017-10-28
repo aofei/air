@@ -2,7 +2,6 @@ package air
 
 import (
 	"bytes"
-	"errors"
 	"image/jpeg"
 	"image/png"
 	"io"
@@ -81,7 +80,7 @@ func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 				}).Encode(w, img)
 			})
 		default:
-			return nil, errors.New("unsupported mime type")
+			return b, nil
 		}
 		return m.minify(mimeType, b)
 	} else if err != nil {
