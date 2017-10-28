@@ -135,14 +135,14 @@ var TemplateRightDelim = "}}"
 // It's called "coffer_enabled" in the config file.
 var CofferEnabled = false
 
-// AssetRoot represents the root directory of the asset file. It will be loaded
+// AssetRoot represents the root directory of the asset files. It will be loaded
 // into the coffer.
 //
 // It's called "asset_root" in the config file.
 var AssetRoot = "assets"
 
-// AssetExts represents the file name extensions of the asset file. It will be
-// used when loading the asset file.
+// AssetExts represents the file name extensions of the asset files. It will be
+// used when loading the asset files.
 //
 // It's called "asset_exts" in the config file.
 var AssetExts = []string{

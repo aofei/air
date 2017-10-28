@@ -6,13 +6,13 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 )
 
-// coffer is used to provide a way to access binary asset files through the
-// runtime memory.
+// coffer is used to access binary asset files by the runtime memory.
 type coffer struct {
 	assets  map[string]*Asset
 	watcher *fsnotify.Watcher
@@ -23,100 +23,81 @@ var cofferSingleton = &coffer{
 	assets: map[string]*Asset{},
 }
 
-// init initializes the c.
-func (c *coffer) init() error {
+// asset returns an `Asset` of the `coffer` for the provided name.
+func (c *coffer) asset(name string) (*Asset, error) {
+	if !CofferEnabled {
+		return nil, nil
+	}
+
+	if !filepath.IsAbs(name) {
+		var err error
+		if name, err = filepath.Abs(name); err != nil {
+			return nil, err
+		}
+	} else if a, ok := c.assets[name]; ok {
+		return a, nil
+	}
+
 	if _, err := os.Stat(AssetRoot); os.IsNotExist(err) {
-		return nil
+		return nil, nil
 	}
 
 	ar, err := filepath.Abs(AssetRoot)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	dirs, files, err := walkFiles(ar, AssetExts)
+	if !strings.HasPrefix(name, ar) {
+		return nil, nil
+	}
+
+	fi, err := os.Stat(name)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	b, err := ioutil.ReadFile(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if mt := mime.TypeByExtension(filepath.Ext(name)); mt != "" {
+		if b, err = minifierSingleton.minify(mt, b); err != nil {
+			return nil, err
+		}
 	}
 
 	if c.watcher == nil {
 		if c.watcher, err = fsnotify.NewWatcher(); err != nil {
-			return err
+			return nil, err
 		}
 
-		for _, dir := range dirs {
-			if err := c.watcher.Add(dir); err != nil {
-				return err
+		go func() {
+			for {
+				select {
+				case event := <-c.watcher.Events:
+					if CofferEnabled {
+						INFO(event)
+					}
+					delete(c.assets, event.Name)
+				case err := <-c.watcher.Errors:
+					if CofferEnabled {
+						ERROR(err)
+					}
+				}
 			}
-		}
-
-		go c.watchAssets()
+		}()
+	} else if err := c.watcher.Add(name); err != nil {
+		return nil, err
 	}
 
-	assets := map[string]*Asset{}
-
-	for _, file := range files {
-		fi, err := os.Stat(file)
-		if err != nil {
-			return err
-		}
-
-		b, err := ioutil.ReadFile(file)
-		if err != nil {
-			return err
-		}
-
-		if mt := mime.TypeByExtension(filepath.Ext(file)); mt != "" {
-			b, err = minifierSingleton.minify(mt, b)
-			if err != nil {
-				return err
-			}
-		}
-
-		assets[file] = &Asset{
-			Name:    file,
-			ModTime: fi.ModTime(),
-			Reader:  bytes.NewReader(b),
-		}
+	c.assets[name] = &Asset{
+		Name:    name,
+		ModTime: fi.ModTime(),
+		Reader:  bytes.NewReader(b),
 	}
 
-	c.assets = assets
-
-	return nil
-}
-
-// watchTemplates watchs the changing of all asset files.
-func (c *coffer) watchAssets() {
-	for {
-		select {
-		case event := <-c.watcher.Events:
-			if CofferEnabled {
-				INFO(event)
-			}
-
-			if event.Op == fsnotify.Create {
-				c.watcher.Add(event.Name)
-			}
-
-			if err := c.init(); err != nil && CofferEnabled {
-				ERROR(err)
-			}
-		case err := <-c.watcher.Errors:
-			if CofferEnabled {
-				ERROR(err)
-			}
-		}
-	}
-}
-
-// asset returns an `Asset` in the `Coffer` for the provided name.
-//
-// **Please use the `filepath.Abs()` to process the name before using.**
-func (c *coffer) asset(name string) *Asset {
-	if !CofferEnabled {
-		return nil
-	}
-	return c.assets[name]
+	return c.assets[name], nil
 }
 
 // Asset is a binary asset file.
