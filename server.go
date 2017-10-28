@@ -24,12 +24,6 @@ func (s *server) serve() error {
 	s.server.WriteTimeout = WriteTimeout
 	s.server.MaxHeaderBytes = MaxHeaderBytes
 
-	go func() {
-		if err := rendererSingleton.init(); err != nil {
-			ERROR(err)
-		}
-	}()
-
 	if DebugMode {
 		LoggerEnabled = true
 		INFO("serving in debug mode")
