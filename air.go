@@ -50,6 +50,14 @@ var Address = "localhost:2333"
 // **It's unit in the config file is MILLISECONDS.**
 var ReadTimeout = time.Duration(0)
 
+// ReadHeaderTimeout is the amount of time allowed to read the HTTP request
+// headers.
+//
+// It's called "read_header_timeout" in the config file.
+//
+// **It's unit in the config file is MILLISECONDS.**
+var ReadHeaderTimeout = time.Duration(0)
+
 // WriteTimeout is the maximum duration before timing out the HTTP server will
 // write of an HTTP response.
 //
@@ -190,6 +198,9 @@ func init() {
 	}
 	if rt, ok := Config["read_timeout"].(int64); ok {
 		ReadTimeout = time.Duration(rt) * time.Millisecond
+	}
+	if rht, ok := Config["read_header_timeout"].(int64); ok {
+		ReadHeaderTimeout = time.Duration(rht) * time.Millisecond
 	}
 	if wt, ok := Config["write_timeout"].(int64); ok {
 		WriteTimeout = time.Duration(wt) * time.Millisecond
