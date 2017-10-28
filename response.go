@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 )
 
 // Response represents the HTTP response.
@@ -159,23 +158,17 @@ func (r *Response) File(file string) error {
 	if _, err := os.Stat(file); err != nil {
 		return err
 	}
-
-	abs, err := filepath.Abs(file)
-	if err != nil {
-		return err
-	}
-
 	for k, v := range r.Headers {
 		r.writer.Header().Set(k, v)
 	}
-
 	for _, c := range r.Cookies {
 		if v := c.String(); v != "" {
 			r.writer.Header().Add("Set-Cookie", v)
 		}
 	}
-
-	if a := cofferSingleton.asset(abs); a != nil {
+	if a, err := cofferSingleton.asset(file); err != nil {
+		return err
+	} else if a != nil {
 		http.ServeContent(
 			r.writer,
 			r.request.request,
@@ -184,11 +177,9 @@ func (r *Response) File(file string) error {
 			a.Reader,
 		)
 	} else {
-		http.ServeFile(r.writer, r.request.request, abs)
+		http.ServeFile(r.writer, r.request.request, file)
 	}
-
 	r.Written = true
-
 	return nil
 }
 

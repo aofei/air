@@ -28,9 +28,6 @@ func (s *server) serve() error {
 		if err := rendererSingleton.init(); err != nil {
 			ERROR(err)
 		}
-		if err := cofferSingleton.init(); err != nil {
-			ERROR(err)
-		}
 	}()
 
 	if DebugMode {
