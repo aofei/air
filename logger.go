@@ -19,8 +19,7 @@ type logger struct {
 
 // loggerSingleton is the singleton instance of the `logger`.
 var loggerSingleton = &logger{
-	mutex:    &sync.Mutex{},
-	template: template.Must(template.New("logger").Parse(LoggerFormat)),
+	mutex: &sync.Mutex{},
 }
 
 // log logs the v at the level.
@@ -31,6 +30,12 @@ func (l *logger) log(level string, v ...interface{}) {
 
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
+
+	if l.template == nil {
+		l.template = template.Must(
+			template.New("logger").Parse(LoggerFormat),
+		)
+	}
 
 	_, file, line, _ := runtime.Caller(3)
 
