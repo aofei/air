@@ -31,8 +31,9 @@ var LoggerEnabled = false
 // LoggerFormat is the output format of the logger.
 //
 // It is called "logger_format" in the "config.toml".
-var LoggerFormat = `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}",` +
-	`"level":"{{.level}}","file":"{{.short_file}}","line":"{{.line}}"}`
+var LoggerFormat = `{"app_name":"{{.AppName}}","time":"{{.Time}}",` +
+	`"level":"{{.Level}}","file":"{{.File}}","line":"{{.Line}}",` +
+	`"message":"{{.Message}}"}`
 
 // LoggerOutput is the output destination of the logger.
 var LoggerOutput = io.Writer(os.Stdout)
