@@ -4,19 +4,18 @@ import (
 	"bytes"
 	"fmt"
 	"runtime"
-	"strconv"
 	"sync"
 	"text/template"
 	"time"
 )
 
-// logger is used to log information generated in the runtime.
+// logger is an active logging object that generates lines of output.
 type logger struct {
-	mutex    *sync.Mutex
 	template *template.Template
+	mutex    *sync.Mutex
 }
 
-// loggerSingleton is the singleton instance of the `logger`.
+// loggerSingleton is the singleton of the `logger`.
 var loggerSingleton = &logger{
 	mutex: &sync.Mutex{},
 }
@@ -36,14 +35,17 @@ func (l *logger) log(level string, v ...interface{}) {
 		)
 	}
 
-	_, file, line, _ := runtime.Caller(3)
+	_, file, line, ok := runtime.Caller(4)
+	if !ok {
+		return
+	}
 
 	m := map[string]interface{}{}
 	m["AppName"] = AppName
 	m["Time"] = time.Now().UTC().Format(time.RFC3339)
 	m["Level"] = level
 	m["File"] = file
-	m["Line"] = strconv.Itoa(line)
+	m["Line"] = line
 	m["Message"] = fmt.Sprint(v...)
 
 	buf := &bytes.Buffer{}

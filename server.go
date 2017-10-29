@@ -6,12 +6,12 @@ import (
 	"time"
 )
 
-// server represents the HTTP server.
+// server is an HTTP server.
 type server struct {
 	server *http.Server
 }
 
-// serverSingleton is the singleton instance of the `server`.
+// serverSingleton is the singleton of the `server`.
 var serverSingleton = &server{
 	server: &http.Server{},
 }

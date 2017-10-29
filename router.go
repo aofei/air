@@ -5,13 +5,13 @@ import (
 	"unsafe"
 )
 
-// router is the registry of all registered routes.
+// router is a registry of all registered routes.
 type router struct {
 	tree      *node
 	maxParams int
 }
 
-// routerSingleton is the singleton instance of the `router`.
+// routerSingleton is the singleton of the `router`.
 var routerSingleton = &router{
 	tree: &node{
 		handlers: map[string]Handler{},

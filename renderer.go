@@ -12,16 +12,16 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-// renderer is used to render the HTML templates.
+// renderer is a renderer for rendering HTML templates.
 type renderer struct {
 	template *template.Template
 	watcher  *fsnotify.Watcher
 }
 
-// rendererSingleton is the singleton instance of the `renderer`.
+// rendererSingleton is the singleton of the `renderer`.
 var rendererSingleton = &renderer{}
 
-// render renders the v into the w with the template name.
+// render renders the v into the w for the provided HTML template name.
 func (r *renderer) render(w io.Writer, name string, v interface{}) error {
 	if r.template == nil {
 		r.template.New("template").
@@ -56,7 +56,6 @@ func (r *renderer) render(w io.Writer, name string, v interface{}) error {
 		if r.watcher, err = fsnotify.NewWatcher(); err != nil {
 			return err
 		}
-
 		go func() {
 			for {
 				select {
@@ -93,13 +92,14 @@ func strcat(s string, ss ...string) string {
 	return s
 }
 
-// substr returns the substring consisting of the chars of the s starting at the
-// index i and continuing up to, but not including, the char at the index j.
+// substr returns the substring consisting of the characters of the s starting
+// at the index i and continuing up to, but not including, the character at the
+// index j.
 func substr(s string, i, j int) string {
 	return string([]rune(s)[i:j])
 }
 
-// timefmt returns a textual representation of the t formatted according to the
+// timefmt returns a textual representation of the t formatted for the provided
 // layout.
 func timefmt(t time.Time, layout string) string {
 	return t.Format(layout)
