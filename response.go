@@ -126,7 +126,7 @@ func (r *Response) HTML(html string) error {
 
 // Render renders one or more templates with the m and responds to the HTTP
 // client with a "text/html" content. The results rendered by the former can be
-// inherited by accessing the m["InheritedHTML"]`.
+// inherited by accessing the `m["InheritedHTML"]`.
 func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	buf := &bytes.Buffer{}
 	for _, t := range templates {

@@ -3,7 +3,6 @@ package air
 import (
 	"bytes"
 	"fmt"
-	"path"
 	"runtime"
 	"strconv"
 	"sync"
@@ -39,27 +38,16 @@ func (l *logger) log(level string, v ...interface{}) {
 
 	_, file, line, _ := runtime.Caller(3)
 
-	values := map[string]interface{}{}
-	values["app_name"] = AppName
-	values["time_rfc3339"] = time.Now().UTC().Format(time.RFC3339)
-	values["level"] = level
-	values["short_file"] = path.Base(file)
-	values["long_file"] = file
-	values["line"] = strconv.Itoa(line)
+	m := map[string]interface{}{}
+	m["AppName"] = AppName
+	m["Time"] = time.Now().UTC().Format(time.RFC3339)
+	m["Level"] = level
+	m["File"] = file
+	m["Line"] = strconv.Itoa(line)
+	m["Message"] = fmt.Sprint(v...)
 
 	buf := &bytes.Buffer{}
-	if err := l.template.Execute(buf, values); err == nil {
-		message := fmt.Sprint(v...)
-		if i := buf.Len() - 1; buf.String()[i] == '}' { // JSON
-			buf.Truncate(i)
-			buf.WriteByte(',')
-			buf.WriteString(`"message":"`)
-			buf.WriteString(message)
-			buf.WriteString(`"}`)
-		} else { // Text
-			buf.WriteByte(' ')
-			buf.WriteString(message)
-		}
+	if err := l.template.Execute(buf, m); err == nil {
 		buf.WriteByte('\n')
 		LoggerOutput.Write(buf.Bytes())
 	}
