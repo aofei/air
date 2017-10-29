@@ -16,22 +16,27 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
-// minifier is used to minify contents by the MIME types.
+// minifier is a minifier that minifies contents based on the MIME types.
 type minifier struct {
 	minifier *minify.M
 }
 
-// minifierSingleton is the singleton instance of the `minifier`.
+// minifierSingleton is the singleton of the `minifier`.
 var minifierSingleton = &minifier{
 	minifier: minify.New(),
 }
 
-// minify minifies the b by the mimeType.
+// minify minifies the b based on the mimeType.
 func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 	if !MinifierEnabled {
 		return b, nil
 	}
-	mimeType, _, _ = mime.ParseMediaType(mimeType)
+
+	mimeType, _, err := mime.ParseMediaType(mimeType)
+	if err != nil {
+		return nil, err
+	}
+
 	buf := &bytes.Buffer{}
 	if err := m.minifier.Minify(
 		mimeType,
@@ -82,9 +87,11 @@ func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 		default:
 			return b, nil
 		}
+
 		return m.minify(mimeType, b)
 	} else if err != nil {
 		return nil, err
 	}
+
 	return buf.Bytes(), nil
 }

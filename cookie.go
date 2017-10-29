@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Cookie represents the HTTP cookie.
+// Cookie is an HTTP cookie.
 type Cookie struct {
 	Name     string
 	Value    string

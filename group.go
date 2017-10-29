@@ -2,7 +2,7 @@ package air
 
 // Group is a set of sub-routes for a specified route. It can be used for inner
 // routes that share common gases or functionality that should be separate from
-// the parent instance while still inheriting from it.
+// the parent while still inheriting from it.
 type Group struct {
 	Prefix string
 	Gases  []Gas

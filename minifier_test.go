@@ -124,6 +124,10 @@ func TestMinifier(t *testing.T) {
 
 	// Errors
 
+	b, err = minifierSingleton.minify("\\", nil)
+	assert.Nil(t, b)
+	assert.Error(t, err)
+
 	b, err = minifierSingleton.minify("application/json", []byte("{:}"))
 	assert.Nil(t, b)
 	assert.Error(t, err)

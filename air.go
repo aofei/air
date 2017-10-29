@@ -32,41 +32,41 @@ var LoggerEnabled = false
 //
 // It is called "logger_format" in the "config.toml".
 var LoggerFormat = `{"app_name":"{{.AppName}}","time":"{{.Time}}",` +
-	`"level":"{{.Level}}","file":"{{.File}}","line":"{{.Line}}",` +
+	`"level":"{{.Level}}","file":"{{.File}}","line":{{.Line}},` +
 	`"message":"{{.Message}}"}`
 
 // LoggerOutput is the output destination of the logger.
 var LoggerOutput = io.Writer(os.Stdout)
 
-// Address is the TCP address that the HTTP server listens on.
+// Address is the TCP address that the server listens on.
 //
 // It is called "address" in the "config.toml".
 var Address = "localhost:2333"
 
-// ReadTimeout is the maximum duration the HTTP server reads an HTTP request.
+// ReadTimeout is the maximum duration the server reads an request.
 //
 // It is called "read_timeout" in the "config.toml".
 //
 // **It is unit in the "config.toml" is MILLISECONDS.**
 var ReadTimeout = time.Duration(0)
 
-// ReadHeaderTimeout is the amount of time allowed the HTTP server reads the
-// HTTP request headers.
+// ReadHeaderTimeout is the amount of time allowed the server reads the request
+// headers.
 //
 // It is called "read_header_timeout" in the "config.toml".
 //
 // **It is unit in the "config.toml" is MILLISECONDS.**
 var ReadHeaderTimeout = time.Duration(0)
 
-// WriteTimeout is the maximum duration the HTTP server writes an HTTP response.
+// WriteTimeout is the maximum duration the server writes an response.
 //
 // It is called "write_timeout" in the "config.toml".
 //
 // **It is unit in the "config.toml" is MILLISECONDS.**
 var WriteTimeout = time.Duration(0)
 
-// IdleTimeout is the maximum amount of time the HTTP server waits for the next
-// HTTP request when HTTP keey-alives are enabled. If it is zero, the value of
+// IdleTimeout is the maximum amount of time the server waits for the next
+// request when keey-alives are enabled. If it is zero, the value of
 // `ReadTimeout` is used. If both are zero, `ReadHeaderTimeout` is used.
 //
 // It is called "idle_timeout" in the "config.toml".
@@ -74,26 +74,24 @@ var WriteTimeout = time.Duration(0)
 // **It is unit in the "config.toml" is MILLISECONDS.**
 var IdleTimeout = time.Duration(0)
 
-// MaxHeaderBytes is the maximum number of bytes the HTTP server will read
-// parsing the HTTP request header's keys and values, including the HTTP request
-// line.
+// MaxHeaderBytes is the maximum number of bytes the server will read parsing
+// the request header's keys and values, including the request line.
 //
 // It is called "max_header_bytes" in the "config.toml".
 var MaxHeaderBytes = 1 << 20
 
 // TLSCertFile is the path to the TLS certificate file used when starting the
-// HTTP server.
+// server.
 //
 // It is called "tls_cert_file" in the "config.toml".
 var TLSCertFile = ""
 
-// TLSKeyFile is the path to the TLS key file used when starting the HTTP
-// server.
+// TLSKeyFile is the path to the TLS key file used when starting the server.
 //
 // It is called "tls_key_file" in the "config.toml".
 var TLSKeyFile = ""
 
-// ErrorHandler is the centralized error handler for the HTTP server.
+// ErrorHandler is the centralized error handler for the server.
 var ErrorHandler = func(err error, req *Request, res *Response) {
 	e := &Error{
 		Code:    500,
@@ -110,10 +108,10 @@ var ErrorHandler = func(err error, req *Request, res *Response) {
 	}
 }
 
-// PreGases is the `Gas` chain that performs first than the HTTP router.
+// PreGases is the `Gas` chain that performs first than the router.
 var PreGases = []Gas{}
 
-// Gases is the `Gas` chain that performs after than the HTTP router.
+// Gases is the `Gas` chain that performs after than the router.
 var Gases = []Gas{}
 
 // MinifierEnabled indicates whether the minifier is enabled.
@@ -121,33 +119,33 @@ var Gases = []Gas{}
 // It is called "minifier_enabled" in the "config.toml".
 var MinifierEnabled = false
 
-// TemplateRoot is the root of the HTML templates. All the HTTP templates inside
+// TemplateRoot is the root of the HTML templates. All the HTML templates inside
 // it will be recursively parsed into the renderer.
 //
 // It is called "template_root" in the "config.toml".
 var TemplateRoot = "templates"
 
 // TemplateExts is the file name extensions of the HTML templates used to
-// distinguish the HTTP template files in the `TemplateRoot` when parsing them
+// distinguish the HTML template files in the `TemplateRoot` when parsing them
 // into the renderer.
 //
 // It is called "template_exts" in the "config.toml".
 var TemplateExts = []string{".html"}
 
 // TemplateLeftDelim is the left side of the HTML template delimiter the
-// renderer renders the HTTP templates.
+// renderer renders the HTML templates.
 //
 // It is called "template_left_delim" in the "config.toml".
 var TemplateLeftDelim = "{{"
 
 // TemplateRightDelim is the right side of the HTML template delimiter the
-// renderer renders the HTTP templates.
+// renderer renders the HTML templates.
 //
 // It is called "template_right_delim" in the "config.toml".
 var TemplateRightDelim = "}}"
 
-// TemplateFuncMap is the HTTP template function map the renderer renders the
-// HTTP templates.
+// TemplateFuncMap is the HTML template function map the renderer renders the
+// HTML templates.
 var TemplateFuncMap = map[string]interface{}{
 	"strlen":  strlen,
 	"strcat":  strcat,
@@ -160,8 +158,8 @@ var TemplateFuncMap = map[string]interface{}{
 // It is called "coffer_enabled" in the "config.toml".
 var CofferEnabled = false
 
-// AssetRoot represents the root of the asset files. All the asset files inside
-// it will be recursively parsed into the coffer.
+// AssetRoot is the root of the asset files. All the asset files inside it will
+// be recursively parsed into the coffer.
 //
 // It is called "asset_root" in the "config.toml".
 var AssetRoot = "assets"
@@ -188,88 +186,91 @@ var Config = map[string]interface{}{}
 func init() {
 	b, _ := ioutil.ReadFile("config.toml")
 	toml.Unmarshal(b, &Config)
-	if an, ok := Config["app_name"].(string); ok {
-		AppName = an
+	if v, ok := Config["app_name"].(string); ok {
+		AppName = v
 	}
-	if dm, ok := Config["debug_mode"].(bool); ok {
-		DebugMode = dm
+	if v, ok := Config["debug_mode"].(bool); ok {
+		DebugMode = v
 	}
-	if le, ok := Config["logger_enabled"].(bool); ok {
-		LoggerEnabled = le
+	if v, ok := Config["logger_enabled"].(bool); ok {
+		LoggerEnabled = v
 	}
-	if lf, ok := Config["logger_format"].(string); ok {
-		LoggerFormat = lf
+	if v, ok := Config["logger_format"].(string); ok {
+		LoggerFormat = v
 	}
-	if addr, ok := Config["address"].(string); ok {
-		Address = addr
+	if v, ok := Config["address"].(string); ok {
+		Address = v
 	}
-	if rt, ok := Config["read_timeout"].(int64); ok {
-		ReadTimeout = time.Duration(rt) * time.Millisecond
+	if v, ok := Config["read_timeout"].(int64); ok {
+		ReadTimeout = time.Duration(v) * time.Millisecond
 	}
-	if rht, ok := Config["read_header_timeout"].(int64); ok {
-		ReadHeaderTimeout = time.Duration(rht) * time.Millisecond
+	if v, ok := Config["read_header_timeout"].(int64); ok {
+		ReadHeaderTimeout = time.Duration(v) * time.Millisecond
 	}
-	if wt, ok := Config["write_timeout"].(int64); ok {
-		WriteTimeout = time.Duration(wt) * time.Millisecond
+	if v, ok := Config["write_timeout"].(int64); ok {
+		WriteTimeout = time.Duration(v) * time.Millisecond
 	}
-	if it, ok := Config["idle_timeout"].(int64); ok {
-		IdleTimeout = time.Duration(it) * time.Millisecond
+	if v, ok := Config["idle_timeout"].(int64); ok {
+		IdleTimeout = time.Duration(v) * time.Millisecond
 	}
-	if mhb, ok := Config["max_header_bytes"].(int64); ok {
-		MaxHeaderBytes = int(mhb)
+	if v, ok := Config["max_header_bytes"].(int64); ok {
+		MaxHeaderBytes = int(v)
 	}
-	if tcf, ok := Config["tls_cert_file"].(string); ok {
-		TLSCertFile = tcf
+	if v, ok := Config["tls_cert_file"].(string); ok {
+		TLSCertFile = v
 	}
-	if tkf, ok := Config["tls_key_file"].(string); ok {
-		TLSKeyFile = tkf
+	if v, ok := Config["tls_key_file"].(string); ok {
+		TLSKeyFile = v
 	}
-	if me, ok := Config["minifier_enabled"].(bool); ok {
-		MinifierEnabled = me
+	if v, ok := Config["minifier_enabled"].(bool); ok {
+		MinifierEnabled = v
 	}
-	if tr, ok := Config["template_root"].(string); ok {
-		TemplateRoot = tr
+	if v, ok := Config["template_root"].(string); ok {
+		TemplateRoot = v
 	}
-	if tes, ok := Config["template_exts"].([]interface{}); ok {
+	if v, ok := Config["template_exts"].([]interface{}); ok {
 		TemplateExts = nil
-		for _, te := range tes {
-			TemplateExts = append(TemplateExts, te.(string))
+		for _, v := range v {
+			if v, ok := v.(string); ok {
+				TemplateExts = append(TemplateExts, v)
+			}
 		}
 	}
-	if tld, ok := Config["template_left_delim"].(string); ok {
-		TemplateLeftDelim = tld
+	if v, ok := Config["template_left_delim"].(string); ok {
+		TemplateLeftDelim = v
 	}
-	if trd, ok := Config["template_right_delim"].(string); ok {
-		TemplateRightDelim = trd
+	if v, ok := Config["template_right_delim"].(string); ok {
+		TemplateRightDelim = v
 	}
-	if ce, ok := Config["coffer_enabled"].(bool); ok {
-		CofferEnabled = ce
+	if v, ok := Config["coffer_enabled"].(bool); ok {
+		CofferEnabled = v
 	}
-	if ar, ok := Config["asset_root"].(string); ok {
-		AssetRoot = ar
+	if v, ok := Config["asset_root"].(string); ok {
+		AssetRoot = v
 	}
-	if aes, ok := Config["asset_exts"].([]interface{}); ok {
+	if v, ok := Config["asset_exts"].([]interface{}); ok {
 		AssetExts = nil
-		for _, ae := range aes {
-			AssetExts = append(AssetExts, ae.(string))
+		for _, v := range v {
+			if v, ok := v.(string); ok {
+				AssetExts = append(AssetExts, v)
+			}
 		}
 	}
 }
 
-// Serve starts the HTTP server.
+// Serve starts the server.
 func Serve() error {
 	return serverSingleton.serve()
 }
 
-// Close closes the HTTP server immediately.
+// Close closes the server immediately.
 func Close() error {
 	return serverSingleton.close()
 }
 
-// Shutdown gracefully shuts down the HTTP server without interrupting any
-// active connections until timeout. It waits indefinitely for connections to
-// return to idle and then shut down when the timeout is less than or equal to
-// zero.
+// Shutdown gracefully shuts down the server without interrupting any active
+// connections until timeout. It waits indefinitely for connections to return to
+// idle and then shut down when the timeout is less than or equal to zero.
 func Shutdown(timeout time.Duration) error {
 	return serverSingleton.shutdown(timeout)
 }
@@ -356,7 +357,7 @@ func TRACE(path string, h Handler, gases ...Gas) {
 }
 
 // STATIC registers a new route with the path prefix to serve the static files
-// from the provided root directory.
+// from the provided root.
 func STATIC(prefix, root string) {
 	GET(prefix+"*", func(req *Request, res *Response) error {
 		err := res.File(filepath.Join(root, req.PathParams["*"]))
@@ -378,10 +379,10 @@ func FILE(path, file string) {
 	})
 }
 
-// Handler defines a function to serve HTTP requests.
+// Handler defines a function to serve requests.
 type Handler func(*Request, *Response) error
 
-// NotFoundHandler is a `Handler` returns HTTP not found error.
+// NotFoundHandler is a `Handler` that returns not found error.
 var NotFoundHandler = func(*Request, *Response) error {
 	return &Error{
 		Code:    404,
@@ -389,7 +390,7 @@ var NotFoundHandler = func(*Request, *Response) error {
 	}
 }
 
-// MethodNotAllowedHandler is a `Handler` returns HTTP method not allowed error.
+// MethodNotAllowedHandler is a `Handler` that returns method not allowed error.
 var MethodNotAllowedHandler = func(*Request, *Response) error {
 	return &Error{
 		Code:    405,
@@ -412,7 +413,7 @@ func WrapGas(h Handler) Gas {
 	}
 }
 
-// Error represents the HTTP error.
+// Error is an HTTP error.
 type Error struct {
 	Code    int
 	Message string

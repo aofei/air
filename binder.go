@@ -10,10 +10,10 @@ import (
 	"strings"
 )
 
-// binder is used to provide a way to bind contents.
+// binder is a binder that binds request based on the MIME types.
 type binder struct{}
 
-// binderSingleton is the singleton instance of the `binder`.
+// binderSingleton is the singleton of the `binder`.
 var binderSingleton = &binder{}
 
 // bind binds the `Body` of the r into the v.

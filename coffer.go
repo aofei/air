@@ -12,19 +12,20 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-// coffer is used to access binary asset files by the runtime memory.
+// coffer is a binary asset file manager that uses runtime memory to reduce disk
+// I/O pressure.
 type coffer struct {
-	assets  map[string]*Asset
+	assets  map[string]*asset
 	watcher *fsnotify.Watcher
 }
 
-// cofferSingleton is the singleton instance of the `coffer`.
+// cofferSingleton is the singleton of the `coffer`.
 var cofferSingleton = &coffer{
-	assets: map[string]*Asset{},
+	assets: map[string]*asset{},
 }
 
-// asset returns an `Asset` of the `coffer` for the provided name.
-func (c *coffer) asset(name string) (*Asset, error) {
+// asset returns an `asset` from the `coffer` for the provided name.
+func (c *coffer) asset(name string) (*asset, error) {
 	if !CofferEnabled {
 		return nil, nil
 	}
@@ -72,7 +73,7 @@ func (c *coffer) asset(name string) (*Asset, error) {
 		return nil, err
 	}
 
-	if mt := mime.TypeByExtension(filepath.Ext(name)); mt != "" {
+	if mt := mime.TypeByExtension(ext); mt != "" {
 		if b, err = minifierSingleton.minify(mt, b); err != nil {
 			return nil, err
 		}
@@ -82,7 +83,6 @@ func (c *coffer) asset(name string) (*Asset, error) {
 		if c.watcher, err = fsnotify.NewWatcher(); err != nil {
 			return nil, err
 		}
-
 		go func() {
 			for {
 				select {
@@ -102,18 +102,18 @@ func (c *coffer) asset(name string) (*Asset, error) {
 		return nil, err
 	}
 
-	c.assets[name] = &Asset{
-		Name:    name,
-		ModTime: fi.ModTime(),
-		Reader:  bytes.NewReader(b),
+	c.assets[name] = &asset{
+		name:    name,
+		modTime: fi.ModTime(),
+		reader:  bytes.NewReader(b),
 	}
 
 	return c.assets[name], nil
 }
 
-// Asset is a binary asset file.
-type Asset struct {
-	Name    string
-	ModTime time.Time
-	Reader  *bytes.Reader
+// asset is a binary asset file.
+type asset struct {
+	name    string
+	modTime time.Time
+	reader  *bytes.Reader
 }

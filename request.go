@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// Request represents the HTTP request.
+// Request is an HTTP request.
 type Request struct {
 	Method        string
 	URL           *URL
@@ -59,8 +59,10 @@ func newRequest(r *http.Request) *Request {
 	if r.MultipartForm != nil {
 		for k, v := range r.MultipartForm.File {
 			if len(v) > 0 {
-				f, _ := v[0].Open()
-				formFiles[k] = f
+				f, err := v[0].Open()
+				if err == nil {
+					formFiles[k] = f
+				}
 			}
 		}
 	}
@@ -78,7 +80,8 @@ func newRequest(r *http.Request) *Request {
 		FormParams:    formParams,
 		FormFiles:     formFiles,
 		Values:        map[string]interface{}{},
-		request:       r,
+
+		request: r,
 	}
 }
 
