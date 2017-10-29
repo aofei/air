@@ -5,7 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -13,79 +13,86 @@ import (
 
 // AppName is the name of the current web application.
 //
-// It's called "app_name" in the config file.
+// It is called "app_name" in the "config.toml".
 var AppName = "air"
 
-// DebugMode indicates whether to enable the debug mode.
+// DebugMode indicates whether the current web application is in debug mode.
 //
-// It's called "debug_mode" in the config file.
+// It is called "debug_mode" in the "config.toml".
 var DebugMode = false
 
-// LoggerEnabled indicates whether to enable the logger.
+// LoggerEnabled indicates whether the logger is enabled.
 //
-// It will be forced to the true if the `DebugMode` is true.
+// It will be forced to be true when the `DebugMode` is true.
 //
-// It's called "logger_enabled" in the config file.
+// It is called "logger_enabled" in the "config.toml".
 var LoggerEnabled = false
 
-// LoggerFormat is the format of the output content of the logger.
+// LoggerFormat is the output format of the logger.
 //
-// It's called "logger_format" in the config file.
+// It is called "logger_format" in the "config.toml".
 var LoggerFormat = `{"app_name":"{{.app_name}}","time":"{{.time_rfc3339}}",` +
 	`"level":"{{.level}}","file":"{{.short_file}}","line":"{{.line}}"}`
 
-// LoggerOutput is the format of the output content of the logger.
+// LoggerOutput is the output destination of the logger.
 var LoggerOutput = io.Writer(os.Stdout)
 
-// Address is the TCP address that the HTTP server to listen on.
+// Address is the TCP address that the HTTP server listens on.
 //
-// It's called "address" in the config file.
+// It is called "address" in the "config.toml".
 var Address = "localhost:2333"
 
-// ReadTimeout is the maximum duration before timing out the HTTP server will
-// read of an HTTP request.
+// ReadTimeout is the maximum duration the HTTP server reads an HTTP request.
 //
-// It's called "read_timeout" in the config file.
+// It is called "read_timeout" in the "config.toml".
 //
-// **It's unit in the config file is MILLISECONDS.**
+// **It is unit in the "config.toml" is MILLISECONDS.**
 var ReadTimeout = time.Duration(0)
 
-// ReadHeaderTimeout is the amount of time allowed to read the HTTP request
-// headers.
+// ReadHeaderTimeout is the amount of time allowed the HTTP server reads the
+// HTTP request headers.
 //
-// It's called "read_header_timeout" in the config file.
+// It is called "read_header_timeout" in the "config.toml".
 //
-// **It's unit in the config file is MILLISECONDS.**
+// **It is unit in the "config.toml" is MILLISECONDS.**
 var ReadHeaderTimeout = time.Duration(0)
 
-// WriteTimeout is the maximum duration before timing out the HTTP server will
-// write of an HTTP response.
+// WriteTimeout is the maximum duration the HTTP server writes an HTTP response.
 //
-// It's called "write_timeout" in the config file.
+// It is called "write_timeout" in the "config.toml".
 //
-// **It's unit in the config file is MILLISECONDS.**
+// **It is unit in the "config.toml" is MILLISECONDS.**
 var WriteTimeout = time.Duration(0)
 
-// MaxHeaderBytes is the maximum number of bytes the HTTP server will read
-// parsing an HTTP request header's keys and values, including the HTTP request
-// line. It does not limit the size of the HTTP request body.
+// IdleTimeout is the maximum amount of time the HTTP server waits for the next
+// HTTP request when HTTP keey-alives are enabled. If it is zero, the value of
+// `ReadTimeout` is used. If both are zero, `ReadHeaderTimeout` is used.
 //
-// It's called "max_header_bytes" in the config file.
+// It is called "idle_timeout" in the "config.toml".
+//
+// **It is unit in the "config.toml" is MILLISECONDS.**
+var IdleTimeout = time.Duration(0)
+
+// MaxHeaderBytes is the maximum number of bytes the HTTP server will read
+// parsing the HTTP request header's keys and values, including the HTTP request
+// line.
+//
+// It is called "max_header_bytes" in the "config.toml".
 var MaxHeaderBytes = 1 << 20
 
-// TLSCertFile is the path of the TLS certificate file that will be used by the
+// TLSCertFile is the path to the TLS certificate file used when starting the
 // HTTP server.
 //
-// It's called "tls_cert_file" in the config file.
+// It is called "tls_cert_file" in the "config.toml".
 var TLSCertFile = ""
 
-// TLSKeyFile is the path of the TLS key file that will be used by the HTTP
+// TLSKeyFile is the path to the TLS key file used when starting the HTTP
 // server.
 //
-// It's called "tls_key_file" in the config file.
+// It is called "tls_key_file" in the "config.toml".
 var TLSKeyFile = ""
 
-// ErrorHandler is the centralized error handler of the HTTP server.
+// ErrorHandler is the centralized error handler for the HTTP server.
 var ErrorHandler = func(err error, req *Request, res *Response) {
 	e := &Error{
 		Code:    500,
@@ -96,50 +103,50 @@ var ErrorHandler = func(err error, req *Request, res *Response) {
 	} else if DebugMode {
 		e.Message = err.Error()
 	}
-
 	if !res.Written {
 		res.StatusCode = e.Code
 		res.String(e.Message)
 	}
 }
 
-// PreGases is a `Gas` chain which is perform before the HTTP router.
+// PreGases is the `Gas` chain that performs first than the HTTP router.
 var PreGases = []Gas{}
 
-// Gases is a `Gas` chain which is perform after the HTTP router.
+// Gases is the `Gas` chain that performs after than the HTTP router.
 var Gases = []Gas{}
 
-// MinifierEnabled indicates whether to enable the minifier.
+// MinifierEnabled indicates whether the minifier is enabled.
 //
-// It's called "minifier_enabled" in the config file.
+// It is called "minifier_enabled" in the "config.toml".
 var MinifierEnabled = false
 
-// TemplateRoot represents the root directory of the HTML templates. It will be
-// parsed into the renderer.
+// TemplateRoot is the root of the HTML templates. All the HTTP templates inside
+// it will be recursively parsed into the renderer.
 //
-// It's called "template_root" in the config file.
+// It is called "template_root" in the "config.toml".
 var TemplateRoot = "templates"
 
-// TemplateExts represents the file name extensions of the HTML templates. It
-// will be used when parsing the HTML templates.
+// TemplateExts is the file name extensions of the HTML templates used to
+// distinguish the HTTP template files in the `TemplateRoot` when parsing them
+// into the renderer.
 //
-// It's called "template_exts" in the config file.
+// It is called "template_exts" in the "config.toml".
 var TemplateExts = []string{".html"}
 
-// TemplateLeftDelim represents the left side of the HTML template delimiter. It
-// will be used when parsing the HTML templates.
+// TemplateLeftDelim is the left side of the HTML template delimiter the
+// renderer renders the HTTP templates.
 //
-// It's called "template_left_delim" in the config file.
+// It is called "template_left_delim" in the "config.toml".
 var TemplateLeftDelim = "{{"
 
-// TemplateRightDelim represents the right side of the HTML template delimiter.
-// It will be used when parsing the HTML templates.
+// TemplateRightDelim is the right side of the HTML template delimiter the
+// renderer renders the HTTP templates.
 //
-// It's called "template_right_delim" in the config file.
+// It is called "template_right_delim" in the "config.toml".
 var TemplateRightDelim = "}}"
 
-// TemplateFuncMap represents the template function map that will be used when
-// parsing the HTML templates.
+// TemplateFuncMap is the HTTP template function map the renderer renders the
+// HTTP templates.
 var TemplateFuncMap = map[string]interface{}{
 	"strlen":  strlen,
 	"strcat":  strcat,
@@ -147,21 +154,21 @@ var TemplateFuncMap = map[string]interface{}{
 	"timefmt": timefmt,
 }
 
-// CofferEnabled indicates whether to enable the coffer.
+// CofferEnabled indicates whether the coffer is enabled.
 //
-// It's called "coffer_enabled" in the config file.
+// It is called "coffer_enabled" in the "config.toml".
 var CofferEnabled = false
 
-// AssetRoot represents the root directory of the asset files. It will be loaded
-// into the coffer.
+// AssetRoot represents the root of the asset files. All the asset files inside
+// it will be recursively parsed into the coffer.
 //
-// It's called "asset_root" in the config file.
+// It is called "asset_root" in the "config.toml".
 var AssetRoot = "assets"
 
-// AssetExts represents the file name extensions of the asset files. It will be
-// used when loading the asset files.
+// AssetExts is the file name extensions of the asset files used to distinguish
+// the asset files in the `AssetRoot` when loading them into the coffer.
 //
-// It's called "asset_exts" in the config file.
+// It is called "asset_exts" in the "config.toml".
 var AssetExts = []string{
 	".html",
 	".css",
@@ -174,8 +181,7 @@ var AssetExts = []string{
 	".png",
 }
 
-// Config is the map that parsing from the config file. You can use it to access
-// the values in the config file.
+// Config is the key-value pairs that is parsed from the "config.toml".
 var Config = map[string]interface{}{}
 
 func init() {
@@ -204,6 +210,9 @@ func init() {
 	}
 	if wt, ok := Config["write_timeout"].(int64); ok {
 		WriteTimeout = time.Duration(wt) * time.Millisecond
+	}
+	if it, ok := Config["idle_timeout"].(int64); ok {
+		IdleTimeout = time.Duration(it) * time.Millisecond
 	}
 	if mhb, ok := Config["max_header_bytes"].(int64); ok {
 		MaxHeaderBytes = int(mhb)
@@ -259,7 +268,7 @@ func Close() error {
 // Shutdown gracefully shuts down the HTTP server without interrupting any
 // active connections until timeout. It waits indefinitely for connections to
 // return to idle and then shut down when the timeout is less than or equal to
-// 0.
+// zero.
 func Shutdown(timeout time.Duration) error {
 	return serverSingleton.shutdown(timeout)
 }
@@ -349,7 +358,7 @@ func TRACE(path string, h Handler, gases ...Gas) {
 // from the provided root directory.
 func STATIC(prefix, root string) {
 	GET(prefix+"*", func(req *Request, res *Response) error {
-		err := res.File(path.Join(root, req.PathParams["*"]))
+		err := res.File(filepath.Join(root, req.PathParams["*"]))
 		if os.IsNotExist(err) {
 			return NotFoundHandler(req, res)
 		}

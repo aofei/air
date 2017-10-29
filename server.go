@@ -21,7 +21,9 @@ func (s *server) serve() error {
 	s.server.Addr = Address
 	s.server.Handler = s
 	s.server.ReadTimeout = ReadTimeout
+	s.server.ReadHeaderTimeout = ReadHeaderTimeout
 	s.server.WriteTimeout = WriteTimeout
+	s.server.IdleTimeout = IdleTimeout
 	s.server.MaxHeaderBytes = MaxHeaderBytes
 
 	if DebugMode {
@@ -43,7 +45,7 @@ func (s *server) close() error {
 
 // shutdown gracefully shuts down the s without interrupting any active
 // connections until timeout. It waits indefinitely for connections to return to
-// idle and then shut down when the timeout is less than or equal to 0.
+// idle and then shut down when the timeout is less than or equal to zero.
 func (s *server) shutdown(timeout time.Duration) error {
 	if timeout <= 0 {
 		return s.server.Shutdown(context.Background())
