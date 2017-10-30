@@ -85,7 +85,7 @@ func newRequest(r *http.Request) *Request {
 	}
 }
 
-// Bind binds the `Body` of the r into the v.
+// Bind binds the r into the v.
 func (r *Request) Bind(v interface{}) error {
 	return binderSingleton.bind(v, r)
 }
