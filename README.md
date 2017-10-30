@@ -52,9 +52,10 @@ properly.**
 	* Route level.
 	* Group level.
 * Binder
-	* `application/json`.
-	* `application/xml`.
-	* `application/x-www-form-urlencoded`.
+	* `application/json`
+	* `application/xml`
+	* `application/x-www-form-urlencoded`
+	* `multipart/form-data`
 * Minifier
 	* `text/html`
 	* `text/css`
