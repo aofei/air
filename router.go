@@ -68,7 +68,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 		if path[i] == ':' {
 			j := i + 1
 
-			r.insert(method, path[:i], nil, staticKind, nil)
+			r.insert(method, path[:i], nil, static, nil)
 
 			for ; i < l && path[i] != '/'; i++ {
 			}
@@ -86,20 +86,20 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 			path = path[:j] + path[i:]
 
 			if i, l = j, len(path); i == l {
-				r.insert(method, path, nh, paramKind, paramNames)
+				r.insert(method, path, nh, param, paramNames)
 				return
 			}
 
-			r.insert(method, path[:i], nil, paramKind, paramNames)
+			r.insert(method, path[:i], nil, param, paramNames)
 		} else if path[i] == '*' {
-			r.insert(method, path[:i], nil, staticKind, nil)
+			r.insert(method, path[:i], nil, static, nil)
 			paramNames = append(paramNames, "*")
-			r.insert(method, path[:i+1], nh, anyKind, paramNames)
+			r.insert(method, path[:i+1], nh, any, paramNames)
 			return
 		}
 	}
 
-	r.insert(method, path, nh, staticKind, paramNames)
+	r.insert(method, path, nh, static, paramNames)
 }
 
 // insert inserts a new route into the `tree` of the r.
@@ -107,7 +107,7 @@ func (r *router) insert(
 	method,
 	path string,
 	h Handler,
-	nk uint8,
+	nk nodeKind,
 	paramNames []string,
 ) {
 	if l := len(paramNames); l > r.maxParams {
@@ -160,7 +160,7 @@ func (r *router) insert(
 			}
 
 			// Reset parent node
-			cn.kind = staticKind
+			cn.kind = static
 			cn.label = cn.prefix[0]
 			cn.prefix = cn.prefix[:ll]
 			cn.children = nil
@@ -223,7 +223,7 @@ func (r *router) route(req *Request) Handler {
 	var (
 		s   = pathClean(req.URL.Path)        // Search
 		nn  *node                            // Next node
-		nk  uint8                            // Next kind
+		nk  nodeKind                         // Next kind
 		sn  *node                            // Saved node
 		ss  string                           // Saved search
 		sl  int                              // Search length
@@ -265,10 +265,10 @@ func (r *router) route(req *Request) Handler {
 		}
 
 		// Static node
-		if nn = cn.child(s[0], staticKind); nn != nil {
+		if nn = cn.child(s[0], static); nn != nil {
 			// Save next
 			if hasLastSlash(cn.prefix) {
-				nk = paramKind
+				nk = param
 				sn = cn
 				ss = s
 			}
@@ -280,10 +280,10 @@ func (r *router) route(req *Request) Handler {
 
 		// Param node
 	Param:
-		if nn = cn.childByKind(paramKind); nn != nil {
+		if nn = cn.childByKind(param); nn != nil {
 			// Save next
 			if hasLastSlash(cn.prefix) {
-				nk = anyKind
+				nk = any
 				sn = cn
 				ss = s
 			}
@@ -301,7 +301,7 @@ func (r *router) route(req *Request) Handler {
 
 		// Any node
 	Any:
-		if cn = cn.childByKind(anyKind); cn != nil {
+		if cn = cn.childByKind(any); cn != nil {
 			if hasLastSlash(req.URL.Path) {
 				si = len(req.URL.Path) - 1
 				for ; si > 0 && req.URL.Path[si] == '/'; si-- {
@@ -326,9 +326,9 @@ func (r *router) route(req *Request) Handler {
 			s = ss
 
 			switch nk {
-			case paramKind:
+			case param:
 				goto Param
-			case anyKind:
+			case any:
 				goto Any
 			}
 		}
@@ -468,7 +468,7 @@ func unhex(c byte) byte {
 
 // node is the node of the radix tree.
 type node struct {
-	kind       uint8
+	kind       nodeKind
 	label      byte
 	prefix     string
 	handlers   map[string]Handler
@@ -477,15 +477,18 @@ type node struct {
 	paramNames []string
 }
 
+// nodeKind is a kind of the `node`.
+type nodeKind uint8
+
 // node kinds
 const (
-	staticKind uint8 = iota
-	paramKind
-	anyKind
+	static nodeKind = iota
+	param
+	any
 )
 
 // child returns a child `node` of the n by the label and the kind.
-func (n *node) child(label byte, kind uint8) *node {
+func (n *node) child(label byte, kind nodeKind) *node {
 	for _, c := range n.children {
 		if c.label == label && c.kind == kind {
 			return c
@@ -505,7 +508,7 @@ func (n *node) childByLabel(l byte) *node {
 }
 
 // childByKind returns a child `node` of the n by the k.
-func (n *node) childByKind(k uint8) *node {
+func (n *node) childByKind(k nodeKind) *node {
 	for _, c := range n.children {
 		if c.kind == k {
 			return c
