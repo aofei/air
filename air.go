@@ -108,8 +108,8 @@ var ErrorHandler = func(err error, req *Request, res *Response) {
 	}
 }
 
-// PreGases is the `Gas` chain that performs first than the router.
-var PreGases = []Gas{}
+// Pregases is the `Gas` chain that performs first than the router.
+var Pregases = []Gas{}
 
 // Gases is the `Gas` chain that performs after than the router.
 var Gases = []Gas{}

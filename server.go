@@ -71,9 +71,9 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return h(req, res)
 	}
 
-	// PreGases
-	for i := len(PreGases) - 1; i >= 0; i-- {
-		h = PreGases[i](h)
+	// Pregases
+	for i := len(Pregases) - 1; i >= 0; i-- {
+		h = Pregases[i](h)
 	}
 
 	// Execute chain
