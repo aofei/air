@@ -141,7 +141,7 @@ example, logging every request or recovering from panics.
 ## Examples
 
 If you want to be familiar with this framework as soon as possible, simply visit
-[here](https://github.com/sheng/atmosphere).
+[here](https://github.com/sheng/air-examples).
 
 ## Community
 
