@@ -176,7 +176,7 @@ func TestServerSeveHTTP(t *testing.T) {
 	rec := httptest.NewRecorder()
 	serverSingleton.ServeHTTP(rec, req)
 
-	assert.Equal(t, "Pregas\nGas\nRoute Gas\nHandler", buf.String())
+	assert.Equal(t, "Pregas\nGas\nRoute gas\nHandler", buf.String())
 	assert.Equal(t, 500, rec.Code)
 	assert.Equal(t, "Handler error", rec.Body.String())
 }
