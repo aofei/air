@@ -24,7 +24,7 @@ func TestRequest(t *testing.T) {
 	rs := reflect.ValueOf(fileHeader).Elem()
 	rf := rs.Field(3)
 	rf = reflect.NewAt(rf.Type(), unsafe.Pointer(rf.UnsafeAddr())).Elem()
-	rf.Set(reflect.ValueOf([]byte{0}))
+	rf.Set(reflect.ValueOf([]byte("foobar")))
 
 	sr.MultipartForm = &multipart.Form{
 		File: map[string][]*multipart.FileHeader{
