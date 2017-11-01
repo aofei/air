@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"mime/multipart"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strconv"
 	"testing"
+	"time"
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
@@ -22,9 +26,21 @@ func TestRequest(t *testing.T) {
 
 	fileHeader := &multipart.FileHeader{}
 	rs := reflect.ValueOf(fileHeader).Elem()
-	rf := rs.Field(3)
+	rf := rs.Field(4)
 	rf = reflect.NewAt(rf.Type(), unsafe.Pointer(rf.UnsafeAddr())).Elem()
-	rf.Set(reflect.ValueOf([]byte("foobar")))
+
+	p := filepath.Join(
+		os.TempDir(),
+		strconv.FormatInt(time.Now().UnixNano(), 10),
+	)
+	f, _ := os.Create(p)
+	defer func() {
+		f.Close()
+		os.Remove(f.Name())
+	}()
+	f.WriteString("foobar")
+
+	rf.Set(reflect.ValueOf(p))
 
 	sr.MultipartForm = &multipart.Form{
 		File: map[string][]*multipart.FileHeader{
