@@ -2,6 +2,7 @@ package air
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -41,7 +42,11 @@ func TestServerServe(t *testing.T) {
 	assert.Equal(t, IdleTimeout, ss.IdleTimeout)
 	assert.Equal(t, MaxHeaderBytes, ss.MaxHeaderBytes)
 	assert.True(t, LoggerEnabled)
-	assert.Contains(t, buf.String(), "serving in debug mode")
+
+	m := map[string]interface{}{}
+	assert.NoError(t, json.Unmarshal(buf.Bytes(), &m))
+	assert.Equal(t, "serving in debug mode", m["message"])
+
 	assert.NoError(t, serverSingleton.close())
 }
 
