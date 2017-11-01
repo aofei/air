@@ -51,6 +51,7 @@ func TestRequest(t *testing.T) {
 	assert.Equal(t, len(sr.Form), len(r.FormParams))
 	assert.NotNil(t, r.FormFiles)
 	assert.Equal(t, len(sr.MultipartForm.File), len(r.FormFiles))
+	assert.Equal(t, sr.RemoteAddr, r.RemoteAddr)
 	assert.NotNil(t, r.Values)
 	assert.Zero(t, len(r.Values))
 	assert.Equal(t, sr, r.request)

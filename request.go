@@ -18,6 +18,7 @@ type Request struct {
 	QueryParams   map[string]string
 	FormParams    map[string]string
 	FormFiles     map[string]io.Reader
+	RemoteAddr    string
 	Values        map[string]interface{}
 
 	request *http.Request
@@ -79,6 +80,7 @@ func newRequest(r *http.Request) *Request {
 		QueryParams:   queryParams,
 		FormParams:    formParams,
 		FormFiles:     formFiles,
+		RemoteAddr:    r.RemoteAddr,
 		Values:        map[string]interface{}{},
 
 		request: r,
