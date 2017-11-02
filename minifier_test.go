@@ -10,21 +10,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/tdewolff/minify"
 )
 
 func TestMinifier(t *testing.T) {
-	// Singleton
-
 	assert.NotNil(t, minifierSingleton)
 	assert.NotNil(t, minifierSingleton.minifier)
-
-	// Uneabled
 
 	b, err := minifierSingleton.minify("unenabled", []byte("uneabled"))
 	assert.Equal(t, "uneabled", string(b))
 	assert.NoError(t, err)
-
-	// HTML
 
 	MinifierEnabled = true
 
@@ -35,16 +30,12 @@ func TestMinifier(t *testing.T) {
 	assert.Equal(t, "<!doctype html>", string(b))
 	assert.NoError(t, err)
 
-	// HTML with parameters
-
 	b, err = minifierSingleton.minify(
 		"text/html; charset=utf-8",
 		[]byte("<!DOCTYPE html>"),
 	)
 	assert.Equal(t, "<!doctype html>", string(b))
 	assert.NoError(t, err)
-
-	// CSS
 
 	b, err = minifierSingleton.minify(
 		"text/css",
@@ -53,16 +44,12 @@ func TestMinifier(t *testing.T) {
 	assert.Equal(t, "body{font-size:16px}", string(b))
 	assert.NoError(t, err)
 
-	// JavaScript
-
 	b, err = minifierSingleton.minify(
 		"application/javascript",
 		[]byte("var foo = \"bar\";"),
 	)
 	assert.Equal(t, "var foo=\"bar\";", string(b))
 	assert.NoError(t, err)
-
-	// JSON
 
 	b, err = minifierSingleton.minify(
 		"application/json",
@@ -71,8 +58,6 @@ func TestMinifier(t *testing.T) {
 	assert.Equal(t, "{\"foo\":\"bar\"}", string(b))
 	assert.NoError(t, err)
 
-	// XML
-
 	b, err = minifierSingleton.minify(
 		"application/xml",
 		[]byte("<Foobar></Foobar>"),
@@ -80,16 +65,12 @@ func TestMinifier(t *testing.T) {
 	assert.Equal(t, "<Foobar/>", string(b))
 	assert.NoError(t, err)
 
-	// SVG
-
 	b, err = minifierSingleton.minify(
 		"image/svg+xml",
 		[]byte("<Foobar></Foobar>"),
 	)
 	assert.Equal(t, "<Foobar/>", string(b))
 	assert.NoError(t, err)
-
-	// JPEG
 
 	buf := &bytes.Buffer{}
 	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
@@ -107,8 +88,6 @@ func TestMinifier(t *testing.T) {
 	assert.NotEmpty(t, b)
 	assert.NoError(t, err)
 
-	// PNG
-
 	buf.Reset()
 	png.Encode(buf, img)
 
@@ -116,13 +95,9 @@ func TestMinifier(t *testing.T) {
 	assert.NotEmpty(t, b)
 	assert.NoError(t, err)
 
-	// Unsupported
-
 	b, err = minifierSingleton.minify("unsupported", []byte("unsupported"))
 	assert.Equal(t, "unsupported", string(b))
 	assert.NoError(t, err)
-
-	// Errors
 
 	b, err = minifierSingleton.minify("\\", nil)
 	assert.Nil(t, b)
@@ -139,4 +114,7 @@ func TestMinifier(t *testing.T) {
 	b, err = minifierSingleton.minify("image/png", nil)
 	assert.Nil(t, b)
 	assert.Error(t, err)
+
+	MinifierEnabled = false
+	minifierSingleton.minifier = minify.New()
 }

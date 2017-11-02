@@ -3,7 +3,6 @@ package air
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -48,6 +47,11 @@ func TestServerServe(t *testing.T) {
 	assert.Equal(t, "serving in debug mode", m["message"])
 
 	assert.NoError(t, serverSingleton.close())
+
+	DebugMode = false
+	LoggerEnabled = false
+	LoggerOutput = os.Stdout
+	serverSingleton.server = &http.Server{}
 }
 
 func TestServerServeTLS(t *testing.T) {
@@ -138,6 +142,8 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 
 	assert.NoError(t, serverSingleton.shutdown(0))
 	assert.NoError(t, serverSingleton.shutdown(1))
+
+	serverSingleton.server = &http.Server{}
 }
 
 func TestServerSeveHTTP(t *testing.T) {
@@ -163,7 +169,10 @@ func TestServerSeveHTTP(t *testing.T) {
 		"/",
 		func(req *Request, res *Response) error {
 			buf.WriteString("Handler")
-			return errors.New("Handler error")
+			return &Error{
+				Code:    500,
+				Message: "Handler error",
+			}
 		},
 		WrapGas(func(*Request, *Response) error {
 			buf.WriteString("Route gas\n")
@@ -184,4 +193,6 @@ func TestServerSeveHTTP(t *testing.T) {
 	assert.Equal(t, "Pregas\nGas\nRoute gas\nHandler", buf.String())
 	assert.Equal(t, 500, rec.Code)
 	assert.Equal(t, "Handler error", rec.Body.String())
+
+	serverSingleton.server = &http.Server{}
 }
