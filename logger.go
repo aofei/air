@@ -49,8 +49,9 @@ func (l *logger) log(level string, v ...interface{}) {
 	m["Message"] = fmt.Sprint(v...)
 
 	buf := &bytes.Buffer{}
-	if err := l.template.Execute(buf, m); err == nil {
-		buf.WriteByte('\n')
-		LoggerOutput.Write(buf.Bytes())
+	if err := l.template.Execute(buf, m); err != nil {
+		return
 	}
+
+	LoggerOutput.Write(buf.Bytes())
 }
