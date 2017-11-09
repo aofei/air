@@ -17,19 +17,12 @@ func TestLogger(t *testing.T) {
 	buf := &bytes.Buffer{}
 	LoggerOutput = buf
 
-	func() {
-		loggerSingleton.log("INFO", "foo", "bar")
-	}()
+	loggerSingleton.log("INFO", "foo", "bar")
 	assert.Zero(t, buf.Len())
 
 	LoggerEnabled = true
 
 	loggerSingleton.log("INFO", "foo", "bar")
-	assert.Zero(t, buf.Len())
-
-	func() {
-		loggerSingleton.log("INFO", "foo", "bar")
-	}()
 
 	m := map[string]interface{}{}
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &m))

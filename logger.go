@@ -35,7 +35,7 @@ func (l *logger) log(level string, v ...interface{}) {
 		)
 	}
 
-	_, file, line, ok := runtime.Caller(4)
+	_, file, line, ok := runtime.Caller(3)
 	if !ok {
 		return
 	}
