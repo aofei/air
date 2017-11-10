@@ -12,12 +12,13 @@ import (
 // logger is an active logging object that generates lines of output.
 type logger struct {
 	template *template.Template
-	mutex    *sync.Mutex
+	once     *sync.Once
 }
 
 // loggerSingleton is the singleton of the `logger`.
 var loggerSingleton = &logger{
-	mutex: &sync.Mutex{},
+	template: template.New("logger"),
+	once:     &sync.Once{},
 }
 
 // log logs the v at the level.
@@ -26,14 +27,9 @@ func (l *logger) log(level string, v ...interface{}) {
 		return
 	}
 
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-
-	if l.template == nil {
-		l.template = template.Must(
-			template.New("logger").Parse(LoggerFormat),
-		)
-	}
+	l.once.Do(func() {
+		template.Must(l.template.Parse(LoggerFormat))
+	})
 
 	_, file, line, ok := runtime.Caller(3)
 	if !ok {
