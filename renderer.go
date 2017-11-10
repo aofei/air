@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -16,67 +17,78 @@ import (
 type renderer struct {
 	template *template.Template
 	watcher  *fsnotify.Watcher
+	once     *sync.Once
 }
 
 // rendererSingleton is the singleton of the `renderer`.
-var rendererSingleton = &renderer{}
+var rendererSingleton = &renderer{
+	template: template.New("template"),
+	once:     &sync.Once{},
+}
+
+func init() {
+	var err error
+	if rendererSingleton.watcher, err = fsnotify.NewWatcher(); err != nil {
+		panic(err)
+	}
+	go func() {
+		for {
+			select {
+			case event := <-rendererSingleton.watcher.Events:
+				INFO(event)
+				rendererSingleton.once = &sync.Once{}
+			case err := <-rendererSingleton.watcher.Errors:
+				ERROR(err)
+			}
+		}
+	}()
+}
 
 // render renders the v into the w for the provided HTML template name.
 func (r *renderer) render(w io.Writer, name string, v interface{}) error {
-	if r.template == nil {
-		r.template.New("template").
+	r.once.Do(func() {
+		tr, err := filepath.Abs(TemplateRoot)
+		if err != nil {
+			PANIC(err)
+		}
+		t := template.New("template").
 			Delims(TemplateLeftDelim, TemplateRightDelim).
 			Funcs(TemplateFuncMap)
-	} else if t := r.template.Lookup(name); t != nil {
-		return t.Execute(w, v)
-	}
-
-	tr, err := filepath.Abs(TemplateRoot)
-	if err != nil {
-		return err
-	}
-
-	tn := filepath.Join(tr, name)
-	if _, err := os.Stat(tn); os.IsNotExist(err) {
-		return err
-	}
-
-	ext := strings.ToLower(filepath.Ext(tn))
-	isTemplate := false
-	for _, te := range TemplateExts {
-		if strings.ToLower(te) == ext {
-			isTemplate = true
-		}
-	}
-	if !isTemplate {
-		return nil
-	}
-
-	if r.watcher == nil {
-		if r.watcher, err = fsnotify.NewWatcher(); err != nil {
-			return err
-		}
-		go func() {
-			for {
-				select {
-				case event := <-r.watcher.Events:
-					INFO(event)
-					r.template = nil
-				case err := <-r.watcher.Errors:
-					ERROR(err)
+		if err := filepath.Walk(
+			tr,
+			func(p string, fi os.FileInfo, err error) error {
+				if fi == nil || !fi.IsDir() {
+					return err
 				}
-			}
-		}()
-	} else if err := r.watcher.Add(tn); err != nil {
-		return err
-	}
-
-	t, err := r.template.New(name).ParseFiles(tn)
-	if err != nil {
-		return err
-	}
-
-	return t.Execute(w, v)
+				for _, e := range TemplateExts {
+					fs, err := filepath.Glob(
+						filepath.Join(p, "*"+e),
+					)
+					if err != nil {
+						return err
+					}
+					for _, f := range fs {
+						b, err := ioutil.ReadFile(f)
+						if err != nil {
+							return err
+						}
+						if _, err := t.New(
+							filepath.ToSlash(
+								f[len(tr)+1:],
+							),
+						).Parse(string(b)); err != nil {
+							return err
+						}
+					}
+				}
+				return r.watcher.Add(p)
+			},
+		); err != nil {
+			PANIC(err)
+		}
+		r.template = t
+	})
+	return r.template.ExecuteTemplate(w, name, v)
 }
 
 // strlen returns the number of characters in the s.
