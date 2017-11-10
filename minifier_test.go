@@ -7,6 +7,7 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"image/png"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,6 +17,7 @@ import (
 func TestMinifier(t *testing.T) {
 	assert.NotNil(t, minifierSingleton)
 	assert.NotNil(t, minifierSingleton.minifier)
+	assert.NotNil(t, minifierSingleton.once)
 
 	b, err := minifierSingleton.minify("unenabled", []byte("uneabled"))
 	assert.Equal(t, "uneabled", string(b))
@@ -117,4 +119,5 @@ func TestMinifier(t *testing.T) {
 
 	MinifierEnabled = false
 	minifierSingleton.minifier = minify.New()
+	minifierSingleton.once = &sync.Once{}
 }
