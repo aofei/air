@@ -22,8 +22,7 @@ type renderer struct {
 
 // rendererSingleton is the singleton of the `renderer`.
 var rendererSingleton = &renderer{
-	template: template.New("template"),
-	once:     &sync.Once{},
+	once: &sync.Once{},
 }
 
 func init() {
@@ -51,7 +50,7 @@ func (r *renderer) render(w io.Writer, name string, v interface{}) error {
 		if err != nil {
 			PANIC(err)
 		}
-		t := template.New("template").
+		r.template = template.New("template").
 			Delims(TemplateLeftDelim, TemplateRightDelim).
 			Funcs(TemplateFuncMap)
 		if err := filepath.Walk(
@@ -72,7 +71,7 @@ func (r *renderer) render(w io.Writer, name string, v interface{}) error {
 						if err != nil {
 							return err
 						}
-						if _, err := t.New(
+						if _, err := r.template.New(
 							filepath.ToSlash(
 								f[len(tr)+1:],
 							),
@@ -86,7 +85,6 @@ func (r *renderer) render(w io.Writer, name string, v interface{}) error {
 		); err != nil {
 			PANIC(err)
 		}
-		r.template = t
 	})
 	return r.template.ExecuteTemplate(w, name, v)
 }
