@@ -24,6 +24,28 @@ var cofferSingleton = &coffer{
 	assets: map[string]*asset{},
 }
 
+func init() {
+	var err error
+	if cofferSingleton.watcher, err = fsnotify.NewWatcher(); err != nil {
+		panic(err)
+	}
+	go func() {
+		for {
+			select {
+			case event := <-cofferSingleton.watcher.Events:
+				if CofferEnabled {
+					INFO(event)
+				}
+				delete(cofferSingleton.assets, event.Name)
+			case err := <-cofferSingleton.watcher.Errors:
+				if CofferEnabled {
+					ERROR(err)
+				}
+			}
+		}
+	}()
+}
+
 // asset returns an `asset` from the `coffer` for the provided name.
 func (c *coffer) asset(name string) (*asset, error) {
 	if !CofferEnabled {
@@ -35,32 +57,23 @@ func (c *coffer) asset(name string) (*asset, error) {
 		if name, err = filepath.Abs(name); err != nil {
 			return nil, err
 		}
-	} else if a, ok := c.assets[name]; ok {
+	}
+
+	if a, ok := c.assets[name]; ok {
 		return a, nil
-	}
-
-	if _, err := os.Stat(AssetRoot); os.IsNotExist(err) {
-		return nil, nil
-	}
-
-	ar, err := filepath.Abs(AssetRoot)
-	if err != nil {
+	} else if ar, err := filepath.Abs(AssetRoot); err != nil {
 		return nil, err
-	}
-
-	if !strings.HasPrefix(name, ar) {
+	} else if !strings.HasPrefix(name, ar) {
 		return nil, nil
 	}
 
 	ext := strings.ToLower(filepath.Ext(name))
-	isAsset := false
-	for _, ae := range AssetExts {
-		if strings.ToLower(ae) == ext {
-			isAsset = true
+	for i := range AssetExts {
+		if strings.ToLower(AssetExts[i]) == ext {
+			break
+		} else if i == len(AssetExts)-1 {
+			return nil, nil
 		}
-	}
-	if !isAsset {
-		return nil, nil
 	}
 
 	fi, err := os.Stat(name)
@@ -79,26 +92,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 		}
 	}
 
-	if c.watcher == nil {
-		if c.watcher, err = fsnotify.NewWatcher(); err != nil {
-			return nil, err
-		}
-		go func() {
-			for {
-				select {
-				case event := <-c.watcher.Events:
-					if CofferEnabled {
-						INFO(event)
-					}
-					delete(c.assets, event.Name)
-				case err := <-c.watcher.Errors:
-					if CofferEnabled {
-						ERROR(err)
-					}
-				}
-			}
-		}()
-	} else if err := c.watcher.Add(name); err != nil {
+	if err := c.watcher.Add(name); err != nil {
 		return nil, err
 	}
 
