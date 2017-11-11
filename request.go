@@ -26,20 +26,22 @@ type Request struct {
 
 // newRequest returns a new instance of the `Request`.
 func newRequest(r *http.Request) *Request {
-	headers := map[string]string{}
+	headers := make(map[string]string, len(r.Header))
 	for k, v := range r.Header {
 		if len(v) > 0 {
 			headers[k] = v[0]
 		}
 	}
 
-	cookies := []*Cookie{}
-	for _, c := range r.Cookies() {
+	cs := r.Cookies()
+	cookies := make([]*Cookie, 0, len(cs))
+	for _, c := range cs {
 		cookies = append(cookies, newCookie(c))
 	}
 
-	queryParams := map[string]string{}
-	for k, v := range r.URL.Query() {
+	qps := r.URL.Query()
+	queryParams := make(map[string]string, len(qps))
+	for k, v := range qps {
 		if len(v) > 0 {
 			queryParams[k] = v[0]
 		}
@@ -49,16 +51,17 @@ func newRequest(r *http.Request) *Request {
 		r.ParseMultipartForm(32 << 20)
 	}
 
-	formParams := map[string]string{}
+	formParams := make(map[string]string, len(r.Form))
 	for k, v := range r.Form {
 		if len(v) > 0 {
 			formParams[k] = v[0]
 		}
 	}
 
-	formFiles := map[string]io.Reader{}
-	if r.MultipartForm != nil {
-		for k, v := range r.MultipartForm.File {
+	formFiles := make(map[string]io.Reader, 0)
+	if mf := r.MultipartForm; mf != nil {
+		formFiles = make(map[string]io.Reader, len(mf.File))
+		for k, v := range mf.File {
 			if len(v) > 0 {
 				f, err := v[0].Open()
 				if err == nil {
@@ -76,7 +79,7 @@ func newRequest(r *http.Request) *Request {
 		ContentLength: r.ContentLength,
 		Body:          r.Body,
 		Cookies:       cookies,
-		PathParams:    map[string]string{},
+		PathParams:    make(map[string]string, theRouter.maxParams),
 		QueryParams:   queryParams,
 		FormParams:    formParams,
 		FormFiles:     formFiles,
