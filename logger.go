@@ -36,16 +36,18 @@ func (l *logger) log(level string, v ...interface{}) {
 		return
 	}
 
-	m := map[string]interface{}{}
-	m["AppName"] = AppName
-	m["Time"] = time.Now().UTC().Format(time.RFC3339)
-	m["Level"] = level
-	m["File"] = file
-	m["Line"] = line
-	m["Message"] = fmt.Sprint(v...)
-
 	buf := &bytes.Buffer{}
-	if err := l.template.Execute(buf, m); err != nil {
+	if err := l.template.Execute(
+		buf,
+		map[string]interface{}{
+			"AppName": AppName,
+			"Time":    time.Now().UTC().Format(time.RFC3339),
+			"Level":   level,
+			"File":    file,
+			"Line":    line,
+			"Message": fmt.Sprint(v...),
+		},
+	); err != nil {
 		return
 	}
 
