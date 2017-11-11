@@ -15,8 +15,8 @@ type logger struct {
 	once     *sync.Once
 }
 
-// loggerSingleton is the singleton of the `logger`.
-var loggerSingleton = &logger{
+// theLogger is the singleton of the `logger`.
+var theLogger = &logger{
 	template: template.New("logger"),
 	once:     &sync.Once{},
 }

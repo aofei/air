@@ -23,8 +23,8 @@ type minifier struct {
 	once     *sync.Once
 }
 
-// minifierSingleton is the singleton of the `minifier`.
-var minifierSingleton = &minifier{
+// theMinifier is the singleton of the `minifier`.
+var theMinifier = &minifier{
 	minifier: minify.New(),
 	once:     &sync.Once{},
 }

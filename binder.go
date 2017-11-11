@@ -12,8 +12,8 @@ import (
 // binder is a binder that binds request based on the MIME types.
 type binder struct{}
 
-// binderSingleton is the singleton of the `binder`.
-var binderSingleton = &binder{}
+// theBinder is the singleton of the `binder`.
+var theBinder = &binder{}
 
 // bind binds the r into the v.
 func (b *binder) bind(v interface{}, r *Request) (err error) {

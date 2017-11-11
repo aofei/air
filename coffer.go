@@ -19,25 +19,25 @@ type coffer struct {
 	watcher *fsnotify.Watcher
 }
 
-// cofferSingleton is the singleton of the `coffer`.
-var cofferSingleton = &coffer{
+// theCoffer is the singleton of the `coffer`.
+var theCoffer = &coffer{
 	assets: map[string]*asset{},
 }
 
 func init() {
 	var err error
-	if cofferSingleton.watcher, err = fsnotify.NewWatcher(); err != nil {
+	if theCoffer.watcher, err = fsnotify.NewWatcher(); err != nil {
 		panic(err)
 	}
 	go func() {
 		for {
 			select {
-			case event := <-cofferSingleton.watcher.Events:
+			case event := <-theCoffer.watcher.Events:
 				if CofferEnabled {
 					INFO(event)
 				}
-				delete(cofferSingleton.assets, event.Name)
-			case err := <-cofferSingleton.watcher.Errors:
+				delete(theCoffer.assets, event.Name)
+			case err := <-theCoffer.watcher.Errors:
 				if CofferEnabled {
 					ERROR(err)
 				}
@@ -87,7 +87,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 	}
 
 	if mt := mime.TypeByExtension(ext); mt != "" {
-		if b, err = minifierSingleton.minify(mt, b); err != nil {
+		if b, err = theMinifier.minify(mt, b); err != nil {
 			return nil, err
 		}
 	}
