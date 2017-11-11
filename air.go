@@ -148,7 +148,6 @@ var TemplateRightDelim = "}}"
 // HTML templates.
 var TemplateFuncMap = map[string]interface{}{
 	"strlen":  strlen,
-	"strcat":  strcat,
 	"substr":  substr,
 	"timefmt": timefmt,
 }

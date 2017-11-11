@@ -1,7 +1,6 @@
 package air
 
 import (
-	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -92,14 +91,6 @@ func (r *renderer) render(w io.Writer, name string, v interface{}) error {
 // strlen returns the number of characters in the s.
 func strlen(s string) int {
 	return len([]rune(s))
-}
-
-// strcat returns a string that is catenated to the tail of the s by the ss.
-func strcat(s string, ss ...string) string {
-	for i := range ss {
-		s = fmt.Sprintf("%s%s", s, ss[i])
-	}
-	return s
 }
 
 // substr returns the substring consisting of the characters of the s starting
