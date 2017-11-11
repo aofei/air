@@ -11,8 +11,8 @@ type server struct {
 	server *http.Server
 }
 
-// serverSingleton is the singleton of the `server`.
-var serverSingleton = &server{
+// theServer is the singleton of the `server`.
+var theServer = &server{
 	server: &http.Server{},
 }
 
@@ -64,7 +64,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// Gases
 	h := func(req *Request, res *Response) error {
-		h := routerSingleton.route(req)
+		h := theRouter.route(req)
 		for i := len(Gases) - 1; i >= 0; i-- {
 			h = Gases[i](h)
 		}

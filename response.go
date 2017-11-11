@@ -81,7 +81,7 @@ func (r *Response) Redirect(url string) error {
 // Blob responds to the client with the contentType content b.
 func (r *Response) Blob(contentType string, b []byte) error {
 	var err error
-	if b, err = minifierSingleton.minify(contentType, b); err != nil {
+	if b, err = theMinifier.minify(contentType, b); err != nil {
 		return err
 	}
 	r.Headers["Content-Type"] = contentType
@@ -131,7 +131,7 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	for _, t := range templates {
 		m["InheritedHTML"] = template.HTML(buf.String())
 		buf.Reset()
-		if err := rendererSingleton.render(buf, t, m); err != nil {
+		if err := theRenderer.render(buf, t, m); err != nil {
 			return err
 		}
 	}
@@ -163,7 +163,7 @@ func (r *Response) File(file string) error {
 		}
 	}
 
-	if a, err := cofferSingleton.asset(file); err != nil {
+	if a, err := theCoffer.asset(file); err != nil {
 		return err
 	} else if a != nil {
 		http.ServeContent(

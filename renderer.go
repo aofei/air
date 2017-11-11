@@ -19,23 +19,23 @@ type renderer struct {
 	once     *sync.Once
 }
 
-// rendererSingleton is the singleton of the `renderer`.
-var rendererSingleton = &renderer{
+// theRenderer is the singleton of the `renderer`.
+var theRenderer = &renderer{
 	once: &sync.Once{},
 }
 
 func init() {
 	var err error
-	if rendererSingleton.watcher, err = fsnotify.NewWatcher(); err != nil {
+	if theRenderer.watcher, err = fsnotify.NewWatcher(); err != nil {
 		panic(err)
 	}
 	go func() {
 		for {
 			select {
-			case event := <-rendererSingleton.watcher.Events:
+			case event := <-theRenderer.watcher.Events:
 				INFO(event)
-				rendererSingleton.once = &sync.Once{}
-			case err := <-rendererSingleton.watcher.Errors:
+				theRenderer.once = &sync.Once{}
+			case err := <-theRenderer.watcher.Errors:
 				ERROR(err)
 			}
 		}

@@ -13,8 +13,8 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	assert.NotNil(t, serverSingleton)
-	assert.NotNil(t, serverSingleton.server)
+	assert.NotNil(t, theServer)
+	assert.NotNil(t, theServer.server)
 }
 
 func TestServerServe(t *testing.T) {
@@ -27,14 +27,14 @@ func TestServerServe(t *testing.T) {
 	LoggerOutput = buf
 
 	go func() {
-		assert.Error(t, http.ErrServerClosed, serverSingleton.serve())
+		assert.Error(t, http.ErrServerClosed, theServer.serve())
 	}()
 
 	time.Sleep(100 * time.Millisecond)
 
-	ss := serverSingleton.server
+	ss := theServer.server
 	assert.Equal(t, Address, ss.Addr)
-	assert.Equal(t, serverSingleton, ss.Handler)
+	assert.Equal(t, theServer, ss.Handler)
 	assert.Equal(t, ReadTimeout, ss.ReadTimeout)
 	assert.Equal(t, ReadHeaderTimeout, ss.ReadHeaderTimeout)
 	assert.Equal(t, WriteTimeout, ss.WriteTimeout)
@@ -46,12 +46,12 @@ func TestServerServe(t *testing.T) {
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &m))
 	assert.Equal(t, "serving in debug mode", m["message"])
 
-	assert.NoError(t, serverSingleton.close())
+	assert.NoError(t, theServer.close())
 
 	DebugMode = false
 	LoggerEnabled = false
 	LoggerOutput = os.Stdout
-	serverSingleton.server = &http.Server{}
+	theServer.server = &http.Server{}
 }
 
 func TestServerServeTLS(t *testing.T) {
@@ -135,15 +135,15 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	keyFile.WriteString(key)
 
 	go func() {
-		assert.Error(t, http.ErrServerClosed, serverSingleton.serve())
+		assert.Error(t, http.ErrServerClosed, theServer.serve())
 	}()
 
 	time.Sleep(100 * time.Millisecond)
 
-	assert.NoError(t, serverSingleton.shutdown(0))
-	assert.NoError(t, serverSingleton.shutdown(1))
+	assert.NoError(t, theServer.shutdown(0))
+	assert.NoError(t, theServer.shutdown(1))
 
-	serverSingleton.server = &http.Server{}
+	theServer.server = &http.Server{}
 }
 
 func TestServerSeveHTTP(t *testing.T) {
@@ -181,18 +181,18 @@ func TestServerSeveHTTP(t *testing.T) {
 	)
 
 	go func() {
-		assert.Error(t, http.ErrServerClosed, serverSingleton.serve())
+		assert.Error(t, http.ErrServerClosed, theServer.serve())
 	}()
 
 	time.Sleep(100 * time.Millisecond)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
-	serverSingleton.ServeHTTP(rec, req)
+	theServer.ServeHTTP(rec, req)
 
 	assert.Equal(t, "Pregas\nGas\nRoute gas\nHandler", buf.String())
 	assert.Equal(t, 500, rec.Code)
 	assert.Equal(t, "Handler error", rec.Body.String())
 
-	serverSingleton.server = &http.Server{}
+	theServer.server = &http.Server{}
 }

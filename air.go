@@ -259,100 +259,100 @@ func init() {
 
 // Serve starts the server.
 func Serve() error {
-	return serverSingleton.serve()
+	return theServer.serve()
 }
 
 // Close closes the server immediately.
 func Close() error {
-	return serverSingleton.close()
+	return theServer.close()
 }
 
 // Shutdown gracefully shuts down the server without interrupting any active
 // connections until timeout. It waits indefinitely for connections to return to
 // idle and then shut down when the timeout is less than or equal to zero.
 func Shutdown(timeout time.Duration) error {
-	return serverSingleton.shutdown(timeout)
+	return theServer.shutdown(timeout)
 }
 
 // INFO logs the v at the INFO level.
 func INFO(v ...interface{}) {
-	loggerSingleton.log("INFO", v...)
+	theLogger.log("INFO", v...)
 }
 
 // WARN logs the v at the WARN level.
 func WARN(v ...interface{}) {
-	loggerSingleton.log("WARN", v...)
+	theLogger.log("WARN", v...)
 }
 
 // ERROR logs the v at the ERROR level.
 func ERROR(v ...interface{}) {
-	loggerSingleton.log("ERROR", v...)
+	theLogger.log("ERROR", v...)
 }
 
 // PANIC logs the v at the PANIC level.
 func PANIC(v ...interface{}) {
-	loggerSingleton.log("PANIC", v...)
+	theLogger.log("PANIC", v...)
 	panic(fmt.Sprint(v...))
 }
 
 // FATAL logs the v at the FATAL level.
 func FATAL(v ...interface{}) {
-	loggerSingleton.log("FATAL", v...)
+	theLogger.log("FATAL", v...)
 	os.Exit(1)
 }
 
 // GET registers a new GET route for the path with the matching h in the router
 // with the optional route-level gases.
 func GET(path string, h Handler, gases ...Gas) {
-	routerSingleton.register("GET", path, h, gases...)
+	theRouter.register("GET", path, h, gases...)
 }
 
 // HEAD registers a new HEAD route for the path with the matching h in the
 // router with the optional route-level gases.
 func HEAD(path string, h Handler, gases ...Gas) {
-	routerSingleton.register("HEAD", path, h, gases...)
+	theRouter.register("HEAD", path, h, gases...)
 }
 
 // POST registers a new POST route for the path with the matching h in the
 // router with the optional route-level gases.
 func POST(path string, h Handler, gases ...Gas) {
-	routerSingleton.register("POST", path, h, gases...)
+	theRouter.register("POST", path, h, gases...)
 }
 
 // PUT registers a new PUT route for the path with the matching h in the router
 // with the optional route-level gases.
 func PUT(path string, h Handler, gases ...Gas) {
-	routerSingleton.register("PUT", path, h, gases...)
+	theRouter.register("PUT", path, h, gases...)
 }
 
 // PATCH registers a new PATCH route for the path with the matching h in the
 // router with the optional route-level gases.
 func PATCH(path string, h Handler, gases ...Gas) {
-	routerSingleton.register("PATCH", path, h, gases...)
+	theRouter.register("PATCH", path, h, gases...)
 }
 
 // DELETE registers a new DELETE route for the path with the matching h in the
 // router with the optional route-level gases.
 func DELETE(path string, h Handler, gases ...Gas) {
-	routerSingleton.register("DELETE", path, h, gases...)
+	theRouter.register("DELETE", path, h, gases...)
 }
 
 // CONNECT registers a new CONNECT route for the path with the matching h in the
 // router with the optional route-level gases.
 func CONNECT(path string, h Handler, gases ...Gas) {
-	routerSingleton.register("CONNECT", path, h, gases...)
+	theRouter.register("CONNECT", path, h, gases...)
 }
 
 // OPTIONS registers a new OPTIONS route for the path with the matching h in the
 // router with the optional route-level gases.
 func OPTIONS(path string, h Handler, gases ...Gas) {
-	routerSingleton.register("OPTIONS", path, h, gases...)
+	theRouter.register("OPTIONS", path, h, gases...)
 }
 
 // TRACE registers a new TRACE route for the path with the matching h in the
 // router with the optional route-level gases.
 func TRACE(path string, h Handler, gases ...Gas) {
-	routerSingleton.register("TRACE", path, h, gases...)
+	theRouter.register("TRACE", path, h, gases...)
 }
 
 // STATIC registers a new route with the path prefix to serve the static files

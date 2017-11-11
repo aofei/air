@@ -11,19 +11,19 @@ import (
 )
 
 func TestLogger(t *testing.T) {
-	assert.NotNil(t, loggerSingleton)
-	assert.NotNil(t, loggerSingleton.template)
-	assert.NotNil(t, loggerSingleton.once)
+	assert.NotNil(t, theLogger)
+	assert.NotNil(t, theLogger.template)
+	assert.NotNil(t, theLogger.once)
 
 	buf := &bytes.Buffer{}
 	LoggerOutput = buf
 
-	loggerSingleton.log("INFO", "foo", "bar")
+	theLogger.log("INFO", "foo", "bar")
 	assert.Zero(t, buf.Len())
 
 	LoggerEnabled = true
 
-	loggerSingleton.log("INFO", "foo", "bar")
+	theLogger.log("INFO", "foo", "bar")
 
 	m := map[string]interface{}{}
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &m))
@@ -31,5 +31,5 @@ func TestLogger(t *testing.T) {
 
 	LoggerEnabled = false
 	LoggerOutput = os.Stdout
-	loggerSingleton.once = &sync.Once{}
+	theLogger.once = &sync.Once{}
 }

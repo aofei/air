@@ -11,8 +11,8 @@ type router struct {
 	maxParams int
 }
 
-// routerSingleton is the singleton of the `router`.
-var routerSingleton = &router{
+// theRouter is the singleton of the `router`.
+var theRouter = &router{
 	tree: &node{
 		handlers: map[string]Handler{},
 	},
