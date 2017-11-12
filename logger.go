@@ -3,7 +3,6 @@ package air
 import (
 	"bytes"
 	"fmt"
-	"runtime"
 	"sync"
 	"text/template"
 	"time"
@@ -26,30 +25,15 @@ func (l *logger) log(level string, v ...interface{}) {
 	if !LoggerEnabled {
 		return
 	}
-
 	l.once.Do(func() {
 		template.Must(l.template.Parse(LoggerFormat))
 	})
-
-	_, file, line, ok := runtime.Caller(3)
-	if !ok {
-		return
-	}
-
 	buf := &bytes.Buffer{}
-	if err := l.template.Execute(
-		buf,
-		map[string]interface{}{
-			"AppName": AppName,
-			"Time":    time.Now().UTC().Format(time.RFC3339),
-			"Level":   level,
-			"File":    file,
-			"Line":    line,
-			"Message": fmt.Sprint(v...),
-		},
-	); err != nil {
-		return
-	}
-
+	l.template.Execute(buf, map[string]interface{}{
+		"AppName": AppName,
+		"Time":    time.Now().UTC().Format(time.RFC3339),
+		"Level":   level,
+		"Message": fmt.Sprint(v...),
+	})
 	LoggerOutput.Write(buf.Bytes())
 }

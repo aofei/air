@@ -79,6 +79,5 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Execute chain
 	if err := h(req, res); err != nil {
 		ErrorHandler(err, req, res)
-		ERROR(err)
 	}
 }
