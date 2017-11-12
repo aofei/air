@@ -32,8 +32,7 @@ var LoggerEnabled = false
 //
 // It is called "logger_format" in the "config.toml".
 var LoggerFormat = `{"app_name":"{{.AppName}}","time":"{{.Time}}",` +
-	`"level":"{{.Level}}","file":"{{.File}}","line":{{.Line}},` +
-	`"message":"{{.Message}}"}` + "\n"
+	`"level":"{{.Level}}","message":"{{.Message}}"}` + "\n"
 
 // LoggerOutput is the output destination of the logger.
 var LoggerOutput = io.Writer(os.Stdout)
@@ -106,6 +105,7 @@ var ErrorHandler = func(err error, req *Request, res *Response) {
 		res.StatusCode = e.Code
 		res.String(e.Message)
 	}
+	ERROR(err)
 }
 
 // Pregases is the `Gas` chain that performs first than the router.
