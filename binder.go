@@ -27,7 +27,7 @@ func (b *binder) bind(v interface{}, r *Request) (err error) {
 	}()
 
 	if r.Method == "GET" {
-		return b.bindParams(v, r.QueryParams)
+		return b.bindParams(v, r.Params)
 	} else if r.Body == nil {
 		return errors.New("request body can't be empty")
 	}
@@ -43,7 +43,7 @@ func (b *binder) bind(v interface{}, r *Request) (err error) {
 	case "application/xml":
 		err = xml.NewDecoder(r.Body).Decode(v)
 	case "application/x-www-form-urlencoded", "multipart/form-data":
-		err = b.bindParams(v, r.FormParams)
+		err = b.bindParams(v, r.Params)
 	default:
 		err = &Error{
 			Code:    415,

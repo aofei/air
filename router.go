@@ -338,7 +338,7 @@ func (r *router) route(req *Request) Handler {
 
 	if handler := cn.handlers[req.Method]; handler != nil {
 		for i := range pvs {
-			req.PathParams[cn.paramNames[i]] = pvs[i]
+			req.Params[cn.paramNames[i]] = pvs[i]
 		}
 		return handler
 	} else if len(cn.handlers) != 0 {
