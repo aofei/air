@@ -375,18 +375,8 @@ func pathWithoutParamNames(p string) string {
 
 // pathClean returns a clean path from the p.
 func pathClean(p string) string {
-	if p == "" {
-		return "/"
-	}
-
 	b := make([]byte, 0, len(p))
-
-	i, l := 0, len(p)
-	if p[0] == '/' {
-		i = 1
-	}
-
-	for i < l {
+	for i, l := 0, len(p); i < l; {
 		if p[i] == '/' {
 			i++
 		} else {
@@ -396,7 +386,9 @@ func pathClean(p string) string {
 			}
 		}
 	}
-
+	if len(b) == 0 {
+		return "/"
+	}
 	return *(*string)(unsafe.Pointer(&b))
 }
 
