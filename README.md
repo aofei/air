@@ -95,7 +95,7 @@ $ go get github.com/sheng/air
 
 done.
 
-> The only requirement is the [Go](https://golang.org/dl/), at least v1.8.
+> The only requirement is the [Go](https://golang.org), at least v1.8.
 
 ## Hello, 世界
 
