@@ -46,7 +46,7 @@ var Address = "localhost:2333"
 //
 // It is called "read_timeout" in the "config.toml".
 //
-// **It is unit in the "config.toml" is MILLISECONDS.**
+// **Its unit in the "config.toml" is MILLISECONDS.**
 var ReadTimeout = time.Duration(0)
 
 // ReadHeaderTimeout is the amount of time allowed the server reads the request
@@ -54,23 +54,23 @@ var ReadTimeout = time.Duration(0)
 //
 // It is called "read_header_timeout" in the "config.toml".
 //
-// **It is unit in the "config.toml" is MILLISECONDS.**
+// **Its unit in the "config.toml" is MILLISECONDS.**
 var ReadHeaderTimeout = time.Duration(0)
 
 // WriteTimeout is the maximum duration the server writes an response.
 //
 // It is called "write_timeout" in the "config.toml".
 //
-// **It is unit in the "config.toml" is MILLISECONDS.**
+// **Its unit in the "config.toml" is MILLISECONDS.**
 var WriteTimeout = time.Duration(0)
 
 // IdleTimeout is the maximum amount of time the server waits for the next
-// request when keey-alives are enabled. If it is zero, the value of
-// `ReadTimeout` is used. If both are zero, `ReadHeaderTimeout` is used.
+// request. If it is zero, the value of `ReadTimeout` is used. If both are zero,
+// `ReadHeaderTimeout` is used.
 //
 // It is called "idle_timeout" in the "config.toml".
 //
-// **It is unit in the "config.toml" is MILLISECONDS.**
+// **Its unit in the "config.toml" is MILLISECONDS.**
 var IdleTimeout = time.Duration(0)
 
 // MaxHeaderBytes is the maximum number of bytes the server will read parsing
