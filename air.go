@@ -92,10 +92,7 @@ var TLSKeyFile = ""
 
 // ErrorHandler is the centralized error handler for the server.
 var ErrorHandler = func(err error, req *Request, res *Response) {
-	e := &Error{
-		Code:    500,
-		Message: "Internal Server Error",
-	}
+	e := &Error{500, "Internal Server Error"}
 	if ce, ok := err.(*Error); ok {
 		e = ce
 	} else if DebugMode {
@@ -383,18 +380,12 @@ type Handler func(*Request, *Response) error
 
 // NotFoundHandler is a `Handler` that returns not found error.
 var NotFoundHandler = func(*Request, *Response) error {
-	return &Error{
-		Code:    404,
-		Message: "Not Found",
-	}
+	return &Error{404, "Not Found"}
 }
 
 // MethodNotAllowedHandler is a `Handler` that returns method not allowed error.
 var MethodNotAllowedHandler = func(*Request, *Response) error {
-	return &Error{
-		Code:    405,
-		Message: "Method Not Allowed",
-	}
+	return &Error{405, "Method Not Allowed"}
 }
 
 // Gas defines a function to process gases.

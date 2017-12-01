@@ -169,10 +169,7 @@ func TestServerSeveHTTP(t *testing.T) {
 		"/",
 		func(req *Request, res *Response) error {
 			buf.WriteString("Handler")
-			return &Error{
-				Code:    500,
-				Message: "Handler error",
-			}
+			return &Error{500, "Handler Error"}
 		},
 		WrapGas(func(*Request, *Response) error {
 			buf.WriteString("Route gas\n")
@@ -192,7 +189,7 @@ func TestServerSeveHTTP(t *testing.T) {
 
 	assert.Equal(t, "Pregas\nGas\nRoute gas\nHandler", buf.String())
 	assert.Equal(t, 500, rec.Code)
-	assert.Equal(t, "Handler error", rec.Body.String())
+	assert.Equal(t, "Handler Error", rec.Body.String())
 
 	theServer.server = &http.Server{}
 }

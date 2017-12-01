@@ -16,25 +16,16 @@ type binder struct{}
 var theBinder = &binder{}
 
 // bind binds the r into the v.
-func (b *binder) bind(v interface{}, r *Request) (err error) {
-	defer func() {
-		if _, ok := err.(*Error); !ok && err != nil {
-			err = &Error{
-				Code:    400,
-				Message: err.Error(),
-			}
-		}
-	}()
-
+func (b *binder) bind(v interface{}, r *Request) error {
 	if r.Method == "GET" {
 		return b.bindParams(v, r.Params)
 	} else if r.Body == nil {
-		return errors.New("request body can't be empty")
+		return &Error{400, "request body can't be empty"}
 	}
 
 	mt, _, err := mime.ParseMediaType(r.Headers["Content-Type"])
 	if err != nil {
-		return err
+		return &Error{400, err.Error()}
 	}
 
 	switch mt {
@@ -45,13 +36,13 @@ func (b *binder) bind(v interface{}, r *Request) (err error) {
 	case "application/x-www-form-urlencoded", "multipart/form-data":
 		err = b.bindParams(v, r.Params)
 	default:
-		err = &Error{
-			Code:    415,
-			Message: "Unsupported Media Type",
-		}
+		return &Error{415, "Unsupported Media Type"}
+	}
+	if err != nil {
+		return &Error{400, err.Error()}
 	}
 
-	return err
+	return nil
 }
 
 // bindParams binds the params into the v.
