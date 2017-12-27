@@ -1,6 +1,7 @@
 package air
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,24 +14,24 @@ import (
 
 // AppName is the name of the current web application.
 //
-// It is called "app_name" in the "config.toml".
+// It is called "app_name" in the configuration file.
 var AppName = "air"
 
 // DebugMode indicates whether the current web application is in debug mode.
 //
-// It is called "debug_mode" in the "config.toml".
+// It is called "debug_mode" in the configuration file.
 var DebugMode = false
 
 // LoggerEnabled indicates whether the logger is enabled.
 //
 // It will be forced to be true when the `DebugMode` is true.
 //
-// It is called "logger_enabled" in the "config.toml".
+// It is called "logger_enabled" in the configuration file.
 var LoggerEnabled = false
 
 // LoggerFormat is the output format of the logger.
 //
-// It is called "logger_format" in the "config.toml".
+// It is called "logger_format" in the configuration file.
 var LoggerFormat = `{"app_name":"{{.AppName}}","time":"{{.Time}}",` +
 	`"level":"{{.Level}}","message":"{{.Message}}"}` + "\n"
 
@@ -39,55 +40,55 @@ var LoggerOutput = io.Writer(os.Stdout)
 
 // Address is the TCP address that the server listens on.
 //
-// It is called "address" in the "config.toml".
+// It is called "address" in the configuration file.
 var Address = "localhost:2333"
 
 // ReadTimeout is the maximum duration the server reads an request.
 //
-// It is called "read_timeout" in the "config.toml".
+// It is called "read_timeout" in the configuration file.
 //
-// **Its unit in the "config.toml" is MILLISECONDS.**
+// **Its unit in the configuration file is MILLISECONDS.**
 var ReadTimeout = time.Duration(0)
 
 // ReadHeaderTimeout is the amount of time allowed the server reads the request
 // headers.
 //
-// It is called "read_header_timeout" in the "config.toml".
+// It is called "read_header_timeout" in the configuration file.
 //
-// **Its unit in the "config.toml" is MILLISECONDS.**
+// **Its unit in the configuration file is MILLISECONDS.**
 var ReadHeaderTimeout = time.Duration(0)
 
 // WriteTimeout is the maximum duration the server writes an response.
 //
-// It is called "write_timeout" in the "config.toml".
+// It is called "write_timeout" in the configuration file.
 //
-// **Its unit in the "config.toml" is MILLISECONDS.**
+// **Its unit in the configuration file is MILLISECONDS.**
 var WriteTimeout = time.Duration(0)
 
 // IdleTimeout is the maximum amount of time the server waits for the next
 // request. If it is zero, the value of `ReadTimeout` is used. If both are zero,
 // `ReadHeaderTimeout` is used.
 //
-// It is called "idle_timeout" in the "config.toml".
+// It is called "idle_timeout" in the configuration file.
 //
-// **Its unit in the "config.toml" is MILLISECONDS.**
+// **Its unit in the configuration file is MILLISECONDS.**
 var IdleTimeout = time.Duration(0)
 
 // MaxHeaderBytes is the maximum number of bytes the server will read parsing
 // the request header's keys and values, including the request line.
 //
-// It is called "max_header_bytes" in the "config.toml".
+// It is called "max_header_bytes" in the configuration file.
 var MaxHeaderBytes = 1 << 20
 
 // TLSCertFile is the path to the TLS certificate file used when starting the
 // server.
 //
-// It is called "tls_cert_file" in the "config.toml".
+// It is called "tls_cert_file" in the configuration file.
 var TLSCertFile = ""
 
 // TLSKeyFile is the path to the TLS key file used when starting the server.
 //
-// It is called "tls_key_file" in the "config.toml".
+// It is called "tls_key_file" in the configuration file.
 var TLSKeyFile = ""
 
 // ErrorHandler is the centralized error handler for the server.
@@ -113,32 +114,32 @@ var Gases = []Gas{}
 
 // MinifierEnabled indicates whether the minifier is enabled.
 //
-// It is called "minifier_enabled" in the "config.toml".
+// It is called "minifier_enabled" in the configuration file.
 var MinifierEnabled = false
 
 // TemplateRoot is the root of the HTML templates. All the HTML templates inside
 // it will be recursively parsed into the renderer.
 //
-// It is called "template_root" in the "config.toml".
+// It is called "template_root" in the configuration file.
 var TemplateRoot = "templates"
 
 // TemplateExts is the file name extensions of the HTML templates used to
 // distinguish the HTML template files in the `TemplateRoot` when parsing them
 // into the renderer.
 //
-// It is called "template_exts" in the "config.toml".
+// It is called "template_exts" in the configuration file.
 var TemplateExts = []string{".html"}
 
 // TemplateLeftDelim is the left side of the HTML template delimiter the
 // renderer renders the HTML templates.
 //
-// It is called "template_left_delim" in the "config.toml".
+// It is called "template_left_delim" in the configuration file.
 var TemplateLeftDelim = "{{"
 
 // TemplateRightDelim is the right side of the HTML template delimiter the
 // renderer renders the HTML templates.
 //
-// It is called "template_right_delim" in the "config.toml".
+// It is called "template_right_delim" in the configuration file.
 var TemplateRightDelim = "}}"
 
 // TemplateFuncMap is the HTML template function map the renderer renders the
@@ -151,19 +152,19 @@ var TemplateFuncMap = map[string]interface{}{
 
 // CofferEnabled indicates whether the coffer is enabled.
 //
-// It is called "coffer_enabled" in the "config.toml".
+// It is called "coffer_enabled" in the configuration file.
 var CofferEnabled = false
 
 // AssetRoot is the root of the asset files. All the asset files inside it will
 // be recursively parsed into the coffer.
 //
-// It is called "asset_root" in the "config.toml".
+// It is called "asset_root" in the configuration file.
 var AssetRoot = "assets"
 
 // AssetExts is the file name extensions of the asset files used to distinguish
 // the asset files in the `AssetRoot` when loading them into the coffer.
 //
-// It is called "asset_exts" in the "config.toml".
+// It is called "asset_exts" in the configuration file.
 var AssetExts = []string{
 	".html",
 	".css",
@@ -176,81 +177,90 @@ var AssetExts = []string{
 	".png",
 }
 
-// Config is the key-value pairs that is parsed from the "config.toml".
+// Config is a set of key-value pairs parsed from the configuration file found
+// in the path specified by a command-line flag named "config". The default path
+// of the configuration file is "config.toml".
 var Config = map[string]interface{}{}
 
 func init() {
-	b, _ := ioutil.ReadFile("config.toml")
-	toml.Unmarshal(b, &Config)
-	if v, ok := Config["app_name"].(string); ok {
-		AppName = v
-	}
-	if v, ok := Config["debug_mode"].(bool); ok {
-		DebugMode = v
-	}
-	if v, ok := Config["logger_enabled"].(bool); ok {
-		LoggerEnabled = v
-	}
-	if v, ok := Config["logger_format"].(string); ok {
-		LoggerFormat = v
-	}
-	if v, ok := Config["address"].(string); ok {
-		Address = v
-	}
-	if v, ok := Config["read_timeout"].(int64); ok {
-		ReadTimeout = time.Duration(v) * time.Millisecond
-	}
-	if v, ok := Config["read_header_timeout"].(int64); ok {
-		ReadHeaderTimeout = time.Duration(v) * time.Millisecond
-	}
-	if v, ok := Config["write_timeout"].(int64); ok {
-		WriteTimeout = time.Duration(v) * time.Millisecond
-	}
-	if v, ok := Config["idle_timeout"].(int64); ok {
-		IdleTimeout = time.Duration(v) * time.Millisecond
-	}
-	if v, ok := Config["max_header_bytes"].(int64); ok {
-		MaxHeaderBytes = int(v)
-	}
-	if v, ok := Config["tls_cert_file"].(string); ok {
-		TLSCertFile = v
-	}
-	if v, ok := Config["tls_key_file"].(string); ok {
-		TLSKeyFile = v
-	}
-	if v, ok := Config["minifier_enabled"].(bool); ok {
-		MinifierEnabled = v
-	}
-	if v, ok := Config["template_root"].(string); ok {
-		TemplateRoot = v
-	}
-	if v, ok := Config["template_exts"].([]interface{}); ok {
-		TemplateExts = nil
-		for _, v := range v {
-			if v, ok := v.(string); ok {
-				TemplateExts = append(TemplateExts, v)
+	cf := flag.String("config", "config.toml", "configuration file")
+	flag.Parse()
+	if b, err := ioutil.ReadFile(*cf); err == nil {
+		if err := toml.Unmarshal(b, &Config); err != nil {
+			panic(err)
+		}
+		if v, ok := Config["app_name"].(string); ok {
+			AppName = v
+		}
+		if v, ok := Config["debug_mode"].(bool); ok {
+			DebugMode = v
+		}
+		if v, ok := Config["logger_enabled"].(bool); ok {
+			LoggerEnabled = v
+		}
+		if v, ok := Config["logger_format"].(string); ok {
+			LoggerFormat = v
+		}
+		if v, ok := Config["address"].(string); ok {
+			Address = v
+		}
+		if v, ok := Config["read_timeout"].(int64); ok {
+			ReadTimeout = time.Duration(v) * time.Millisecond
+		}
+		if v, ok := Config["read_header_timeout"].(int64); ok {
+			ReadHeaderTimeout = time.Duration(v) * time.Millisecond
+		}
+		if v, ok := Config["write_timeout"].(int64); ok {
+			WriteTimeout = time.Duration(v) * time.Millisecond
+		}
+		if v, ok := Config["idle_timeout"].(int64); ok {
+			IdleTimeout = time.Duration(v) * time.Millisecond
+		}
+		if v, ok := Config["max_header_bytes"].(int64); ok {
+			MaxHeaderBytes = int(v)
+		}
+		if v, ok := Config["tls_cert_file"].(string); ok {
+			TLSCertFile = v
+		}
+		if v, ok := Config["tls_key_file"].(string); ok {
+			TLSKeyFile = v
+		}
+		if v, ok := Config["minifier_enabled"].(bool); ok {
+			MinifierEnabled = v
+		}
+		if v, ok := Config["template_root"].(string); ok {
+			TemplateRoot = v
+		}
+		if v, ok := Config["template_exts"].([]interface{}); ok {
+			TemplateExts = make([]string, 0, len(v))
+			for _, v := range v {
+				if v, ok := v.(string); ok {
+					TemplateExts = append(TemplateExts, v)
+				}
 			}
 		}
-	}
-	if v, ok := Config["template_left_delim"].(string); ok {
-		TemplateLeftDelim = v
-	}
-	if v, ok := Config["template_right_delim"].(string); ok {
-		TemplateRightDelim = v
-	}
-	if v, ok := Config["coffer_enabled"].(bool); ok {
-		CofferEnabled = v
-	}
-	if v, ok := Config["asset_root"].(string); ok {
-		AssetRoot = v
-	}
-	if v, ok := Config["asset_exts"].([]interface{}); ok {
-		AssetExts = nil
-		for _, v := range v {
-			if v, ok := v.(string); ok {
-				AssetExts = append(AssetExts, v)
+		if v, ok := Config["template_left_delim"].(string); ok {
+			TemplateLeftDelim = v
+		}
+		if v, ok := Config["template_right_delim"].(string); ok {
+			TemplateRightDelim = v
+		}
+		if v, ok := Config["coffer_enabled"].(bool); ok {
+			CofferEnabled = v
+		}
+		if v, ok := Config["asset_root"].(string); ok {
+			AssetRoot = v
+		}
+		if v, ok := Config["asset_exts"].([]interface{}); ok {
+			AssetExts = make([]string, 0, len(v))
+			for _, v := range v {
+				if v, ok := v.(string); ok {
+					AssetExts = append(AssetExts, v)
+				}
 			}
 		}
+	} else if !os.IsNotExist(err) {
+		panic(err)
 	}
 }
 
