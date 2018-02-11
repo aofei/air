@@ -1,13 +1,10 @@
 package air
 
 import (
-	"bytes"
 	"io/ioutil"
 	"mime"
-	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -52,13 +49,6 @@ func (c *coffer) asset(name string) (*asset, error) {
 		return nil, nil
 	}
 
-	if !filepath.IsAbs(name) {
-		var err error
-		if name, err = filepath.Abs(name); err != nil {
-			return nil, err
-		}
-	}
-
 	if a, ok := c.assets[name]; ok {
 		return a, nil
 	} else if ar, err := filepath.Abs(AssetRoot); err != nil {
@@ -74,11 +64,6 @@ func (c *coffer) asset(name string) (*asset, error) {
 		} else if i == len(AssetExts)-1 {
 			return nil, nil
 		}
-	}
-
-	fi, err := os.Stat(name)
-	if err != nil {
-		return nil, err
 	}
 
 	b, err := ioutil.ReadFile(name)
@@ -98,8 +83,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 
 	c.assets[name] = &asset{
 		name:    name,
-		modTime: fi.ModTime(),
-		reader:  bytes.NewReader(b),
+		content: b,
 	}
 
 	return c.assets[name], nil
@@ -108,6 +92,5 @@ func (c *coffer) asset(name string) (*asset, error) {
 // asset is a binary asset file.
 type asset struct {
 	name    string
-	modTime time.Time
-	reader  *bytes.Reader
+	content []byte
 }
