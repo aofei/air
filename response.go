@@ -181,7 +181,9 @@ func (r *Response) File(file string) error {
 		return err
 	}
 
-	r.Headers["ETag"] = fmt.Sprintf(`"%x"`, md5.Sum(c))
+	if _, ok := r.Headers["ETag"]; !ok {
+		r.Headers["ETag"] = fmt.Sprintf(`"%x"`, md5.Sum(c))
+	}
 
 	for k, v := range r.Headers {
 		r.writer.Header().Set(k, v)
