@@ -54,11 +54,11 @@ func (g *Group) TRACE(path string, h Handler, gases ...Gas) {
 }
 
 // STATIC implements the `STATIC()`.
-func (g *Group) STATIC(prefix, root string) {
-	STATIC(g.Prefix+prefix, root)
+func (g *Group) STATIC(prefix, root string, gases ...Gas) {
+	STATIC(g.Prefix+prefix, root, append(g.Gases, gases...)...)
 }
 
 // FILE implements the `FILE()`.
-func (g *Group) FILE(path, file string) {
-	FILE(g.Prefix+path, file)
+func (g *Group) FILE(path, file string, gases ...Gas) {
+	FILE(g.Prefix+path, file, append(g.Gases, gases...)...)
 }

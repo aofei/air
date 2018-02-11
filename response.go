@@ -3,13 +3,19 @@ package air
 import (
 	"bufio"
 	"bytes"
+	"crypto/md5"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
+	"time"
 )
 
 // Response is an HTTP response.
@@ -149,9 +155,33 @@ func (r *Response) Stream(contentType string, reader io.Reader) error {
 
 // File responds to the client with a file content with the file.
 func (r *Response) File(file string) error {
-	if _, err := os.Stat(file); err != nil {
+	file, err := filepath.Abs(file)
+	if err != nil {
+		return err
+	} else if fi, err := os.Stat(file); err != nil {
+		return err
+	} else if fi.IsDir() {
+		if p := r.request.request.URL.Path; p[len(p)-1] != '/' {
+			p = path.Base(p) + "/"
+			if q := r.request.request.URL.RawQuery; q != "" {
+				p += "?" + q
+			}
+			r.StatusCode = 301
+			return r.Redirect(p)
+		}
+		file += "index.html"
+	}
+
+	c := []byte{}
+	if a, err := theCoffer.asset(file); err != nil {
+		return err
+	} else if a != nil {
+		c = a.content
+	} else if c, err = ioutil.ReadFile(file); err != nil {
 		return err
 	}
+
+	r.Headers["ETag"] = fmt.Sprintf(`"%x"`, md5.Sum(c))
 
 	for k, v := range r.Headers {
 		r.writer.Header().Set(k, v)
@@ -163,19 +193,13 @@ func (r *Response) File(file string) error {
 		}
 	}
 
-	if a, err := theCoffer.asset(file); err != nil {
-		return err
-	} else if a != nil {
-		http.ServeContent(
-			r.writer,
-			r.request.request,
-			a.name,
-			a.modTime,
-			a.reader,
-		)
-	} else {
-		http.ServeFile(r.writer, r.request.request, file)
-	}
+	http.ServeContent(
+		r.writer,
+		r.request.request,
+		file,
+		time.Time{},
+		bytes.NewReader(c),
+	)
 
 	r.Written = true
 

@@ -363,26 +363,31 @@ func TRACE(path string, h Handler, gases ...Gas) {
 }
 
 // STATIC registers a new route with the path prefix to serve the static files
-// from the provided root.
-func STATIC(prefix, root string) {
-	GET(prefix+"*", func(req *Request, res *Response) error {
+// from the provided root with the optional route-level gases.
+func STATIC(prefix, root string, gases ...Gas) {
+	h := func(req *Request, res *Response) error {
 		err := res.File(filepath.Join(root, req.Params["*"]))
 		if os.IsNotExist(err) {
 			return NotFoundHandler(req, res)
 		}
 		return err
-	})
+	}
+	GET(prefix+"*", h, gases...)
+	HEAD(prefix+"*", h, gases...)
 }
 
-// FILE registers a new route with the path to serve a static file.
-func FILE(path, file string) {
-	GET(path, func(req *Request, res *Response) error {
+// FILE registers a new route with the path to serve a static file with the
+// optional route-level gases.
+func FILE(path, file string, gases ...Gas) {
+	h := func(req *Request, res *Response) error {
 		err := res.File(file)
 		if os.IsNotExist(err) {
 			return NotFoundHandler(req, res)
 		}
 		return err
-	})
+	}
+	GET(path, h, gases...)
+	HEAD(path, h, gases...)
 }
 
 // Handler defines a function to serve requests.
