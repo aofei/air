@@ -22,8 +22,8 @@ properly.**
 	* As simple as possible.
 	* As expressive as possible.
 * Method
-	* `GET`
-	* `HEAD`
+	* `GET` (cache-friendly)
+	* `HEAD` (cache-friendly)
 	* `POST`
 	* `PUT`
 	* `PATCH`
