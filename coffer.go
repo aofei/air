@@ -3,8 +3,10 @@ package air
 import (
 	"io/ioutil"
 	"mime"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -66,6 +68,11 @@ func (c *coffer) asset(name string) (*asset, error) {
 		}
 	}
 
+	fi, err := os.Stat(name)
+	if err != nil {
+		return nil, err
+	}
+
 	b, err := ioutil.ReadFile(name)
 	if err != nil {
 		return nil, err
@@ -84,6 +91,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 	c.assets[name] = &asset{
 		name:    name,
 		content: b,
+		modTime: fi.ModTime(),
 	}
 
 	return c.assets[name], nil
@@ -93,4 +101,5 @@ func (c *coffer) asset(name string) (*asset, error) {
 type asset struct {
 	name    string
 	content []byte
+	modTime time.Time
 }

@@ -101,6 +101,10 @@ var ErrorHandler = func(err error, req *Request, res *Response) {
 	}
 	if !res.Written {
 		res.StatusCode = e.Code
+		if req.Method == "GET" || req.Method == "HEAD" {
+			delete(res.Headers, "ETag")
+			delete(res.Headers, "Last-Modified")
+		}
 		res.String(e.Message)
 	}
 	ERROR(err)

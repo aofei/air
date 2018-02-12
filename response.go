@@ -12,9 +12,11 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/textproto"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -57,16 +59,26 @@ func newResponse(r *Request, writer http.ResponseWriter) *Response {
 // write writes the b to the client.
 func (r *Response) write(b []byte) error {
 	if !r.Written {
-		for k, v := range r.Headers {
-			r.writer.Header().Set(k, v)
-		}
-		for _, c := range r.Cookies {
-			if v := c.String(); v != "" {
-				r.writer.Header().Add("Set-Cookie", v)
+		if !checkPreconditions(r.request, r) {
+			for k, v := range r.Headers {
+				r.writer.Header().Set(k, v)
 			}
+			for _, c := range r.Cookies {
+				if v := c.String(); v != "" {
+					r.writer.Header().Add("Set-Cookie", v)
+				}
+			}
+		} else if r.StatusCode == 304 {
+			delete(r.Headers, "Content-Type")
+			delete(r.Headers, "Content-Length")
+		} else if r.StatusCode == 412 {
+			return &Error{412, "Precondition Failed"}
 		}
 		r.writer.WriteHeader(r.StatusCode)
 		r.Written = true
+		if r.StatusCode == 304 {
+			return nil
+		}
 	}
 	n, err := r.writer.Write(b)
 	r.Size += n
@@ -173,12 +185,18 @@ func (r *Response) File(file string) error {
 	}
 
 	c := []byte{}
+	mt := time.Time{}
 	if a, err := theCoffer.asset(file); err != nil {
 		return err
 	} else if a != nil {
 		c = a.content
+		mt = a.modTime
+	} else if fi, err := os.Stat(file); err != nil {
+		return err
 	} else if c, err = ioutil.ReadFile(file); err != nil {
 		return err
+	} else {
+		mt = fi.ModTime()
 	}
 
 	if _, ok := r.Headers["ETag"]; !ok {
@@ -199,7 +217,7 @@ func (r *Response) File(file string) error {
 		r.writer,
 		r.request.request,
 		file,
-		time.Time{},
+		mt,
 		bytes.NewReader(c),
 	)
 
@@ -230,4 +248,141 @@ func (r *Response) CloseNotify() <-chan bool {
 // pos is nil, default options are used.
 func (r *Response) Push(target string, pos *http.PushOptions) error {
 	return r.pusher.Push(target, pos)
+}
+
+// checkPreconditions evaluates request preconditions and reports whether a
+// precondition resulted in sending not modified or precondition failed.
+func checkPreconditions(req *Request, res *Response) bool {
+	im, hasIfMatch := req.Headers["If-Match"]
+	ius, _ := http.ParseTime(req.Headers["If-Unmodified-Since"])
+	if hasIfMatch {
+		if !checkIfMatch(res, im) {
+			res.StatusCode = 412
+			return true
+		}
+	} else if !ius.IsZero() && !checkIfModifiedSince(res, ius) {
+		res.StatusCode = 412
+		return true
+	}
+	inm, hasIfNoneMatch := req.Headers["If-None-Match"]
+	ims, _ := http.ParseTime(req.Headers["If-Modified-Since"])
+	if hasIfNoneMatch {
+		if !checkIfNoneMatch(res, inm) {
+			if req.Method == "GET" || req.Method == "HEAD" {
+				res.StatusCode = 304
+				return true
+			}
+			res.StatusCode = 412
+			return true
+		}
+	} else if !ims.IsZero() &&
+		(req.Method == "GET" || req.Method == "HEAD") &&
+		!checkIfModifiedSince(res, ims) {
+		res.StatusCode = 304
+		return true
+	}
+	return false
+}
+
+// checkIfMatch reports whether the im and the ETag in the res match.
+func checkIfMatch(res *Response, im string) bool {
+	for {
+		im = textproto.TrimString(im)
+		if len(im) == 0 {
+			break
+		}
+		if im[0] == ',' {
+			im = im[1:]
+			continue
+		}
+		if im[0] == '*' {
+			return true
+		}
+		eTag, remain := scanETag(im)
+		if eTag == "" {
+			break
+		}
+		if eTagStrongMatch(eTag, res.Headers["ETag"]) {
+			return true
+		}
+		im = remain
+	}
+	return false
+}
+
+// checkIfUnmodifiedSince reports whether the ius before the Last-Modified in
+// the res.
+func checkIfUnmodifiedSince(res *Response, ius time.Time) bool {
+	lm, _ := http.ParseTime(res.Headers["Last-Modified"])
+	return lm.Before(ius.Add(time.Second))
+}
+
+// checkIfNoneMatch reports whether the im and the ETag in the res not match.
+func checkIfNoneMatch(res *Response, inm string) bool {
+	for {
+		inm = textproto.TrimString(inm)
+		if len(inm) == 0 {
+			break
+		}
+		if inm[0] == ',' {
+			inm = inm[1:]
+		}
+		if inm[0] == '*' {
+			return false
+		}
+		eTag, remain := scanETag(inm)
+		if eTag == "" {
+			break
+		}
+		if eTagWeakMatch(eTag, res.Headers["ETag"]) {
+			return false
+		}
+		inm = remain
+	}
+	return true
+}
+
+// checkIfModifiedSince reports whether the ius not before the Last-Modified in
+// the res.
+func checkIfModifiedSince(res *Response, ims time.Time) bool {
+	lm, _ := http.ParseTime(res.Headers["Last-Modified"])
+	return !lm.Before(ims.Add(time.Second))
+}
+
+// scanETag determines if a syntactically valid ETag is present at s. If so, the
+// ETag and remaining text after consuming ETag is returned. Otherwise, it
+// returns "", "".
+func scanETag(s string) (eTag string, remain string) {
+	s = textproto.TrimString(s)
+	start := 0
+	if strings.HasPrefix(s, "W/") {
+		start = 2
+	}
+	if len(s[start:]) < 2 || s[start] != '"' {
+		return "", ""
+	}
+	// ETag is either W/"text" or "text".
+	// See RFC 7232 2.3.
+	for i := start + 1; i < len(s); i++ {
+		c := s[i]
+		switch {
+		// Character values allowed in ETags.
+		case c == 0x21 || c >= 0x23 && c <= 0x7E || c >= 0x80:
+		case c == '"':
+			return string(s[:i+1]), s[i+1:]
+		default:
+			return "", ""
+		}
+	}
+	return "", ""
+}
+
+// eTagStrongMatch reports whether a and b match using strong ETag comparison.
+func eTagStrongMatch(a, b string) bool {
+	return a == b && a != "" && a[0] == '"'
+}
+
+// eTagWeakMatch reports whether a and b match using weak ETag comparison.
+func eTagWeakMatch(a, b string) bool {
+	return strings.TrimPrefix(a, "W/") == strings.TrimPrefix(b, "W/")
 }
