@@ -16,6 +16,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -60,6 +61,7 @@ func newResponse(r *Request, writer http.ResponseWriter) *Response {
 func (r *Response) write(b []byte) error {
 	if !r.Written {
 		if !checkPreconditions(r.request, r) {
+			r.Headers["Content-Length"] = strconv.Itoa(len(b))
 			for k, v := range r.Headers {
 				r.writer.Header().Set(k, v)
 			}
@@ -161,7 +163,8 @@ func (r *Response) Stream(contentType string, reader io.Reader) error {
 	if err := r.Blob(contentType, nil); err != nil {
 		return err
 	}
-	_, err := io.Copy(r.writer, reader)
+	n, err := io.Copy(r.writer, reader)
+	r.Size += int(n)
 	return err
 }
 
@@ -222,6 +225,7 @@ func (r *Response) File(file string) error {
 	)
 
 	r.Written = true
+	r.Size += len(c)
 
 	return nil
 }
