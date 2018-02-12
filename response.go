@@ -78,13 +78,15 @@ func (r *Response) write(b []byte) error {
 		}
 		r.writer.WriteHeader(r.StatusCode)
 		r.Written = true
-		if r.StatusCode == 304 {
-			return nil
-		}
 	}
-	n, err := r.writer.Write(b)
-	r.Size += n
-	return err
+	if r.request.Method != "HEAD" && r.StatusCode != 304 {
+		n, err := r.writer.Write(b)
+		if err != nil {
+			return
+		}
+		r.Size += n
+	}
+	return nil
 }
 
 // NoContent responds to the client with no content.
@@ -162,10 +164,14 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 func (r *Response) Stream(contentType string, reader io.Reader) error {
 	if err := r.Blob(contentType, nil); err != nil {
 		return err
+	} else if r.request.Method != "HEAD" && r.StatusCode != 304 {
+		n, err := io.Copy(r.writer, reader)
+		if err != nil {
+			return err
+		}
+		r.Size += int(n)
 	}
-	n, err := io.Copy(r.writer, reader)
-	r.Size += int(n)
-	return err
+	return nil
 }
 
 // File responds to the client with a file content with the file.
@@ -225,7 +231,9 @@ func (r *Response) File(file string) error {
 	)
 
 	r.Written = true
-	r.Size += len(c)
+	if r.request.Method != "HEAD" && r.StatusCode != 304 {
+		r.Size += len(c)
+	}
 
 	return nil
 }
