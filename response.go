@@ -82,7 +82,7 @@ func (r *Response) write(b []byte) error {
 	if r.request.Method != "HEAD" && r.StatusCode != 304 {
 		n, err := r.writer.Write(b)
 		if err != nil {
-			return
+			return err
 		}
 		r.Size += n
 	}
