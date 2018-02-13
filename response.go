@@ -265,9 +265,9 @@ func (r *Response) Push(target string, pos *http.PushOptions) error {
 // checkPreconditions evaluates request preconditions and reports whether a
 // precondition resulted in sending not modified or precondition failed.
 func checkPreconditions(req *Request, res *Response) bool {
-	im, hasIfMatch := req.Headers["If-Match"]
+	im := req.Headers["If-Match"]
 	ius, _ := http.ParseTime(req.Headers["If-Unmodified-Since"])
-	if hasIfMatch {
+	if im != "" {
 		if !checkIfMatch(res, im) {
 			res.StatusCode = 412
 			return true
@@ -276,9 +276,9 @@ func checkPreconditions(req *Request, res *Response) bool {
 		res.StatusCode = 412
 		return true
 	}
-	inm, hasIfNoneMatch := req.Headers["If-None-Match"]
+	inm := req.Headers["If-None-Match"]
 	ims, _ := http.ParseTime(req.Headers["If-Modified-Since"])
-	if hasIfNoneMatch {
+	if inm != "" {
 		if !checkIfNoneMatch(res, inm) {
 			if req.Method == "GET" || req.Method == "HEAD" {
 				res.StatusCode = 304
