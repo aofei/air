@@ -26,7 +26,7 @@ type Response struct {
 	StatusCode int
 	Headers    map[string]string
 	Cookies    []*Cookie
-	Size       int
+	Size       int64
 	Written    bool
 
 	request       *Request
@@ -84,7 +84,7 @@ func (r *Response) write(b []byte) error {
 		if err != nil {
 			return err
 		}
-		r.Size += n
+		r.Size += int64(n)
 	}
 	return nil
 }
@@ -169,7 +169,7 @@ func (r *Response) Stream(contentType string, reader io.Reader) error {
 		if err != nil {
 			return err
 		}
-		r.Size += int(n)
+		r.Size += n
 	}
 	return nil
 }
@@ -232,7 +232,7 @@ func (r *Response) File(file string) error {
 
 	r.Written = true
 	if r.request.Method != "HEAD" && r.StatusCode != 304 {
-		r.Size += len(c)
+		r.Size += int64(len(c))
 	}
 
 	return nil
