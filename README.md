@@ -138,10 +138,13 @@ A gas is a function chained in the HTTP request-response cycle with access to
 `air.Request` and `air.Response` which it uses to perform a specific action, for
 example, logging every request or recovering from panics.
 
+If you are looking for some useful gases, simply visit
+[here](https://github.com/air-gases).
+
 ## Examples
 
 If you want to be familiar with this framework as soon as possible, simply visit
-[here](https://github.com/sheng/air-examples).
+[here](https://github.com/air-examples).
 
 ## Community
 
@@ -151,7 +154,7 @@ questions or ideas [here](https://github.com/sheng/air/issues).
 ## Contributing
 
 If you want to help build this framework, simply follow
-[these](https://github.com/sheng/air/wiki/Contributing) to send pull requests
+[this](https://github.com/sheng/air/wiki/Contributing) to send pull requests
 [here](https://github.com/sheng/air/pulls).
 
 ## License
