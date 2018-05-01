@@ -16,7 +16,8 @@ properly.**
 ## Features
 
 * Singleton
-  * Air is uncountable.
+	* Air is uncountable.
+	* Just one package `air.*`.
 * API
 	* As less as possible.
 	* As simple as possible.
@@ -40,7 +41,7 @@ properly.**
 * Server
 	* HTTP/2 support.
 	* SSL/TLS support.
-	* Gracefully shutdown support.
+	* Graceful shutdown support.
 * Router
 	* Based on the Radix Tree.
 	* Has a good inspection mechanism.
