@@ -1,7 +1,7 @@
 # Air
 
 [![Build Status](https://travis-ci.org/sheng/air.svg?branch=master)](https://travis-ci.org/sheng/air)
-[![codecov](https://codecov.io/gh/sheng/air/branch/master/graph/badge.svg)](https://codecov.io/gh/sheng/air)
+[![Coverage Status](https://coveralls.io/repos/github/sheng/air/badge.svg?branch=master)](https://coveralls.io/github/sheng/air?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/sheng/air)](https://goreportcard.com/report/github.com/sheng/air)
 [![GoDoc](https://godoc.org/github.com/sheng/air?status.svg)](https://godoc.org/github.com/sheng/air)
 
