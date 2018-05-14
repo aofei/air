@@ -7,21 +7,19 @@ import (
 
 // URL is an HTTP URL.
 type URL struct {
-	Scheme   string
-	Host     string
-	Path     string
-	Query    string
-	Fragment string
+	Scheme string
+	Host   string
+	Path   string
+	Query  string
 }
 
 // newURL returns a new instance of the `URL`.
 func newURL(u *url.URL) *URL {
 	return &URL{
-		Scheme:   u.Scheme,
-		Host:     u.Host,
-		Path:     u.EscapedPath(),
-		Query:    u.RawQuery,
-		Fragment: u.Fragment,
+		Scheme: u.Scheme,
+		Host:   u.Host,
+		Path:   u.EscapedPath(),
+		Query:  u.RawQuery,
 	}
 }
 
@@ -45,10 +43,6 @@ func (u *URL) String() string {
 	if u.Query != "" {
 		buf.WriteByte('?')
 		buf.WriteString(u.Query)
-	}
-	if u.Fragment != "" {
-		buf.WriteByte('#')
-		buf.WriteString(u.Fragment)
 	}
 	return buf.String()
 }
