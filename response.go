@@ -139,21 +139,25 @@ func (r *Response) HTML(h string) error {
 		var f func(*html.Node)
 		f = func(n *html.Node) {
 			if n.Type == html.ElementNode {
+				target := ""
 				switch n.Data {
 				case "link":
 					for _, a := range n.Attr {
 						if a.Key == "href" {
-							r.Push(a.Val, nil)
+							target = a.Val
 							break
 						}
 					}
 				case "img", "script":
 					for _, a := range n.Attr {
 						if a.Key == "src" {
-							r.Push(a.Val, nil)
+							target = a.Val
 							break
 						}
 					}
+				}
+				if path.IsAbs(target) {
+					r.Push(target, nil)
 				}
 			}
 			for c := n.FirstChild; c != nil; c = c.NextSibling {
