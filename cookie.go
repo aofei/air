@@ -42,10 +42,8 @@ func newCookie(raw string) *Cookie {
 		if len(v) > 1 && v[0] == '"' && v[len(v)-1] == '"' {
 			v = v[1 : len(v)-1]
 		}
-		for i := 0; i < len(v); i++ {
-			if !validCookieValueByte(v[i]) {
-				continue
-			}
+		if !validCookieValue(v) {
+			continue
 		}
 		return &Cookie{
 			Name:  n,
@@ -61,12 +59,22 @@ func (c *Cookie) String() string {
 		return ""
 	}
 	buf := bytes.Buffer{}
-	buf.WriteString(sanitizeCookieName(c.Name))
+	n := strings.Replace(c.Name, "\r", "-", -1)
+	n = strings.Replace(n, "\n", "-", -1)
+	buf.WriteString(n)
 	buf.WriteRune('=')
-	buf.WriteString(sanitizeCookieValue(c.Value))
+	v := sanitize(c.Value, func(b byte) bool {
+		return validCookieValue(string(b))
+	})
+	if strings.IndexByte(v, ' ') >= 0 || strings.IndexByte(v, ',') >= 0 {
+		v = `"` + v + `"`
+	}
+	buf.WriteString(v)
 	if len(c.Path) > 0 {
 		buf.WriteString("; Path=")
-		buf.WriteString(sanitizeCookiePath(c.Path))
+		buf.WriteString(sanitize(c.Path, func(b byte) bool {
+			return 0x20 <= b && b < 0x7f && b != ';'
+		}))
 	}
 	if validCookieDomain(c.Domain) {
 		d := c.Domain
@@ -99,93 +107,29 @@ func (c *Cookie) String() string {
 	return buf.String()
 }
 
-// isTokenTable is a table of the cookie token indicates.
-var isTokenTable = [127]bool{
-	'!':  true,
-	'#':  true,
-	'$':  true,
-	'%':  true,
-	'&':  true,
-	'\'': true,
-	'*':  true,
-	'+':  true,
-	'-':  true,
-	'.':  true,
-	'0':  true,
-	'1':  true,
-	'2':  true,
-	'3':  true,
-	'4':  true,
-	'5':  true,
-	'6':  true,
-	'7':  true,
-	'8':  true,
-	'9':  true,
-	'A':  true,
-	'B':  true,
-	'C':  true,
-	'D':  true,
-	'E':  true,
-	'F':  true,
-	'G':  true,
-	'H':  true,
-	'I':  true,
-	'J':  true,
-	'K':  true,
-	'L':  true,
-	'M':  true,
-	'N':  true,
-	'O':  true,
-	'P':  true,
-	'Q':  true,
-	'R':  true,
-	'S':  true,
-	'T':  true,
-	'U':  true,
-	'W':  true,
-	'V':  true,
-	'X':  true,
-	'Y':  true,
-	'Z':  true,
-	'^':  true,
-	'_':  true,
-	'`':  true,
-	'a':  true,
-	'b':  true,
-	'c':  true,
-	'd':  true,
-	'e':  true,
-	'f':  true,
-	'g':  true,
-	'h':  true,
-	'i':  true,
-	'j':  true,
-	'k':  true,
-	'l':  true,
-	'm':  true,
-	'n':  true,
-	'o':  true,
-	'p':  true,
-	'q':  true,
-	'r':  true,
-	's':  true,
-	't':  true,
-	'u':  true,
-	'v':  true,
-	'w':  true,
-	'x':  true,
-	'y':  true,
-	'z':  true,
-	'|':  true,
-	'~':  true,
-}
-
 // validCookieName returns whether the n is a valid cookie name.
 func validCookieName(n string) bool {
 	return n != "" && strings.IndexFunc(n, func(r rune) bool {
-		i := int(r)
-		return i >= len(isTokenTable) || !isTokenTable[i]
+		return !strings.ContainsRune(
+			"!#$%&'*+-."+
+				"0123456789"+
+				"ABCDEFGHIJKLMNOPQRSTUWVXYZ"+
+				"^_`"+
+				"abcdefghijklmnopqrstuvwxyz"+
+				"|~",
+			r,
+		)
 	}) < 0
+}
+
+// validCookieValue returns whether the v is a valid cookie value.
+func validCookieValue(v string) bool {
+	for _, b := range v {
+		if 0x20 <= b && b < 0x7f && b != '"' && b != ';' && b != '\\' {
+			return true
+		}
+	}
+	return false
 }
 
 // validCookieDomain returns whether the d is a valid cookie domain.
@@ -239,53 +183,21 @@ func validCookieDomain(d string) bool {
 	return ok
 }
 
-// validCookieValueByte returns whether the b is a valid cookie value byte.
-func validCookieValueByte(b byte) bool {
-	return 0x20 <= b && b < 0x7f && b != '"' && b != ';' && b != '\\'
-}
-
-// validCookiePathByte returns whether the b is a valid cookie path byte.
-func validCookiePathByte(b byte) bool {
-	return 0x20 <= b && b < 0x7f && b != ';'
-}
-
-// sanitizeCookieName sanitizes the n as a cookie name.
-func sanitizeCookieName(n string) string {
-	return strings.Replace(strings.Replace(n, "\n", "-", -1), "\r", "-", -1)
-}
-
-// sanitizeCookieValue sanitizes the v as a cookie value.
-func sanitizeCookieValue(v string) string {
-	v = sanitizeOrWarn(v, validCookieValueByte)
-	if len(v) == 0 {
-		return v
-	}
-	if strings.IndexByte(v, ' ') >= 0 || strings.IndexByte(v, ',') >= 0 {
-		return `"` + v + `"`
-	}
-	return v
-}
-
-// sanitizeCookiePath sanitizes the p as a cookie path.
-func sanitizeCookiePath(p string) string {
-	return sanitizeOrWarn(p, validCookiePathByte)
-}
-
-// sanitizeOrWarn sanitizes or warns the v based on the valid.
-func sanitizeOrWarn(v string, valid func(byte) bool) string {
+// sanitize sanitizes the s based on the valid.
+func sanitize(s string, valid func(byte) bool) string {
 	ok := true
-	for i := 0; i < len(v); i++ {
-		if !valid(v[i]) {
+	for i := 0; i < len(s); i++ {
+		if !valid(s[i]) {
 			ok = false
 			break
 		}
 	}
 	if ok {
-		return v
+		return s
 	}
-	buf := make([]byte, 0, len(v))
-	for i := 0; i < len(v); i++ {
-		if b := v[i]; valid(b) {
+	buf := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if b := s[i]; valid(b) {
 			buf = append(buf, b)
 		}
 	}
