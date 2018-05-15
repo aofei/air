@@ -116,6 +116,11 @@ var Pregases = []Gas{}
 // Gases is the `Gas` chain that performs after than the router.
 var Gases = []Gas{}
 
+// AutoPushEnabled indicates whether the auto push is enabled.
+//
+// It is called "auto_push_enabled" in the configuration file.
+var AutoPushEnabled = false
+
 // MinifierEnabled indicates whether the minifier is enabled.
 //
 // It is called "minifier_enabled" in the configuration file.
@@ -228,6 +233,9 @@ func init() {
 		}
 		if v, ok := Config["tls_key_file"].(string); ok {
 			TLSKeyFile = v
+		}
+		if v, ok := Config["auto_push_enabled"].(bool); ok {
+			AutoPushEnabled = v
 		}
 		if v, ok := Config["minifier_enabled"].(bool); ok {
 			MinifierEnabled = v
