@@ -255,10 +255,24 @@ func (r *Response) CloseNotify() <-chan bool {
 }
 
 // Push initiates an HTTP/2 server push. This constructs a synthetic request
-// using the given target and pos, serializes that request into a PUSH_PROMISE
-// frame, then dispatches that request using the server's request handler. If
-// pos is nil, default options are used.
-func (r *Response) Push(target string, pos *http.PushOptions) error {
+// using the given target and headers, serializes that request into a
+// PUSH_PROMISE frame, then dispatches that request using the server's request
+// handler. The target must either be an absolute path (like "/path") or an
+// absolute URL that contains a valid host and the same scheme as the parent
+// request. If the target is a path, it will inherit the scheme and host of the
+// parent request. The headers specifies additional promised request headers.
+// The headers cannot include HTTP/2 pseudo header fields like ":path" and
+// ":scheme", which will be added automatically.
+func (r *Response) Push(target string, headers map[string]string) error {
+	var pos *http.PushOptions
+	for k, v := range headers {
+		if pos == nil {
+			pos = &http.PushOptions{
+				Header: http.Header{},
+			}
+		}
+		pos.Header.Set(k, v)
+	}
 	return r.pusher.Push(target, pos)
 }
 
