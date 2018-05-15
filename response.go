@@ -19,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
 // Response is an HTTP response.
@@ -140,9 +142,40 @@ func (r *Response) XML(v interface{}) error {
 	return r.Blob("application/xml; charset=utf-8", b)
 }
 
-// HTML responds to the client with the "text/html" content html.
-func (r *Response) HTML(html string) error {
-	return r.Blob("text/html; charset=utf-8", []byte(html))
+// HTML responds to the client with the "text/html" content h.
+func (r *Response) HTML(h string) error {
+	if AutoPushEnabled {
+		tree, err := html.Parse(strings.NewReader(h))
+		if err != nil {
+			return err
+		}
+		var f func(*html.Node)
+		f = func(n *html.Node) {
+			if n.Type == html.ElementNode {
+				switch n.Data {
+				case "link":
+					for _, a := range n.Attr {
+						if a.Key == "href" {
+							r.Push(a.Val, nil)
+							break
+						}
+					}
+				case "img", "script":
+					for _, a := range n.Attr {
+						if a.Key == "src" {
+							r.Push(a.Val, nil)
+							break
+						}
+					}
+				}
+			}
+			for c := n.FirstChild; c != nil; c = c.NextSibling {
+				f(c)
+			}
+		}
+		f(tree)
+	}
+	return r.Blob("text/html; charset=utf-8", []byte(h))
 }
 
 // Render renders one or more HTML templates with the m and responds to the
