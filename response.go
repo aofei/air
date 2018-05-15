@@ -31,31 +31,18 @@ type Response struct {
 	Size       int64
 	Written    bool
 
-	request       *Request
-	writer        http.ResponseWriter
-	flusher       http.Flusher
-	hijacker      http.Hijacker
-	closeNotifier http.CloseNotifier
-	pusher        http.Pusher
+	request *Request
+	writer  http.ResponseWriter
 }
 
 // newResponse returns a new instance of the `Response`.
 func newResponse(r *Request, writer http.ResponseWriter) *Response {
-	flusher, _ := writer.(http.Flusher)
-	hijacker, _ := writer.(http.Hijacker)
-	closeNotifier, _ := writer.(http.CloseNotifier)
-	pusher, _ := writer.(http.Pusher)
-
 	return &Response{
 		StatusCode: 200,
 		Headers:    map[string]string{},
 
-		request:       r,
-		writer:        writer,
-		flusher:       flusher,
-		hijacker:      hijacker,
-		closeNotifier: closeNotifier,
-		pusher:        pusher,
+		request: r,
+		writer:  writer,
 	}
 }
 
@@ -144,7 +131,7 @@ func (r *Response) XML(v interface{}) error {
 
 // HTML responds to the client with the "text/html" content h.
 func (r *Response) HTML(h string) error {
-	if AutoPushEnabled {
+	if AutoPushEnabled && r.request.Proto == "HTTP/2" {
 		tree, err := html.Parse(strings.NewReader(h))
 		if err != nil {
 			return err
@@ -273,18 +260,18 @@ func (r *Response) File(file string) error {
 
 // Flush flushes buffered data to the client.
 func (r *Response) Flush() {
-	r.flusher.Flush()
+	r.writer.(http.Flusher).Flush()
 }
 
 // Hijack took over the connection from the server.
 func (r *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return r.hijacker.Hijack()
+	return r.writer.(http.Hijacker).Hijack()
 }
 
 // CloseNotify returns a channel that receives at most a single value when the
 // connection has gone away.
 func (r *Response) CloseNotify() <-chan bool {
-	return r.closeNotifier.CloseNotify()
+	return r.writer.(http.CloseNotifier).CloseNotify()
 }
 
 // Push initiates an HTTP/2 server push. This constructs a synthetic request
@@ -306,7 +293,7 @@ func (r *Response) Push(target string, headers map[string]string) error {
 		}
 		pos.Header.Set(k, v)
 	}
-	return r.pusher.Push(target, pos)
+	return r.writer.(http.Pusher).Push(target, pos)
 }
 
 // checkPreconditions evaluates request preconditions and reports whether a
