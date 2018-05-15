@@ -31,10 +31,9 @@ func newRequest(r *http.Request) *Request {
 		}
 	}
 
-	cs := r.Cookies()
-	cookies := make([]*Cookie, 0, len(cs))
-	for _, c := range cs {
-		cookies = append(cookies, newCookie(c))
+	cookies := make([]*Cookie, 0, len(r.Header["Cookie"]))
+	for _, line := range r.Header["Cookie"] {
+		cookies = append(cookies, newCookie(line))
 	}
 
 	if r.Form == nil || r.MultipartForm == nil {
