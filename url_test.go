@@ -10,8 +10,13 @@ import (
 func TestURL(t *testing.T) {
 	su, _ := url.ParseRequestURI("https://example.com/foo/bar?foo=bar")
 
-	u := newURL(su)
-	assert.NotNil(t, u)
+	u := &URL{
+		Scheme: su.Scheme,
+		Host:   su.Host,
+		Path:   su.EscapedPath(),
+		Query:  su.RawQuery,
+	}
+
 	assert.Equal(t, su.Scheme, u.Scheme)
 	assert.Equal(t, su.Host, u.Host)
 	assert.Equal(t, su.EscapedPath(), u.Path)

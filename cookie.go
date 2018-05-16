@@ -21,38 +21,6 @@ type Cookie struct {
 	HTTPOnly bool
 }
 
-// newCookie returns a new instance of the `Cookie`.
-func newCookie(raw string) *Cookie {
-	parts := strings.Split(strings.TrimSpace(raw), ";")
-	if len(parts) == 1 && parts[0] == "" {
-		return nil
-	}
-	for i := 0; i < len(parts); i++ {
-		parts[i] = strings.TrimSpace(parts[i])
-		if len(parts[i]) == 0 {
-			continue
-		}
-		n, v := parts[i], ""
-		if i := strings.Index(n, "="); i >= 0 {
-			n, v = n[:i], n[i+1:]
-		}
-		if !validCookieName(n) {
-			continue
-		}
-		if len(v) > 1 && v[0] == '"' && v[len(v)-1] == '"' {
-			v = v[1 : len(v)-1]
-		}
-		if !validCookieValue(v) {
-			continue
-		}
-		return &Cookie{
-			Name:  n,
-			Value: v,
-		}
-	}
-	return nil
-}
-
 // String returns the serialization string of the c.
 func (c *Cookie) String() string {
 	if !validCookieName(c.Name) {

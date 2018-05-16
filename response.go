@@ -31,19 +31,9 @@ type Response struct {
 	Size       int64
 	Written    bool
 
-	request *Request
-	writer  http.ResponseWriter
-}
-
-// newResponse returns a new instance of the `Response`.
-func newResponse(r *Request, rw http.ResponseWriter) *Response {
-	return &Response{
-		StatusCode: 200,
-		Headers:    map[string]string{},
-
-		request: r,
-		writer:  rw,
-	}
+	request            *Request
+	httpRequest        *http.Request
+	httpResponseWriter http.ResponseWriter
 }
 
 // write writes the b to the client.
@@ -52,11 +42,14 @@ func (r *Response) write(b []byte) error {
 		if !checkPreconditions(r.request, r) {
 			r.Headers["Content-Length"] = strconv.Itoa(len(b))
 			for k, v := range r.Headers {
-				r.writer.Header().Set(k, v)
+				r.httpResponseWriter.Header().Set(k, v)
 			}
 			for _, c := range r.Cookies {
 				if v := c.String(); v != "" {
-					r.writer.Header().Add("Set-Cookie", v)
+					r.httpResponseWriter.Header().Add(
+						"Set-Cookie",
+						v,
+					)
 				}
 			}
 		} else if r.StatusCode == 304 {
@@ -65,11 +58,11 @@ func (r *Response) write(b []byte) error {
 		} else if r.StatusCode == 412 {
 			return &Error{412, "Precondition Failed"}
 		}
-		r.writer.WriteHeader(r.StatusCode)
+		r.httpResponseWriter.WriteHeader(r.StatusCode)
 		r.Written = true
 	}
 	if r.request.Method != "HEAD" && r.StatusCode != 304 {
-		n, err := r.writer.Write(b)
+		n, err := r.httpResponseWriter.Write(b)
 		if err != nil {
 			return err
 		}
@@ -189,7 +182,7 @@ func (r *Response) Stream(contentType string, reader io.Reader) error {
 	if err := r.Blob(contentType, nil); err != nil {
 		return err
 	} else if r.request.Method != "HEAD" && r.StatusCode != 304 {
-		n, err := io.Copy(r.writer, reader)
+		n, err := io.Copy(r.httpResponseWriter, reader)
 		if err != nil {
 			return err
 		}
@@ -206,9 +199,9 @@ func (r *Response) File(file string) error {
 	} else if fi, err := os.Stat(file); err != nil {
 		return err
 	} else if fi.IsDir() {
-		if p := r.request.request.URL.Path; p[len(p)-1] != '/' {
+		if p := r.httpRequest.URL.Path; p[len(p)-1] != '/' {
 			p = path.Base(p) + "/"
-			if q := r.request.request.URL.RawQuery; q != "" {
+			if q := r.httpRequest.URL.RawQuery; q != "" {
 				p += "?" + q
 			}
 			r.StatusCode = 301
@@ -237,18 +230,18 @@ func (r *Response) File(file string) error {
 	}
 
 	for k, v := range r.Headers {
-		r.writer.Header().Set(k, v)
+		r.httpResponseWriter.Header().Set(k, v)
 	}
 
 	for _, c := range r.Cookies {
 		if v := c.String(); v != "" {
-			r.writer.Header().Add("Set-Cookie", v)
+			r.httpResponseWriter.Header().Add("Set-Cookie", v)
 		}
 	}
 
 	http.ServeContent(
-		r.writer,
-		r.request.request,
+		r.httpResponseWriter,
+		r.httpRequest,
 		file,
 		mt,
 		bytes.NewReader(c),
@@ -264,18 +257,18 @@ func (r *Response) File(file string) error {
 
 // Flush flushes buffered data to the client.
 func (r *Response) Flush() {
-	r.writer.(http.Flusher).Flush()
+	r.httpResponseWriter.(http.Flusher).Flush()
 }
 
 // Hijack took over the connection from the server.
 func (r *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return r.writer.(http.Hijacker).Hijack()
+	return r.httpResponseWriter.(http.Hijacker).Hijack()
 }
 
 // CloseNotify returns a channel that receives at most a single value when the
 // connection has gone away.
 func (r *Response) CloseNotify() <-chan bool {
-	return r.writer.(http.CloseNotifier).CloseNotify()
+	return r.httpResponseWriter.(http.CloseNotifier).CloseNotify()
 }
 
 // Push initiates an HTTP/2 server push. This constructs a synthetic request
@@ -297,7 +290,7 @@ func (r *Response) Push(target string, headers map[string]string) error {
 		}
 		pos.Header.Set(k, v)
 	}
-	return r.writer.(http.Pusher).Push(target, pos)
+	return r.httpResponseWriter.(http.Pusher).Push(target, pos)
 }
 
 // checkPreconditions evaluates request preconditions and reports whether a
