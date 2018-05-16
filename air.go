@@ -91,6 +91,11 @@ var TLSCertFile = ""
 // It is called "tls_key_file" in the configuration file.
 var TLSKeyFile = ""
 
+// HTTPSEnforced indicates whether the HTTPS is enforced.
+//
+// It is called "https_enforced" in the configuration file.
+var HTTPSEnforced = false
+
 // ErrorHandler is the centralized error handler for the server.
 var ErrorHandler = func(err error, req *Request, res *Response) {
 	e := &Error{500, "Internal Server Error"}
@@ -233,6 +238,9 @@ func init() {
 		}
 		if v, ok := Config["tls_key_file"].(string); ok {
 			TLSKeyFile = v
+		}
+		if v, ok := Config["https_enforced"].(bool); ok {
+			HTTPSEnforced = v
 		}
 		if v, ok := Config["auto_push_enabled"].(bool); ok {
 			AutoPushEnabled = v
