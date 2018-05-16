@@ -124,7 +124,7 @@ func (r *Response) XML(v interface{}) error {
 
 // HTML responds to the client with the "text/html" content h.
 func (r *Response) HTML(h string) error {
-	if AutoPushEnabled && strings.HasPrefix(r.request.Proto, "HTTP/2") {
+	if AutoPushEnabled && r.request.Proto == "HTTP/2" {
 		tree, err := html.Parse(strings.NewReader(h))
 		if err != nil {
 			return err
