@@ -2,7 +2,9 @@ package air
 
 import (
 	"context"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -32,6 +34,28 @@ func (s *server) serve() error {
 	}
 
 	if TLSCertFile != "" && TLSKeyFile != "" {
+		if HTTPSEnforced && (Address == "" ||
+			strings.HasSuffix(strings.ToLower(Address), ":https") ||
+			strings.HasSuffix(Address, ":443")) {
+			a, _, err := net.SplitHostPort(Address)
+			if err != nil {
+				a = Address
+			}
+			var h http.HandlerFunc
+			h = func(rw http.ResponseWriter, r *http.Request) {
+				host, _, err := net.SplitHostPort(r.Host)
+				if err != nil {
+					host = r.Host
+				}
+				url := "https://" + host + r.RequestURI
+				http.Redirect(rw, r, url, 301)
+			}
+			go func() {
+				if err = http.ListenAndServe(a, h); err != nil {
+					FATAL(err)
+				}
+			}()
+		}
 		return s.server.ListenAndServeTLS(TLSCertFile, TLSKeyFile)
 	}
 
