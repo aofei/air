@@ -1,9 +1,6 @@
 package air
 
-import (
-	"bytes"
-	"net/url"
-)
+import "bytes"
 
 // URL is an HTTP URL.
 type URL struct {
@@ -11,16 +8,6 @@ type URL struct {
 	Host   string
 	Path   string
 	Query  string
-}
-
-// newURL returns a new instance of the `URL`.
-func newURL(u *url.URL) *URL {
-	return &URL{
-		Scheme: u.Scheme,
-		Host:   u.Host,
-		Path:   u.EscapedPath(),
-		Query:  u.RawQuery,
-	}
 }
 
 // String returns the serialization string of the u.

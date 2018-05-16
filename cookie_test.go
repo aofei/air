@@ -14,9 +14,11 @@ func TestCookie(t *testing.T) {
 		Value: "bar",
 	}
 
-	c := newCookie(sc.String())
+	c := &Cookie{
+		Name:  sc.Name,
+		Value: sc.Value,
+	}
 
-	assert.NotNil(t, c)
 	assert.Equal(t, sc.Name, c.Name)
 	assert.Equal(t, sc.Value, c.Value)
 	assert.Equal(t, sc.String(), c.String())

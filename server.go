@@ -2,6 +2,7 @@ package air
 
 import (
 	"context"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -83,10 +84,100 @@ func (s *server) shutdown(timeout time.Duration) error {
 
 // ServeHTTP implements the `http.Handler`.
 func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	req := newRequest(r)
-	res := newResponse(req, rw)
+	// Request
+
+	req := &Request{
+		Method: r.Method,
+		URL: &URL{
+			Scheme: "http",
+			Host:   r.Host,
+			Path:   r.URL.EscapedPath(),
+			Query:  r.URL.RawQuery,
+		},
+		Proto:         r.Proto,
+		Headers:       make(map[string]string, len(r.Header)),
+		ContentLength: r.ContentLength,
+		Body:          r.Body,
+		Cookies:       make([]*Cookie, 0, len(r.Header["Cookie"])),
+		Params:        make(map[string]string, theRouter.maxParams),
+		Files:         map[string]io.Reader{},
+		RemoteAddr:    r.RemoteAddr,
+		Values:        map[string]interface{}{},
+	}
+
+	if r.TLS != nil {
+		req.URL.Scheme = "https"
+	}
+
+	for k, v := range r.Header {
+		if len(v) > 0 {
+			req.Headers[k] = v[0]
+		}
+	}
+
+	for _, line := range r.Header["Cookie"] {
+		parts := strings.Split(strings.TrimSpace(line), ";")
+		if len(parts) == 1 && parts[0] == "" {
+			continue
+		}
+		for i := 0; i < len(parts); i++ {
+			parts[i] = strings.TrimSpace(parts[i])
+			if len(parts[i]) == 0 {
+				continue
+			}
+			n, v := parts[i], ""
+			if i := strings.Index(n, "="); i >= 0 {
+				n, v = n[:i], n[i+1:]
+			}
+			if !validCookieName(n) {
+				continue
+			}
+			if len(v) > 1 && v[0] == '"' && v[len(v)-1] == '"' {
+				v = v[1 : len(v)-1]
+			}
+			if !validCookieValue(v) {
+				continue
+			}
+			req.Cookies = append(req.Cookies, &Cookie{
+				Name:  n,
+				Value: v,
+			})
+		}
+	}
+
+	if r.Form == nil || r.MultipartForm == nil {
+		r.ParseMultipartForm(32 << 20)
+	}
+
+	for k, v := range r.Form {
+		if len(v) > 0 {
+			req.Params[k] = v[0]
+		}
+	}
+
+	if r.MultipartForm != nil {
+		for k, v := range r.MultipartForm.File {
+			if len(v) > 0 {
+				if f, err := v[0].Open(); err == nil {
+					req.Files[k] = f
+				}
+			}
+		}
+	}
+
+	// Response
+
+	res := &Response{
+		StatusCode: 200,
+		Headers:    map[string]string{},
+
+		request:            req,
+		httpRequest:        r,
+		httpResponseWriter: rw,
+	}
 
 	// Gases
+
 	h := func(req *Request, res *Response) error {
 		h := theRouter.route(req)
 		for i := len(Gases) - 1; i >= 0; i-- {
@@ -96,11 +187,13 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	// Pregases
+
 	for i := len(Pregases) - 1; i >= 0; i-- {
 		h = Pregases[i](h)
 	}
 
 	// Execute chain
+
 	if err := h(req, res); err != nil {
 		ErrorHandler(err, req, res)
 	}
