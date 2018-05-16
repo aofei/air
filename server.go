@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -94,7 +95,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			Path:   r.URL.EscapedPath(),
 			Query:  r.URL.RawQuery,
 		},
-		Proto:         r.Proto,
+		Proto:         "HTTP/" + strconv.Itoa(r.ProtoMajor),
 		Headers:       make(map[string]string, len(r.Header)),
 		ContentLength: r.ContentLength,
 		Body:          r.Body,
@@ -107,6 +108,10 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	if r.TLS != nil {
 		req.URL.Scheme = "https"
+	}
+
+	if r.ProtoMajor < 2 {
+		req.Proto += "." + strconv.Itoa(r.ProtoMinor)
 	}
 
 	for k, v := range r.Header {
