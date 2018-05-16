@@ -36,13 +36,13 @@ type Response struct {
 }
 
 // newResponse returns a new instance of the `Response`.
-func newResponse(r *Request, writer http.ResponseWriter) *Response {
+func newResponse(r *Request, rw http.ResponseWriter) *Response {
 	return &Response{
 		StatusCode: 200,
 		Headers:    map[string]string{},
 
 		request: r,
-		writer:  writer,
+		writer:  rw,
 	}
 }
 
@@ -131,7 +131,7 @@ func (r *Response) XML(v interface{}) error {
 
 // HTML responds to the client with the "text/html" content h.
 func (r *Response) HTML(h string) error {
-	if AutoPushEnabled && r.request.Proto == "HTTP/2" {
+	if AutoPushEnabled && strings.HasPrefix(r.request.Proto, "HTTP/2") {
 		tree, err := html.Parse(strings.NewReader(h))
 		if err != nil {
 			return err
