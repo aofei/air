@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"mime"
 	"net"
 	"net/http"
@@ -238,42 +237,55 @@ func (r *Response) File(file string) error {
 		file += "index.html"
 	}
 
-	c := []byte{}
+	var c io.ReadSeeker
 	mt := time.Time{}
 	if a, err := theCoffer.asset(file); err != nil {
 		return err
 	} else if a != nil {
-		c = a.content
+		c = bytes.NewReader(a.content)
 		mt = a.modTime
-	} else if fi, err := os.Stat(file); err != nil {
-		return err
-	} else if c, err = ioutil.ReadFile(file); err != nil {
-		return err
 	} else {
+		f, err := os.Open(file)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		fi, err := f.Stat()
+		if err != nil {
+			return err
+		}
+
+		c = f
 		mt = fi.ModTime()
 	}
 
 	if ct, ok := r.Headers["Content-Type"]; !ok {
-		ct = mime.TypeByExtension(filepath.Ext(file))
-		if ct == "" {
-			n := 1 << 9
-			if l := len(c); n > l {
-				n = l
+		if ct = mime.TypeByExtension(filepath.Ext(file)); ct == "" {
+			// Read a chunk to decide between UTF-8 text and binary
+			b := [1 << 9]byte{}
+			n, _ := io.ReadFull(c, b[:])
+			ct = http.DetectContentType(b[:n])
+			if _, err := c.Seek(0, io.SeekStart); err != nil {
+				return err
 			}
-			ct = http.DetectContentType(c[:n])
 		}
 		r.Headers["Content-Type"] = ct
 	}
 
 	if _, ok := r.Headers["ETag"]; !ok {
-		r.Headers["ETag"] = fmt.Sprintf(`"%x"`, md5.Sum(c))
+		h := md5.New()
+		if _, err := io.Copy(h, c); err != nil {
+			return err
+		}
+		r.Headers["ETag"] = fmt.Sprintf(`"%x"`, h.Sum(nil))
 	}
 
 	if _, ok := r.Headers["Last-Modified"]; !ok {
 		r.Headers["Last-Modified"] = mt.UTC().Format(http.TimeFormat)
 	}
 
-	return r.Stream(bytes.NewReader(c))
+	return r.Stream(c)
 }
 
 // Flush flushes buffered data to the client.
