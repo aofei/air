@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
+	"mime"
 	"net"
 	"net/http"
 	"net/textproto"
@@ -40,7 +41,11 @@ type Response struct {
 func (r *Response) write(b []byte) error {
 	if !r.Written {
 		if !checkPreconditions(r.request, r) {
-			r.Headers["Content-Length"] = strconv.Itoa(len(b))
+			if _, ok := r.Headers["Content-Length"]; !ok {
+				r.Headers["Content-Length"] = strconv.Itoa(
+					len(b),
+				)
+			}
 			for k, v := range r.Headers {
 				r.httpResponseWriter.Header().Set(k, v)
 			}
@@ -82,19 +87,21 @@ func (r *Response) Redirect(url string) error {
 	return r.write(nil)
 }
 
-// Blob responds to the client with the contentType content b.
-func (r *Response) Blob(contentType string, b []byte) error {
-	var err error
-	if b, err = theMinifier.minify(contentType, b); err != nil {
-		return err
+// Blob responds to the client with the content b.
+func (r *Response) Blob(b []byte) error {
+	if ct, ok := r.Headers["Content-Type"]; ok {
+		var err error
+		if b, err = theMinifier.minify(ct, b); err != nil {
+			return err
+		}
 	}
-	r.Headers["Content-Type"] = contentType
 	return r.write(b)
 }
 
 // String responds to the client with the "text/plain" content s.
 func (r *Response) String(s string) error {
-	return r.Blob("text/plain; charset=utf-8", []byte(s))
+	r.Headers["Content-Type"] = "text/plain; charset=utf-8"
+	return r.Blob([]byte(s))
 }
 
 // JSON responds to the client with the "application/json" content v.
@@ -106,7 +113,8 @@ func (r *Response) JSON(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	return r.Blob("application/json; charset=utf-8", b)
+	r.Headers["Content-Type"] = "application/json; charset=utf-8"
+	return r.Blob(b)
 }
 
 // XML responds to the client with the "application/xml" content v.
@@ -119,7 +127,8 @@ func (r *Response) XML(v interface{}) error {
 		return err
 	}
 	b = append([]byte(xml.Header), b...)
-	return r.Blob("application/xml; charset=utf-8", b)
+	r.Headers["Content-Type"] = "application/xml; charset=utf-8"
+	return r.Blob(b)
 }
 
 // HTML responds to the client with the "text/html" content h.
@@ -159,7 +168,8 @@ func (r *Response) HTML(h string) error {
 		}
 		f(tree)
 	}
-	return r.Blob("text/html; charset=utf-8", []byte(h))
+	r.Headers["Content-Type"] = "text/html; charset=utf-8"
+	return r.Blob([]byte(h))
 }
 
 // Render renders one or more HTML templates with the m and responds to the
@@ -177,17 +187,35 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	return r.HTML(buf.String())
 }
 
-// Stream responds to the client with the contentType streaming content reader.
-func (r *Response) Stream(contentType string, reader io.Reader) error {
-	if err := r.Blob(contentType, nil); err != nil {
-		return err
-	} else if r.request.Method != "HEAD" && r.StatusCode != 304 {
-		n, err := io.Copy(r.httpResponseWriter, reader)
-		if err != nil {
-			return err
-		}
-		r.Size += n
+// Stream responds to the client with the streaming content.
+func (r *Response) Stream(content io.ReadSeeker) error {
+	for k, v := range r.Headers {
+		r.httpResponseWriter.Header().Set(k, v)
 	}
+
+	for _, c := range r.Cookies {
+		if v := c.String(); v != "" {
+			r.httpResponseWriter.Header().Add("Set-Cookie", v)
+		}
+	}
+
+	size, err := content.Seek(0, io.SeekEnd)
+	if err != nil {
+		return err
+	} else if _, err := content.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+
+	r.Size += size
+
+	http.ServeContent(
+		r.httpResponseWriter,
+		r.httpRequest,
+		"",
+		time.Time{},
+		content,
+	)
+
 	return nil
 }
 
@@ -199,9 +227,9 @@ func (r *Response) File(file string) error {
 	} else if fi, err := os.Stat(file); err != nil {
 		return err
 	} else if fi.IsDir() {
-		if p := r.httpRequest.URL.Path; p[len(p)-1] != '/' {
+		if p := r.request.URL.Path; p[len(p)-1] != '/' {
 			p = path.Base(p) + "/"
-			if q := r.httpRequest.URL.RawQuery; q != "" {
+			if q := r.request.URL.Query; q != "" {
 				p += "?" + q
 			}
 			r.StatusCode = 301
@@ -225,34 +253,27 @@ func (r *Response) File(file string) error {
 		mt = fi.ModTime()
 	}
 
+	if ct, ok := r.Headers["Content-Type"]; !ok {
+		ct = mime.TypeByExtension(filepath.Ext(file))
+		if ct == "" {
+			n := 1 << 9
+			if l := len(c); n > l {
+				n = l
+			}
+			ct = http.DetectContentType(c[:n])
+		}
+		r.Headers["Content-Type"] = ct
+	}
+
 	if _, ok := r.Headers["ETag"]; !ok {
 		r.Headers["ETag"] = fmt.Sprintf(`"%x"`, md5.Sum(c))
 	}
 
-	for k, v := range r.Headers {
-		r.httpResponseWriter.Header().Set(k, v)
+	if _, ok := r.Headers["Last-Modified"]; !ok {
+		r.Headers["Last-Modified"] = mt.UTC().Format(http.TimeFormat)
 	}
 
-	for _, c := range r.Cookies {
-		if v := c.String(); v != "" {
-			r.httpResponseWriter.Header().Add("Set-Cookie", v)
-		}
-	}
-
-	http.ServeContent(
-		r.httpResponseWriter,
-		r.httpRequest,
-		file,
-		mt,
-		bytes.NewReader(c),
-	)
-
-	r.Written = true
-	if r.request.Method != "HEAD" && r.StatusCode != 304 {
-		r.Size += int64(len(c))
-	}
-
-	return nil
+	return r.Stream(bytes.NewReader(c))
 }
 
 // Flush flushes buffered data to the client.
@@ -303,7 +324,7 @@ func checkPreconditions(req *Request, res *Response) bool {
 			res.StatusCode = 412
 			return true
 		}
-	} else if !ius.IsZero() && !checkIfModifiedSince(res, ius) {
+	} else if !ius.IsZero() && !checkIfUnmodifiedSince(res, ius) {
 		res.StatusCode = 412
 		return true
 	}
