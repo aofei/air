@@ -8,11 +8,11 @@ type Request struct {
 	URL           *URL
 	Proto         string
 	Headers       map[string]string
-	ContentLength int64
 	Body          io.Reader
+	ContentLength int64
 	Cookies       []*Cookie
 	Params        map[string]string
-	Files         map[string]io.Reader
+	Files         map[string]io.ReadSeeker
 	RemoteAddr    string
 	Values        map[string]interface{}
 }
