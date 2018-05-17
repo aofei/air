@@ -97,11 +97,11 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		},
 		Proto:         "HTTP/" + strconv.Itoa(r.ProtoMajor),
 		Headers:       make(map[string]string, len(r.Header)),
-		ContentLength: r.ContentLength,
 		Body:          r.Body,
+		ContentLength: r.ContentLength,
 		Cookies:       make([]*Cookie, 0, len(r.Header["Cookie"])),
 		Params:        make(map[string]string, theRouter.maxParams),
-		Files:         map[string]io.Reader{},
+		Files:         map[string]io.ReadSeeker{},
 		RemoteAddr:    r.RemoteAddr,
 		Values:        map[string]interface{}{},
 	}
