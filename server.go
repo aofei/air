@@ -116,12 +116,12 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	for k, v := range r.Header {
 		if len(v) > 0 {
-			req.Headers[k] = v[0]
+			req.Headers[k] = strings.Join(v, ", ")
 		}
 	}
 
-	for _, line := range r.Header["Cookie"] {
-		parts := strings.Split(strings.TrimSpace(line), ";")
+	for _, s := range strings.Split(req.Headers["Cookie"], ", ") {
+		parts := strings.Split(strings.TrimSpace(s), ";")
 		if len(parts) == 1 && parts[0] == "" {
 			continue
 		}
@@ -177,7 +177,6 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Headers:    map[string]string{},
 
 		request:            req,
-		httpRequest:        r,
 		httpResponseWriter: rw,
 	}
 
