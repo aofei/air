@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"io"
 	"mime"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/textproto"
@@ -25,65 +26,358 @@ import (
 
 // Response is an HTTP response.
 type Response struct {
-	StatusCode int
-	Headers    map[string]string
-	Cookies    []*Cookie
-	Size       int64
-	Written    bool
+	StatusCode    int
+	Headers       map[string]string
+	ContentLength int64
+	Cookies       []*Cookie
+	Written       bool
 
 	request            *Request
-	httpRequest        *http.Request
 	httpResponseWriter http.ResponseWriter
 }
 
-// write writes the b to the client.
-func (r *Response) write(b []byte) error {
-	if !r.Written {
-		if !checkPreconditions(r.request, r) {
-			if _, ok := r.Headers["Content-Length"]; !ok {
-				r.Headers["Content-Length"] = strconv.Itoa(
-					len(b),
+// Write responds to the client with the content.
+func (r *Response) Write(content io.ReadSeeker) error {
+	if r.Written {
+		return nil
+	}
+
+	canWrite := false
+	var reader io.Reader = content
+	defer func() {
+		if !canWrite {
+			return
+		}
+
+		if reader != nil && r.ContentLength == 0 {
+			r.ContentLength, _ = content.Seek(0, io.SeekEnd)
+			content.Seek(0, io.SeekStart)
+		}
+
+		if r.StatusCode < 400 {
+			r.Headers["Accept-Ranges"] = "bytes"
+			if r.Headers["Content-Encoding"] == "" {
+				r.Headers["Content-Length"] = strconv.FormatInt(
+					r.ContentLength,
+					10,
 				)
 			}
-			for k, v := range r.Headers {
+		}
+
+		cls := make([]string, 0, len(r.Cookies))
+		for _, c := range r.Cookies {
+			if v := c.String(); v != "" {
+				cls = append(cls, v)
+			}
+		}
+
+		if len(cls) > 0 {
+			r.Headers["Set-Cookie"] = strings.Join(cls, ", ")
+		}
+
+		for k, v := range r.Headers {
+			if _, ok := r.httpResponseWriter.Header()[k]; !ok {
 				r.httpResponseWriter.Header().Set(k, v)
 			}
-			for _, c := range r.Cookies {
-				if v := c.String(); v != "" {
-					r.httpResponseWriter.Header().Add(
-						"Set-Cookie",
-						v,
-					)
-				}
-			}
-		} else if r.StatusCode == 304 {
-			delete(r.Headers, "Content-Type")
-			delete(r.Headers, "Content-Length")
-		} else if r.StatusCode == 412 {
-			return &Error{412, "Precondition Failed"}
 		}
+
 		r.httpResponseWriter.WriteHeader(r.StatusCode)
+		if r.request.Method != "HEAD" {
+			io.CopyN(r.httpResponseWriter, reader, r.ContentLength)
+		}
+
 		r.Written = true
+	}()
+
+	if r.StatusCode >= 400 { // something has gone wrong
+		canWrite = true
+		return nil
 	}
-	if r.request.Method != "HEAD" && r.StatusCode != 304 {
-		n, err := r.httpResponseWriter.Write(b)
-		if err != nil {
+
+	im := r.request.Headers["If-Match"]
+	et := r.Headers["ETag"]
+	ius, _ := http.ParseTime(r.request.Headers["If-Unmodified-Since"])
+	lm, _ := http.ParseTime(r.Headers["Last-Modified"])
+	if im != "" {
+		matched := false
+		for {
+			im = textproto.TrimString(im)
+			if len(im) == 0 {
+				break
+			}
+			if im[0] == ',' {
+				im = im[1:]
+				continue
+			}
+			if im[0] == '*' {
+				matched = true
+				break
+			}
+			eTag, remain := scanETag(im)
+			if eTag == "" {
+				break
+			}
+			if eTagStrongMatch(eTag, et) {
+				matched = true
+				break
+			}
+			im = remain
+		}
+		if !matched {
+			r.StatusCode = 412
+		}
+	} else if !ius.IsZero() && !lm.Before(ius.Add(time.Second)) {
+		r.StatusCode = 412
+	}
+
+	inm := r.request.Headers["If-None-Match"]
+	ims, _ := http.ParseTime(r.request.Headers["If-Modified-Since"])
+	if inm != "" {
+		noneMatched := true
+		for {
+			inm = textproto.TrimString(inm)
+			if len(inm) == 0 {
+				break
+			}
+			if inm[0] == ',' {
+				inm = inm[1:]
+			}
+			if inm[0] == '*' {
+				noneMatched = false
+				break
+			}
+			eTag, remain := scanETag(inm)
+			if eTag == "" {
+				break
+			}
+			if eTagWeakMatch(eTag, r.Headers["ETag"]) {
+				noneMatched = false
+				break
+			}
+			inm = remain
+		}
+		if !noneMatched {
+			if m := r.request.Method; m == "GET" || m == "HEAD" {
+				r.StatusCode = 304
+			} else {
+				r.StatusCode = 412
+			}
+		}
+	} else if !ims.IsZero() && lm.Before(ims.Add(time.Second)) {
+		r.StatusCode = 304
+	}
+
+	if r.StatusCode == 304 {
+		delete(r.Headers, "Content-Type")
+		delete(r.Headers, "Content-Length")
+		canWrite = true
+		return nil
+	} else if r.StatusCode == 412 {
+		return &Error{412, "Precondition Failed"}
+	} else if content == nil {
+		canWrite = true
+		return nil
+	}
+
+	ct, ok := r.Headers["Content-Type"]
+	if !ok {
+		// Read a chunk to decide between UTF-8 text and binary
+		b := [1 << 9]byte{}
+		n, _ := io.ReadFull(content, b[:])
+		ct = http.DetectContentType(b[:n])
+		if _, err := content.Seek(0, io.SeekStart); err != nil {
 			return err
 		}
-		r.Size += int64(n)
+		r.Headers["Content-Type"] = ct
 	}
+
+	size, err := content.Seek(0, io.SeekEnd)
+	if err != nil {
+		return err
+	} else if _, err := content.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+
+	r.ContentLength = size
+
+	rh := r.request.Headers["Range"]
+	if rh == "" {
+		canWrite = true
+		return nil
+	} else if r.request.Method == "GET" || r.request.Method == "HEAD" {
+		if ir := r.request.Headers["If-Range"]; ir != "" {
+			if eTag, _ := scanETag(ir); eTag != "" &&
+				!eTagStrongMatch(eTag, et) {
+				canWrite = true
+				return nil
+			}
+
+			// The If-Range value is typically the ETag value, but
+			// it may also be the modtime date. See
+			// golang.org/issue/8367.
+			if lm.IsZero() {
+				canWrite = true
+				return nil
+			} else if t, _ := http.ParseTime(ir); !t.Equal(lm) {
+				canWrite = true
+				return nil
+			}
+		}
+	}
+
+	const b = "bytes="
+	if !strings.HasPrefix(rh, b) {
+		return &Error{416, "Invalid Range"}
+	}
+
+	ranges := []httpRange{}
+	noOverlap := false
+	for _, ra := range strings.Split(rh[len(b):], ",") {
+		ra = strings.TrimSpace(ra)
+		if ra == "" {
+			continue
+		}
+		i := strings.Index(ra, "-")
+		if i < 0 {
+			return &Error{416, "Invalid Range"}
+		}
+		start := strings.TrimSpace(ra[:i])
+		end := strings.TrimSpace(ra[i+1:])
+		var r httpRange
+		if start == "" {
+			// If no start is specified, end specifies the
+			// range start relative to the end of the file.
+			i, err := strconv.ParseInt(end, 10, 64)
+			if err != nil {
+				return &Error{416, "Invalid Range"}
+			}
+			if i > size {
+				i = size
+			}
+			r.start = size - i
+			r.length = size - r.start
+		} else {
+			i, err := strconv.ParseInt(start, 10, 64)
+			if err != nil || i < 0 {
+				return &Error{416, "Invalid Range"}
+			}
+			if i >= size {
+				// If the range begins after the size of the
+				// content, then it does not overlap.
+				noOverlap = true
+				continue
+			}
+			r.start = i
+			if end == "" {
+				// If no end is specified, range extends to end
+				// of the file.
+				r.length = size - r.start
+			} else {
+				i, err := strconv.ParseInt(end, 10, 64)
+				if err != nil || r.start > i {
+					return &Error{416, "Invalid Range"}
+				}
+				if i >= size {
+					i = size - 1
+				}
+				r.length = i - r.start + 1
+			}
+		}
+		ranges = append(ranges, r)
+	}
+
+	if noOverlap && len(ranges) == 0 {
+		// The specified ranges did not overlap with the content.
+		r.Headers["Content-Range"] = fmt.Sprintf("bytes */%d", size)
+		return &Error{416, "Invalid Range: Failed to Overlap"}
+	}
+
+	var rangesSize int64
+	for _, ra := range ranges {
+		rangesSize += ra.length
+	}
+
+	if rangesSize > size {
+		ranges = nil
+	}
+
+	if l := len(ranges); l == 1 {
+		// RFC 2616, Section 14.16:
+		// "When an HTTP message includes the content of a single range
+		// (for example, a response to a request for a single range, or
+		// to a request for a set of ranges that overlap without any
+		// holes), this content is transmitted with a Content-Range
+		// header, and a Content-Length header showing the number of
+		// bytes actually transferred.
+		// ...
+		// A response to a request for a single range MUST NOT be sent
+		// using the multipart/byteranges media type."
+		ra := ranges[0]
+		if _, err := content.Seek(ra.start, io.SeekStart); err != nil {
+			return &Error{416, err.Error()}
+		}
+		r.ContentLength = ra.length
+		r.StatusCode = 206
+		r.Headers["Content-Range"] = ra.contentRange(size)
+	} else if l > 1 {
+		var w countingWriter
+		mw := multipart.NewWriter(&w)
+		for _, ra := range ranges {
+			mw.CreatePart(ra.header(ct, size))
+			r.ContentLength += ra.length
+		}
+		mw.Close()
+		r.ContentLength += int64(w)
+
+		r.StatusCode = 206
+
+		pr, pw := io.Pipe()
+		mw = multipart.NewWriter(pw)
+		r.Headers["Content-Type"] = "multipart/byteranges; boundary=" +
+			mw.Boundary()
+		reader = pr
+		defer pr.Close()
+		go func() {
+			for _, ra := range ranges {
+				part, err := mw.CreatePart(ra.header(ct, size))
+				if err != nil {
+					pw.CloseWithError(err)
+					return
+				}
+				if _, err := content.Seek(
+					ra.start,
+					io.SeekStart,
+				); err != nil {
+					pw.CloseWithError(err)
+					return
+				}
+				if _, err := io.CopyN(
+					part,
+					content,
+					ra.length,
+				); err != nil {
+					pw.CloseWithError(err)
+					return
+				}
+			}
+			mw.Close()
+			pw.Close()
+		}()
+	}
+
+	canWrite = true
 	return nil
 }
 
 // NoContent responds to the client with no content.
 func (r *Response) NoContent() error {
-	return r.write(nil)
+	return r.Write(nil)
 }
 
 // Redirect responds to the client with a redirection to the url.
 func (r *Response) Redirect(url string) error {
 	r.Headers["Location"] = url
-	return r.write(nil)
+	return r.Write(nil)
 }
 
 // Blob responds to the client with the content b.
@@ -94,7 +388,7 @@ func (r *Response) Blob(b []byte) error {
 			return err
 		}
 	}
-	return r.write(b)
+	return r.Write(bytes.NewReader(b))
 }
 
 // String responds to the client with the "text/plain" content s.
@@ -186,38 +480,6 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	return r.HTML(buf.String())
 }
 
-// Stream responds to the client with the streaming content.
-func (r *Response) Stream(content io.ReadSeeker) error {
-	for k, v := range r.Headers {
-		r.httpResponseWriter.Header().Set(k, v)
-	}
-
-	for _, c := range r.Cookies {
-		if v := c.String(); v != "" {
-			r.httpResponseWriter.Header().Add("Set-Cookie", v)
-		}
-	}
-
-	size, err := content.Seek(0, io.SeekEnd)
-	if err != nil {
-		return err
-	} else if _, err := content.Seek(0, io.SeekStart); err != nil {
-		return err
-	}
-
-	r.Size += size
-
-	http.ServeContent(
-		r.httpResponseWriter,
-		r.httpRequest,
-		"",
-		time.Time{},
-		content,
-	)
-
-	return nil
-}
-
 // File responds to the client with a file content with the file.
 func (r *Response) File(file string) error {
 	file, err := filepath.Abs(file)
@@ -285,7 +547,7 @@ func (r *Response) File(file string) error {
 		r.Headers["Last-Modified"] = mt.UTC().Format(http.TimeFormat)
 	}
 
-	return r.Stream(c)
+	return r.Write(c)
 }
 
 // Flush flushes buffered data to the client.
@@ -326,105 +588,6 @@ func (r *Response) Push(target string, headers map[string]string) error {
 	return r.httpResponseWriter.(http.Pusher).Push(target, pos)
 }
 
-// checkPreconditions evaluates request preconditions and reports whether a
-// precondition resulted in sending not modified or precondition failed.
-func checkPreconditions(req *Request, res *Response) bool {
-	im := req.Headers["If-Match"]
-	ius, _ := http.ParseTime(req.Headers["If-Unmodified-Since"])
-	if im != "" {
-		if !checkIfMatch(res, im) {
-			res.StatusCode = 412
-			return true
-		}
-	} else if !ius.IsZero() && !checkIfUnmodifiedSince(res, ius) {
-		res.StatusCode = 412
-		return true
-	}
-	inm := req.Headers["If-None-Match"]
-	ims, _ := http.ParseTime(req.Headers["If-Modified-Since"])
-	if inm != "" {
-		if !checkIfNoneMatch(res, inm) {
-			if req.Method == "GET" || req.Method == "HEAD" {
-				res.StatusCode = 304
-				return true
-			}
-			res.StatusCode = 412
-			return true
-		}
-	} else if !ims.IsZero() &&
-		(req.Method == "GET" || req.Method == "HEAD") &&
-		!checkIfModifiedSince(res, ims) {
-		res.StatusCode = 304
-		return true
-	}
-	return false
-}
-
-// checkIfMatch reports whether the im and the ETag in the res match.
-func checkIfMatch(res *Response, im string) bool {
-	for {
-		im = textproto.TrimString(im)
-		if len(im) == 0 {
-			break
-		}
-		if im[0] == ',' {
-			im = im[1:]
-			continue
-		}
-		if im[0] == '*' {
-			return true
-		}
-		eTag, remain := scanETag(im)
-		if eTag == "" {
-			break
-		}
-		if eTagStrongMatch(eTag, res.Headers["ETag"]) {
-			return true
-		}
-		im = remain
-	}
-	return false
-}
-
-// checkIfUnmodifiedSince reports whether the ius before the Last-Modified in
-// the res.
-func checkIfUnmodifiedSince(res *Response, ius time.Time) bool {
-	lm, _ := http.ParseTime(res.Headers["Last-Modified"])
-	return lm.Before(ius.Add(time.Second))
-}
-
-// checkIfNoneMatch reports whether the im and the ETag in the res not match.
-func checkIfNoneMatch(res *Response, inm string) bool {
-	for {
-		inm = textproto.TrimString(inm)
-		if len(inm) == 0 {
-			break
-		}
-		if inm[0] == ',' {
-			inm = inm[1:]
-		}
-		if inm[0] == '*' {
-			return false
-		}
-		eTag, remain := scanETag(inm)
-		if eTag == "" {
-			break
-		}
-		if eTagWeakMatch(eTag, res.Headers["ETag"]) {
-			return false
-		}
-		inm = remain
-	}
-	return true
-}
-
-// checkIfModifiedSince reports whether the ius not before the Last-Modified in
-// the res.
-func checkIfModifiedSince(res *Response, ims time.Time) bool {
-	lm, _ := http.ParseTime(res.Headers["Last-Modified"])
-	return !lm.Before(ims.Add(time.Second))
-}
-
 // scanETag determines if a syntactically valid ETag is present at s. If so, the
 // ETag and remaining text after consuming ETag is returned. Otherwise, it
 // returns "", "".
@@ -461,4 +624,31 @@ func eTagStrongMatch(a, b string) bool {
 // eTagWeakMatch reports whether a and b match using weak ETag comparison.
 func eTagWeakMatch(a, b string) bool {
 	return strings.TrimPrefix(a, "W/") == strings.TrimPrefix(b, "W/")
+}
+
+// httpRange specifies the byte range to be sent to the client.
+type httpRange struct {
+	start, length int64
+}
+
+// contentRange return a Content-Range header field of the r.
+func (r httpRange) contentRange(size int64) string {
+	return fmt.Sprintf("bytes %d-%d/%d", r.start, r.start+r.length-1, size)
+}
+
+// header return  the MIME header of the r.
+func (r httpRange) header(contentType string, size int64) textproto.MIMEHeader {
+	return textproto.MIMEHeader{
+		"Content-Range": {r.contentRange(size)},
+		"Content-Type":  {contentType},
+	}
+}
+
+// countingWriter counts how many bytes have been written to it.
+type countingWriter int64
+
+// Write implements the `io.Writer`.
+func (w *countingWriter) Write(p []byte) (n int, err error) {
+	*w += countingWriter(len(p))
+	return len(p), nil
 }
