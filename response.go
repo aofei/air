@@ -32,8 +32,8 @@ type Response struct {
 	Cookies       []*Cookie
 	Written       bool
 
-	request            *Request
-	httpResponseWriter http.ResponseWriter
+	request *Request
+	writer  http.ResponseWriter
 }
 
 // Write responds to the client with the content.
@@ -64,26 +64,27 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			}
 		}
 
-		cls := make([]string, 0, len(r.Cookies))
-		for _, c := range r.Cookies {
-			if v := c.String(); v != "" {
-				cls = append(cls, v)
-			}
-		}
-
-		if len(cls) > 0 {
-			r.Headers["Set-Cookie"] = strings.Join(cls, ", ")
-		}
-
 		for k, v := range r.Headers {
-			if _, ok := r.httpResponseWriter.Header()[k]; !ok {
-				r.httpResponseWriter.Header().Set(k, v)
+			r.writer.Header().Set(k, v)
+		}
+
+		if _, ok := r.Headers["Set-Cookie"]; !ok {
+			cls := make([]string, 0, len(r.Cookies))
+			for _, c := range r.Cookies {
+				if v := c.String(); v != "" {
+					cls = append(cls, v)
+					r.writer.Header().Add("Set-Cookie", v)
+				}
+			}
+
+			if sc := strings.Join(cls, ", "); sc != "" {
+				r.Headers["Set-Cookie"] = sc
 			}
 		}
 
-		r.httpResponseWriter.WriteHeader(r.StatusCode)
+		r.writer.WriteHeader(r.StatusCode)
 		if r.request.Method != "HEAD" {
-			io.CopyN(r.httpResponseWriter, reader, r.ContentLength)
+			io.CopyN(r.writer, reader, r.ContentLength)
 		}
 
 		r.Written = true
@@ -552,18 +553,18 @@ func (r *Response) File(file string) error {
 
 // Flush flushes buffered data to the client.
 func (r *Response) Flush() {
-	r.httpResponseWriter.(http.Flusher).Flush()
+	r.writer.(http.Flusher).Flush()
 }
 
 // Hijack took over the connection from the server.
 func (r *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return r.httpResponseWriter.(http.Hijacker).Hijack()
+	return r.writer.(http.Hijacker).Hijack()
 }
 
 // CloseNotify returns a channel that receives at most a single value when the
 // connection has gone away.
 func (r *Response) CloseNotify() <-chan bool {
-	return r.httpResponseWriter.(http.CloseNotifier).CloseNotify()
+	return r.writer.(http.CloseNotifier).CloseNotify()
 }
 
 // Push initiates an HTTP/2 server push. This constructs a synthetic request
@@ -585,7 +586,7 @@ func (r *Response) Push(target string, headers map[string]string) error {
 		}
 		pos.Header.Set(k, v)
 	}
-	return r.httpResponseWriter.(http.Pusher).Push(target, pos)
+	return r.writer.(http.Pusher).Push(target, pos)
 }
 
 // scanETag determines if a syntactically valid ETag is present at s. If so, the

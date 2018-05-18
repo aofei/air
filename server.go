@@ -120,8 +120,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	for _, s := range strings.Split(req.Headers["Cookie"], ", ") {
-		parts := strings.Split(strings.TrimSpace(s), ";")
+	for _, line := range r.Header["Cookie"] {
+		parts := strings.Split(strings.TrimSpace(line), ";")
 		if len(parts) == 1 && parts[0] == "" {
 			continue
 		}
@@ -176,8 +176,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		StatusCode: 200,
 		Headers:    map[string]string{},
 
-		request:            req,
-		httpResponseWriter: rw,
+		request: req,
+		writer:  rw,
 	}
 
 	// Gases
