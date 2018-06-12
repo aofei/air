@@ -16,12 +16,12 @@ properly.**
 ## Features
 
 * Singleton
-	* Air is uncountable.
-	* Just one package `air.*`.
+	* Air is uncountable
+	* Just one package `air.*`
 * API
-	* As less as possible.
-	* As simple as possible.
-	* As expressive as possible.
+	* As less as possible
+	* As simple as possible
+	* As expressive as possible
 * Method
 	* `GET` (cache-friendly)
 	* `HEAD` (cache-friendly)
@@ -39,19 +39,19 @@ properly.**
 	* `PANIC`
 	* `FATAL`
 * Server
-	* HTTP/2 support.
-	* SSL/TLS support.
-	* Graceful shutdown support.
+	* HTTP/2 support
+	* SSL/TLS support
+	* Graceful shutdown support
 * Router
-	* Based on the Radix Tree.
-	* Has a good inspection mechanism.
-	* Group routes support.
+	* Based on the Radix Tree
+	* Has a good inspection mechanism
+	* Group routes support
 * Gas (also called middleware)
 	* Router level:
-		* Before router.
-		* After router.
-	* Route level.
-	* Group level.
+		* Before router
+		* After router
+	* Route level
+	* Group level
 * Binder
 	* `application/json`
 	* `application/xml`
@@ -67,11 +67,11 @@ properly.**
 	* `image/jpeg`
 	* `image/png`
 * Renderer
-	* Rich template functions.
-	* Hot update support.
+	* Rich template functions
+	* Hot update support
 * Coffer
-	* Accesses binary asset files by using the runtime memory.
-	* Significantly improves the performance of the `air.Response#File()`.
+	* Accesses binary asset files by using the runtime memory
+	* Significantly improves the performance of the `air.Response#File()`
 	* Asset file minimization:
 		* `.html`
 		* `.css`
@@ -82,9 +82,9 @@ properly.**
 		* `.jpg`
 		* `.jpeg`
 		* `.png`
-	* Hot update support.
+	* Hot update support
 * Error
-	* Centralized handling.
+	* Centralized handling
 
 ## Installation
 
