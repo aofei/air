@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"golang.org/x/net/html"
 )
 
@@ -32,8 +33,31 @@ type Response struct {
 	Cookies       []*Cookie
 	Written       bool
 
-	request *Request
-	writer  http.ResponseWriter
+	request     *Request
+	httpRequest *http.Request
+	writer      http.ResponseWriter
+}
+
+// UpgradeToWebSocket upgrades the connection to the WebSocket protocol.
+func (r *Response) UpgradeToWebSocket() (*WebSocketConn, error) {
+	for k, v := range r.Headers {
+		r.writer.Header().Set(k, v)
+	}
+
+	conn, err := (&websocket.Upgrader{}).Upgrade(
+		r.writer,
+		r.httpRequest,
+		r.writer.Header(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	r.Written = true
+
+	return &WebSocketConn{
+		conn: conn,
+	}, nil
 }
 
 // Write responds to the client with the content.

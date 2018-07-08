@@ -42,6 +42,7 @@ properly.**
 	* HTTP/2 support
 	* SSL/TLS support
 	* Graceful shutdown support
+	* WebSocket support
 * Router
 	* Based on the Radix Tree
 	* Has a good inspection mechanism
