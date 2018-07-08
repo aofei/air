@@ -176,8 +176,9 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		StatusCode: 200,
 		Headers:    map[string]string{},
 
-		request: req,
-		writer:  rw,
+		request:     req,
+		httpRequest: r,
+		writer:      rw,
 	}
 
 	// Gases

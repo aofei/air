@@ -472,7 +472,7 @@ type node struct {
 // nodeKind is a kind of the `node`.
 type nodeKind uint8
 
-// node kinds
+// the node kinds.
 const (
 	static nodeKind = iota
 	param
