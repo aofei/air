@@ -2,7 +2,7 @@ package air
 
 import (
 	"context"
-	"io"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"strconv"
@@ -101,7 +101,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		ContentLength: r.ContentLength,
 		Cookies:       make([]*Cookie, 0, len(r.Header["Cookie"])),
 		Params:        make(map[string]string, theRouter.maxParams),
-		Files:         map[string]io.ReadSeeker{},
+		Files:         map[string]multipart.File{},
 		RemoteAddr:    r.RemoteAddr,
 		Values:        map[string]interface{}{},
 	}
