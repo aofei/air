@@ -81,6 +81,11 @@ func (r *Request) ParseFiles() {
 		r.httpRequest.ParseMultipartForm(32 << 20)
 	}
 	if r.httpRequest.MultipartForm != nil {
+		for k, v := range r.httpRequest.MultipartForm.Value {
+			if len(v) > 0 {
+				r.Params[k] = v[0]
+			}
+		}
 		for k, v := range r.httpRequest.MultipartForm.File {
 			if len(v) > 0 {
 				if f, err := v[0].Open(); err == nil {
