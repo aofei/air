@@ -33,9 +33,8 @@ type Response struct {
 	Cookies       []*Cookie
 	Written       bool
 
-	request     *Request
-	httpRequest *http.Request
-	writer      http.ResponseWriter
+	request *Request
+	writer  http.ResponseWriter
 }
 
 // UpgradeToWebSocket upgrades the connection to the WebSocket protocol.
@@ -46,7 +45,7 @@ func (r *Response) UpgradeToWebSocket() (*WebSocketConn, error) {
 
 	conn, err := (&websocket.Upgrader{}).Upgrade(
 		r.writer,
-		r.httpRequest,
+		r.request.httpRequest,
 		r.writer.Header(),
 	)
 	if err != nil {

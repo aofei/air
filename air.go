@@ -43,7 +43,7 @@ var LoggerOutput = io.Writer(os.Stdout)
 // It is called "address" in the configuration file.
 var Address = "localhost:2333"
 
-// ReadTimeout is the maximum duration the server reads an request.
+// ReadTimeout is the maximum duration the server reads the request.
 //
 // It is called "read_timeout" in the configuration file.
 //
@@ -95,6 +95,24 @@ var TLSKeyFile = ""
 //
 // It is called "https_enforced" in the configuration file.
 var HTTPSEnforced = false
+
+// ParseRequestCookiesManually indicates whether the cookies does not need to be
+// auto parsed when the server read parsing the request.
+//
+// It is called "parse_request_cookies_manually" in the configuration file.
+var ParseRequestCookiesManually = false
+
+// ParseRequestParamsManually indicates whether the params does not need to be
+// auto parsed when the server read parsing the request.
+//
+// It is called "parse_request_params_manually" in the configuration file.
+var ParseRequestParamsManually = false
+
+// ParseRequestFilesManually indicates whether the files does not need to be
+// auto parsed when the server read parsing the request.
+//
+// It is called "parse_request_files_manually" in the configuration file.
+var ParseRequestFilesManually = false
 
 // ErrorHandler is the centralized error handler for the server.
 var ErrorHandler = func(err error, req *Request, res *Response) {
@@ -199,88 +217,97 @@ var Config = map[string]interface{}{}
 func init() {
 	cf := flag.String("config", "config.toml", "configuration file")
 	flag.Parse()
-	if b, err := ioutil.ReadFile(*cf); err == nil {
-		if err := toml.Unmarshal(b, &Config); err != nil {
+	if b, err := ioutil.ReadFile(*cf); err != nil {
+		if !os.IsNotExist(err) {
 			panic(err)
 		}
-		if v, ok := Config["app_name"].(string); ok {
-			AppName = v
-		}
-		if v, ok := Config["debug_mode"].(bool); ok {
-			DebugMode = v
-		}
-		if v, ok := Config["logger_enabled"].(bool); ok {
-			LoggerEnabled = v
-		}
-		if v, ok := Config["logger_format"].(string); ok {
-			LoggerFormat = v
-		}
-		if v, ok := Config["address"].(string); ok {
-			Address = v
-		}
-		if v, ok := Config["read_timeout"].(int64); ok {
-			ReadTimeout = time.Duration(v) * time.Millisecond
-		}
-		if v, ok := Config["read_header_timeout"].(int64); ok {
-			ReadHeaderTimeout = time.Duration(v) * time.Millisecond
-		}
-		if v, ok := Config["write_timeout"].(int64); ok {
-			WriteTimeout = time.Duration(v) * time.Millisecond
-		}
-		if v, ok := Config["idle_timeout"].(int64); ok {
-			IdleTimeout = time.Duration(v) * time.Millisecond
-		}
-		if v, ok := Config["max_header_bytes"].(int64); ok {
-			MaxHeaderBytes = int(v)
-		}
-		if v, ok := Config["tls_cert_file"].(string); ok {
-			TLSCertFile = v
-		}
-		if v, ok := Config["tls_key_file"].(string); ok {
-			TLSKeyFile = v
-		}
-		if v, ok := Config["https_enforced"].(bool); ok {
-			HTTPSEnforced = v
-		}
-		if v, ok := Config["auto_push_enabled"].(bool); ok {
-			AutoPushEnabled = v
-		}
-		if v, ok := Config["minifier_enabled"].(bool); ok {
-			MinifierEnabled = v
-		}
-		if v, ok := Config["template_root"].(string); ok {
-			TemplateRoot = v
-		}
-		if v, ok := Config["template_exts"].([]interface{}); ok {
-			TemplateExts = make([]string, 0, len(v))
-			for _, v := range v {
-				if v, ok := v.(string); ok {
-					TemplateExts = append(TemplateExts, v)
-				}
-			}
-		}
-		if v, ok := Config["template_left_delim"].(string); ok {
-			TemplateLeftDelim = v
-		}
-		if v, ok := Config["template_right_delim"].(string); ok {
-			TemplateRightDelim = v
-		}
-		if v, ok := Config["coffer_enabled"].(bool); ok {
-			CofferEnabled = v
-		}
-		if v, ok := Config["asset_root"].(string); ok {
-			AssetRoot = v
-		}
-		if v, ok := Config["asset_exts"].([]interface{}); ok {
-			AssetExts = make([]string, 0, len(v))
-			for _, v := range v {
-				if v, ok := v.(string); ok {
-					AssetExts = append(AssetExts, v)
-				}
-			}
-		}
-	} else if !os.IsNotExist(err) {
+	} else if err := toml.Unmarshal(b, &Config); err != nil {
 		panic(err)
+	}
+	if v, ok := Config["app_name"].(string); ok {
+		AppName = v
+	}
+	if v, ok := Config["debug_mode"].(bool); ok {
+		DebugMode = v
+	}
+	if v, ok := Config["logger_enabled"].(bool); ok {
+		LoggerEnabled = v
+	}
+	if v, ok := Config["logger_format"].(string); ok {
+		LoggerFormat = v
+	}
+	if v, ok := Config["address"].(string); ok {
+		Address = v
+	}
+	if v, ok := Config["read_timeout"].(int64); ok {
+		ReadTimeout = time.Duration(v) * time.Millisecond
+	}
+	if v, ok := Config["read_header_timeout"].(int64); ok {
+		ReadHeaderTimeout = time.Duration(v) * time.Millisecond
+	}
+	if v, ok := Config["write_timeout"].(int64); ok {
+		WriteTimeout = time.Duration(v) * time.Millisecond
+	}
+	if v, ok := Config["idle_timeout"].(int64); ok {
+		IdleTimeout = time.Duration(v) * time.Millisecond
+	}
+	if v, ok := Config["max_header_bytes"].(int64); ok {
+		MaxHeaderBytes = int(v)
+	}
+	if v, ok := Config["tls_cert_file"].(string); ok {
+		TLSCertFile = v
+	}
+	if v, ok := Config["tls_key_file"].(string); ok {
+		TLSKeyFile = v
+	}
+	if v, ok := Config["https_enforced"].(bool); ok {
+		HTTPSEnforced = v
+	}
+	if v, ok := Config["parse_request_cookies_manually"].(bool); ok {
+		ParseRequestCookiesManually = v
+	}
+	if v, ok := Config["parse_request_params_manually"].(bool); ok {
+		ParseRequestParamsManually = v
+	}
+	if v, ok := Config["parse_request_files_manually"].(bool); ok {
+		ParseRequestFilesManually = v
+	}
+	if v, ok := Config["auto_push_enabled"].(bool); ok {
+		AutoPushEnabled = v
+	}
+	if v, ok := Config["minifier_enabled"].(bool); ok {
+		MinifierEnabled = v
+	}
+	if v, ok := Config["template_root"].(string); ok {
+		TemplateRoot = v
+	}
+	if v, ok := Config["template_exts"].([]interface{}); ok {
+		TemplateExts = make([]string, 0, len(v))
+		for _, v := range v {
+			if v, ok := v.(string); ok {
+				TemplateExts = append(TemplateExts, v)
+			}
+		}
+	}
+	if v, ok := Config["template_left_delim"].(string); ok {
+		TemplateLeftDelim = v
+	}
+	if v, ok := Config["template_right_delim"].(string); ok {
+		TemplateRightDelim = v
+	}
+	if v, ok := Config["coffer_enabled"].(bool); ok {
+		CofferEnabled = v
+	}
+	if v, ok := Config["asset_root"].(string); ok {
+		AssetRoot = v
+	}
+	if v, ok := Config["asset_exts"].([]interface{}); ok {
+		AssetExts = make([]string, 0, len(v))
+		for _, v := range v {
+			if v, ok := v.(string); ok {
+				AssetExts = append(AssetExts, v)
+			}
+		}
 	}
 }
 

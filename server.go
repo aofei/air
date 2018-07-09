@@ -104,6 +104,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Files:         map[string]multipart.File{},
 		RemoteAddr:    r.RemoteAddr,
 		Values:        map[string]interface{}{},
+
+		httpRequest: r,
 	}
 
 	if r.TLS != nil {
@@ -120,54 +122,16 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	for _, line := range r.Header["Cookie"] {
-		parts := strings.Split(strings.TrimSpace(line), ";")
-		if len(parts) == 1 && parts[0] == "" {
-			continue
-		}
-		for i := 0; i < len(parts); i++ {
-			parts[i] = strings.TrimSpace(parts[i])
-			if len(parts[i]) == 0 {
-				continue
-			}
-			n, v := parts[i], ""
-			if i := strings.Index(n, "="); i >= 0 {
-				n, v = n[:i], n[i+1:]
-			}
-			if !validCookieName(n) {
-				continue
-			}
-			if len(v) > 1 && v[0] == '"' && v[len(v)-1] == '"' {
-				v = v[1 : len(v)-1]
-			}
-			if !validCookieValue(v) {
-				continue
-			}
-			req.Cookies = append(req.Cookies, &Cookie{
-				Name:  n,
-				Value: v,
-			})
-		}
+	if !ParseRequestCookiesManually {
+		req.ParseCookies()
 	}
 
-	if r.Form == nil || r.MultipartForm == nil {
-		r.ParseMultipartForm(32 << 20)
+	if !ParseRequestParamsManually {
+		req.ParseParams()
 	}
 
-	for k, v := range r.Form {
-		if len(v) > 0 {
-			req.Params[k] = v[0]
-		}
-	}
-
-	if r.MultipartForm != nil {
-		for k, v := range r.MultipartForm.File {
-			if len(v) > 0 {
-				if f, err := v[0].Open(); err == nil {
-					req.Files[k] = f
-				}
-			}
-		}
+	if !ParseRequestFilesManually {
+		req.ParseFiles()
 	}
 
 	// Response
@@ -176,9 +140,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		StatusCode: 200,
 		Headers:    map[string]string{},
 
-		request:     req,
-		httpRequest: r,
-		writer:      rw,
+		request: req,
+		writer:  rw,
 	}
 
 	// Gases
