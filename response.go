@@ -53,11 +53,45 @@ func (r *Response) UpgradeToWebSocket() (*WebSocketConn, error) {
 		return nil, err
 	}
 
+	wsc := &WebSocketConn{
+		conn: conn,
+	}
+
+	conn.SetCloseHandler(func(statusCode int, reason string) error {
+		if wsc.ConnectionCloseHandler != nil {
+			return wsc.ConnectionCloseHandler(statusCode, reason)
+		}
+		mt := int(WebSocketMessageTypeConnectionClose)
+		m := websocket.FormatCloseMessage(statusCode, "")
+		wsc.conn.WriteControl(mt, m, time.Now().Add(time.Second))
+		return nil
+	})
+
+	conn.SetPingHandler(func(appData string) error {
+		if wsc.PingHandler != nil {
+			return wsc.PingHandler(appData)
+		}
+		mt := int(WebSocketMessageTypePong)
+		m := []byte(appData)
+		err := wsc.conn.WriteControl(mt, m, time.Now().Add(time.Second))
+		if err == websocket.ErrCloseSent {
+			return nil
+		} else if e, ok := err.(net.Error); ok && e.Temporary() {
+			return nil
+		}
+		return err
+	})
+
+	conn.SetPongHandler(func(appData string) error {
+		if wsc.PongHandler != nil {
+			return wsc.PongHandler(appData)
+		}
+		return nil
+	})
+
 	r.Written = true
 
-	return &WebSocketConn{
-		conn: conn,
-	}, nil
+	return wsc, nil
 }
 
 // Write responds to the client with the content.

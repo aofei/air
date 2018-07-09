@@ -5,7 +5,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/sheng/air)](https://goreportcard.com/report/github.com/sheng/air)
 [![GoDoc](https://godoc.org/github.com/sheng/air?status.svg)](https://godoc.org/github.com/sheng/air)
 
-An ideal RESTful web framework for Go. You can use it to build a RESTful web
+An ideally refined web framework for Go. You can use it to build a web
 application as natural as breathing.
 
 High-performance? Fastest? Almost all the web frameworks are using these words
