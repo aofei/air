@@ -580,8 +580,9 @@ func (r *Response) File(file string) error {
 		mt = fi.ModTime()
 	}
 
-	if ct, ok := r.Headers["Content-Type"]; !ok {
-		if ct = mime.TypeByExtension(filepath.Ext(file)); ct == "" {
+	if _, ok := r.Headers["Content-Type"]; !ok {
+		ct := mime.TypeByExtension(filepath.Ext(file))
+		if ct == "" {
 			// Read a chunk to decide between UTF-8 text and binary
 			b := [1 << 9]byte{}
 			n, _ := io.ReadFull(c, b[:])
