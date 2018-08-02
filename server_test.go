@@ -23,8 +23,8 @@ func TestServerServe(t *testing.T) {
 
 	DebugMode = true
 
-	buf := &bytes.Buffer{}
-	LoggerOutput = buf
+	buf := bytes.Buffer{}
+	LoggerOutput = &buf
 
 	go func() {
 		assert.Error(t, http.ErrServerClosed, theServer.serve())
@@ -147,7 +147,7 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 }
 
 func TestServerSeveHTTP(t *testing.T) {
-	buf := &bytes.Buffer{}
+	buf := bytes.Buffer{}
 
 	Pregases = append(
 		Pregases,

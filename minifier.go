@@ -75,10 +75,10 @@ func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	buf := &bytes.Buffer{}
+	buf := bytes.Buffer{}
 	if err := m.minifier.Minify(
 		mimeType,
-		buf,
+		&buf,
 		bytes.NewReader(b),
 	); err == minify.ErrNotExist {
 		return b, nil

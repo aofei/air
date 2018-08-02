@@ -74,7 +74,7 @@ func TestMinifier(t *testing.T) {
 	assert.Equal(t, "<Foobar/>", string(b))
 	assert.NoError(t, err)
 
-	buf := &bytes.Buffer{}
+	buf := bytes.Buffer{}
 	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
 	draw.Draw(
 		img,
@@ -84,14 +84,14 @@ func TestMinifier(t *testing.T) {
 		draw.Src,
 	)
 
-	jpeg.Encode(buf, img, nil)
+	jpeg.Encode(&buf, img, nil)
 
 	b, err = theMinifier.minify("image/jpeg", buf.Bytes())
 	assert.NotEmpty(t, b)
 	assert.NoError(t, err)
 
 	buf.Reset()
-	png.Encode(buf, img)
+	png.Encode(&buf, img)
 
 	b, err = theMinifier.minify("image/png", buf.Bytes())
 	assert.NotEmpty(t, b)

@@ -15,8 +15,8 @@ func TestLogger(t *testing.T) {
 	assert.NotNil(t, theLogger.template)
 	assert.NotNil(t, theLogger.once)
 
-	buf := &bytes.Buffer{}
-	LoggerOutput = buf
+	buf := bytes.Buffer{}
+	LoggerOutput = &buf
 
 	theLogger.log("INFO", "foo", "bar")
 	assert.Zero(t, buf.Len())
