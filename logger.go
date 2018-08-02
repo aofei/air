@@ -28,8 +28,8 @@ func (l *logger) log(level string, v ...interface{}) {
 	l.once.Do(func() {
 		template.Must(l.template.Parse(LoggerFormat))
 	})
-	buf := &bytes.Buffer{}
-	l.template.Execute(buf, map[string]interface{}{
+	buf := bytes.Buffer{}
+	l.template.Execute(&buf, map[string]interface{}{
 		"AppName": AppName,
 		"Time":    time.Now().UTC().Format(time.RFC3339),
 		"Level":   level,

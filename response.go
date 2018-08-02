@@ -301,7 +301,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		}
 		start := strings.TrimSpace(ra[:i])
 		end := strings.TrimSpace(ra[i+1:])
-		var r httpRange
+		r := httpRange{}
 		if start == "" {
 			// If no start is specified, end specifies the
 			// range start relative to the end of the file.
@@ -527,11 +527,11 @@ func (r *Response) HTML(h string) error {
 // client with the "text/html" content. The results rendered by the former can
 // be inherited by accessing the `m["InheritedHTML"]`.
 func (r *Response) Render(m map[string]interface{}, templates ...string) error {
-	buf := &bytes.Buffer{}
+	buf := bytes.Buffer{}
 	for _, t := range templates {
 		m["InheritedHTML"] = template.HTML(buf.String())
 		buf.Reset()
-		if err := theRenderer.render(buf, t, m); err != nil {
+		if err := theRenderer.render(&buf, t, m); err != nil {
 			return err
 		}
 	}
