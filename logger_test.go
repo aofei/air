@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,24 +11,25 @@ import (
 
 func TestLogger(t *testing.T) {
 	assert.NotNil(t, theLogger)
-	assert.NotNil(t, theLogger.template)
-	assert.NotNil(t, theLogger.once)
+	assert.NotNil(t, theLogger.mutex)
 
 	buf := bytes.Buffer{}
 	LoggerOutput = &buf
 
-	theLogger.log("INFO", "foo", "bar")
+	theLogger.log("info", "foobar")
 	assert.Zero(t, buf.Len())
 
 	LoggerEnabled = true
 
-	theLogger.log("INFO", "foo", "bar")
+	theLogger.log("info", "foo", map[string]interface{}{
+		"bar": "foobar",
+	})
 
 	m := map[string]interface{}{}
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &m))
-	assert.Equal(t, "foobar", m["message"])
+	assert.Equal(t, "foo", m["message"])
+	assert.Equal(t, "foobar", m["bar"])
 
 	LoggerEnabled = false
 	LoggerOutput = os.Stdout
-	theLogger.once = &sync.Once{}
 }

@@ -54,7 +54,7 @@ func (s *server) serve() error {
 			}
 			go func() {
 				if err = http.ListenAndServe(a, h); err != nil {
-					FATAL(err)
+					FATAL(err.Error())
 				}
 			}()
 		}
