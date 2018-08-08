@@ -33,12 +33,12 @@ func init() {
 			select {
 			case event := <-theCoffer.watcher.Events:
 				if CofferEnabled {
-					INFO(event)
+					INFO(event.String())
 				}
 				delete(theCoffer.assets, event.Name)
 			case err := <-theCoffer.watcher.Errors:
 				if CofferEnabled {
-					ERROR(err)
+					ERROR(err.Error())
 				}
 			}
 		}

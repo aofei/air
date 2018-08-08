@@ -2,7 +2,6 @@ package air
 
 import (
 	"flag"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -28,12 +27,6 @@ var DebugMode = false
 //
 // It is called "logger_enabled" in the configuration file.
 var LoggerEnabled = false
-
-// LoggerFormat is the output format of the logger.
-//
-// It is called "logger_format" in the configuration file.
-var LoggerFormat = `{"app_name":"{{.AppName}}","time":"{{.Time}}",` +
-	`"level":"{{.Level}}","message":"{{.Message}}"}` + "\n"
 
 // LoggerOutput is the output destination of the logger.
 var LoggerOutput = io.Writer(os.Stdout)
@@ -130,7 +123,7 @@ var ErrorHandler = func(err error, req *Request, res *Response) {
 		}
 		res.String(e.Message)
 	}
-	ERROR(err)
+	ERROR(err.Error())
 }
 
 // Pregases is the `Gas` chain that performs first than the router.
@@ -233,9 +226,6 @@ func init() {
 	if v, ok := Config["logger_enabled"].(bool); ok {
 		LoggerEnabled = v
 	}
-	if v, ok := Config["logger_format"].(string); ok {
-		LoggerFormat = v
-	}
 	if v, ok := Config["address"].(string); ok {
 		Address = v
 	}
@@ -328,30 +318,30 @@ func Shutdown(timeout time.Duration) error {
 	return theServer.shutdown(timeout)
 }
 
-// INFO logs the v at the INFO level.
-func INFO(v ...interface{}) {
-	theLogger.log("INFO", v...)
+// INFO logs the msg at the INFO level with the optional extras.
+func INFO(msg string, extras ...map[string]interface{}) {
+	theLogger.log("info", msg, extras...)
 }
 
-// WARN logs the v at the WARN level.
-func WARN(v ...interface{}) {
-	theLogger.log("WARN", v...)
+// WARN logs the msg at the WARN level with the optional extras.
+func WARN(msg string, extras ...map[string]interface{}) {
+	theLogger.log("warn", msg, extras...)
 }
 
-// ERROR logs the v at the ERROR level.
-func ERROR(v ...interface{}) {
-	theLogger.log("ERROR", v...)
+// ERROR logs the msg at the ERROR level with the optional extras.
+func ERROR(msg string, extras ...map[string]interface{}) {
+	theLogger.log("error", msg, extras...)
 }
 
-// PANIC logs the v at the PANIC level.
-func PANIC(v ...interface{}) {
-	theLogger.log("PANIC", v...)
-	panic(fmt.Sprint(v...))
+// PANIC logs the msg at the PANIC level with the optional extras.
+func PANIC(msg string, extras ...map[string]interface{}) {
+	theLogger.log("panic", msg, extras...)
+	panic(msg)
 }
 
-// FATAL logs the v at the FATAL level.
-func FATAL(v ...interface{}) {
-	theLogger.log("FATAL", v...)
+// FATAL logs the msg at the FATAL level with the optional extras.
+func FATAL(msg string, extras ...map[string]interface{}) {
+	theLogger.log("fatal", msg, extras...)
 	os.Exit(1)
 }
 

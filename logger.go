@@ -1,39 +1,48 @@
 package air
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"sync"
-	"text/template"
 	"time"
 )
 
 // logger is an active logging object that generates lines of output.
 type logger struct {
-	template *template.Template
-	once     *sync.Once
+	mutex *sync.Mutex
 }
 
 // theLogger is the singleton of the `logger`.
 var theLogger = &logger{
-	template: template.New("logger"),
-	once:     &sync.Once{},
+	mutex: &sync.Mutex{},
 }
 
-// log logs the v at the level.
-func (l *logger) log(level string, v ...interface{}) {
+// log logs the msg at the lvl with the optional extras.
+func (l *logger) log(lvl, msg string, extras ...map[string]interface{}) {
 	if !LoggerEnabled {
 		return
 	}
-	l.once.Do(func() {
-		template.Must(l.template.Parse(LoggerFormat))
-	})
-	buf := bytes.Buffer{}
-	l.template.Execute(&buf, map[string]interface{}{
-		"AppName": AppName,
-		"Time":    time.Now().UTC().Format(time.RFC3339),
-		"Level":   level,
-		"Message": fmt.Sprint(v...),
-	})
-	LoggerOutput.Write(buf.Bytes())
+
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	fields := map[string]interface{}{
+		"app_name": AppName,
+		"time":     time.Now().UnixNano(),
+		"level":    lvl,
+		"message":  msg,
+	}
+
+	for _, extra := range extras {
+		for k, v := range extra {
+			fields[k] = v
+		}
+	}
+
+	b, err := json.Marshal(fields)
+	if err != nil {
+		b = []byte(fmt.Sprintf(`{"error":"%v"}`, err))
+	}
+
+	LoggerOutput.Write(append(b, '\n'))
 }

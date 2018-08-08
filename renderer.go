@@ -33,10 +33,10 @@ func init() {
 		for {
 			select {
 			case event := <-theRenderer.watcher.Events:
-				INFO(event)
+				INFO(event.String())
 				theRenderer.once = &sync.Once{}
 			case err := <-theRenderer.watcher.Errors:
-				ERROR(err)
+				ERROR(err.Error())
 			}
 		}
 	}()
@@ -47,7 +47,7 @@ func (r *renderer) render(w io.Writer, name string, v interface{}) error {
 	r.once.Do(func() {
 		tr, err := filepath.Abs(TemplateRoot)
 		if err != nil {
-			PANIC(err)
+			PANIC(err.Error())
 		}
 		r.template = template.New("template").
 			Delims(TemplateLeftDelim, TemplateRightDelim).
@@ -82,7 +82,7 @@ func (r *renderer) render(w io.Writer, name string, v interface{}) error {
 				return r.watcher.Add(p)
 			},
 		); err != nil {
-			PANIC(err)
+			PANIC(err.Error())
 		}
 	})
 	return r.template.ExecuteTemplate(w, name, v)

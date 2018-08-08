@@ -707,7 +707,7 @@ func (r httpRange) header(contentType string, size int64) textproto.MIMEHeader {
 type countingWriter int64
 
 // Write implements the `io.Writer`.
-func (w *countingWriter) Write(p []byte) (n int, err error) {
+func (w *countingWriter) Write(p []byte) (int, error) {
 	*w += countingWriter(len(p))
 	return len(p), nil
 }
