@@ -19,9 +19,10 @@ func TestServer(t *testing.T) {
 
 func TestServerServe(t *testing.T) {
 	assert.False(t, DebugMode)
-	assert.False(t, LoggerEnabled)
+	assert.Equal(t, LoggerLowestLevel, LoggerLevelDebug)
 
 	DebugMode = true
+	LoggerLowestLevel = LoggerLevelOff
 
 	buf := bytes.Buffer{}
 	LoggerOutput = &buf
@@ -40,7 +41,7 @@ func TestServerServe(t *testing.T) {
 	assert.Equal(t, WriteTimeout, ss.WriteTimeout)
 	assert.Equal(t, IdleTimeout, ss.IdleTimeout)
 	assert.Equal(t, MaxHeaderBytes, ss.MaxHeaderBytes)
-	assert.True(t, LoggerEnabled)
+	assert.Equal(t, LoggerLowestLevel, LoggerLevelDebug)
 
 	m := map[string]interface{}{}
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &m))
@@ -49,7 +50,7 @@ func TestServerServe(t *testing.T) {
 	assert.NoError(t, theServer.close())
 
 	DebugMode = false
-	LoggerEnabled = false
+	LoggerLowestLevel = LoggerLevelDebug
 	LoggerOutput = os.Stdout
 	theServer.server = &http.Server{}
 }
@@ -147,6 +148,8 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 }
 
 func TestServerSeveHTTP(t *testing.T) {
+	LoggerLowestLevel = LoggerLevelOff
+
 	buf := bytes.Buffer{}
 
 	Pregases = append(
@@ -192,4 +195,6 @@ func TestServerSeveHTTP(t *testing.T) {
 	assert.Equal(t, "Handler Error", rec.Body.String())
 
 	theServer.server = &http.Server{}
+
+	LoggerLowestLevel = LoggerLevelDebug
 }

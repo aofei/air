@@ -21,12 +21,12 @@ var AppName = "air"
 // It is called "debug_mode" in the configuration file.
 var DebugMode = false
 
-// LoggerEnabled indicates whether the logger is enabled.
+// LoggerLowestLevel is the lowest level of the logger.
 //
-// It will be forced to be true when the `DebugMode` is true.
+// It will be forced to `LoggerLevelDebug` when the `DebugMode` is true.
 //
-// It is called "logger_enabled" in the configuration file.
-var LoggerEnabled = false
+// It is called "logger_lowest_level" in the configuration file.
+var LoggerLowestLevel = LoggerLevelDebug
 
 // LoggerOutput is the output destination of the logger.
 var LoggerOutput = io.Writer(os.Stdout)
@@ -223,8 +223,21 @@ func init() {
 	if v, ok := Config["debug_mode"].(bool); ok {
 		DebugMode = v
 	}
-	if v, ok := Config["logger_enabled"].(bool); ok {
-		LoggerEnabled = v
+	if v, ok := Config["logger_lowest_level"].(string); ok {
+		switch v {
+		case "debug":
+			LoggerLowestLevel = LoggerLevelDebug
+		case "info":
+			LoggerLowestLevel = LoggerLevelInfo
+		case "warn":
+			LoggerLowestLevel = LoggerLevelWarn
+		case "error":
+			LoggerLowestLevel = LoggerLevelError
+		case "fatal":
+			LoggerLowestLevel = LoggerLevelFatal
+		case "panic":
+			LoggerLowestLevel = LoggerLevelPanic
+		}
 	}
 	if v, ok := Config["address"].(string); ok {
 		Address = v
@@ -318,31 +331,38 @@ func Shutdown(timeout time.Duration) error {
 	return theServer.shutdown(timeout)
 }
 
-// INFO logs the msg at the INFO level with the optional extras.
+// DEBUG logs the msg at the `LoggerLevelDebug` level with the optional extras.
+func DEBUG(msg string, extras ...map[string]interface{}) {
+	theLogger.log(LoggerLevelDebug, msg, extras...)
+}
+
+// INFO logs the msg at the `LoggerLevelInfo` with the optional extras.
 func INFO(msg string, extras ...map[string]interface{}) {
-	theLogger.log("info", msg, extras...)
+	theLogger.log(LoggerLevelInfo, msg, extras...)
 }
 
-// WARN logs the msg at the WARN level with the optional extras.
+// WARN logs the msg at the `LoggerLevelWarn` level with the optional extras.
 func WARN(msg string, extras ...map[string]interface{}) {
-	theLogger.log("warn", msg, extras...)
+	theLogger.log(LoggerLevelWarn, msg, extras...)
 }
 
-// ERROR logs the msg at the ERROR level with the optional extras.
+// ERROR logs the msg at the `LoggerLevelError` level with the optional extras.
 func ERROR(msg string, extras ...map[string]interface{}) {
-	theLogger.log("error", msg, extras...)
+	theLogger.log(LoggerLevelError, msg, extras...)
 }
 
-// PANIC logs the msg at the PANIC level with the optional extras.
-func PANIC(msg string, extras ...map[string]interface{}) {
-	theLogger.log("panic", msg, extras...)
-	panic(msg)
-}
-
-// FATAL logs the msg at the FATAL level with the optional extras.
+// FATAL logs the msg at the `LoggerLevelFatal` level with the optional extras
+// followed by a call to `os.Exit(1)`.
 func FATAL(msg string, extras ...map[string]interface{}) {
-	theLogger.log("fatal", msg, extras...)
+	theLogger.log(LoggerLevelFatal, msg, extras...)
 	os.Exit(1)
+}
+
+// PANIC logs the msg at the `LoggerLevelPanic` level with the optional extras
+// followed by a call to `panic()`.
+func PANIC(msg string, extras ...map[string]interface{}) {
+	theLogger.log(LoggerLevelPanic, msg, extras...)
+	panic(msg)
 }
 
 // GET registers a new GET route for the path with the matching h in the router
