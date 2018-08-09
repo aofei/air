@@ -40,7 +40,8 @@ const (
 	// LoggerLevelPanic defines the panic level of the logger.
 	LoggerLevelPanic
 
-	// LoggerLevelOff defines a way to turn off the logger.
+	// LoggerLevelOff defines the off level of the logger. It will turn off
+	// the logger.
 	LoggerLevelOff
 )
 
@@ -59,6 +60,8 @@ func (ll LoggerLevel) String() string {
 		return "fatal"
 	case LoggerLevelPanic:
 		return "panic"
+	case LoggerLevelOff:
+		return "off"
 	}
 	return ""
 }
