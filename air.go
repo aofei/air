@@ -225,18 +225,20 @@ func init() {
 	}
 	if v, ok := Config["logger_lowest_level"].(string); ok {
 		switch v {
-		case "debug":
+		case LoggerLevelDebug.String():
 			LoggerLowestLevel = LoggerLevelDebug
-		case "info":
+		case LoggerLevelInfo.String():
 			LoggerLowestLevel = LoggerLevelInfo
-		case "warn":
+		case LoggerLevelWarn.String():
 			LoggerLowestLevel = LoggerLevelWarn
-		case "error":
+		case LoggerLevelError.String():
 			LoggerLowestLevel = LoggerLevelError
-		case "fatal":
+		case LoggerLevelFatal.String():
 			LoggerLowestLevel = LoggerLevelFatal
-		case "panic":
+		case LoggerLevelPanic.String():
 			LoggerLowestLevel = LoggerLevelPanic
+		case LoggerLevelOff.String():
+			LoggerLowestLevel = LoggerLevelOff
 		}
 	}
 	if v, ok := Config["address"].(string); ok {
