@@ -17,29 +17,75 @@ var theLogger = &logger{
 	mutex: &sync.Mutex{},
 }
 
-// log logs the msg at the lvl with the optional extras.
-func (l *logger) log(lvl, msg string, extras ...map[string]interface{}) {
-	if !LoggerEnabled {
+// LoggerLevel is the level of the logger.
+type LoggerLevel uint8
+
+// The logger levels.
+const (
+	// LoggerLevelDebug defines the debug level of the logger.
+	LoggerLevelDebug LoggerLevel = iota
+
+	// LoggerLevelInfo defines the info level of the logger.
+	LoggerLevelInfo
+
+	// LoggerLevelWarn defines the warn level of the logger.
+	LoggerLevelWarn
+
+	// LoggerLevelError defines the error level of the logger.
+	LoggerLevelError
+
+	// LoggerLevelFatal defines the fatal level of the logger.
+	LoggerLevelFatal
+
+	// LoggerLevelPanic defines the panic level of the logger.
+	LoggerLevelPanic
+
+	// LoggerLevelOff defines a way to turn off the logger.
+	LoggerLevelOff
+)
+
+// String returns the string value of the ll.
+func (ll LoggerLevel) String() string {
+	switch ll {
+	case LoggerLevelDebug:
+		return "debug"
+	case LoggerLevelInfo:
+		return "info"
+	case LoggerLevelWarn:
+		return "warn"
+	case LoggerLevelError:
+		return "error"
+	case LoggerLevelFatal:
+		return "fatal"
+	case LoggerLevelPanic:
+		return "panic"
+	}
+	return ""
+}
+
+// log logs the m at the ll with the optional es.
+func (l *logger) log(ll LoggerLevel, m string, es ...map[string]interface{}) {
+	if ll < LoggerLowestLevel {
 		return
 	}
 
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	fields := map[string]interface{}{
+	fs := map[string]interface{}{
 		"app_name": AppName,
 		"time":     time.Now().UnixNano(),
-		"level":    lvl,
-		"message":  msg,
+		"level":    ll.String(),
+		"message":  m,
 	}
 
-	for _, extra := range extras {
-		for k, v := range extra {
-			fields[k] = v
+	for _, e := range es {
+		for k, v := range e {
+			fs[k] = v
 		}
 	}
 
-	b, err := json.Marshal(fields)
+	b, err := json.Marshal(fs)
 	if err != nil {
 		b = []byte(fmt.Sprintf(`{"error":"%v"}`, err))
 	}

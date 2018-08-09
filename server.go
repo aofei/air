@@ -31,7 +31,7 @@ func (s *server) serve() error {
 	s.server.MaxHeaderBytes = MaxHeaderBytes
 
 	if DebugMode {
-		LoggerEnabled = true
+		LoggerLowestLevel = LoggerLevelDebug
 		INFO("serving in debug mode")
 	}
 

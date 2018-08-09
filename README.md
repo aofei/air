@@ -33,11 +33,12 @@ properly.**
 	* `OPTIONS`
 	* `TRACE`
 * Logger
+	* `DEBUG`
 	* `INFO`
 	* `WARN`
 	* `ERROR`
-	* `PANIC`
 	* `FATAL`
+	* `PANIC`
 * Server
 	* HTTP/2 support
 	* SSL/TLS support

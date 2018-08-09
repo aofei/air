@@ -13,15 +13,17 @@ func TestLogger(t *testing.T) {
 	assert.NotNil(t, theLogger)
 	assert.NotNil(t, theLogger.mutex)
 
+	LoggerLowestLevel = LoggerLevelOff
+
 	buf := bytes.Buffer{}
 	LoggerOutput = &buf
 
-	theLogger.log("info", "foobar")
+	theLogger.log(LoggerLevelInfo, "foobar")
 	assert.Zero(t, buf.Len())
 
-	LoggerEnabled = true
+	LoggerLowestLevel = LoggerLevelInfo
 
-	theLogger.log("info", "foo", map[string]interface{}{
+	theLogger.log(LoggerLevelInfo, "foo", map[string]interface{}{
 		"bar": "foobar",
 	})
 
@@ -30,6 +32,6 @@ func TestLogger(t *testing.T) {
 	assert.Equal(t, "foo", m["message"])
 	assert.Equal(t, "foobar", m["bar"])
 
-	LoggerEnabled = false
+	LoggerLowestLevel = LoggerLevelDebug
 	LoggerOutput = os.Stdout
 }
