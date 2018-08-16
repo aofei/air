@@ -27,16 +27,33 @@ var theRenderer = &renderer{
 func init() {
 	var err error
 	if theRenderer.watcher, err = fsnotify.NewWatcher(); err != nil {
-		panic(err)
+		FATAL(
+			"air: failed to build renderer's watcher",
+			map[string]interface{}{
+				"error": err.Error(),
+			},
+		)
 	}
+
 	go func() {
 		for {
 			select {
-			case event := <-theRenderer.watcher.Events:
-				INFO(event.String())
+			case e := <-theRenderer.watcher.Events:
+				DEBUG(
+					"air: template file event occurs",
+					map[string]interface{}{
+						"file":  e.Name,
+						"event": e.Op.String(),
+					},
+				)
 				theRenderer.once = &sync.Once{}
 			case err := <-theRenderer.watcher.Errors:
-				ERROR(err.Error())
+				ERROR(
+					"air: renderer watcher error",
+					map[string]interface{}{
+						"error": err.Error(),
+					},
+				)
 			}
 		}
 	}()
@@ -52,8 +69,17 @@ func (r *renderer) render(
 	r.once.Do(func() {
 		tr, err := filepath.Abs(TemplateRoot)
 		if err != nil {
-			PANIC(err.Error())
+			ERROR(
+				"air: failed to get absolute representation "+
+					"of the template root",
+				map[string]interface{}{
+					"error": err.Error(),
+				},
+			)
+
+			return
 		}
+
 		r.template = template.New("template").
 			Delims(TemplateLeftDelim, TemplateRightDelim).
 			Funcs(template.FuncMap{
@@ -68,6 +94,7 @@ func (r *renderer) render(
 				if fi == nil || !fi.IsDir() {
 					return err
 				}
+
 				for _, e := range TemplateExts {
 					fs, err := filepath.Glob(
 						filepath.Join(p, "*"+e),
@@ -75,11 +102,13 @@ func (r *renderer) render(
 					if err != nil {
 						return err
 					}
+
 					for _, f := range fs {
 						b, err := ioutil.ReadFile(f)
 						if err != nil {
 							return err
 						}
+
 						if _, err := r.template.New(
 							filepath.ToSlash(
 								f[len(tr)+1:],
@@ -89,10 +118,16 @@ func (r *renderer) render(
 						}
 					}
 				}
+
 				return r.watcher.Add(p)
 			},
 		); err != nil {
-			PANIC(err.Error())
+			ERROR(
+				"air: failed to walk template files",
+				map[string]interface{}{
+					"error": err.Error(),
+				},
+			)
 		}
 	})
 

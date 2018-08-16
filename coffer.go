@@ -26,19 +26,37 @@ var theCoffer = &coffer{
 func init() {
 	var err error
 	if theCoffer.watcher, err = fsnotify.NewWatcher(); err != nil {
-		panic(err)
+		FATAL(
+			"air: failed to build coffer's watcher",
+			map[string]interface{}{
+				"error": err.Error(),
+			},
+		)
 	}
+
 	go func() {
 		for {
 			select {
-			case event := <-theCoffer.watcher.Events:
+			case e := <-theCoffer.watcher.Events:
 				if CofferEnabled {
-					INFO(event.String())
+					DEBUG(
+						"air: asset file event occurs",
+						map[string]interface{}{
+							"file":  e.Name,
+							"event": e.Op.String(),
+						},
+					)
 				}
-				delete(theCoffer.assets, event.Name)
+
+				delete(theCoffer.assets, e.Name)
 			case err := <-theCoffer.watcher.Errors:
 				if CofferEnabled {
-					ERROR(err.Error())
+					ERROR(
+						"air: coffer watcher error",
+						map[string]interface{}{
+							"error": err.Error(),
+						},
+					)
 				}
 			}
 		}

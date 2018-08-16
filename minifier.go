@@ -52,6 +52,7 @@ func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 			if err != nil {
 				return err
 			}
+
 			return jpeg.Encode(w, img, nil)
 		})
 		m.minifier.AddFunc("image/png", func(
@@ -64,6 +65,7 @@ func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 			if err != nil {
 				return err
 			}
+
 			return (&png.Encoder{
 				CompressionLevel: png.BestCompression,
 			}).Encode(w, img)

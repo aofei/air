@@ -60,9 +60,11 @@ func (r *Response) UpgradeToWebSocket() (*WebSocketConn, error) {
 		if wsc.ConnectionCloseHandler != nil {
 			return wsc.ConnectionCloseHandler(statusCode, reason)
 		}
+
 		mt := int(WebSocketMessageTypeConnectionClose)
 		m := websocket.FormatCloseMessage(statusCode, "")
 		wsc.conn.WriteControl(mt, m, time.Now().Add(time.Second))
+
 		return nil
 	})
 
@@ -70,6 +72,7 @@ func (r *Response) UpgradeToWebSocket() (*WebSocketConn, error) {
 		if wsc.PingHandler != nil {
 			return wsc.PingHandler(appData)
 		}
+
 		mt := int(WebSocketMessageTypePong)
 		m := []byte(appData)
 		err := wsc.conn.WriteControl(mt, m, time.Now().Add(time.Second))
@@ -78,6 +81,7 @@ func (r *Response) UpgradeToWebSocket() (*WebSocketConn, error) {
 		} else if e, ok := err.(net.Error); ok && e.Temporary() {
 			return nil
 		}
+
 		return err
 	})
 
@@ -85,6 +89,7 @@ func (r *Response) UpgradeToWebSocket() (*WebSocketConn, error) {
 		if wsc.PongHandler != nil {
 			return wsc.PongHandler(appData)
 		}
+
 		return nil
 	})
 
@@ -163,24 +168,30 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			if len(im) == 0 {
 				break
 			}
+
 			if im[0] == ',' {
 				im = im[1:]
 				continue
 			}
+
 			if im[0] == '*' {
 				matched = true
 				break
 			}
+
 			eTag, remain := scanETag(im)
 			if eTag == "" {
 				break
 			}
+
 			if eTagStrongMatch(eTag, et) {
 				matched = true
 				break
 			}
+
 			im = remain
 		}
+
 		if !matched {
 			r.StatusCode = 412
 		}
@@ -197,21 +208,26 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			if len(inm) == 0 {
 				break
 			}
+
 			if inm[0] == ',' {
 				inm = inm[1:]
 			}
+
 			if inm[0] == '*' {
 				noneMatched = false
 				break
 			}
+
 			eTag, remain := scanETag(inm)
 			if eTag == "" {
 				break
 			}
+
 			if eTagWeakMatch(eTag, r.Headers["ETag"]) {
 				noneMatched = false
 				break
 			}
+
 			inm = remain
 		}
 		if !noneMatched {
@@ -231,7 +247,10 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		canWrite = true
 		return nil
 	} else if r.StatusCode == 412 {
-		return &Error{412, "Precondition Failed"}
+		return &Error{
+			Code:    412,
+			Message: "Precondition Failed",
+		}
 	} else if content == nil {
 		canWrite = true
 		return nil
@@ -246,6 +265,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		if _, err := content.Seek(0, io.SeekStart); err != nil {
 			return err
 		}
+
 		r.Headers["Content-Type"] = ct
 	}
 
@@ -285,7 +305,10 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 	const b = "bytes="
 	if !strings.HasPrefix(rh, b) {
-		return &Error{416, "Invalid Range"}
+		return &Error{
+			Code:    416,
+			Message: "Invalid Range",
+		}
 	}
 
 	ranges := []httpRange{}
@@ -295,10 +318,15 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		if ra == "" {
 			continue
 		}
+
 		i := strings.Index(ra, "-")
 		if i < 0 {
-			return &Error{416, "Invalid Range"}
+			return &Error{
+				Code:    416,
+				Message: "Invalid Range",
+			}
 		}
+
 		start := strings.TrimSpace(ra[:i])
 		end := strings.TrimSpace(ra[i+1:])
 		r := httpRange{}
@@ -307,24 +335,34 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			// range start relative to the end of the file.
 			i, err := strconv.ParseInt(end, 10, 64)
 			if err != nil {
-				return &Error{416, "Invalid Range"}
+				return &Error{
+					Code:    416,
+					Message: "Invalid Range",
+				}
 			}
+
 			if i > size {
 				i = size
 			}
+
 			r.start = size - i
 			r.length = size - r.start
 		} else {
 			i, err := strconv.ParseInt(start, 10, 64)
 			if err != nil || i < 0 {
-				return &Error{416, "Invalid Range"}
+				return &Error{
+					Code:    416,
+					Message: "Invalid Range",
+				}
 			}
+
 			if i >= size {
 				// If the range begins after the size of the
 				// content, then it does not overlap.
 				noOverlap = true
 				continue
 			}
+
 			r.start = i
 			if end == "" {
 				// If no end is specified, range extends to end
@@ -333,21 +371,30 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			} else {
 				i, err := strconv.ParseInt(end, 10, 64)
 				if err != nil || r.start > i {
-					return &Error{416, "Invalid Range"}
+					return &Error{
+						Code:    416,
+						Message: "Invalid Range",
+					}
 				}
+
 				if i >= size {
 					i = size - 1
 				}
+
 				r.length = i - r.start + 1
 			}
 		}
+
 		ranges = append(ranges, r)
 	}
 
 	if noOverlap && len(ranges) == 0 {
 		// The specified ranges did not overlap with the content.
 		r.Headers["Content-Range"] = fmt.Sprintf("bytes */%d", size)
-		return &Error{416, "Invalid Range: Failed to Overlap"}
+		return &Error{
+			Code:    416,
+			Message: "Invalid Range: Failed to Overlap",
+		}
 	}
 
 	var rangesSize int64
@@ -372,8 +419,12 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		// using the multipart/byteranges media type."
 		ra := ranges[0]
 		if _, err := content.Seek(ra.start, io.SeekStart); err != nil {
-			return &Error{416, err.Error()}
+			return &Error{
+				Code:    416,
+				Message: err.Error(),
+			}
 		}
+
 		r.ContentLength = ra.length
 		r.StatusCode = 206
 		r.Headers["Content-Range"] = ra.contentRange(size)
@@ -384,6 +435,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			mw.CreatePart(ra.header(ct, size))
 			r.ContentLength += ra.length
 		}
+
 		mw.Close()
 		r.ContentLength += int64(w)
 
@@ -402,6 +454,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 					pw.CloseWithError(err)
 					return
 				}
+
 				if _, err := content.Seek(
 					ra.start,
 					io.SeekStart,
@@ -409,6 +462,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 					pw.CloseWithError(err)
 					return
 				}
+
 				if _, err := io.CopyN(
 					part,
 					content,
@@ -418,6 +472,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 					return
 				}
 			}
+
 			mw.Close()
 			pw.Close()
 		}()
@@ -446,6 +501,7 @@ func (r *Response) Blob(b []byte) error {
 			return err
 		}
 	}
+
 	return r.Write(bytes.NewReader(b))
 }
 
@@ -457,28 +513,46 @@ func (r *Response) String(s string) error {
 
 // JSON responds to the client with the "application/json" content v.
 func (r *Response) JSON(v interface{}) error {
-	b, err := json.Marshal(v)
+	var (
+		b   []byte
+		err error
+	)
+
 	if DebugMode {
 		b, err = json.MarshalIndent(v, "", "\t")
+	} else {
+		b, err = json.Marshal(v)
 	}
+
 	if err != nil {
 		return err
 	}
+
 	r.Headers["Content-Type"] = "application/json; charset=utf-8"
+
 	return r.Blob(b)
 }
 
 // XML responds to the client with the "application/xml" content v.
 func (r *Response) XML(v interface{}) error {
-	b, err := xml.Marshal(v)
+	var (
+		b   []byte
+		err error
+	)
+
 	if DebugMode {
 		b, err = xml.MarshalIndent(v, "", "\t")
+	} else {
+		b, err = xml.Marshal(v)
 	}
+
 	if err != nil {
 		return err
 	}
+
 	b = append([]byte(xml.Header), b...)
 	r.Headers["Content-Type"] = "application/xml; charset=utf-8"
+
 	return r.Blob(b)
 }
 
@@ -489,6 +563,7 @@ func (r *Response) HTML(h string) error {
 		if err != nil {
 			return err
 		}
+
 		var f func(*html.Node)
 		f = func(n *html.Node) {
 			if n.Type == html.ElementNode {
@@ -509,17 +584,22 @@ func (r *Response) HTML(h string) error {
 						}
 					}
 				}
+
 				if path.IsAbs(target) {
 					r.Push(target, nil)
 				}
 			}
+
 			for c := n.FirstChild; c != nil; c = c.NextSibling {
 				f(c)
 			}
 		}
+
 		f(tree)
 	}
+
 	r.Headers["Content-Type"] = "text/html; charset=utf-8"
+
 	return r.Blob([]byte(h))
 }
 
@@ -536,6 +616,7 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 			return err
 		}
 	}
+
 	return r.HTML(buf.String())
 }
 
@@ -552,9 +633,12 @@ func (r *Response) File(file string) error {
 			if q := r.request.URL.Query; q != "" {
 				p += "?" + q
 			}
+
 			r.StatusCode = 301
+
 			return r.Redirect(p)
 		}
+
 		file += "index.html"
 	}
 
@@ -592,6 +676,7 @@ func (r *Response) File(file string) error {
 				return err
 			}
 		}
+
 		r.Headers["Content-Type"] = ct
 	}
 
@@ -600,6 +685,7 @@ func (r *Response) File(file string) error {
 		if _, err := io.Copy(h, c); err != nil {
 			return err
 		}
+
 		r.Headers["ETag"] = fmt.Sprintf(`"%x"`, h.Sum(nil))
 	}
 
@@ -643,8 +729,10 @@ func (r *Response) Push(target string, headers map[string]string) error {
 				Header: http.Header{},
 			}
 		}
+
 		pos.Header.Set(k, v)
 	}
+
 	return r.writer.(http.Pusher).Push(target, pos)
 }
 
@@ -657,9 +745,11 @@ func scanETag(s string) (eTag string, remain string) {
 	if strings.HasPrefix(s, "W/") {
 		start = 2
 	}
+
 	if len(s[start:]) < 2 || s[start] != '"' {
 		return "", ""
 	}
+
 	// ETag is either W/"text" or "text".
 	// See RFC 7232 2.3.
 	for i := start + 1; i < len(s); i++ {
@@ -673,6 +763,7 @@ func scanETag(s string) (eTag string, remain string) {
 			return "", ""
 		}
 	}
+
 	return "", ""
 }
 

@@ -20,12 +20,18 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	if r.Method == "GET" {
 		return b.bindParams(v, r.Params)
 	} else if r.Body == nil {
-		return &Error{400, "request body can't be empty"}
+		return &Error{
+			Code:    400,
+			Message: "request body can't be empty",
+		}
 	}
 
 	mt, _, err := mime.ParseMediaType(r.Headers["Content-Type"])
 	if err != nil {
-		return &Error{400, err.Error()}
+		return &Error{
+			Code:    400,
+			Message: err.Error(),
+		}
 	}
 
 	switch mt {
@@ -36,10 +42,17 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	case "application/x-www-form-urlencoded", "multipart/form-data":
 		err = b.bindParams(v, r.Params)
 	default:
-		return &Error{415, "Unsupported Media Type"}
+		return &Error{
+			Code:    415,
+			Message: "Unsupported Media Type",
+		}
 	}
+
 	if err != nil {
-		return &Error{400, err.Error()}
+		return &Error{
+			Code:    400,
+			Message: err.Error(),
+		}
 	}
 
 	return nil
@@ -65,6 +78,7 @@ func (b *binder) bindParams(v interface{}, params map[string]string) error {
 			if err != nil {
 				return err
 			}
+
 			continue
 		}
 
@@ -84,10 +98,12 @@ func (b *binder) bindParams(v interface{}, params map[string]string) error {
 			if p == "" {
 				p = "0"
 			}
+
 			v, err := strconv.ParseInt(p, 10, 64)
 			if err != nil {
 				return err
 			}
+
 			vf.SetInt(v)
 		case reflect.Uint,
 			reflect.Uint8,
@@ -97,28 +113,34 @@ func (b *binder) bindParams(v interface{}, params map[string]string) error {
 			if p == "" {
 				p = "0"
 			}
+
 			v, err := strconv.ParseUint(p, 10, 64)
 			if err != nil {
 				return err
 			}
+
 			vf.SetUint(v)
 		case reflect.Bool:
 			if p == "" {
 				p = "false"
 			}
+
 			v, err := strconv.ParseBool(p)
 			if err != nil {
 				return err
 			}
+
 			vf.SetBool(v)
 		case reflect.Float32, reflect.Float64:
 			if p == "" {
 				p = "0.0"
 			}
+
 			v, err := strconv.ParseFloat(p, 64)
 			if err != nil {
 				return err
 			}
+
 			vf.SetFloat(v)
 		case reflect.String:
 			vf.SetString(p)

@@ -34,24 +34,30 @@ func (r *Request) ParseCookies() {
 		if len(parts) == 1 && parts[0] == "" {
 			continue
 		}
+
 		for i := 0; i < len(parts); i++ {
 			parts[i] = strings.TrimSpace(parts[i])
 			if len(parts[i]) == 0 {
 				continue
 			}
+
 			n, v := parts[i], ""
 			if i := strings.Index(n, "="); i >= 0 {
 				n, v = n[:i], n[i+1:]
 			}
+
 			if !validCookieName(n) {
 				continue
 			}
+
 			if len(v) > 1 && v[0] == '"' && v[len(v)-1] == '"' {
 				v = v[1 : len(v)-1]
 			}
+
 			if !validCookieValue(v) {
 				continue
 			}
+
 			r.Cookies = append(r.Cookies, &Cookie{
 				Name:  n,
 				Value: v,
@@ -67,6 +73,7 @@ func (r *Request) ParseParams() {
 	if r.httpRequest.Form == nil {
 		r.httpRequest.ParseForm()
 	}
+
 	for k, v := range r.httpRequest.Form {
 		if len(v) > 0 {
 			r.Params[k] = v[0]
@@ -81,12 +88,14 @@ func (r *Request) ParseFiles() {
 	if r.httpRequest.MultipartForm == nil {
 		r.httpRequest.ParseMultipartForm(32 << 20)
 	}
+
 	if r.httpRequest.MultipartForm != nil {
 		for k, v := range r.httpRequest.MultipartForm.Value {
 			if len(v) > 0 {
 				r.Params[k] = v[0]
 			}
 		}
+
 		for k, v := range r.httpRequest.MultipartForm.File {
 			if len(v) > 0 {
 				if f, err := v[0].Open(); err == nil {
@@ -109,5 +118,6 @@ func (r *Request) LocalizedString(key string) string {
 	if r.localizedString != nil {
 		return r.localizedString(key)
 	}
+
 	return key
 }
