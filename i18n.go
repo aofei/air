@@ -147,7 +147,15 @@ func (i *i18n) localize(r *Request) {
 
 		i.locales = ls
 		i.matcher = language.NewMatcher(ts)
-		i.watcher.Add(lr)
+
+		if err := i.watcher.Add(lr); err != nil {
+			ERROR(
+				"air: failed to watch locale files",
+				map[string]interface{}{
+					"error": err.Error(),
+				},
+			)
+		}
 	})
 
 	mt, _ := language.MatchStrings(i.matcher, r.Headers["Accept-Language"])
