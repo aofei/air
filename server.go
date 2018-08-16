@@ -122,6 +122,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	theI18n.localize(req)
+
 	if !ParseRequestCookiesManually {
 		req.ParseCookies()
 	}

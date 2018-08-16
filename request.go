@@ -21,7 +21,8 @@ type Request struct {
 	RemoteAddr    string
 	Values        map[string]interface{}
 
-	httpRequest *http.Request
+	httpRequest     *http.Request
+	localizedString func(string) string
 }
 
 // ParseCookies parses the cookies sent with the r into the `r.Cookies`.
@@ -99,4 +100,14 @@ func (r *Request) ParseFiles() {
 // Bind binds the r into the v.
 func (r *Request) Bind(v interface{}) error {
 	return theBinder.bind(v, r)
+}
+
+// LocalizedString returns localized string for the provided key.
+//
+// It only works if the `I18nEnabled` is true.
+func (r *Request) LocalizedString(key string) string {
+	if r.localizedString != nil {
+		return r.localizedString(key)
+	}
+	return key
 }

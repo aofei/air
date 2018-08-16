@@ -85,6 +85,9 @@ properly.**
 		* `.jpeg`
 		* `.png`
 	* Hot update support
+* I18n
+	* Adapt to the request's favorite conventions
+	* Implanted into the `air.Response#Render()`
 * Error
 	* Centralized handling
 

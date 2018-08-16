@@ -45,7 +45,7 @@ func init() {
 	}()
 }
 
-// asset returns an `asset` from the `coffer` for the provided name.
+// asset returns an `asset` from the c for the provided name.
 func (c *coffer) asset(name string) (*asset, error) {
 	if !CofferEnabled {
 		return nil, nil

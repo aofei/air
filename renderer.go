@@ -43,7 +43,12 @@ func init() {
 }
 
 // render renders the v into the w for the provided HTML template name.
-func (r *renderer) render(w io.Writer, name string, v interface{}) error {
+func (r *renderer) render(
+	w io.Writer,
+	name string,
+	v interface{},
+	locstr func(string) string,
+) error {
 	r.once.Do(func() {
 		tr, err := filepath.Abs(TemplateRoot)
 		if err != nil {
@@ -51,6 +56,11 @@ func (r *renderer) render(w io.Writer, name string, v interface{}) error {
 		}
 		r.template = template.New("template").
 			Delims(TemplateLeftDelim, TemplateRightDelim).
+			Funcs(template.FuncMap{
+				"locstr": func(key string) string {
+					return key
+				},
+			}).
 			Funcs(TemplateFuncMap)
 		if err := filepath.Walk(
 			tr,
@@ -85,6 +95,18 @@ func (r *renderer) render(w io.Writer, name string, v interface{}) error {
 			PANIC(err.Error())
 		}
 	})
+
+	if locstr != nil {
+		t, err := r.template.Clone()
+		if err != nil {
+			return err
+		}
+
+		return t.Funcs(template.FuncMap{
+			"locstr": locstr,
+		}).ExecuteTemplate(w, name, v)
+	}
+
 	return r.template.ExecuteTemplate(w, name, v)
 }
 
