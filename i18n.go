@@ -28,19 +28,37 @@ var theI18n = &i18n{
 func init() {
 	var err error
 	if theI18n.watcher, err = fsnotify.NewWatcher(); err != nil {
-		panic(err)
+		FATAL(
+			"air: failed to build i18n's watcher",
+			map[string]interface{}{
+				"error": err.Error(),
+			},
+		)
 	}
+
 	go func() {
 		for {
 			select {
-			case event := <-theI18n.watcher.Events:
+			case e := <-theI18n.watcher.Events:
 				if I18nEnabled {
-					INFO(event.String())
+					DEBUG(
+						"air: locale file event occurs",
+						map[string]interface{}{
+							"file":  e.Name,
+							"event": e.Op.String(),
+						},
+					)
 				}
+
 				theI18n.once = &sync.Once{}
 			case err := <-theI18n.watcher.Errors:
 				if I18nEnabled {
-					ERROR(err.Error())
+					ERROR(
+						"air: i18n watcher error",
+						map[string]interface{}{
+							"error": err.Error(),
+						},
+					)
 				}
 			}
 		}
@@ -56,12 +74,27 @@ func (i *i18n) localize(r *Request) {
 	i.once.Do(func() {
 		lr, err := filepath.Abs(LocaleRoot)
 		if err != nil {
-			PANIC(err.Error())
+			ERROR(
+				"air: failed to get absolute representation "+
+					"of the locale root",
+				map[string]interface{}{
+					"error": err.Error(),
+				},
+			)
+
+			return
 		}
 
 		lfns, err := filepath.Glob(filepath.Join(lr, "*.toml"))
 		if err != nil {
-			PANIC(err.Error())
+			ERROR(
+				"air: failed to get locale files",
+				map[string]interface{}{
+					"error": err.Error(),
+				},
+			)
+
+			return
 		}
 
 		ls := make(map[string]map[string]string, len(lfns))
@@ -69,12 +102,26 @@ func (i *i18n) localize(r *Request) {
 		for _, lfn := range lfns {
 			b, err := ioutil.ReadFile(lfn)
 			if err != nil {
-				PANIC(err.Error())
+				ERROR(
+					"air: failed to read locale file",
+					map[string]interface{}{
+						"error": err.Error(),
+					},
+				)
+
+				return
 			}
 
 			l := map[string]string{}
 			if err := toml.Unmarshal(b, &l); err != nil {
-				PANIC(err.Error())
+				ERROR(
+					"air: failed to unmarshal locale file",
+					map[string]interface{}{
+						"error": err.Error(),
+					},
+				)
+
+				return
 			}
 
 			t, err := language.Parse(strings.Replace(
@@ -84,7 +131,14 @@ func (i *i18n) localize(r *Request) {
 				1,
 			))
 			if err != nil {
-				PANIC(err.Error())
+				ERROR(
+					"air: failed to parse locale",
+					map[string]interface{}{
+						"error": err.Error(),
+					},
+				)
+
+				return
 			}
 
 			ls[t.String()] = l
@@ -105,6 +159,7 @@ func (i *i18n) localize(r *Request) {
 		} else if v, ok := i.locales[LocaleBase][key]; ok {
 			return v
 		}
+
 		return key
 	}
 }

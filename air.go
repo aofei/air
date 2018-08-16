@@ -109,27 +109,31 @@ var ParseRequestFilesManually = false
 
 // ErrorHandler is the centralized error handler for the server.
 var ErrorHandler = func(err error, req *Request, res *Response) {
-	e := &Error{500, "Internal Server Error"}
+	e := &Error{
+		Code:    500,
+		Message: "Internal Server Error",
+	}
 	if ce, ok := err.(*Error); ok {
 		e = ce
 	} else if DebugMode {
 		e.Message = err.Error()
 	}
+
 	if !res.Written {
 		res.StatusCode = e.Code
 		if req.Method == "GET" || req.Method == "HEAD" {
 			delete(res.Headers, "ETag")
 			delete(res.Headers, "Last-Modified")
 		}
+
 		res.String(e.Message)
 	}
-	ERROR(err.Error())
 }
 
-// Pregases is the `Gas` chain that performs first than the router.
+// Pregases is the `Gas` chain that performs before the router.
 var Pregases = []Gas{}
 
-// Gases is the `Gas` chain that performs after than the router.
+// Gases is the `Gas` chain that performs after the router.
 var Gases = []Gas{}
 
 // AutoPushEnabled indicates whether the auto push is enabled.
@@ -229,17 +233,30 @@ func init() {
 	flag.Parse()
 	if b, err := ioutil.ReadFile(*cf); err != nil {
 		if !os.IsNotExist(err) {
-			panic(err)
+			FATAL(
+				"air: failed to read configuration file",
+				map[string]interface{}{
+					"error": err.Error(),
+				},
+			)
 		}
 	} else if err := toml.Unmarshal(b, &Config); err != nil {
-		panic(err)
+		FATAL(
+			"air: failed to unmarshal configuration file",
+			map[string]interface{}{
+				"error": err.Error(),
+			},
+		)
 	}
+
 	if v, ok := Config["app_name"].(string); ok {
 		AppName = v
 	}
+
 	if v, ok := Config["debug_mode"].(bool); ok {
 		DebugMode = v
 	}
+
 	if v, ok := Config["logger_lowest_level"].(string); ok {
 		switch v {
 		case LoggerLevelDebug.String():
@@ -258,51 +275,67 @@ func init() {
 			LoggerLowestLevel = LoggerLevelOff
 		}
 	}
+
 	if v, ok := Config["address"].(string); ok {
 		Address = v
 	}
+
 	if v, ok := Config["read_timeout"].(int64); ok {
 		ReadTimeout = time.Duration(v) * time.Millisecond
 	}
+
 	if v, ok := Config["read_header_timeout"].(int64); ok {
 		ReadHeaderTimeout = time.Duration(v) * time.Millisecond
 	}
+
 	if v, ok := Config["write_timeout"].(int64); ok {
 		WriteTimeout = time.Duration(v) * time.Millisecond
 	}
+
 	if v, ok := Config["idle_timeout"].(int64); ok {
 		IdleTimeout = time.Duration(v) * time.Millisecond
 	}
+
 	if v, ok := Config["max_header_bytes"].(int64); ok {
 		MaxHeaderBytes = int(v)
 	}
+
 	if v, ok := Config["tls_cert_file"].(string); ok {
 		TLSCertFile = v
 	}
+
 	if v, ok := Config["tls_key_file"].(string); ok {
 		TLSKeyFile = v
 	}
+
 	if v, ok := Config["https_enforced"].(bool); ok {
 		HTTPSEnforced = v
 	}
+
 	if v, ok := Config["parse_request_cookies_manually"].(bool); ok {
 		ParseRequestCookiesManually = v
 	}
+
 	if v, ok := Config["parse_request_params_manually"].(bool); ok {
 		ParseRequestParamsManually = v
 	}
+
 	if v, ok := Config["parse_request_files_manually"].(bool); ok {
 		ParseRequestFilesManually = v
 	}
+
 	if v, ok := Config["auto_push_enabled"].(bool); ok {
 		AutoPushEnabled = v
 	}
+
 	if v, ok := Config["minifier_enabled"].(bool); ok {
 		MinifierEnabled = v
 	}
+
 	if v, ok := Config["template_root"].(string); ok {
 		TemplateRoot = v
 	}
+
 	if v, ok := Config["template_exts"].([]interface{}); ok {
 		TemplateExts = make([]string, 0, len(v))
 		for _, v := range v {
@@ -311,18 +344,23 @@ func init() {
 			}
 		}
 	}
+
 	if v, ok := Config["template_left_delim"].(string); ok {
 		TemplateLeftDelim = v
 	}
+
 	if v, ok := Config["template_right_delim"].(string); ok {
 		TemplateRightDelim = v
 	}
+
 	if v, ok := Config["coffer_enabled"].(bool); ok {
 		CofferEnabled = v
 	}
+
 	if v, ok := Config["asset_root"].(string); ok {
 		AssetRoot = v
 	}
+
 	if v, ok := Config["asset_exts"].([]interface{}); ok {
 		AssetExts = make([]string, 0, len(v))
 		for _, v := range v {
@@ -331,32 +369,18 @@ func init() {
 			}
 		}
 	}
+
 	if v, ok := Config["i18n_enabled"].(bool); ok {
 		I18nEnabled = v
 	}
+
 	if v, ok := Config["locale_root"].(string); ok {
 		LocaleRoot = v
 	}
+
 	if v, ok := Config["locale_base"].(string); ok {
 		LocaleBase = v
 	}
-}
-
-// Serve starts the server.
-func Serve() error {
-	return theServer.serve()
-}
-
-// Close closes the server immediately.
-func Close() error {
-	return theServer.close()
-}
-
-// Shutdown gracefully shuts down the server without interrupting any active
-// connections until timeout. It waits indefinitely for connections to return to
-// idle and then shut down when the timeout is less than or equal to zero.
-func Shutdown(timeout time.Duration) error {
-	return theServer.shutdown(timeout)
 }
 
 // DEBUG logs the msg at the `LoggerLevelDebug` level with the optional extras.
@@ -455,8 +479,10 @@ func STATIC(prefix, root string, gases ...Gas) {
 		if os.IsNotExist(err) {
 			return NotFoundHandler(req, res)
 		}
+
 		return err
 	}
+
 	GET(prefix+"*", h, gases...)
 	HEAD(prefix+"*", h, gases...)
 }
@@ -469,10 +495,29 @@ func FILE(path, file string, gases ...Gas) {
 		if os.IsNotExist(err) {
 			return NotFoundHandler(req, res)
 		}
+
 		return err
 	}
+
 	GET(path, h, gases...)
 	HEAD(path, h, gases...)
+}
+
+// Serve starts the server.
+func Serve() error {
+	return theServer.serve()
+}
+
+// Close closes the server immediately.
+func Close() error {
+	return theServer.close()
+}
+
+// Shutdown gracefully shuts down the server without interrupting any active
+// connections until timeout. It waits indefinitely for connections to return to
+// idle and then shut down when the timeout is less than or equal to zero.
+func Shutdown(timeout time.Duration) error {
+	return theServer.shutdown(timeout)
 }
 
 // Handler defines a function to serve requests.
@@ -480,12 +525,18 @@ type Handler func(*Request, *Response) error
 
 // NotFoundHandler is a `Handler` that returns not found error.
 var NotFoundHandler = func(*Request, *Response) error {
-	return &Error{404, "Not Found"}
+	return &Error{
+		Code:    404,
+		Message: "Not Found",
+	}
 }
 
 // MethodNotAllowedHandler is a `Handler` that returns method not allowed error.
 var MethodNotAllowedHandler = func(*Request, *Response) error {
-	return &Error{405, "Method Not Allowed"}
+	return &Error{
+		Code:    405,
+		Message: "Method Not Allowed",
+	}
 }
 
 // Gas defines a function to process gases.
@@ -498,6 +549,7 @@ func WrapGas(h Handler) Gas {
 			if err := h(req, res); err != nil {
 				return err
 			}
+
 			return next(req, res)
 		}
 	}

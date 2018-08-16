@@ -63,6 +63,7 @@ func (ll LoggerLevel) String() string {
 	case LoggerLevelOff:
 		return "off"
 	}
+
 	return ""
 }
 
@@ -88,9 +89,26 @@ func (l *logger) log(ll LoggerLevel, m string, es ...map[string]interface{}) {
 		}
 	}
 
-	b, err := json.Marshal(fs)
+	var (
+		b   []byte
+		err error
+	)
+
+	if DebugMode {
+		b, err = json.MarshalIndent(fs, "", "\t")
+	} else {
+		b, err = json.Marshal(fs)
+	}
+
 	if err != nil {
-		b = []byte(fmt.Sprintf(`{"error":"%v"}`, err))
+		if DebugMode {
+			b = []byte(fmt.Sprintf(
+				"{\n\t\"logger_error\": \"%v\"\n}",
+				err,
+			))
+		} else {
+			b = []byte(fmt.Sprintf(`{"logger_error":"%v"}`, err))
+		}
 	}
 
 	LoggerOutput.Write(append(b, '\n'))

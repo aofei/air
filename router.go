@@ -25,33 +25,44 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 		path = path[:len(path)-1]
 	}
 
+	msg := ""
 	if path == "" {
-		panic("air: the path cannot be empty")
+		msg = "air: the route's path cannot be empty"
 	} else if path[0] != '/' {
-		panic("air: the path must start with the /")
+		msg = "air: the route's path must start with the /"
 	} else if strings.Contains(path, "//") {
-		panic("air: the path cannot have the //")
+		msg = "air: the route's path cannot have the //"
 	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
 		for _, p := range ps {
 			if strings.Count(p, ":") > 1 {
-				panic("air: adjacent params in the path must " +
-					"be separated by the /")
+				msg = "air: adjacent params in the route's " +
+					"path must be separated by the /"
+				break
 			}
 		}
 	} else if strings.Contains(path, "*") {
 		if strings.Count(path, "*") > 1 {
-			panic("air: only one * is allowed in the path")
+			msg = "air: only one * is allowed in the route's path"
 		} else if path[len(path)-1] != '*' {
-			panic("air: the * can only appear at the end of the " +
-				"path")
+			msg = "air: the * can only appear at the end of the " +
+				"route's path"
 		} else if strings.Contains(
 			path[strings.LastIndex(path, "/"):],
 			":",
 		) {
-			panic("air: adjacent param and the * in the path " +
-				"must be separated by the /")
+			msg = "air: adjacent param and the * in the route's " +
+				"path must be separated by the /"
 		}
+	}
+
+	if msg != "" {
+		FATAL(msg, map[string]interface{}{
+			"route": map[string]interface{}{
+				"method": method,
+				"path":   path,
+			},
+		})
 	}
 
 	nh := func(req *Request, res *Response) error {
@@ -59,6 +70,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 		for i := len(gases) - 1; i >= 0; i-- {
 			h = gases[i](h)
 		}
+
 		return h(req, res)
 	}
 
@@ -77,8 +89,18 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 
 			for _, pn := range paramNames {
 				if pn == paramName {
-					panic("air: the path cannot have " +
-						"duplicate param names")
+					e := map[string]interface{}{
+						"route": map[string]interface{}{
+							"method": method,
+							"path":   path,
+						},
+					}
+					FATAL(
+						"air: the route's path cannot "+
+							"have duplicate "+
+							"param names",
+						e,
+					)
 				}
 			}
 
@@ -306,6 +328,7 @@ func (r *router) route(req *Request) Handler {
 				si = len(req.URL.Path) - 1
 				for ; si > 0 && req.URL.Path[si] == '/'; si-- {
 				}
+
 				s += req.URL.Path[si+1:]
 			}
 
@@ -340,6 +363,7 @@ func (r *router) route(req *Request) Handler {
 		for i := range pvs {
 			req.Params[cn.paramNames[i]] = pvs[i]
 		}
+
 		return handler
 	} else if len(cn.handlers) != 0 {
 		return MethodNotAllowedHandler
@@ -386,9 +410,11 @@ func pathClean(p string) string {
 			}
 		}
 	}
+
 	if len(b) == 0 {
 		return "/"
 	}
+
 	return *(*string)(unsafe.Pointer(&b))
 }
 
@@ -401,9 +427,11 @@ func unescape(s string) string {
 			n++
 			if i+2 >= len(s) || !ishex(s[i+1]) || !ishex(s[i+2]) {
 				s = s[i:]
+
 				if len(s) > 3 {
 					s = s[:3]
 				}
+
 				return ""
 			}
 			i += 2
@@ -429,6 +457,7 @@ func unescape(s string) string {
 			j++
 		}
 	}
+
 	return string(t)
 }
 
@@ -442,6 +471,7 @@ func ishex(c byte) bool {
 	case 'A' <= c && c <= 'F':
 		return true
 	}
+
 	return false
 }
 
@@ -455,6 +485,7 @@ func unhex(c byte) byte {
 	case 'A' <= c && c <= 'F':
 		return c - 'A' + 10
 	}
+
 	return 0
 }
 
@@ -486,6 +517,7 @@ func (n *node) child(label byte, kind nodeKind) *node {
 			return c
 		}
 	}
+
 	return nil
 }
 
@@ -496,6 +528,7 @@ func (n *node) childByLabel(l byte) *node {
 			return c
 		}
 	}
+
 	return nil
 }
 
@@ -506,5 +539,6 @@ func (n *node) childByKind(k nodeKind) *node {
 			return c
 		}
 	}
+
 	return nil
 }

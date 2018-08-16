@@ -172,7 +172,10 @@ func TestServerSeveHTTP(t *testing.T) {
 		"/",
 		func(req *Request, res *Response) error {
 			buf.WriteString("Handler")
-			return &Error{500, "Handler Error"}
+			return &Error{
+				Code:    500,
+				Message: "Handler Error",
+			}
 		},
 		WrapGas(func(*Request, *Response) error {
 			buf.WriteString("Route gas\n")

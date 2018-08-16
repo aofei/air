@@ -32,7 +32,7 @@ func (s *server) serve() error {
 
 	if DebugMode {
 		LoggerLowestLevel = LoggerLevelDebug
-		INFO("serving in debug mode")
+		DEBUG("serving in debug mode")
 	}
 
 	if TLSCertFile != "" && TLSKeyFile != "" {
@@ -43,21 +43,30 @@ func (s *server) serve() error {
 			if err != nil {
 				a = Address
 			}
+
 			var h http.HandlerFunc
 			h = func(rw http.ResponseWriter, r *http.Request) {
 				host, _, err := net.SplitHostPort(r.Host)
 				if err != nil {
 					host = r.Host
 				}
+
 				url := "https://" + host + r.RequestURI
 				http.Redirect(rw, r, url, 301)
 			}
+
 			go func() {
 				if err = http.ListenAndServe(a, h); err != nil {
-					FATAL(err.Error())
+					ERROR(
+						"air: http2https handler error",
+						map[string]interface{}{
+							"error": err.Error(),
+						},
+					)
 				}
 			}()
 		}
+
 		return s.server.ListenAndServeTLS(TLSCertFile, TLSKeyFile)
 	}
 
@@ -153,6 +162,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		for i := len(Gases) - 1; i >= 0; i-- {
 			h = Gases[i](h)
 		}
+
 		return h(req, res)
 	}
 
