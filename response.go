@@ -531,7 +531,8 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	for _, t := range templates {
 		m["InheritedHTML"] = template.HTML(buf.String())
 		buf.Reset()
-		if err := theRenderer.render(&buf, t, m); err != nil {
+		err := theRenderer.render(&buf, t, m, r.request.localizedString)
+		if err != nil {
 			return err
 		}
 	}

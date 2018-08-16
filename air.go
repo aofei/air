@@ -202,6 +202,23 @@ var AssetExts = []string{
 	".png",
 }
 
+// I18nEnabled indicates whether the i18n is enabled.
+//
+// It is called "i18n_enabled" in the configuration file.
+var I18nEnabled = false
+
+// LocaleRoot is the root of the locale files. All the locale files inside it
+// will be parsed into the i18n.
+//
+// It is called "locale_root" in the configuration file.
+var LocaleRoot = "locales"
+
+// LocaleBase is the base of the locale files. It will be used when a locale
+// file cannot be found.
+//
+// It is called "locale_base" in the configuration file.
+var LocaleBase = "en-US"
+
 // Config is a set of key-value pairs parsed from the configuration file found
 // in the path specified by a command-line flag named "config". The default path
 // of the configuration file is "config.toml".
@@ -313,6 +330,15 @@ func init() {
 				AssetExts = append(AssetExts, v)
 			}
 		}
+	}
+	if v, ok := Config["i18n_enabled"].(bool); ok {
+		I18nEnabled = v
+	}
+	if v, ok := Config["locale_root"].(string); ok {
+		LocaleRoot = v
+	}
+	if v, ok := Config["locale_base"].(string); ok {
+		LocaleBase = v
 	}
 }
 
