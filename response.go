@@ -126,6 +126,11 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			}
 		}
 
+		if HTTPSEnforced {
+			r.Headers["Strict-Transport-Security"] =
+				"max-age=31536000; includeSubDomains"
+		}
+
 		for k, v := range r.Headers {
 			r.writer.Header().Set(k, v)
 		}
