@@ -158,7 +158,17 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Gases
 
 	h := func(req *Request, res *Response) error {
-		h := theRouter.route(req)
+		rh := theRouter.route(req)
+		h := func(req *Request, res *Response) error {
+			if err := rh(req, res); err != nil {
+				return err
+			} else if !res.Written {
+				return res.Write(nil)
+			}
+
+			return nil
+		}
+
 		for i := len(Gases) - 1; i >= 0; i-- {
 			h = Gases[i](h)
 		}
@@ -176,7 +186,5 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	if err := h(req, res); err != nil {
 		ErrorHandler(err, req, res)
-	} else if !res.Written {
-		res.Write(nil)
 	}
 }
