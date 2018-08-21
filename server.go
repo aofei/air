@@ -176,5 +176,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	if err := h(req, res); err != nil {
 		ErrorHandler(err, req, res)
+	} else if !res.Written {
+		res.Write(nil)
 	}
 }
