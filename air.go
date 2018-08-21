@@ -383,7 +383,7 @@ func init() {
 	}
 }
 
-// DEBUG logs the msg at the `LoggerLevelDebug` level with the optional extras.
+// DEBUG logs the msg at the `LoggerLevelDebug` with the optional extras.
 func DEBUG(msg string, extras ...map[string]interface{}) {
 	theLogger.log(LoggerLevelDebug, msg, extras...)
 }
@@ -393,24 +393,24 @@ func INFO(msg string, extras ...map[string]interface{}) {
 	theLogger.log(LoggerLevelInfo, msg, extras...)
 }
 
-// WARN logs the msg at the `LoggerLevelWarn` level with the optional extras.
+// WARN logs the msg at the `LoggerLevelWarn` with the optional extras.
 func WARN(msg string, extras ...map[string]interface{}) {
 	theLogger.log(LoggerLevelWarn, msg, extras...)
 }
 
-// ERROR logs the msg at the `LoggerLevelError` level with the optional extras.
+// ERROR logs the msg at the `LoggerLevelError` with the optional extras.
 func ERROR(msg string, extras ...map[string]interface{}) {
 	theLogger.log(LoggerLevelError, msg, extras...)
 }
 
-// FATAL logs the msg at the `LoggerLevelFatal` level with the optional extras
+// FATAL logs the msg at the `LoggerLevelFatal` with the optional extras
 // followed by a call to `os.Exit(1)`.
 func FATAL(msg string, extras ...map[string]interface{}) {
 	theLogger.log(LoggerLevelFatal, msg, extras...)
 	os.Exit(1)
 }
 
-// PANIC logs the msg at the `LoggerLevelPanic` level with the optional extras
+// PANIC logs the msg at the `LoggerLevelPanic` with the optional extras
 // followed by a call to `panic()`.
 func PANIC(msg string, extras ...map[string]interface{}) {
 	theLogger.log(LoggerLevelPanic, msg, extras...)
