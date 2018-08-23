@@ -22,7 +22,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	} else if r.Body == nil {
 		return &Error{
 			Code:    400,
-			Message: "request body can't be empty",
+			Message: "request body cannot be empty",
 		}
 	}
 

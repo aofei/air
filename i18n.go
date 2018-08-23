@@ -29,7 +29,7 @@ func init() {
 	var err error
 	if theI18n.watcher, err = fsnotify.NewWatcher(); err != nil {
 		FATAL(
-			"air: failed to build i18n's watcher",
+			"air: failed to build i18n watcher",
 			map[string]interface{}{
 				"error": err.Error(),
 			},

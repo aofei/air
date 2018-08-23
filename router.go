@@ -27,31 +27,31 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 
 	msg := ""
 	if path == "" {
-		msg = "air: the route's path cannot be empty"
+		msg = "air: the route path cannot be empty"
 	} else if path[0] != '/' {
-		msg = "air: the route's path must start with the /"
+		msg = "air: the route path must start with the /"
 	} else if strings.Contains(path, "//") {
-		msg = "air: the route's path cannot have the //"
+		msg = "air: the route path cannot have the //"
 	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
 		for _, p := range ps {
 			if strings.Count(p, ":") > 1 {
-				msg = "air: adjacent params in the route's " +
+				msg = "air: adjacent params in the route " +
 					"path must be separated by the /"
 				break
 			}
 		}
 	} else if strings.Contains(path, "*") {
 		if strings.Count(path, "*") > 1 {
-			msg = "air: only one * is allowed in the route's path"
+			msg = "air: only one * is allowed in the route path"
 		} else if path[len(path)-1] != '*' {
 			msg = "air: the * can only appear at the end of the " +
-				"route's path"
+				"route path"
 		} else if strings.Contains(
 			path[strings.LastIndex(path, "/"):],
 			":",
 		) {
-			msg = "air: adjacent param and the * in the route's " +
+			msg = "air: adjacent param and the * in the route " +
 				"path must be separated by the /"
 		}
 	}
@@ -96,7 +96,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 						},
 					}
 					FATAL(
-						"air: the route's path cannot "+
+						"air: the route path cannot "+
 							"have duplicate "+
 							"param names",
 						e,
@@ -420,7 +420,7 @@ func pathClean(p string) string {
 
 // unescape return a normal string unescaped from the s.
 func unescape(s string) string {
-	// Count the %, check that they're well-formed.
+	// Count the %, check that they are well-formed.
 	n := 0
 	for i := 0; i < len(s); i++ {
 		if s[i] == '%' {

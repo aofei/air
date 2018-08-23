@@ -32,7 +32,7 @@ func (s *server) serve() error {
 
 	if DebugMode {
 		LoggerLowestLevel = LoggerLevelDebug
-		DEBUG("serving in debug mode")
+		DEBUG("air: serving in debug mode")
 	}
 
 	if TLSCertFile != "" && TLSKeyFile != "" {

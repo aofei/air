@@ -27,7 +27,7 @@ func init() {
 	var err error
 	if theCoffer.watcher, err = fsnotify.NewWatcher(); err != nil {
 		FATAL(
-			"air: failed to build coffer's watcher",
+			"air: failed to build coffer watcher",
 			map[string]interface{}{
 				"error": err.Error(),
 			},
