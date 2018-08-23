@@ -127,7 +127,7 @@ func validCookieDomain(d string) bool {
 		d = d[1:]
 	}
 
-	ok := false // Ok once we've seen a letter.
+	ok := false // Ok once we have seen a letter.
 	last := byte('.')
 	partlen := 0
 	for i := 0; i < len(d); i++ {

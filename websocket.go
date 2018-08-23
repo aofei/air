@@ -64,7 +64,7 @@ const (
 
 	// WebSocketCloseStatusCodeMandatoryExtension indicates that an endpoint
 	// (client) is terminating the connection because it has expected the
-	// server to negotiate one or more extension, but the server didn't
+	// server to negotiate one or more extension, but the server did not
 	// return them in the response message of the WebSocket handshake. The
 	// list of extensions that are needed SHOULD appear in the /reason/ part
 	// of the Close frame. Note that this status code is not used by the
@@ -80,7 +80,7 @@ const (
 	// be set as a status code in a Close control frame by an endpoint. It
 	// is designated for use in applications expecting a status code to
 	// indicate that the connection was closed due to a failure to perform a
-	// TLS handshake (e.g., the server certificate can't be verified).
+	// TLS handshake (e.g., the server certificate cannot be verified).
 	WebSocketCloseStatusCodeTLSHandshake = 1015
 )
 

@@ -28,7 +28,7 @@ func init() {
 	var err error
 	if theRenderer.watcher, err = fsnotify.NewWatcher(); err != nil {
 		FATAL(
-			"air: failed to build renderer's watcher",
+			"air: failed to build renderer watcher",
 			map[string]interface{}{
 				"error": err.Error(),
 			},
