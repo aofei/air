@@ -45,7 +45,7 @@ func TestServerServe(t *testing.T) {
 
 	m := map[string]interface{}{}
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &m))
-	assert.Equal(t, "serving in debug mode", m["message"])
+	assert.Equal(t, "air: serving in debug mode", m["message"])
 
 	assert.NoError(t, theServer.close())
 
