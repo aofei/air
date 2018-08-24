@@ -233,20 +233,10 @@ func init() {
 	flag.Parse()
 	if b, err := ioutil.ReadFile(*cf); err != nil {
 		if !os.IsNotExist(err) {
-			FATAL(
-				"air: failed to read configuration file",
-				map[string]interface{}{
-					"error": err.Error(),
-				},
-			)
+			panic(err)
 		}
 	} else if err := toml.Unmarshal(b, &Config); err != nil {
-		FATAL(
-			"air: failed to unmarshal configuration file",
-			map[string]interface{}{
-				"error": err.Error(),
-			},
-		)
+		panic(err)
 	}
 
 	if v, ok := Config["app_name"].(string); ok {
