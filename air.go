@@ -2,6 +2,7 @@ package air
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -233,10 +234,16 @@ func init() {
 	flag.Parse()
 	if b, err := ioutil.ReadFile(*cf); err != nil {
 		if !os.IsNotExist(err) {
-			panic(err)
+			panic(fmt.Errorf(
+				"air: failed to read configuration file: %v",
+				err,
+			))
 		}
 	} else if err := toml.Unmarshal(b, &Config); err != nil {
-		panic(err)
+		panic(fmt.Errorf(
+			"air: failed to unmarshal configuration file: %v",
+			err,
+		))
 	}
 
 	if v, ok := Config["app_name"].(string); ok {

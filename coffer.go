@@ -1,6 +1,7 @@
 package air
 
 import (
+	"fmt"
 	"io/ioutil"
 	"mime"
 	"os"
@@ -26,7 +27,10 @@ var theCoffer = &coffer{
 func init() {
 	var err error
 	if theCoffer.watcher, err = fsnotify.NewWatcher(); err != nil {
-		panic(err)
+		panic(fmt.Errorf(
+			"air: failed to build coffer watcher: %v",
+			err,
+		))
 	}
 
 	go func() {

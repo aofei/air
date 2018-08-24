@@ -1,6 +1,7 @@
 package air
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -28,7 +29,10 @@ var theI18n = &i18n{
 func init() {
 	var err error
 	if theI18n.watcher, err = fsnotify.NewWatcher(); err != nil {
-		panic(err)
+		panic(fmt.Errorf(
+			"air: failed to build i18n watcher: %v",
+			err,
+		))
 	}
 
 	go func() {
