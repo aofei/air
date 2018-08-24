@@ -1,6 +1,7 @@
 package air
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -27,7 +28,10 @@ var theRenderer = &renderer{
 func init() {
 	var err error
 	if theRenderer.watcher, err = fsnotify.NewWatcher(); err != nil {
-		panic(err)
+		panic(fmt.Errorf(
+			"air: failed to build renderer watcher: %v",
+			err,
+		))
 	}
 
 	go func() {
