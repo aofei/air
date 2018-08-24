@@ -39,9 +39,30 @@ type Response struct {
 
 // UpgradeToWebSocket upgrades the connection to the WebSocket protocol.
 func (r *Response) UpgradeToWebSocket() (*WebSocketConn, error) {
+	if HTTPSEnforced {
+		r.Headers["Strict-Transport-Security"] =
+			"max-age=31536000; includeSubDomains"
+	}
+
 	for k, v := range r.Headers {
 		r.writer.Header().Set(k, v)
 	}
+
+	if _, ok := r.Headers["Set-Cookie"]; !ok {
+		cls := make([]string, 0, len(r.Cookies))
+		for _, c := range r.Cookies {
+			if v := c.String(); v != "" {
+				cls = append(cls, v)
+				r.writer.Header().Add("Set-Cookie", v)
+			}
+		}
+
+		if sc := strings.Join(cls, ", "); sc != "" {
+			r.Headers["Set-Cookie"] = sc
+		}
+	}
+
+	r.Written = true
 
 	conn, err := (&websocket.Upgrader{}).Upgrade(
 		r.writer,
@@ -92,8 +113,6 @@ func (r *Response) UpgradeToWebSocket() (*WebSocketConn, error) {
 
 		return nil
 	})
-
-	r.Written = true
 
 	return wsc, nil
 }
