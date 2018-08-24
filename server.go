@@ -39,24 +39,35 @@ func (s *server) serve() error {
 		if HTTPSEnforced && (Address == "" ||
 			strings.HasSuffix(strings.ToLower(Address), ":https") ||
 			strings.HasSuffix(Address, ":443")) {
-			a, _, err := net.SplitHostPort(Address)
-			if err != nil {
-				a = Address
-			}
-
-			var h http.HandlerFunc
-			h = func(rw http.ResponseWriter, r *http.Request) {
-				host, _, err := net.SplitHostPort(r.Host)
+			go func() {
+				a, _, err := net.SplitHostPort(Address)
 				if err != nil {
-					host = r.Host
+					a = Address
 				}
 
-				url := "https://" + host + r.RequestURI
-				http.Redirect(rw, r, url, 301)
-			}
+				if err := http.ListenAndServe(
+					a,
+					http.HandlerFunc(func(
+						rw http.ResponseWriter,
+						r *http.Request,
+					) {
+						h, _, err := net.SplitHostPort(
+							r.Host,
+						)
+						if err != nil {
+							h = r.Host
+						}
 
-			go func() {
-				if err = http.ListenAndServe(a, h); err != nil {
+						http.Redirect(
+							rw,
+							r,
+							"https://"+
+								h+
+								r.RequestURI,
+							301,
+						)
+					}),
+				); err != nil {
 					ERROR(
 						"air: http2https handler error",
 						map[string]interface{}{
