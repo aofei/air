@@ -17,5 +17,5 @@ func TestGroup(t *testing.T) {
 	g.OPTIONS("/", nil)
 	g.TRACE("/", nil)
 	g.STATIC("/", "")
-	g.FILE("/", "")
+	g.FILE("/file", "")
 }

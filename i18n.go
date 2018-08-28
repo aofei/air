@@ -72,7 +72,7 @@ func (i *i18n) localize(r *Request) {
 		if err != nil {
 			ERROR(
 				"air: failed to get absolute representation "+
-					"of the locale root",
+					"of locale root",
 				map[string]interface{}{
 					"error": err.Error(),
 				},

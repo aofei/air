@@ -9,6 +9,7 @@ import (
 type router struct {
 	tree      *node
 	maxParams int
+	handlers  map[string]Handler
 }
 
 // theRouter is the singleton of the `router`.
@@ -16,6 +17,7 @@ var theRouter = &router{
 	tree: &node{
 		handlers: map[string]Handler{},
 	},
+	handlers: map[string]Handler{},
 }
 
 // register registers a new route for the method and the path with the matching
@@ -27,33 +29,34 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 
 	msg := ""
 	if path == "" {
-		msg = "air: the route path cannot be empty"
+		msg = "air: route path cannot be empty"
 	} else if path[0] != '/' {
-		msg = "air: the route path must start with the /"
+		msg = "air: route path must start with /"
 	} else if strings.Contains(path, "//") {
-		msg = "air: the route path cannot have the //"
+		msg = "air: route path cannot have //"
 	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
 		for _, p := range ps {
 			if strings.Count(p, ":") > 1 {
-				msg = "air: adjacent params in the route " +
-					"path must be separated by the /"
+				msg = "air: adjacent params in route path " +
+					"must be separated by /"
 				break
 			}
 		}
 	} else if strings.Contains(path, "*") {
 		if strings.Count(path, "*") > 1 {
-			msg = "air: only one * is allowed in the route path"
+			msg = "air: only one * is allowed in route path"
 		} else if path[len(path)-1] != '*' {
-			msg = "air: the * can only appear at the end of the " +
-				"route path"
+			msg = "air: * can only appear at end of route path"
 		} else if strings.Contains(
 			path[strings.LastIndex(path, "/"):],
 			":",
 		) {
-			msg = "air: adjacent param and the * in the route " +
-				"path must be separated by the /"
+			msg = "air: adjacent param and * in route path must " +
+				"be separated by /"
 		}
+	} else if _, ok := r.handlers[method+path]; ok {
+		msg = "air: route already exists"
 	}
 
 	if msg != "" {
@@ -96,9 +99,8 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 						},
 					}
 					FATAL(
-						"air: the route path cannot "+
-							"have duplicate "+
-							"param names",
+						"air: route path cannot have "+
+							"duplicate param names",
 						e,
 					)
 				}
@@ -122,6 +124,8 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 	}
 
 	r.insert(method, path, nh, static, paramNames)
+
+	r.handlers[method+path] = h
 }
 
 // insert inserts a new route into the `tree` of the r.
