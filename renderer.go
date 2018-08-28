@@ -70,7 +70,7 @@ func (r *renderer) render(
 		if err != nil {
 			ERROR(
 				"air: failed to get absolute representation "+
-					"of the template root",
+					"of template root",
 				map[string]interface{}{
 					"error": err.Error(),
 				},
