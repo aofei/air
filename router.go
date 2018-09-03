@@ -9,7 +9,7 @@ import (
 type router struct {
 	tree      *node
 	maxParams int
-	handlers  map[string]Handler
+	routes    map[string]struct{}
 }
 
 // theRouter is the singleton of the `router`.
@@ -17,7 +17,7 @@ var theRouter = &router{
 	tree: &node{
 		handlers: map[string]Handler{},
 	},
-	handlers: map[string]Handler{},
+	routes: map[string]struct{}{},
 }
 
 // register registers a new route for the method and the path with the matching
@@ -55,7 +55,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 			msg = "air: adjacent param and * in route path must " +
 				"be separated by /"
 		}
-	} else if _, ok := r.handlers[method+path]; ok {
+	} else if _, ok := r.routes[method+path]; ok {
 		msg = "air: route already exists"
 	}
 
@@ -125,7 +125,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 
 	r.insert(method, path, nh, static, paramNames)
 
-	r.handlers[method+path] = h
+	r.routes[method+path] = struct{}{}
 }
 
 // insert inserts a new route into the `tree` of the r.

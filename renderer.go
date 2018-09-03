@@ -79,7 +79,8 @@ func (r *renderer) render(
 			return
 		}
 
-		r.template = template.New("template").
+		r.template = template.
+			New("template").
 			Delims(TemplateLeftDelim, TemplateRightDelim).
 			Funcs(template.FuncMap{
 				"locstr": func(key string) string {
