@@ -57,6 +57,8 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 		}
 	} else if _, ok := r.routes[method+pathWithoutParamNames(path)]; ok {
 		msg = "air: route already exists"
+	} else {
+		r.routes[method+pathWithoutParamNames(path)] = struct{}{}
 	}
 
 	if msg != "" {
@@ -124,8 +126,6 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 	}
 
 	r.insert(method, path, nh, static, paramNames)
-
-	r.routes[method+pathWithoutParamNames(path)] = struct{}{}
 }
 
 // insert inserts a new route into the `tree` of the r.
