@@ -55,7 +55,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 			msg = "air: adjacent param and * in route path must " +
 				"be separated by /"
 		}
-	} else if _, ok := r.routes[method+path]; ok {
+	} else if _, ok := r.routes[method+pathWithoutParamNames(path)]; ok {
 		msg = "air: route already exists"
 	}
 
@@ -125,7 +125,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 
 	r.insert(method, path, nh, static, paramNames)
 
-	r.routes[method+path] = struct{}{}
+	r.routes[method+pathWithoutParamNames(path)] = struct{}{}
 }
 
 // insert inserts a new route into the `tree` of the r.
@@ -398,6 +398,7 @@ func pathWithoutParamNames(p string) string {
 			}
 		}
 	}
+
 	return p
 }
 

@@ -539,19 +539,6 @@ var MethodNotAllowedHandler = func(*Request, *Response) error {
 // Gas defines a function to process gases.
 type Gas func(Handler) Handler
 
-// WrapGas wraps the h into the `Gas`.
-func WrapGas(h Handler) Gas {
-	return func(next Handler) Handler {
-		return func(req *Request, res *Response) error {
-			if err := h(req, res); err != nil {
-				return err
-			}
-
-			return next(req, res)
-		}
-	}
-}
-
 // Error is an HTTP error.
 type Error struct {
 	Code    int
