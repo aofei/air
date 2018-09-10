@@ -10,7 +10,7 @@ require (
 	github.com/tdewolff/minify v2.3.5+incompatible
 	github.com/tdewolff/parse v2.3.3+incompatible // indirect
 	github.com/tdewolff/test v0.0.0-20171106182207-265427085153 // indirect
-	golang.org/x/net v0.0.0-20180826012351-8a410e7b638d
-	golang.org/x/sys v0.0.0-20180831094639-fa5fdf94c789 // indirect
+	golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
+	golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e // indirect
 	golang.org/x/text v0.3.0
 )

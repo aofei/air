@@ -152,21 +152,23 @@ func TestServerSeveHTTP(t *testing.T) {
 
 	buf := bytes.Buffer{}
 
-	Pregases = append(
-		Pregases,
-		WrapGas(func(*Request, *Response) error {
-			buf.WriteString("Pregas\n")
-			return nil
-		}),
-	)
+	Pregases = []Gas{
+		func(next Handler) Handler {
+			return func(req *Request, res *Response) error {
+				buf.WriteString("Pregas\n")
+				return next(req, res)
+			}
+		},
+	}
 
-	Gases = append(
-		Gases,
-		WrapGas(func(*Request, *Response) error {
-			buf.WriteString("Gas\n")
-			return nil
-		}),
-	)
+	Gases = []Gas{
+		func(next Handler) Handler {
+			return func(req *Request, res *Response) error {
+				buf.WriteString("Gas\n")
+				return next(req, res)
+			}
+		},
+	}
 
 	GET(
 		"/",
@@ -177,10 +179,12 @@ func TestServerSeveHTTP(t *testing.T) {
 				Message: "Handler Error",
 			}
 		},
-		WrapGas(func(*Request, *Response) error {
-			buf.WriteString("Route gas\n")
-			return nil
-		}),
+		func(next Handler) Handler {
+			return func(req *Request, res *Response) error {
+				buf.WriteString("Route gas\n")
+				return next(req, res)
+			}
+		},
 	)
 
 	go func() {
