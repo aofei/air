@@ -62,14 +62,10 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 	}
 
 	if msg != "" {
-		FATAL(msg, map[string]interface{}{
-			"route": map[string]interface{}{
-				"method": method,
-				"path":   path,
-			},
-		})
+		panic(msg)
 	}
 
+	paramNames := []string{}
 	nh := func(req *Request, res *Response) error {
 		h := h
 		for i := len(gases) - 1; i >= 0; i-- {
@@ -78,8 +74,6 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 
 		return h(req, res)
 	}
-
-	paramNames := []string{}
 
 	for i, l := 0, len(path); i < l; i++ {
 		if path[i] == ':' {
@@ -94,17 +88,8 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 
 			for _, pn := range paramNames {
 				if pn == paramName {
-					e := map[string]interface{}{
-						"route": map[string]interface{}{
-							"method": method,
-							"path":   path,
-						},
-					}
-					FATAL(
-						"air: route path cannot have "+
-							"duplicate param names",
-						e,
-					)
+					panic("air: route path cannot have " +
+						"duplicate param names")
 				}
 			}
 
