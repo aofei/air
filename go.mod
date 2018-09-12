@@ -1,4 +1,4 @@
-module github.com/sheng/air
+module github.com/aofei/air
 
 require (
 	github.com/BurntSushi/toml v0.3.0
@@ -10,7 +10,7 @@ require (
 	github.com/tdewolff/minify v2.3.5+incompatible
 	github.com/tdewolff/parse v2.3.3+incompatible // indirect
 	github.com/tdewolff/test v0.0.0-20171106182207-265427085153 // indirect
-	golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
+	golang.org/x/net v0.0.0-20180911220305-26e67e76b6c3
 	golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e // indirect
 	golang.org/x/text v0.3.0
 )
