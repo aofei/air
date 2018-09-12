@@ -1,9 +1,9 @@
 # Air
 
-[![Build Status](https://travis-ci.org/sheng/air.svg?branch=master)](https://travis-ci.org/sheng/air)
-[![Coverage Status](https://coveralls.io/repos/github/sheng/air/badge.svg?branch=master)](https://coveralls.io/github/sheng/air?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/sheng/air)](https://goreportcard.com/report/github.com/sheng/air)
-[![GoDoc](https://godoc.org/github.com/sheng/air?status.svg)](https://godoc.org/github.com/sheng/air)
+[![Build Status](https://travis-ci.org/aofei/air.svg?branch=master)](https://travis-ci.org/aofei/air)
+[![Coverage Status](https://coveralls.io/repos/github/aofei/air/badge.svg?branch=master)](https://coveralls.io/github/aofei/air?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/aofei/air)](https://goreportcard.com/report/github.com/aofei/air)
+[![GoDoc](https://godoc.org/github.com/aofei/air?status.svg)](https://godoc.org/github.com/aofei/air)
 
 An ideally refined web framework for Go. You can use it to build a web
 application as natural as breathing.
@@ -96,7 +96,7 @@ properly.**
 Open your terminal and execute
 
 ```bash
-$ go get github.com/sheng/air
+$ go get github.com/aofei/air
 ```
 
 done.
@@ -110,7 +110,7 @@ Create a file named `hello.go`
 ```go
 package main
 
-import "github.com/sheng/air"
+import "github.com/aofei/air"
 
 func main() {
 	air.GET("/", func(req *air.Request, res *air.Response) error {
@@ -130,9 +130,9 @@ then visit `http://localhost:2333`.
 
 ## Documentation
 
-* [English](https://github.com/sheng/air/wiki/Documentation)
-* [简体中文](https://github.com/sheng/air/wiki/文档)
-* [GoDoc](https://godoc.org/github.com/sheng/air)
+* [English](https://github.com/aofei/air/wiki/Documentation)
+* [简体中文](https://github.com/aofei/air/wiki/文档)
+* [GoDoc](https://godoc.org/github.com/aofei/air)
 
 ## Gases
 
@@ -155,13 +155,13 @@ If you want to be familiar with this framework as soon as possible, simply visit
 ## Community
 
 If you want to discuss this framework, or ask questions about it, simply post
-questions or ideas [here](https://github.com/sheng/air/issues).
+questions or ideas [here](https://github.com/aofei/air/issues).
 
 ## Contributing
 
 If you want to help build this framework, simply follow
-[this](https://github.com/sheng/air/wiki/Contributing) to send pull requests
-[here](https://github.com/sheng/air/pulls).
+[this](https://github.com/aofei/air/wiki/Contributing) to send pull requests
+[here](https://github.com/aofei/air/pulls).
 
 ## License
 
