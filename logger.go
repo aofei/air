@@ -3,6 +3,7 @@ package air
 import (
 	"encoding/json"
 	"fmt"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -81,6 +82,10 @@ func (l *logger) log(ll LoggerLevel, m string, es ...map[string]interface{}) {
 		"time":     time.Now().UnixNano(),
 		"level":    ll.String(),
 		"message":  m,
+	}
+	if DebugMode {
+		_, fn, l, _ := runtime.Caller(2)
+		fs["caller"] = fmt.Sprintf("%s:%d", fn, l)
 	}
 
 	for _, e := range es {
