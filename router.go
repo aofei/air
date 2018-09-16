@@ -21,7 +21,7 @@ var theRouter = &router{
 }
 
 // register registers a new route for the method and the path with the matching
-// h in the r with the optional route-level gases..
+// h in the r with the optional route-level gases.
 func (r *router) register(method, path string, h Handler, gases ...Gas) {
 	if path != "/" && hasLastSlash(path) {
 		path = path[:len(path)-1]

@@ -119,7 +119,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Headers:       make(map[string]string, len(r.Header)),
 		Body:          r.Body,
 		ContentLength: r.ContentLength,
-		Cookies:       make([]*Cookie, 0, len(r.Header["Cookie"])),
+		Cookies:       map[string]*Cookie{},
 		Params:        make(map[string]string, theRouter.maxParams),
 		Files:         map[string]multipart.File{},
 		RemoteAddr:    r.RemoteAddr,
@@ -142,47 +142,36 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	theI18n.localize(req)
-
-	if !ParseRequestCookiesManually {
-		req.ParseCookies()
-	}
-
-	if !ParseRequestParamsManually {
-		req.ParseParams()
-	}
-
-	if !ParseRequestFilesManually {
-		req.ParseFiles()
-	}
-
-	ipStr, _, _ := net.SplitHostPort(req.RemoteAddr)
+	cIPStr, _, _ := net.SplitHostPort(req.RemoteAddr)
 	if f := req.Headers["Forwarded"]; f != "" { // See RFC 7239
 		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
 			p := strings.TrimSpace(p)
 			if strings.HasPrefix(p, "for=") {
-				ipStr = strings.TrimPrefix(p[4:], "\"[")
-				ipStr = strings.TrimSuffix(ipStr, "]\"")
+				cIPStr = strings.TrimPrefix(p[4:], "\"[")
+				cIPStr = strings.TrimSuffix(cIPStr, "]\"")
 				break
 			}
 		}
 	} else if xff := req.Headers["X-Forwarded-For"]; xff != "" {
-		ipStr = strings.TrimSpace(strings.Split(xff, ",")[0])
+		cIPStr = strings.TrimSpace(strings.Split(xff, ",")[0])
 	}
 
-	req.ClientIP = net.ParseIP(ipStr)
+	req.ClientIP = net.ParseIP(cIPStr)
+
+	theI18n.localize(req)
 
 	// Response
 
 	res := &Response{
 		StatusCode: 200,
 		Headers:    map[string]string{},
+		Cookies:    map[string]*Cookie{},
 
 		request: req,
 		writer:  rw,
 	}
 
-	// Gases
+	// Chain gases
 
 	h := func(req *Request, res *Response) error {
 		rh := theRouter.route(req)
@@ -196,6 +185,10 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
+		req.ParseCookies()
+		req.ParseParams()
+		req.ParseFiles()
+
 		for i := len(Gases) - 1; i >= 0; i-- {
 			h = Gases[i](h)
 		}
@@ -203,7 +196,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return h(req, res)
 	}
 
-	// Pregases
+	// Chain pregases
 
 	for i := len(Pregases) - 1; i >= 0; i-- {
 		h = Pregases[i](h)

@@ -16,7 +16,7 @@ type Request struct {
 	Headers       map[string]string
 	Body          io.Reader
 	ContentLength int64
-	Cookies       []*Cookie
+	Cookies       map[string]*Cookie
 	Params        map[string]string
 	Files         map[string]multipart.File
 	RemoteAddr    string
@@ -24,13 +24,23 @@ type Request struct {
 	Values        map[string]interface{}
 
 	httpRequest     *http.Request
+	parsedCookies   bool
+	parsedParams    bool
+	parsedFiles     bool
 	localizedString func(string) string
 }
 
 // ParseCookies parses the cookies sent with the r into the `r.Cookies`.
 //
-// It must be called manually when the `ParseRequestCookiesManually` is true.
+// It will be called after routing. Relax, you can of course call it before
+// routing, it will only take effect on the very first call.
 func (r *Request) ParseCookies() {
+	if r.parsedCookies {
+		return
+	}
+
+	r.parsedCookies = true
+
 	for _, line := range r.httpRequest.Header["Cookie"] {
 		ps := strings.Split(strings.TrimSpace(line), ";")
 		if len(ps) == 1 && ps[0] == "" {
@@ -60,18 +70,25 @@ func (r *Request) ParseCookies() {
 				continue
 			}
 
-			r.Cookies = append(r.Cookies, &Cookie{
+			r.Cookies[n] = &Cookie{
 				Name:  n,
 				Value: v,
-			})
+			}
 		}
 	}
 }
 
 // ParseParams parses the params sent with the r into the `r.Params`.
 //
-// It must be called manually when the `ParseRequestParamsManually` is true.
+// It will be called after routing. Relax, you can of course call it before
+// routing, it will only take effect on the very first call.
 func (r *Request) ParseParams() {
+	if r.parsedParams {
+		return
+	}
+
+	r.parsedParams = true
+
 	if r.httpRequest.Form == nil {
 		r.httpRequest.ParseForm()
 	}
@@ -85,8 +102,15 @@ func (r *Request) ParseParams() {
 
 // ParseFiles parses the files sent with the r into the `r.Files`.
 //
-// It must be called manually when the `ParseRequestFilesManually` is true.
+// It will be called after routing. Relax, you can of course call it before
+// routing, it will only take effect on the very first call.
 func (r *Request) ParseFiles() {
+	if r.parsedFiles {
+		return
+	}
+
+	r.parsedFiles = true
+
 	if r.httpRequest.MultipartForm == nil {
 		r.httpRequest.ParseMultipartForm(32 << 20)
 	}

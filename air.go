@@ -90,24 +90,6 @@ var TLSKeyFile = ""
 // It is called "https_enforced" in the configuration file.
 var HTTPSEnforced = false
 
-// ParseRequestCookiesManually indicates whether the cookies does not need to be
-// auto parsed when the server read parsing the request.
-//
-// It is called "parse_request_cookies_manually" in the configuration file.
-var ParseRequestCookiesManually = false
-
-// ParseRequestParamsManually indicates whether the params does not need to be
-// auto parsed when the server read parsing the request.
-//
-// It is called "parse_request_params_manually" in the configuration file.
-var ParseRequestParamsManually = false
-
-// ParseRequestFilesManually indicates whether the files does not need to be
-// auto parsed when the server read parsing the request.
-//
-// It is called "parse_request_files_manually" in the configuration file.
-var ParseRequestFilesManually = false
-
 // ErrorHandler is the centralized error handler for the server.
 var ErrorHandler = func(err error, req *Request, res *Response) {
 	e := &Error{
@@ -131,10 +113,10 @@ var ErrorHandler = func(err error, req *Request, res *Response) {
 	}
 }
 
-// Pregases is the `Gas` chain that performs before the router.
+// Pregases is the `Gas` chain that performs before routing.
 var Pregases = []Gas{}
 
-// Gases is the `Gas` chain that performs after the router.
+// Gases is the `Gas` chain that performs after routing.
 var Gases = []Gas{}
 
 // AutoPushEnabled indicates whether the auto push is enabled.
@@ -307,18 +289,6 @@ func init() {
 
 	if v, ok := Config["https_enforced"].(bool); ok {
 		HTTPSEnforced = v
-	}
-
-	if v, ok := Config["parse_request_cookies_manually"].(bool); ok {
-		ParseRequestCookiesManually = v
-	}
-
-	if v, ok := Config["parse_request_params_manually"].(bool); ok {
-		ParseRequestParamsManually = v
-	}
-
-	if v, ok := Config["parse_request_files_manually"].(bool); ok {
-		ParseRequestFilesManually = v
 	}
 
 	if v, ok := Config["auto_push_enabled"].(bool); ok {

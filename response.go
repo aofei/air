@@ -30,7 +30,7 @@ type Response struct {
 	StatusCode    int
 	Headers       map[string]string
 	ContentLength int64
-	Cookies       []*Cookie
+	Cookies       map[string]*Cookie
 	Written       bool
 
 	request *Request
@@ -39,6 +39,8 @@ type Response struct {
 
 // UpgradeToWebSocket upgrades the connection to the WebSocket protocol.
 func (r *Response) UpgradeToWebSocket() (*WebSocketConn, error) {
+	r.StatusCode = 101
+
 	if HTTPSEnforced {
 		r.Headers["Strict-Transport-Security"] =
 			"max-age=31536000; includeSubDomains"
@@ -51,9 +53,9 @@ func (r *Response) UpgradeToWebSocket() (*WebSocketConn, error) {
 	if _, ok := r.Headers["Set-Cookie"]; !ok {
 		cls := make([]string, 0, len(r.Cookies))
 		for _, c := range r.Cookies {
-			if v := c.String(); v != "" {
-				cls = append(cls, v)
-				r.writer.Header().Add("Set-Cookie", v)
+			if cl := c.String(); cl != "" {
+				cls = append(cls, cl)
+				r.writer.Header().Add("Set-Cookie", cl)
 			}
 		}
 
@@ -135,14 +137,18 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			content.Seek(0, io.SeekStart)
 		}
 
-		if r.StatusCode < 400 {
+		if r.StatusCode >= 200 && r.StatusCode < 400 {
 			r.Headers["Accept-Ranges"] = "bytes"
-			if r.Headers["Content-Encoding"] == "" {
-				r.Headers["Content-Length"] = strconv.FormatInt(
-					r.ContentLength,
-					10,
-				)
-			}
+		}
+
+		if r.Headers["Content-Encoding"] == "" &&
+			r.StatusCode >= 200 &&
+			r.StatusCode != 204 &&
+			(r.StatusCode >= 300 || r.request.Method != "CONNECT") {
+			r.Headers["Content-Length"] = strconv.FormatInt(
+				r.ContentLength,
+				10,
+			)
 		}
 
 		if HTTPSEnforced {
@@ -157,9 +163,9 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		if _, ok := r.Headers["Set-Cookie"]; !ok {
 			cls := make([]string, 0, len(r.Cookies))
 			for _, c := range r.Cookies {
-				if v := c.String(); v != "" {
-					cls = append(cls, v)
-					r.writer.Header().Add("Set-Cookie", v)
+				if cl := c.String(); cl != "" {
+					cls = append(cls, cl)
+					r.writer.Header().Add("Set-Cookie", cl)
 				}
 			}
 
@@ -176,7 +182,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		r.Written = true
 	}()
 
-	if r.StatusCode >= 400 { // something has gone wrong
+	if r.StatusCode >= 400 { // Something has gone wrong
 		canWrite = true
 		return nil
 	}
@@ -255,7 +261,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			inm = remain
 		}
 		if !noneMatched {
-			if m := r.request.Method; m == "GET" || m == "HEAD" {
+			if r.request.Method == "GET" ||
+				r.request.Method == "HEAD" {
 				r.StatusCode = 304
 			} else {
 				r.StatusCode = 412
