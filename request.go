@@ -3,6 +3,7 @@ package air
 import (
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"strings"
 )
@@ -19,6 +20,7 @@ type Request struct {
 	Params        map[string]string
 	Files         map[string]multipart.File
 	RemoteAddr    string
+	ClientIP      net.IP
 	Values        map[string]interface{}
 
 	httpRequest     *http.Request
@@ -30,18 +32,18 @@ type Request struct {
 // It must be called manually when the `ParseRequestCookiesManually` is true.
 func (r *Request) ParseCookies() {
 	for _, line := range r.httpRequest.Header["Cookie"] {
-		parts := strings.Split(strings.TrimSpace(line), ";")
-		if len(parts) == 1 && parts[0] == "" {
+		ps := strings.Split(strings.TrimSpace(line), ";")
+		if len(ps) == 1 && ps[0] == "" {
 			continue
 		}
 
-		for i := 0; i < len(parts); i++ {
-			parts[i] = strings.TrimSpace(parts[i])
-			if len(parts[i]) == 0 {
+		for i := 0; i < len(ps); i++ {
+			ps[i] = strings.TrimSpace(ps[i])
+			if len(ps[i]) == 0 {
 				continue
 			}
 
-			n, v := parts[i], ""
+			n, v := ps[i], ""
 			if i := strings.Index(n, "="); i >= 0 {
 				n, v = n[:i], n[i+1:]
 			}

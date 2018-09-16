@@ -503,6 +503,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 	}
 
 	canWrite = true
+
 	return nil
 }
 

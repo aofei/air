@@ -156,6 +156,22 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		req.ParseFiles()
 	}
 
+	ipStr, _, _ := net.SplitHostPort(req.RemoteAddr)
+	if f := req.Headers["Forwarded"]; f != "" { // See RFC 7239
+		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
+			p := strings.TrimSpace(p)
+			if strings.HasPrefix(p, "for=") {
+				ipStr = strings.TrimPrefix(p[4:], "\"[")
+				ipStr = strings.TrimSuffix(ipStr, "]\"")
+				break
+			}
+		}
+	} else if xff := req.Headers["X-Forwarded-For"]; xff != "" {
+		ipStr = strings.TrimSpace(strings.Split(xff, ",")[0])
+	}
+
+	req.ClientIP = net.ParseIP(ipStr)
+
 	// Response
 
 	res := &Response{
