@@ -350,7 +350,9 @@ func (r *router) route(req *Request) Handler {
 
 	if handler := cn.handlers[req.Method]; handler != nil {
 		for i := range pvs {
-			req.Params[cn.paramNames[i]] = pvs[i]
+			req.Params[cn.paramNames[i]] = &RequestParamValue{
+				i: pvs[i],
+			}
 		}
 
 		return handler

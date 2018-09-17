@@ -2,7 +2,6 @@ package air
 
 import (
 	"context"
-	"mime/multipart"
 	"net"
 	"net/http"
 	"strconv"
@@ -120,8 +119,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Body:          r.Body,
 		ContentLength: r.ContentLength,
 		Cookies:       map[string]*Cookie{},
-		Params:        make(map[string]string, theRouter.maxParams),
-		Files:         map[string]multipart.File{},
+		Params:        map[string]*RequestParamValue{},
 		RemoteAddr:    r.RemoteAddr,
 		Values:        map[string]interface{}{},
 
@@ -187,7 +185,6 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 		req.ParseCookies()
 		req.ParseParams()
-		req.ParseFiles()
 
 		for i := len(Gases) - 1; i >= 0; i-- {
 			h = Gases[i](h)

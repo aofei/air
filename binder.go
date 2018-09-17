@@ -6,7 +6,6 @@ import (
 	"errors"
 	"mime"
 	"reflect"
-	"strconv"
 )
 
 // binder is a binder that binds request based on the MIME types.
@@ -59,7 +58,10 @@ func (b *binder) bind(v interface{}, r *Request) error {
 }
 
 // bindParams binds the params into the v.
-func (b *binder) bindParams(v interface{}, params map[string]string) error {
+func (b *binder) bindParams(
+	v interface{},
+	params map[string]*RequestParamValue,
+) error {
 	typ := reflect.TypeOf(v).Elem()
 	if typ.Kind() != reflect.Struct {
 		return errors.New("binding element must be a struct")
@@ -84,66 +86,34 @@ func (b *binder) bindParams(v interface{}, params map[string]string) error {
 
 		tf := typ.Field(i)
 
-		p, ok := params[tf.Name]
+		pv, ok := params[tf.Name]
 		if !ok {
 			continue
 		}
 
 		switch tf.Type.Kind() {
+		case reflect.Bool:
+			b, _ := pv.Bool()
+			vf.SetBool(b)
 		case reflect.Int,
 			reflect.Int8,
 			reflect.Int16,
 			reflect.Int32,
 			reflect.Int64:
-			if p == "" {
-				p = "0"
-			}
-
-			v, err := strconv.ParseInt(p, 10, 64)
-			if err != nil {
-				return err
-			}
-
-			vf.SetInt(v)
+			i64, _ := pv.Int64()
+			vf.SetInt(i64)
 		case reflect.Uint,
 			reflect.Uint8,
 			reflect.Uint16,
 			reflect.Uint32,
 			reflect.Uint64:
-			if p == "" {
-				p = "0"
-			}
-
-			v, err := strconv.ParseUint(p, 10, 64)
-			if err != nil {
-				return err
-			}
-
-			vf.SetUint(v)
-		case reflect.Bool:
-			if p == "" {
-				p = "false"
-			}
-
-			v, err := strconv.ParseBool(p)
-			if err != nil {
-				return err
-			}
-
-			vf.SetBool(v)
+			ui64, _ := pv.Uint64()
+			vf.SetUint(ui64)
 		case reflect.Float32, reflect.Float64:
-			if p == "" {
-				p = "0.0"
-			}
-
-			v, err := strconv.ParseFloat(p, 64)
-			if err != nil {
-				return err
-			}
-
-			vf.SetFloat(v)
+			f64, _ := pv.Float64()
+			vf.SetFloat(f64)
 		case reflect.String:
-			vf.SetString(p)
+			vf.SetString(pv.String())
 		default:
 			return errors.New("unknown type")
 		}

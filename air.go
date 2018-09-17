@@ -442,7 +442,7 @@ func TRACE(path string, h Handler, gases ...Gas) {
 // from the provided root with the optional route-level gases.
 func STATIC(prefix, root string, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
-		err := res.File(filepath.Join(root, req.Params["*"]))
+		err := res.File(filepath.Join(root, req.Params["*"].String()))
 		if os.IsNotExist(err) {
 			return NotFoundHandler(req, res)
 		}
