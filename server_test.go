@@ -3,6 +3,7 @@ package air
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -35,12 +36,8 @@ func TestServerServe(t *testing.T) {
 
 	ss := theServer.server
 	assert.Equal(t, Address, ss.Addr)
-	assert.Equal(t, theServer, ss.Handler)
-	assert.Equal(t, ReadTimeout, ss.ReadTimeout)
-	assert.Equal(t, ReadHeaderTimeout, ss.ReadHeaderTimeout)
-	assert.Equal(t, WriteTimeout, ss.WriteTimeout)
+	assert.NotEqual(t, theServer, ss.Handler)
 	assert.Equal(t, IdleTimeout, ss.IdleTimeout)
-	assert.Equal(t, MaxHeaderBytes, ss.MaxHeaderBytes)
 	assert.Equal(t, LoggerLowestLevel, LoggerLevelDebug)
 
 	m := map[string]interface{}{}
@@ -174,10 +171,7 @@ func TestServerSeveHTTP(t *testing.T) {
 		"/",
 		func(req *Request, res *Response) error {
 			buf.WriteString("Handler")
-			return &Error{
-				Code:    500,
-				Message: "Handler Error",
-			}
+			return errors.New("handler error")
 		},
 		func(next Handler) Handler {
 			return func(req *Request, res *Response) error {
@@ -199,7 +193,7 @@ func TestServerSeveHTTP(t *testing.T) {
 
 	assert.Equal(t, "Pregas\nGas\nRoute gas\nHandler", buf.String())
 	assert.Equal(t, 500, rec.Code)
-	assert.Equal(t, "Handler Error", rec.Body.String())
+	assert.Equal(t, "internal server error", rec.Body.String())
 
 	theServer.server = &http.Server{}
 

@@ -232,17 +232,18 @@ func (r *router) route(req *Request) Handler {
 	cn := r.tree // Current node as root of the `tree` of the r
 
 	var (
-		s   = pathClean(req.URL.Path)        // Search
-		nn  *node                            // Next node
-		nk  nodeKind                         // Next kind
-		sn  *node                            // Saved node
-		ss  string                           // Saved search
-		sl  int                              // Search length
-		pl  int                              // Prefix length
-		ll  int                              // LCP length
-		max int                              // Max number of sl and pl
-		si  int                              // Start index
-		pvs = make([]string, 0, r.maxParams) // Param values
+		p   = req.httpRequest.URL.EscapedPath() // Path
+		s   = pathClean(p)                      // Search
+		nn  *node                               // Next node
+		nk  nodeKind                            // Next kind
+		sn  *node                               // Saved node
+		ss  string                              // Saved search
+		sl  int                                 // Search length
+		pl  int                                 // Prefix length
+		ll  int                                 // LCP length
+		max int                                 // Max number of sl and pl
+		si  int                                 // Start index
+		pvs = make([]string, 0, r.maxParams)    // Param values
 	)
 
 	// Search order: static > param > any
@@ -313,12 +314,12 @@ func (r *router) route(req *Request) Handler {
 		// Any node
 	Any:
 		if cn = cn.childByKind(any); cn != nil {
-			if hasLastSlash(req.URL.Path) {
-				si = len(req.URL.Path) - 1
-				for ; si > 0 && req.URL.Path[si] == '/'; si-- {
+			if hasLastSlash(p) {
+				si = len(p) - 1
+				for ; si > 0 && p[si] == '/'; si-- {
 				}
 
-				s += req.URL.Path[si+1:]
+				s += p[si+1:]
 			}
 
 			if len(pvs) < len(cn.paramNames) {
@@ -350,8 +351,10 @@ func (r *router) route(req *Request) Handler {
 
 	if handler := cn.handlers[req.Method]; handler != nil {
 		for i := range pvs {
-			req.Params[cn.paramNames[i]] = &RequestParamValue{
-				i: pvs[i],
+			req.Params[cn.paramNames[i]] = []*RequestParamValue{
+				&RequestParamValue{
+					i: pvs[i],
+				},
 			}
 		}
 

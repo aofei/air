@@ -154,7 +154,10 @@ func (i *i18n) localize(r *Request) {
 		}
 	})
 
-	mt, _ := language.MatchStrings(i.matcher, r.Headers["Accept-Language"])
+	mt, _ := language.MatchStrings(
+		i.matcher,
+		r.Headers["accept-language"]...,
+	)
 	l := i.locales[mt.String()]
 
 	r.localizedString = func(key string) string {

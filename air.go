@@ -1,6 +1,7 @@
 package air
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -37,42 +38,13 @@ var LoggerOutput = io.Writer(os.Stdout)
 // It is called "address" in the configuration file.
 var Address = "localhost:2333"
 
-// ReadTimeout is the maximum duration the server reads the request.
-//
-// It is called "read_timeout" in the configuration file.
-//
-// **Its unit in the configuration file is MILLISECONDS.**
-var ReadTimeout = time.Duration(0)
-
-// ReadHeaderTimeout is the amount of time allowed the server reads the request
-// headers.
-//
-// It is called "read_header_timeout" in the configuration file.
-//
-// **Its unit in the configuration file is MILLISECONDS.**
-var ReadHeaderTimeout = time.Duration(0)
-
-// WriteTimeout is the maximum duration the server writes an response.
-//
-// It is called "write_timeout" in the configuration file.
-//
-// **Its unit in the configuration file is MILLISECONDS.**
-var WriteTimeout = time.Duration(0)
-
 // IdleTimeout is the maximum amount of time the server waits for the next
-// request. If it is zero, the value of `ReadTimeout` is used. If both are zero,
-// `ReadHeaderTimeout` is used.
+// request.
 //
 // It is called "idle_timeout" in the configuration file.
 //
 // **Its unit in the configuration file is MILLISECONDS.**
 var IdleTimeout = time.Duration(0)
-
-// MaxHeaderBytes is the maximum number of bytes the server will read parsing
-// the request header's keys and values, including the request line.
-//
-// It is called "max_header_bytes" in the configuration file.
-var MaxHeaderBytes = 1 << 20
 
 // TLSCertFile is the path to the TLS certificate file used when starting the
 // server.
@@ -85,31 +57,24 @@ var TLSCertFile = ""
 // It is called "tls_key_file" in the configuration file.
 var TLSKeyFile = ""
 
-// HTTPSEnforced indicates whether the HTTPS is enforced.
-//
-// It is called "https_enforced" in the configuration file.
-var HTTPSEnforced = false
-
 // ErrorHandler is the centralized error handler for the server.
 var ErrorHandler = func(err error, req *Request, res *Response) {
-	e := &Error{
-		Code:    500,
-		Message: "Internal Server Error",
-	}
-	if ce, ok := err.(*Error); ok {
-		e = ce
-	} else if DebugMode {
-		e.Message = err.Error()
-	}
-
 	if !res.Written {
-		res.StatusCode = e.Code
-		if req.Method == "GET" || req.Method == "HEAD" {
-			delete(res.Headers, "ETag")
-			delete(res.Headers, "Last-Modified")
+		if res.Status < 400 {
+			res.Status = 500
 		}
 
-		res.String(e.Message)
+		m := err.Error()
+		if res.Status == 500 && !DebugMode {
+			m = "internal server error"
+		}
+
+		if req.Method == "GET" || req.Method == "HEAD" {
+			delete(res.Headers, "etag")
+			delete(res.Headers, "last-modified")
+		}
+
+		res.String(m)
 	}
 }
 
@@ -259,24 +224,8 @@ func init() {
 		Address = v
 	}
 
-	if v, ok := Config["read_timeout"].(int64); ok {
-		ReadTimeout = time.Duration(v) * time.Millisecond
-	}
-
-	if v, ok := Config["read_header_timeout"].(int64); ok {
-		ReadHeaderTimeout = time.Duration(v) * time.Millisecond
-	}
-
-	if v, ok := Config["write_timeout"].(int64); ok {
-		WriteTimeout = time.Duration(v) * time.Millisecond
-	}
-
 	if v, ok := Config["idle_timeout"].(int64); ok {
 		IdleTimeout = time.Duration(v) * time.Millisecond
-	}
-
-	if v, ok := Config["max_header_bytes"].(int64); ok {
-		MaxHeaderBytes = int(v)
 	}
 
 	if v, ok := Config["tls_cert_file"].(string); ok {
@@ -285,10 +234,6 @@ func init() {
 
 	if v, ok := Config["tls_key_file"].(string); ok {
 		TLSKeyFile = v
-	}
-
-	if v, ok := Config["https_enforced"].(bool); ok {
-		HTTPSEnforced = v
 	}
 
 	if v, ok := Config["auto_push_enabled"].(bool); ok {
@@ -442,7 +387,10 @@ func TRACE(path string, h Handler, gases ...Gas) {
 // from the provided root with the optional route-level gases.
 func STATIC(prefix, root string, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
-		err := res.File(filepath.Join(root, req.Params["*"].String()))
+		err := res.File(filepath.Join(
+			root,
+			req.Params["*"][0].String(),
+		))
 		if os.IsNotExist(err) {
 			return NotFoundHandler(req, res)
 		}
@@ -491,31 +439,16 @@ func Shutdown(timeout time.Duration) error {
 type Handler func(*Request, *Response) error
 
 // NotFoundHandler is a `Handler` that returns not found error.
-var NotFoundHandler = func(*Request, *Response) error {
-	return &Error{
-		Code:    404,
-		Message: "Not Found",
-	}
+var NotFoundHandler = func(req *Request, res *Response) error {
+	res.Status = 404
+	return errors.New("not found")
 }
 
 // MethodNotAllowedHandler is a `Handler` that returns method not allowed error.
-var MethodNotAllowedHandler = func(*Request, *Response) error {
-	return &Error{
-		Code:    405,
-		Message: "Method Not Allowed",
-	}
+var MethodNotAllowedHandler = func(req *Request, res *Response) error {
+	res.Status = 405
+	return errors.New("method not allowed")
 }
 
 // Gas defines a function to process gases.
 type Gas func(Handler) Handler
-
-// Error is an HTTP error.
-type Error struct {
-	Code    int
-	Message string
-}
-
-// Error implements the `error#Error()`.
-func (e *Error) Error() string {
-	return e.Message
-}

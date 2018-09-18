@@ -4,9 +4,11 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 // server is an HTTP server.
@@ -23,64 +25,22 @@ var theServer = &server{
 func (s *server) serve() error {
 	s.server.Addr = Address
 	s.server.Handler = s
-	s.server.ReadTimeout = ReadTimeout
-	s.server.ReadHeaderTimeout = ReadHeaderTimeout
-	s.server.WriteTimeout = WriteTimeout
 	s.server.IdleTimeout = IdleTimeout
-	s.server.MaxHeaderBytes = MaxHeaderBytes
 
 	if DebugMode {
 		LoggerLowestLevel = LoggerLevelDebug
 		DEBUG("air: serving in debug mode")
 	}
 
-	if TLSCertFile != "" && TLSKeyFile != "" {
-		if HTTPSEnforced && (Address == "" ||
-			strings.HasSuffix(strings.ToLower(Address), ":https") ||
-			strings.HasSuffix(Address, ":443")) {
-			go func() {
-				a, _, err := net.SplitHostPort(Address)
-				if err != nil {
-					a = Address
-				}
+	if TLSCertFile == "" || TLSKeyFile == "" {
+		s.server.Handler = h2c.NewHandler(s, &http2.Server{
+			IdleTimeout: IdleTimeout,
+		})
 
-				if err := http.ListenAndServe(
-					a,
-					http.HandlerFunc(func(
-						rw http.ResponseWriter,
-						r *http.Request,
-					) {
-						h, _, err := net.SplitHostPort(
-							r.Host,
-						)
-						if err != nil {
-							h = r.Host
-						}
-
-						http.Redirect(
-							rw,
-							r,
-							"https://"+
-								h+
-								r.RequestURI,
-							301,
-						)
-					}),
-				); err != nil {
-					ERROR(
-						"air: http2https handler error",
-						map[string]interface{}{
-							"error": err.Error(),
-						},
-					)
-				}
-			}()
-		}
-
-		return s.server.ListenAndServeTLS(TLSCertFile, TLSKeyFile)
+		return s.server.ListenAndServe()
 	}
 
-	return s.server.ListenAndServe()
+	return s.server.ListenAndServeTLS(TLSCertFile, TLSKeyFile)
 }
 
 // close closes the s immediately.
@@ -107,42 +67,34 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Request
 
 	req := &Request{
-		Method: r.Method,
-		URL: &URL{
-			Scheme: "http",
-			Host:   r.Host,
-			Path:   r.URL.EscapedPath(),
-			Query:  r.URL.RawQuery,
-		},
-		Proto:         "HTTP/" + strconv.Itoa(r.ProtoMajor),
-		Headers:       make(map[string]string, len(r.Header)),
+		Method:        r.Method,
+		Scheme:        "http",
+		Authority:     r.Host,
+		Path:          r.RequestURI,
+		Headers:       map[string][]string(r.Header),
 		Body:          r.Body,
 		ContentLength: r.ContentLength,
 		Cookies:       map[string]*Cookie{},
-		Params:        map[string]*RequestParamValue{},
-		RemoteAddr:    r.RemoteAddr,
-		Values:        map[string]interface{}{},
+		Params: make(
+			map[string][]*RequestParamValue,
+			theRouter.maxParams,
+		),
+		RemoteAddr: r.RemoteAddr,
+		Values:     map[string]interface{}{},
 
 		httpRequest: r,
 	}
 
 	if r.TLS != nil {
-		req.URL.Scheme = "https"
-	}
-
-	if r.ProtoMajor < 2 {
-		req.Proto += "." + strconv.Itoa(r.ProtoMinor)
-	}
-
-	for k, v := range r.Header {
-		if len(v) > 0 {
-			req.Headers[k] = strings.Join(v, ", ")
-		}
+		req.Scheme = "https"
 	}
 
 	cIPStr, _, _ := net.SplitHostPort(req.RemoteAddr)
-	if f := req.Headers["Forwarded"]; f != "" { // See RFC 7239
-		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
+	if fs := req.Headers["forwarded"]; len(fs) > 0 { // See RFC 7239
+		for _, p := range strings.Split(
+			strings.Split(fs[0], ",")[0],
+			";",
+		) {
 			p := strings.TrimSpace(p)
 			if strings.HasPrefix(p, "for=") {
 				cIPStr = strings.TrimPrefix(p[4:], "\"[")
@@ -150,8 +102,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-	} else if xff := req.Headers["X-Forwarded-For"]; xff != "" {
-		cIPStr = strings.TrimSpace(strings.Split(xff, ",")[0])
+	} else if xffs := req.Headers["x-forwarded-for"]; len(xffs) > 0 {
+		cIPStr = strings.TrimSpace(strings.Split(xffs[0], ",")[0])
 	}
 
 	req.ClientIP = net.ParseIP(cIPStr)
@@ -161,9 +113,9 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Response
 
 	res := &Response{
-		StatusCode: 200,
-		Headers:    map[string]string{},
-		Cookies:    map[string]*Cookie{},
+		Status:  200,
+		Headers: map[string][]string{},
+		Cookies: map[string]*Cookie{},
 
 		request: req,
 		writer:  rw,

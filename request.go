@@ -14,13 +14,14 @@ import (
 // Request is an HTTP request.
 type Request struct {
 	Method        string
-	URL           *URL
-	Proto         string
-	Headers       map[string]string
+	Scheme        string
+	Authority     string
+	Path          string
+	Headers       map[string][]string
 	Body          io.Reader
 	ContentLength int64
 	Cookies       map[string]*Cookie
-	Params        map[string]*RequestParamValue
+	Params        map[string][]*RequestParamValue
 	RemoteAddr    string
 	ClientIP      net.IP
 	Values        map[string]interface{}
@@ -28,7 +29,6 @@ type Request struct {
 	httpRequest     *http.Request
 	parsedCookies   bool
 	parsedParams    bool
-	parsedFiles     bool
 	localizedString func(string) string
 }
 
@@ -96,28 +96,37 @@ func (r *Request) ParseParams() {
 	}
 
 	for k, v := range r.httpRequest.Form {
-		if len(v) > 0 {
-			r.Params[k] = &RequestParamValue{
-				i: v[0],
-			}
+		vs := make([]*RequestParamValue, 0, len(v))
+		for _, v := range v {
+			vs = append(vs, &RequestParamValue{
+				i: v,
+			})
 		}
+
+		r.Params[k] = vs
 	}
 
 	if r.httpRequest.MultipartForm != nil {
 		for k, v := range r.httpRequest.MultipartForm.Value {
-			if len(v) > 0 {
-				r.Params[k] = &RequestParamValue{
-					i: v[0],
-				}
+			vs := make([]*RequestParamValue, 0, len(v))
+			for _, v := range v {
+				vs = append(vs, &RequestParamValue{
+					i: v,
+				})
 			}
+
+			r.Params[k] = vs
 		}
 
 		for k, v := range r.httpRequest.MultipartForm.File {
-			if len(v) > 0 {
-				r.Params[k] = &RequestParamValue{
-					i: v[0],
-				}
+			vs := make([]*RequestParamValue, 0, len(v))
+			for _, v := range v {
+				vs = append(vs, &RequestParamValue{
+					i: v,
+				})
 			}
+
+			r.Params[k] = vs
 		}
 	}
 }
@@ -369,16 +378,10 @@ func (rpv *RequestParamValue) File() (*RequestParamFileValue, error) {
 			Seeker:   f,
 			Closer:   f,
 			Filename: fh.Filename,
-			Headers:  make(map[string]string, len(fh.Header)),
+			Headers:  map[string][]string(fh.Header),
 		}
 
-		for k, v := range fh.Header {
-			if len(v) > 0 {
-				rpv.f.Headers[k] = strings.Join(v, ", ")
-			}
-		}
-
-		rpv.f.Size, _ = f.Seek(0, io.SeekEnd)
+		rpv.f.ContentLength, _ = f.Seek(0, io.SeekEnd)
 		f.Seek(0, io.SeekStart)
 	}
 
@@ -391,7 +394,7 @@ type RequestParamFileValue struct {
 	io.Seeker
 	io.Closer
 
-	Filename string
-	Headers  map[string]string
-	Size     int64
+	Filename      string
+	Headers       map[string][]string
+	ContentLength int64
 }

@@ -19,18 +19,17 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	if r.Method == "GET" {
 		return b.bindParams(v, r.Params)
 	} else if r.Body == nil {
-		return &Error{
-			Code:    400,
-			Message: "request body cannot be empty",
-		}
+		return errors.New("request body cannot be empty")
 	}
 
-	mt, _, err := mime.ParseMediaType(r.Headers["Content-Type"])
+	ct := ""
+	if cts := r.Headers["content-type"]; len(cts) > 0 {
+		ct = cts[0]
+	}
+
+	mt, _, err := mime.ParseMediaType(ct)
 	if err != nil {
-		return &Error{
-			Code:    400,
-			Message: err.Error(),
-		}
+		return err
 	}
 
 	switch mt {
@@ -41,17 +40,11 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	case "application/x-www-form-urlencoded", "multipart/form-data":
 		err = b.bindParams(v, r.Params)
 	default:
-		return &Error{
-			Code:    415,
-			Message: "Unsupported Media Type",
-		}
+		return errors.New("unsupported media type")
 	}
 
 	if err != nil {
-		return &Error{
-			Code:    400,
-			Message: err.Error(),
-		}
+		return err
 	}
 
 	return nil
@@ -60,7 +53,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 // bindParams binds the params into the v.
 func (b *binder) bindParams(
 	v interface{},
-	params map[string]*RequestParamValue,
+	params map[string][]*RequestParamValue,
 ) error {
 	typ := reflect.TypeOf(v).Elem()
 	if typ.Kind() != reflect.Struct {
@@ -86,8 +79,10 @@ func (b *binder) bindParams(
 
 		tf := typ.Field(i)
 
-		pv, ok := params[tf.Name]
-		if !ok {
+		var pv *RequestParamValue
+		if pvs := params[tf.Name]; len(pvs) > 0 {
+			pv = pvs[0]
+		} else {
 			continue
 		}
 
