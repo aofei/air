@@ -71,22 +71,24 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Scheme:        "http",
 		Authority:     r.Host,
 		Path:          r.RequestURI,
-		Headers:       Headers(r.Header),
+		Headers:       make(Headers, len(r.Header)),
 		Body:          r.Body,
 		ContentLength: r.ContentLength,
 		Cookies:       map[string]*Cookie{},
-		Params: make(
-			map[string][]*RequestParamValue,
-			theRouter.maxParams,
-		),
-		RemoteAddr: r.RemoteAddr,
-		Values:     map[string]interface{}{},
+		Params:        make(RequestParams, theRouter.maxParams),
+		Files:         RequestFiles{},
+		RemoteAddr:    r.RemoteAddr,
+		Values:        map[string]interface{}{},
 
 		httpRequest: r,
 	}
 
 	if r.TLS != nil {
 		req.Scheme = "https"
+	}
+
+	for k, v := range r.Header {
+		req.Headers.Set(k, v)
 	}
 
 	cIPStr, _, _ := net.SplitHostPort(req.RemoteAddr)
@@ -133,7 +135,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 
 		req.ParseCookies()
-		req.ParseParams()
+		req.ParseParamAndFiles()
 
 		for i := len(Gases) - 1; i >= 0; i-- {
 			h = Gases[i](h)

@@ -79,9 +79,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		}
 
 		for k, v := range r.Headers {
-			for _, v := range v {
-				r.writer.Header().Add(k, v)
-			}
+			k := textproto.CanonicalMIMEHeaderKey(k)
+			r.writer.Header()[k] = v
 		}
 
 		r.writer.WriteHeader(r.Status)
@@ -649,9 +648,7 @@ func (r *Response) WebSocket() (*WebSocketConn, error) {
 	}
 
 	for k, v := range r.Headers {
-		for _, v := range v {
-			r.writer.Header().Add(k, v)
-		}
+		r.writer.Header()[textproto.CanonicalMIMEHeaderKey(k)] = v
 	}
 
 	r.Written = true
@@ -736,9 +733,12 @@ func (r *Response) CloseNotify() <-chan bool {
 // will be added automatically.
 func (r *Response) Push(target string, hs Headers) error {
 	var pos *http.PushOptions
-	if len(hs) > 0 {
+	if l := len(hs); l > 0 {
 		pos = &http.PushOptions{
-			Header: http.Header(hs),
+			Header: make(http.Header, l),
+		}
+		for k, v := range hs {
+			pos.Header[textproto.CanonicalMIMEHeaderKey(k)] = v
 		}
 	}
 

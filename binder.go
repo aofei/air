@@ -46,10 +46,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 }
 
 // bindParams binds the params into the v.
-func (b *binder) bindParams(
-	v interface{},
-	params map[string][]*RequestParamValue,
-) error {
+func (b *binder) bindParams(v interface{}, params RequestParams) error {
 	typ := reflect.TypeOf(v).Elem()
 	if typ.Kind() != reflect.Struct {
 		return errors.New("binding element must be a struct")
@@ -73,37 +70,33 @@ func (b *binder) bindParams(
 		}
 
 		tf := typ.Field(i)
-
-		var pv *RequestParamValue
-		if pvs := params[tf.Name]; len(pvs) > 0 {
-			pv = pvs[0]
-		} else {
+		if len(params[tf.Name]) == 0 {
 			continue
 		}
 
 		switch tf.Type.Kind() {
 		case reflect.Bool:
-			b, _ := pv.Bool()
+			b, _ := params.Bool(tf.Name)
 			vf.SetBool(b)
 		case reflect.Int,
 			reflect.Int8,
 			reflect.Int16,
 			reflect.Int32,
 			reflect.Int64:
-			i64, _ := pv.Int64()
+			i64, _ := params.Int64(tf.Name)
 			vf.SetInt(i64)
 		case reflect.Uint,
 			reflect.Uint8,
 			reflect.Uint16,
 			reflect.Uint32,
 			reflect.Uint64:
-			ui64, _ := pv.Uint64()
+			ui64, _ := params.Uint64(tf.Name)
 			vf.SetUint(ui64)
 		case reflect.Float32, reflect.Float64:
-			f64, _ := pv.Float64()
+			f64, _ := params.Float64(tf.Name)
 			vf.SetFloat(f64)
 		case reflect.String:
-			vf.SetString(pv.String())
+			vf.SetString(params.First(tf.Name))
 		default:
 			return errors.New("unknown type")
 		}

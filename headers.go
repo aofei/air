@@ -29,8 +29,8 @@ func (hs Headers) Delete(key string) {
 	delete(hs, strings.ToLower(key))
 }
 
-// First tries to return the first value associated with the key. It returns ""
-// if there are no values associated with the key.
+// First returns the first value associated with the key. It returns "" if there
+// are no values associated with the key.
 //
 // The key is case insensitive and will be canonicalized by the
 // `strings.ToLower()`. To use non-canonical keys, access the map directly.
