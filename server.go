@@ -71,7 +71,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Scheme:        "http",
 		Authority:     r.Host,
 		Path:          r.RequestURI,
-		Headers:       map[string][]string(r.Header),
+		Headers:       Headers(r.Header),
 		Body:          r.Body,
 		ContentLength: r.ContentLength,
 		Cookies:       map[string]*Cookie{},
@@ -90,11 +90,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	cIPStr, _, _ := net.SplitHostPort(req.RemoteAddr)
-	if fs := req.Headers["forwarded"]; len(fs) > 0 { // See RFC 7239
-		for _, p := range strings.Split(
-			strings.Split(fs[0], ",")[0],
-			";",
-		) {
+	if f := req.Headers.First("forwarded"); f != "" { // See RFC 7239
+		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
 			p := strings.TrimSpace(p)
 			if strings.HasPrefix(p, "for=") {
 				cIPStr = strings.TrimPrefix(p[4:], "\"[")
@@ -102,8 +99,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-	} else if xffs := req.Headers["x-forwarded-for"]; len(xffs) > 0 {
-		cIPStr = strings.TrimSpace(strings.Split(xffs[0], ",")[0])
+	} else if xff := req.Headers.First("x-forwarded-for"); xff != "" {
+		cIPStr = strings.TrimSpace(strings.Split(xff, ",")[0])
 	}
 
 	req.ClientIP = net.ParseIP(cIPStr)
@@ -114,7 +111,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	res := &Response{
 		Status:  200,
-		Headers: map[string][]string{},
+		Headers: Headers{},
 		Cookies: map[string]*Cookie{},
 
 		request: req,

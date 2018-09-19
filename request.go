@@ -17,7 +17,7 @@ type Request struct {
 	Scheme        string
 	Authority     string
 	Path          string
-	Headers       map[string][]string
+	Headers       Headers
 	Body          io.Reader
 	ContentLength int64
 	Cookies       map[string]*Cookie
@@ -378,7 +378,7 @@ func (rpv *RequestParamValue) File() (*RequestParamFileValue, error) {
 			Seeker:   f,
 			Closer:   f,
 			Filename: fh.Filename,
-			Headers:  map[string][]string(fh.Header),
+			Headers:  Headers(fh.Header),
 		}
 
 		rpv.f.ContentLength, _ = f.Seek(0, io.SeekEnd)
@@ -395,6 +395,6 @@ type RequestParamFileValue struct {
 	io.Closer
 
 	Filename      string
-	Headers       map[string][]string
+	Headers       Headers
 	ContentLength int64
 }

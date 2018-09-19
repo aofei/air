@@ -29,7 +29,7 @@ import (
 // Response is an HTTP response.
 type Response struct {
 	Status        int
-	Headers       map[string][]string
+	Headers       Headers
 	ContentLength int64
 	Cookies       map[string]*Cookie
 	Written       bool
@@ -57,16 +57,16 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		}
 
 		if r.Status >= 200 && r.Status < 400 {
-			r.Headers["accept-ranges"] = []string{"bytes"}
+			r.Headers.Set("accept-ranges", []string{"bytes"})
 		}
 
-		if len(r.Headers["content-encoding"]) == 0 &&
+		if r.Headers.First("content-encoding") == "" &&
 			r.Status >= 200 &&
 			r.Status != 204 &&
 			(r.Status >= 300 || r.request.Method != "CONNECT") {
-			r.Headers["content-length"] = []string{
+			r.Headers.Set("content-length", []string{
 				strconv.FormatInt(r.ContentLength, 10),
-			}
+			})
 		}
 
 		if len(r.Cookies) > 0 {
@@ -75,7 +75,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 				vs = append(vs, c.String())
 			}
 
-			r.Headers["set-cookie"] = vs
+			r.Headers.Set("set-cookie", vs)
 		}
 
 		for k, v := range r.Headers {
@@ -97,26 +97,10 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		return nil
 	}
 
-	im := ""
-	if ims := r.request.Headers["if-match"]; len(ims) > 0 {
-		im = ims[0]
-	}
-
-	et := ""
-	if ets := r.Headers["etag"]; len(ets) > 0 {
-		et = ets[0]
-	}
-
-	ius := time.Time{}
-	if iuss := r.request.Headers["if-unmodified-since"]; len(iuss) > 0 {
-		ius, _ = http.ParseTime(iuss[0])
-	}
-
-	lm := time.Time{}
-	if lms := r.Headers["last-modified"]; len(lms) > 0 {
-		lm, _ = http.ParseTime(lms[0])
-	}
-
+	im := r.request.Headers.First("if-match")
+	et := r.Headers.First("etag")
+	ius, _ := http.ParseTime(r.request.Headers.First("if-unmodified-since"))
+	lm, _ := http.ParseTime(r.Headers.First("last-modified"))
 	if im != "" {
 		matched := false
 		for {
@@ -155,16 +139,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		r.Status = 412
 	}
 
-	inm := ""
-	if inms := r.request.Headers["if-none-match"]; len(inms) > 0 {
-		inm = inms[0]
-	}
-
-	ims := time.Time{}
-	if imss := r.request.Headers["if-modified-since"]; len(imss) > 0 {
-		ims, _ = http.ParseTime(imss[0])
-	}
-
+	inm := r.request.Headers.First("if-none-match")
+	ims, _ := http.ParseTime(r.request.Headers.First("if-modified-since"))
 	if inm != "" {
 		noneMatched := true
 		for {
@@ -187,12 +163,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 				break
 			}
 
-			et := ""
-			if ets := r.Headers["etag"]; len(ets) > 0 {
-				et = ets[0]
-			}
-
-			if eTagWeakMatch(eTag, et) {
+			if eTagWeakMatch(eTag, r.Headers.First("etag")) {
 				noneMatched = false
 				break
 			}
@@ -212,8 +183,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 	}
 
 	if r.Status == 304 {
-		delete(r.Headers, "content-type")
-		delete(r.Headers, "content-length")
+		r.Headers.Delete("content-type")
+		r.Headers.Delete("content-length")
 		canWrite = true
 		return nil
 	} else if r.Status == 412 {
@@ -223,10 +194,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		return nil
 	}
 
-	ct := ""
-	if cts := r.Headers["content-type"]; len(cts) > 0 {
-		ct = cts[0]
-	} else {
+	ct := r.Headers.First("content-type")
+	if ct == "" {
 		// Read a chunk to decide between UTF-8 text and binary
 		b := [1 << 9]byte{}
 		n, _ := io.ReadFull(content, b[:])
@@ -235,7 +204,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			return err
 		}
 
-		r.Headers["content-type"] = []string{ct}
+		r.Headers.Set("content-type", []string{ct})
 	}
 
 	size, err := content.Seek(0, io.SeekEnd)
@@ -247,13 +216,12 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 	r.ContentLength = size
 
-	rh := ""
-	if rhs := r.request.Headers["range"]; len(rhs) == 0 {
+	rh := r.request.Headers.First("range")
+	if rh == "" {
 		canWrite = true
 		return nil
 	} else if r.request.Method == "GET" || r.request.Method == "HEAD" {
-		if irs := r.request.Headers["if-range"]; len(irs) > 0 {
-			ir := irs[0]
+		if ir := r.request.Headers.First("if-range"); ir != "" {
 			if eTag, _ := scanETag(ir); eTag != "" &&
 				!eTagStrongMatch(eTag, et) {
 				canWrite = true
@@ -271,8 +239,6 @@ func (r *Response) Write(content io.ReadSeeker) error {
 				return nil
 			}
 		}
-	} else {
-		rh = rhs[0]
 	}
 
 	const b = "bytes="
@@ -352,9 +318,9 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 	if noOverlap && len(ranges) == 0 {
 		// The specified ranges did not overlap with the content.
-		r.Headers["content-range"] = []string{
+		r.Headers.Set("content-range", []string{
 			fmt.Sprintf("bytes */%d", size),
-		}
+		})
 
 		r.Status = 416
 
@@ -389,7 +355,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 		r.ContentLength = ra.length
 		r.Status = 206
-		r.Headers["content-range"] = []string{ra.contentRange(size)}
+		r.Headers.Set("content-range", []string{ra.contentRange(size)})
 	} else if l > 1 {
 		var w countingWriter
 		mw := multipart.NewWriter(&w)
@@ -405,9 +371,9 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 		pr, pw := io.Pipe()
 		mw = multipart.NewWriter(pw)
-		r.Headers["content-type"] = []string{
+		r.Headers.Set("content-type", []string{
 			"multipart/byteranges; boundary=" + mw.Boundary(),
-		}
+		})
 		reader = pr
 		defer pr.Close()
 		go func() {
@@ -453,15 +419,15 @@ func (r *Response) NoContent() error {
 
 // Redirect responds to the client with a redirection to the url.
 func (r *Response) Redirect(url string) error {
-	r.Headers["location"] = []string{url}
+	r.Headers.Set("location", []string{url})
 	return r.Write(nil)
 }
 
 // Blob responds to the client with the content b.
 func (r *Response) Blob(b []byte) error {
-	if cts := r.Headers["content-type"]; len(cts) > 0 {
+	if ct := r.Headers.First("content-type"); ct != "" {
 		var err error
-		if b, err = theMinifier.minify(cts[0], b); err != nil {
+		if b, err = theMinifier.minify(ct, b); err != nil {
 			return err
 		}
 	}
@@ -471,7 +437,7 @@ func (r *Response) Blob(b []byte) error {
 
 // String responds to the client with the "text/plain" content s.
 func (r *Response) String(s string) error {
-	r.Headers["content-type"] = []string{"text/plain; charset=utf-8"}
+	r.Headers.Set("content-type", []string{"text/plain; charset=utf-8"})
 	return r.Blob([]byte(s))
 }
 
@@ -492,7 +458,9 @@ func (r *Response) JSON(v interface{}) error {
 		return err
 	}
 
-	r.Headers["content-type"] = []string{"application/json; charset=utf-8"}
+	r.Headers.Set("content-type", []string{
+		"application/json; charset=utf-8",
+	})
 
 	return r.Blob(b)
 }
@@ -515,7 +483,9 @@ func (r *Response) XML(v interface{}) error {
 	}
 
 	b = append([]byte(xml.Header), b...)
-	r.Headers["content-type"] = []string{"application/xml; charset=utf-8"}
+	r.Headers.Set("content-type", []string{
+		"application/xml; charset=utf-8",
+	})
 
 	return r.Blob(b)
 }
@@ -562,7 +532,7 @@ func (r *Response) HTML(h string) error {
 		f(tree)
 	}
 
-	r.Headers["content-type"] = []string{"text/html; charset=utf-8"}
+	r.Headers.Set("content-type", []string{"text/html; charset=utf-8"})
 
 	return r.Blob([]byte(h))
 }
@@ -630,7 +600,7 @@ func (r *Response) File(file string) error {
 		mt = fi.ModTime()
 	}
 
-	if len(r.Headers["content-type"]) == 0 {
+	if r.Headers.First("content-type") == "" {
 		ct := mime.TypeByExtension(filepath.Ext(file))
 		if ct == "" {
 			// Read a chunk to decide between UTF-8 text and binary
@@ -642,28 +612,30 @@ func (r *Response) File(file string) error {
 			}
 		}
 
-		r.Headers["content-type"] = []string{ct}
+		r.Headers.Set("content-type", []string{ct})
 	}
 
-	if len(r.Headers["etag"]) == 0 {
+	if r.Headers.First("etag") == "" {
 		h := md5.New()
 		if _, err := io.Copy(h, c); err != nil {
 			return err
 		}
 
-		r.Headers["etag"] = []string{fmt.Sprintf(`"%x"`, h.Sum(nil))}
+		r.Headers.Set("etag", []string{
+			fmt.Sprintf(`"%x"`, h.Sum(nil)),
+		})
 	}
 
-	if len(r.Headers["last-modified"]) == 0 {
-		r.Headers["last-modified"] = []string{
+	if r.Headers.First("last-modified") == "" {
+		r.Headers.Set("last-modified", []string{
 			mt.UTC().Format(http.TimeFormat),
-		}
+		})
 	}
 
 	return r.Write(c)
 }
 
-// WebSocket tries to convert the connection to the WebSocket protocol.
+// WebSocket switches the connection to the WebSocket protocol.
 func (r *Response) WebSocket() (*WebSocketConn, error) {
 	r.Status = 101
 
@@ -673,7 +645,7 @@ func (r *Response) WebSocket() (*WebSocketConn, error) {
 			vs = append(vs, c.String())
 		}
 
-		r.Headers["set-cookie"] = vs
+		r.Headers.Set("set-cookie", vs)
 	}
 
 	for k, v := range r.Headers {
@@ -754,24 +726,20 @@ func (r *Response) CloseNotify() <-chan bool {
 }
 
 // Push initiates an HTTP/2 server push. This constructs a synthetic request
-// using the given target and headers, serializes that request into a
-// PUSH_PROMISE frame, then dispatches that request using the server's request
-// handler. The target must either be an absolute path (like "/path") or an
-// absolute URL that contains a valid host and the same scheme as the parent
-// request. If the target is a path, it will inherit the scheme and host of the
-// parent request. The headers specifies additional promised request headers.
-// The headers cannot include HTTP/2 pseudo header fields like ":path" and
-// ":scheme", which will be added automatically.
-func (r *Response) Push(target string, headers map[string]string) error {
+// using the target and hs, serializes that request into a PUSH_PROMISE frame,
+// then dispatches that request using the server's request handler. The target
+// must either be an absolute path (like "/path") or an absolute URL that
+// contains a valid host and the same scheme as the parent request. If the
+// target is a path, it will inherit the scheme and host of the parent request.
+// The headers specifies additional promised request headers. The headers
+// cannot include HTTP/2 pseudo header fields like ":path" and ":scheme", which
+// will be added automatically.
+func (r *Response) Push(target string, hs Headers) error {
 	var pos *http.PushOptions
-	for k, v := range headers {
-		if pos == nil {
-			pos = &http.PushOptions{
-				Header: http.Header{},
-			}
+	if len(hs) > 0 {
+		pos = &http.PushOptions{
+			Header: http.Header(hs),
 		}
-
-		pos.Header.Set(k, v)
 	}
 
 	return r.writer.(http.Pusher).Push(target, pos)
