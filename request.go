@@ -20,7 +20,7 @@ type Request struct {
 	Cookies       map[string]*Cookie
 	Params        RequestParams
 	Files         RequestFiles
-	RemoteAddr    string
+	RemoteAddress string
 	ClientIP      net.IP
 	Values        map[string]interface{}
 

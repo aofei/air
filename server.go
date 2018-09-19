@@ -76,7 +76,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Cookies:       map[string]*Cookie{},
 		Params:        make(RequestParams, theRouter.maxParams),
 		Files:         RequestFiles{},
-		RemoteAddr:    r.RemoteAddr,
+		RemoteAddress: r.RemoteAddr,
 		Values:        map[string]interface{}{},
 
 		httpRequest: r,
@@ -90,7 +90,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		req.Headers.Set(k, v)
 	}
 
-	cIPStr, _, _ := net.SplitHostPort(req.RemoteAddr)
+	cIPStr, _, _ := net.SplitHostPort(req.RemoteAddress)
 	if f := req.Headers.First("forwarded"); f != "" { // See RFC 7239
 		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
 			p := strings.TrimSpace(p)
