@@ -2,13 +2,11 @@ package air
 
 import (
 	"context"
+	"log"
 	"net"
 	"net/http"
 	"strings"
 	"time"
-
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 // server is an HTTP server.
@@ -25,22 +23,23 @@ var theServer = &server{
 func (s *server) serve() error {
 	s.server.Addr = Address
 	s.server.Handler = s
+	s.server.ReadTimeout = ReadTimeout
+	s.server.ReadHeaderTimeout = ReadHeaderTimeout
+	s.server.WriteTimeout = WriteTimeout
 	s.server.IdleTimeout = IdleTimeout
+	s.server.MaxHeaderBytes = MaxHeaderBytes
+	s.server.ErrorLog = log.New(&serverErrorLogWriter{}, "air: ", 0)
 
 	if DebugMode {
 		LoggerLowestLevel = LoggerLevelDebug
 		DEBUG("air: serving in debug mode")
 	}
 
-	if TLSCertFile == "" || TLSKeyFile == "" {
-		s.server.Handler = h2c.NewHandler(s, &http2.Server{
-			IdleTimeout: IdleTimeout,
-		})
-
-		return s.server.ListenAndServe()
+	if TLSCertFile != "" && TLSKeyFile != "" {
+		return s.server.ListenAndServeTLS(TLSCertFile, TLSKeyFile)
 	}
 
-	return s.server.ListenAndServeTLS(TLSCertFile, TLSKeyFile)
+	return s.server.ListenAndServe()
 }
 
 // close closes the s immediately.
@@ -155,4 +154,13 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if err := h(req, res); err != nil {
 		ErrorHandler(err, req, res)
 	}
+}
+
+// serverErrorLogWriter is an HTTP server error log writer.
+type serverErrorLogWriter struct{}
+
+// Write implements the `io.Writer`.
+func (selw *serverErrorLogWriter) Write(b []byte) (int, error) {
+	ERROR(string(b))
+	return len(b), nil
 }

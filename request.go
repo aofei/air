@@ -533,7 +533,7 @@ func (rps RequestParams) Uint64s(key string) ([]uint64, error) {
 	return ui64s, nil
 }
 
-// Float32 returns an `float32` by parsing the first value associated with the
+// Float32 returns a `float32` by parsing the first value associated with the
 // key. It returns (0, nil) if there are no values associated with the key.
 func (rps RequestParams) Float32(key string) (float32, error) {
 	if v := rps.First(key); v != "" {
@@ -548,9 +548,8 @@ func (rps RequestParams) Float32(key string) (float32, error) {
 	return 0, nil
 }
 
-// Float32s returns an `float32s` slice by parsing the values associated with
-// the key. It returns (nil, nil) if there are no values associated with the
-// key.
+// Float32s returns a `float32s` slice by parsing the values associated with the
+// key. It returns (nil, nil) if there are no values associated with the key.
 func (rps RequestParams) Float32s(key string) ([]float32, error) {
 	if len(rps[key]) == 0 {
 		return nil, nil
@@ -569,7 +568,7 @@ func (rps RequestParams) Float32s(key string) ([]float32, error) {
 	return f32s, nil
 }
 
-// Float64 returns an `float64` by parsing the first value associated with the
+// Float64 returns a `float64` by parsing the first value associated with the
 // key. It returns (0, nil) if there are no values associated with the key.
 func (rps RequestParams) Float64(key string) (float64, error) {
 	if v := rps.First(key); v != "" {
@@ -579,9 +578,8 @@ func (rps RequestParams) Float64(key string) (float64, error) {
 	return 0, nil
 }
 
-// Float64s returns an `float64s` slice by parsing the values associated with
-// the key. It returns (nil, nil) if there are no values associated with the
-// key.
+// Float64s returns a `float64s` slice by parsing the values associated with the
+// key. It returns (nil, nil) if there are no values associated with the key.
 func (rps RequestParams) Float64s(key string) ([]float64, error) {
 	if len(rps[key]) == 0 {
 		return nil, nil

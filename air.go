@@ -38,13 +38,42 @@ var LoggerOutput = io.Writer(os.Stdout)
 // It is called "address" in the configuration file.
 var Address = "localhost:2333"
 
+// ReadTimeout is the maximum duration the server reads the request.
+//
+// It is called "read_timeout" in the configuration file.
+//
+// **Its unit in the configuration file is MILLISECONDS.**
+var ReadTimeout = time.Duration(0)
+
+// ReadHeaderTimeout is the amount of time allowed the server reads the request
+// headers.
+//
+// It is called "read_header_timeout" in the configuration file.
+//
+// **Its unit in the configuration file is MILLISECONDS.**
+var ReadHeaderTimeout = time.Duration(0)
+
+// WriteTimeout is the maximum duration the server writes an response.
+//
+// It is called "write_timeout" in the configuration file.
+//
+// **Its unit in the configuration file is MILLISECONDS.**
+var WriteTimeout = time.Duration(0)
+
 // IdleTimeout is the maximum amount of time the server waits for the next
-// request.
+// request. If it is zero, the value of `ReadTimeout` is used. If both are zero,
+// `ReadHeaderTimeout` is used.
 //
 // It is called "idle_timeout" in the configuration file.
 //
 // **Its unit in the configuration file is MILLISECONDS.**
 var IdleTimeout = time.Duration(0)
+
+// MaxHeaderBytes is the maximum number of bytes the server will read parsing
+// the request header's keys and values, including the request line.
+//
+// It is called "max_header_bytes" in the configuration file.
+var MaxHeaderBytes = 1 << 20
 
 // TLSCertFile is the path to the TLS certificate file used when starting the
 // server.
@@ -59,23 +88,25 @@ var TLSKeyFile = ""
 
 // ErrorHandler is the centralized error handler for the server.
 var ErrorHandler = func(err error, req *Request, res *Response) {
-	if !res.Written {
-		if res.Status < 400 {
-			res.Status = 500
-		}
-
-		m := err.Error()
-		if res.Status == 500 && !DebugMode {
-			m = "internal server error"
-		}
-
-		if req.Method == "GET" || req.Method == "HEAD" {
-			delete(res.Headers, "etag")
-			delete(res.Headers, "last-modified")
-		}
-
-		res.String(m)
+	if res.Written {
+		return
 	}
+
+	if res.Status < 400 {
+		res.Status = 500
+	}
+
+	m := err.Error()
+	if res.Status == 500 && !DebugMode {
+		m = "internal server error"
+	}
+
+	if req.Method == "GET" || req.Method == "HEAD" {
+		res.Headers.Delete("etag")
+		res.Headers.Delete("last-modified")
+	}
+
+	res.String(m)
 }
 
 // Pregases is the `Gas` chain that performs before routing.
