@@ -102,8 +102,8 @@ var ErrorHandler = func(err error, req *Request, res *Response) {
 	}
 
 	if req.Method == "GET" || req.Method == "HEAD" {
-		res.Headers.Delete("etag")
-		res.Headers.Delete("last-modified")
+		delete(req.Headers, "etag")
+		delete(req.Headers, "last-modified")
 	}
 
 	res.String(m)
@@ -418,7 +418,10 @@ func TRACE(path string, h Handler, gases ...Gas) {
 // from the provided root with the optional route-level gases.
 func STATIC(prefix, root string, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
-		err := res.File(filepath.Join(root, req.Params.First("*")))
+		err := res.File(filepath.Join(
+			root,
+			req.Params["*"].FirstValue().String(),
+		))
 		if os.IsNotExist(err) {
 			return NotFoundHandler(req, res)
 		}

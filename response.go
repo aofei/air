@@ -29,7 +29,7 @@ import (
 // Response is an HTTP response.
 type Response struct {
 	Status        int
-	Headers       Headers
+	Headers       map[string]*Header
 	ContentLength int64
 	Cookies       map[string]*Cookie
 	Written       bool
@@ -57,16 +57,22 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		}
 
 		if r.Status >= 200 && r.Status < 400 {
-			r.Headers.Set("accept-ranges", []string{"bytes"})
+			r.Headers["accept-ranges"] = &Header{
+				Name:   "accept-ranges",
+				Values: []string{"bytes"},
+			}
 		}
 
-		if r.Headers.First("content-encoding") == "" &&
+		if r.Headers["content-encoding"].FirstValue() == "" &&
 			r.Status >= 200 &&
 			r.Status != 204 &&
 			(r.Status >= 300 || r.request.Method != "CONNECT") {
-			r.Headers.Set("content-length", []string{
-				strconv.FormatInt(r.ContentLength, 10),
-			})
+			r.Headers["content-length"] = &Header{
+				Name: "content-length",
+				Values: []string{
+					strconv.FormatInt(r.ContentLength, 10),
+				},
+			}
 		}
 
 		if len(r.Cookies) > 0 {
@@ -75,12 +81,15 @@ func (r *Response) Write(content io.ReadSeeker) error {
 				vs = append(vs, c.String())
 			}
 
-			r.Headers.Set("set-cookie", vs)
+			r.Headers["set-cookie"] = &Header{
+				Name:   "set-cookie",
+				Values: vs,
+			}
 		}
 
 		for k, v := range r.Headers {
 			k := textproto.CanonicalMIMEHeaderKey(k)
-			r.writer.Header()[k] = v
+			r.writer.Header()[k] = v.Values
 		}
 
 		r.writer.WriteHeader(r.Status)
@@ -96,10 +105,12 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		return nil
 	}
 
-	im := r.request.Headers.First("if-match")
-	et := r.Headers.First("etag")
-	ius, _ := http.ParseTime(r.request.Headers.First("if-unmodified-since"))
-	lm, _ := http.ParseTime(r.Headers.First("last-modified"))
+	im := r.request.Headers["if-match"].FirstValue()
+	et := r.Headers["etag"].FirstValue()
+	ius, _ := http.ParseTime(
+		r.request.Headers["if-unmodified-since"].FirstValue(),
+	)
+	lm, _ := http.ParseTime(r.Headers["last-modified"].FirstValue())
 	if im != "" {
 		matched := false
 		for {
@@ -138,8 +149,10 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		r.Status = 412
 	}
 
-	inm := r.request.Headers.First("if-none-match")
-	ims, _ := http.ParseTime(r.request.Headers.First("if-modified-since"))
+	inm := r.request.Headers["if-none-match"].FirstValue()
+	ims, _ := http.ParseTime(
+		r.request.Headers["if-modified-since"].FirstValue(),
+	)
 	if inm != "" {
 		noneMatched := true
 		for {
@@ -162,7 +175,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 				break
 			}
 
-			if eTagWeakMatch(eTag, r.Headers.First("etag")) {
+			if eTagWeakMatch(eTag, r.Headers["etag"].FirstValue()) {
 				noneMatched = false
 				break
 			}
@@ -182,8 +195,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 	}
 
 	if r.Status == 304 {
-		r.Headers.Delete("content-type")
-		r.Headers.Delete("content-length")
+		delete(r.Headers, "content-type")
+		delete(r.Headers, "content-length")
 		canWrite = true
 		return nil
 	} else if r.Status == 412 {
@@ -193,7 +206,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		return nil
 	}
 
-	ct := r.Headers.First("content-type")
+	ct := r.Headers["content-type"].FirstValue()
 	if ct == "" {
 		// Read a chunk to decide between UTF-8 text and binary
 		b := [1 << 9]byte{}
@@ -203,7 +216,10 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			return err
 		}
 
-		r.Headers.Set("content-type", []string{ct})
+		r.Headers["content-type"] = &Header{
+			Name:   "content-type",
+			Values: []string{ct},
+		}
 	}
 
 	size, err := content.Seek(0, io.SeekEnd)
@@ -215,12 +231,12 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 	r.ContentLength = size
 
-	rh := r.request.Headers.First("range")
+	rh := r.request.Headers["range"].FirstValue()
 	if rh == "" {
 		canWrite = true
 		return nil
 	} else if r.request.Method == "GET" || r.request.Method == "HEAD" {
-		if ir := r.request.Headers.First("if-range"); ir != "" {
+		if ir := r.request.Headers["if-range"].FirstValue(); ir != "" {
 			if eTag, _ := scanETag(ir); eTag != "" &&
 				!eTagStrongMatch(eTag, et) {
 				canWrite = true
@@ -317,9 +333,10 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 	if noOverlap && len(ranges) == 0 {
 		// The specified ranges did not overlap with the content.
-		r.Headers.Set("content-range", []string{
-			fmt.Sprintf("bytes */%d", size),
-		})
+		r.Headers["content-range"] = &Header{
+			Name:   "content-range",
+			Values: []string{fmt.Sprintf("bytes */%d", size)},
+		}
 
 		r.Status = 416
 
@@ -354,7 +371,10 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 		r.ContentLength = ra.length
 		r.Status = 206
-		r.Headers.Set("content-range", []string{ra.contentRange(size)})
+		r.Headers["content-range"] = &Header{
+			Name:   "content-range",
+			Values: []string{ra.contentRange(size)},
+		}
 	} else if l > 1 {
 		var w countingWriter
 		mw := multipart.NewWriter(&w)
@@ -370,9 +390,13 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 		pr, pw := io.Pipe()
 		mw = multipart.NewWriter(pw)
-		r.Headers.Set("content-type", []string{
-			"multipart/byteranges; boundary=" + mw.Boundary(),
-		})
+		r.Headers["content-type"] = &Header{
+			Name: "content-type",
+			Values: []string{
+				"multipart/byteranges; boundary=" +
+					mw.Boundary(),
+			},
+		}
 		reader = pr
 		defer pr.Close()
 		go func() {
@@ -418,13 +442,16 @@ func (r *Response) NoContent() error {
 
 // Redirect responds to the client with a redirection to the url.
 func (r *Response) Redirect(url string) error {
-	r.Headers.Set("location", []string{url})
+	r.Headers["location"] = &Header{
+		Name:   "location",
+		Values: []string{url},
+	}
 	return r.Write(nil)
 }
 
 // Blob responds to the client with the content b.
 func (r *Response) Blob(b []byte) error {
-	if ct := r.Headers.First("content-type"); ct != "" {
+	if ct := r.Headers["content-type"].FirstValue(); ct != "" {
 		var err error
 		if b, err = theMinifier.minify(ct, b); err != nil {
 			return err
@@ -436,7 +463,10 @@ func (r *Response) Blob(b []byte) error {
 
 // String responds to the client with the "text/plain" content s.
 func (r *Response) String(s string) error {
-	r.Headers.Set("content-type", []string{"text/plain; charset=utf-8"})
+	r.Headers["content-type"] = &Header{
+		Name:   "content-type",
+		Values: []string{"text/plain; charset=utf-8"},
+	}
 	return r.Blob([]byte(s))
 }
 
@@ -457,9 +487,10 @@ func (r *Response) JSON(v interface{}) error {
 		return err
 	}
 
-	r.Headers.Set("content-type", []string{
-		"application/json; charset=utf-8",
-	})
+	r.Headers["content-type"] = &Header{
+		Name:   "content-type",
+		Values: []string{"application/json; charset=utf-8"},
+	}
 
 	return r.Blob(b)
 }
@@ -482,9 +513,10 @@ func (r *Response) XML(v interface{}) error {
 	}
 
 	b = append([]byte(xml.Header), b...)
-	r.Headers.Set("content-type", []string{
-		"application/xml; charset=utf-8",
-	})
+	r.Headers["content-type"] = &Header{
+		Name:   "content-type",
+		Values: []string{"application/xml; charset=utf-8"},
+	}
 
 	return r.Blob(b)
 }
@@ -531,7 +563,10 @@ func (r *Response) HTML(h string) error {
 		f(tree)
 	}
 
-	r.Headers.Set("content-type", []string{"text/html; charset=utf-8"})
+	r.Headers["content-type"] = &Header{
+		Name:   "content-type",
+		Values: []string{"text/html; charset=utf-8"},
+	}
 
 	return r.Blob([]byte(h))
 }
@@ -599,7 +634,7 @@ func (r *Response) File(file string) error {
 		mt = fi.ModTime()
 	}
 
-	if r.Headers.First("content-type") == "" {
+	if r.Headers["content-type"].FirstValue() == "" {
 		ct := mime.TypeByExtension(filepath.Ext(file))
 		if ct == "" {
 			// Read a chunk to decide between UTF-8 text and binary
@@ -611,24 +646,29 @@ func (r *Response) File(file string) error {
 			}
 		}
 
-		r.Headers.Set("content-type", []string{ct})
+		r.Headers["content-type"] = &Header{
+			Name:   "content-type",
+			Values: []string{ct},
+		}
 	}
 
-	if r.Headers.First("etag") == "" {
+	if r.Headers["etag"].FirstValue() == "" {
 		h := md5.New()
 		if _, err := io.Copy(h, c); err != nil {
 			return err
 		}
 
-		r.Headers.Set("etag", []string{
-			fmt.Sprintf(`"%x"`, h.Sum(nil)),
-		})
+		r.Headers["etag"] = &Header{
+			Name:   "etag",
+			Values: []string{fmt.Sprintf(`"%x"`, h.Sum(nil))},
+		}
 	}
 
-	if r.Headers.First("last-modified") == "" {
-		r.Headers.Set("last-modified", []string{
-			mt.UTC().Format(http.TimeFormat),
-		})
+	if r.Headers["last-modified"].FirstValue() == "" {
+		r.Headers["last-modified"] = &Header{
+			Name:   "last-modified",
+			Values: []string{mt.UTC().Format(http.TimeFormat)},
+		}
 	}
 
 	return r.Write(c)
@@ -644,11 +684,15 @@ func (r *Response) WebSocket() (*WebSocketConn, error) {
 			vs = append(vs, c.String())
 		}
 
-		r.Headers.Set("set-cookie", vs)
+		r.Headers["set-cookie"] = &Header{
+			Name:   "set-cookie",
+			Values: vs,
+		}
 	}
 
 	for k, v := range r.Headers {
-		r.writer.Header()[textproto.CanonicalMIMEHeaderKey(k)] = v
+		k := textproto.CanonicalMIMEHeaderKey(k)
+		r.writer.Header()[k] = v.Values
 	}
 
 	r.Written = true
@@ -723,22 +767,23 @@ func (r *Response) CloseNotify() <-chan bool {
 }
 
 // Push initiates an HTTP/2 server push. This constructs a synthetic request
-// using the target and hs, serializes that request into a PUSH_PROMISE frame,
-// then dispatches that request using the server's request handler. The target
-// must either be an absolute path (like "/path") or an absolute URL that
-// contains a valid host and the same scheme as the parent request. If the
+// using the target and headers, serializes that request into a PUSH_PROMISE
+// frame, then dispatches that request using the server's request handler. The
+// target must either be an absolute path (like "/path") or an absolute URL
+// that contains a valid host and the same scheme as the parent request. If the
 // target is a path, it will inherit the scheme and host of the parent request.
 // The headers specifies additional promised request headers. The headers
 // cannot include HTTP/2 pseudo header fields like ":path" and ":scheme", which
 // will be added automatically.
-func (r *Response) Push(target string, hs Headers) error {
+func (r *Response) Push(target string, headers map[string]*Header) error {
 	var pos *http.PushOptions
-	if l := len(hs); l > 0 {
+	if l := len(headers); l > 0 {
 		pos = &http.PushOptions{
 			Header: make(http.Header, l),
 		}
-		for k, v := range hs {
-			pos.Header[textproto.CanonicalMIMEHeaderKey(k)] = v
+		for k, v := range headers {
+			k := textproto.CanonicalMIMEHeaderKey(k)
+			r.writer.Header()[k] = v.Values
 		}
 	}
 

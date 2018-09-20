@@ -1,11 +1,16 @@
 package air
 
 import (
+	"errors"
+	"fmt"
 	"io"
+	"mime/multipart"
 	"net"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // Request is an HTTP request.
@@ -14,20 +19,19 @@ type Request struct {
 	Scheme        string
 	Authority     string
 	Path          string
-	Headers       Headers
+	Headers       map[string]*Header
 	Body          io.Reader
 	ContentLength int64
 	Cookies       map[string]*Cookie
-	Params        RequestParams
-	Files         RequestFiles
+	Params        map[string]*RequestParam
 	RemoteAddress string
 	ClientIP      net.IP
 	Values        map[string]interface{}
 
-	httpRequest         *http.Request
-	parsedCookies       bool
-	parsedParamAndFiles bool
-	localizedString     func(string) string
+	httpRequest      *http.Request
+	parseCookiesOnce *sync.Once
+	parseParamsOnce  *sync.Once
+	localizedString  func(string) string
 }
 
 // ParseCookies parses the cookies sent with the r into the `r.Cookies`.
@@ -35,103 +39,122 @@ type Request struct {
 // It will be called after routing. Relax, you can of course call it before
 // routing, it will only take effect on the very first call.
 func (r *Request) ParseCookies() {
-	if r.parsedCookies {
-		return
-	}
-
-	r.parsedCookies = true
-
-	for _, line := range r.httpRequest.Header["Cookie"] {
-		ps := strings.Split(strings.TrimSpace(line), ";")
-		if len(ps) == 1 && ps[0] == "" {
-			continue
-		}
-
-		for i := 0; i < len(ps); i++ {
-			ps[i] = strings.TrimSpace(ps[i])
-			if len(ps[i]) == 0 {
+	r.parseCookiesOnce.Do(func() {
+		for _, line := range r.httpRequest.Header["Cookie"] {
+			ps := strings.Split(strings.TrimSpace(line), ";")
+			if len(ps) == 1 && ps[0] == "" {
 				continue
 			}
 
-			n, v := ps[i], ""
-			if i := strings.Index(n, "="); i >= 0 {
-				n, v = n[:i], n[i+1:]
-			}
-
-			if !validCookieName(n) {
-				continue
-			}
-
-			if len(v) > 1 && v[0] == '"' && v[len(v)-1] == '"' {
-				v = v[1 : len(v)-1]
-			}
-
-			if !validCookieValue(v) {
-				continue
-			}
-
-			r.Cookies[n] = &Cookie{
-				Name:  n,
-				Value: v,
-			}
-		}
-	}
-}
-
-// ParseParamAndFiles parses the params and the files sent with the r into the
-// `r.Params` and `r.Files`.
-//
-// It will be called after routing. Relax, you can of course call it before
-// routing, it will only take effect on the very first call.
-func (r *Request) ParseParamAndFiles() {
-	if r.parsedParamAndFiles {
-		return
-	}
-
-	r.parsedParamAndFiles = true
-
-	if r.httpRequest.Form == nil || r.httpRequest.MultipartForm == nil {
-		r.httpRequest.ParseMultipartForm(32 << 20)
-	}
-
-	for k, v := range r.httpRequest.Form {
-		r.Params[k] = v
-	}
-
-	if r.httpRequest.MultipartForm != nil {
-		for k, v := range r.httpRequest.MultipartForm.Value {
-			r.Params[k] = v
-		}
-
-		for k, v := range r.httpRequest.MultipartForm.File {
-			fs := make([]*RequestFile, 0, len(v))
-			for _, v := range v {
-				f, err := v.Open()
-				if err != nil {
+			for i := 0; i < len(ps); i++ {
+				ps[i] = strings.TrimSpace(ps[i])
+				if len(ps[i]) == 0 {
 					continue
 				}
 
-				hs := make(Headers, len(v.Header))
-				for k, v := range v.Header {
-					hs.Set(k, v)
+				n, v := ps[i], ""
+				if i := strings.Index(n, "="); i >= 0 {
+					n, v = n[:i], n[i+1:]
 				}
 
-				cl, _ := f.Seek(0, io.SeekEnd)
-				f.Seek(0, io.SeekStart)
+				if !validCookieName(n) {
+					continue
+				}
 
-				fs = append(fs, &RequestFile{
-					Reader:        f,
-					Seeker:        f,
-					Closer:        f,
-					Filename:      v.Filename,
-					Headers:       hs,
-					ContentLength: cl,
+				if len(v) > 1 && v[0] == '"' &&
+					v[len(v)-1] == '"' {
+					v = v[1 : len(v)-1]
+				}
+
+				if !validCookieValue(v) {
+					continue
+				}
+
+				r.Cookies[n] = &Cookie{
+					Name:  n,
+					Value: v,
+				}
+			}
+		}
+	})
+}
+
+// ParseParams parses the params sent with the r into the `r.Params`.
+//
+// It will be called after routing. Relax, you can of course call it before
+// routing, it will only take effect on the very first call.
+func (r *Request) ParseParams() {
+	r.parseParamsOnce.Do(func() {
+		if r.httpRequest.Form == nil ||
+			r.httpRequest.MultipartForm == nil {
+			r.httpRequest.ParseMultipartForm(32 << 20)
+		}
+
+		for k, v := range r.httpRequest.Form {
+			vs := make([]*RequestParamValue, 0, len(v))
+			for _, v := range v {
+				vs = append(vs, &RequestParamValue{
+					i: v,
 				})
 			}
 
-			r.Files[k] = fs
+			if r.Params[k] == nil {
+				r.Params[k] = &RequestParam{
+					Name:   k,
+					Values: vs,
+				}
+			} else {
+				r.Params[k].Values = append(
+					r.Params[k].Values,
+					vs...,
+				)
+			}
 		}
-	}
+
+		if r.httpRequest.MultipartForm != nil {
+			for k, v := range r.httpRequest.MultipartForm.Value {
+				vs := make([]*RequestParamValue, 0, len(v))
+				for _, v := range v {
+					vs = append(vs, &RequestParamValue{
+						i: v,
+					})
+				}
+
+				if r.Params[k] == nil {
+					r.Params[k] = &RequestParam{
+						Name:   k,
+						Values: vs,
+					}
+				} else {
+					r.Params[k].Values = append(
+						r.Params[k].Values,
+						vs...,
+					)
+				}
+			}
+
+			for k, v := range r.httpRequest.MultipartForm.File {
+				vs := make([]*RequestParamValue, 0, len(v))
+				for _, v := range v {
+					vs = append(vs, &RequestParamValue{
+						i: v,
+					})
+				}
+
+				if r.Params[k] == nil {
+					r.Params[k] = &RequestParam{
+						Name:   k,
+						Values: vs,
+					}
+				} else {
+					r.Params[k].Values = append(
+						r.Params[k].Values,
+						vs...,
+					)
+				}
+			}
+		}
+	})
 }
 
 // Bind binds the r into the v.
@@ -150,474 +173,294 @@ func (r *Request) LocalizedString(key string) string {
 	return key
 }
 
-// RequestParams is an HTTP request param map.
-type RequestParams map[string][]string
-
-// First returns the first value associated with the key. It returns "" if there
-// are no values associated with the key.
-func (rps RequestParams) First(key string) string {
-	if vs := rps[key]; len(vs) > 0 {
-		return vs[0]
-	}
-
-	return ""
+// RequestParam is an HTTP request param.
+type RequestParam struct {
+	Name   string
+	Values []*RequestParamValue
 }
 
-// Bool returns a `bool` by parsing the first value associated with the key. It
-// returns (false, nil) if there are no values associated with the key.
-func (rps RequestParams) Bool(key string) (bool, error) {
-	if v := rps.First(key); v != "" {
-		return strconv.ParseBool(v)
+// FirstValue returns the first value of the rp. It returns nil if the rp is nil
+// or there are no values.
+func (rp *RequestParam) FirstValue() *RequestParamValue {
+	if rp == nil || len(rp.Values) == 0 {
+		return nil
 	}
 
-	return false, nil
+	return rp.Values[0]
 }
 
-// Bools returns a `bool` slice by parsing the values associated with the key.
-// It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Bools(key string) ([]bool, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
+// RequestParamValue is an HTTP request param value.
+type RequestParamValue struct {
+	i    interface{}
+	b    *bool
+	i64  *int64
+	ui64 *uint64
+	f64  *float64
+	s    *string
+	f    *RequestParamFileValue
+}
 
-	bs := make([]bool, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		b, err := strconv.ParseBool(v)
+// Bool returns a `bool` from the rpv's underlying value.
+func (rpv *RequestParamValue) Bool() (bool, error) {
+	if rpv.b == nil {
+		b, err := strconv.ParseBool(rpv.String())
 		if err != nil {
-			return nil, err
+			return false, err
 		}
 
-		bs = append(bs, b)
+		rpv.b = &b
 	}
 
-	return bs, nil
+	return *rpv.b, nil
 }
 
-// Int returns an `int` by parsing the first value associated with the key. It
-// returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Int(key string) (int, error) {
-	if v := rps.First(key); v != "" {
-		i64, err := strconv.ParseInt(v, 10, 0)
+// Int returns an `int` from the rpv's underlying value.
+func (rpv *RequestParamValue) Int() (int, error) {
+	if rpv.i64 == nil {
+		i64, err := strconv.ParseInt(rpv.String(), 10, 0)
 		if err != nil {
 			return 0, err
 		}
 
-		return int(i64), nil
+		rpv.i64 = &i64
 	}
 
-	return 0, nil
+	return int(*rpv.i64), nil
 }
 
-// Ints returns an `int` slice by parsing the values associated with the key. It
-// returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Ints(key string) ([]int, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	is := make([]int, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		i64, err := strconv.ParseInt(v, 10, 0)
-		if err != nil {
-			return nil, err
-		}
-
-		is = append(is, int(i64))
-	}
-
-	return is, nil
-}
-
-// Int8 returns an `int8` by parsing the first value associated with the key. It
-// returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Int8(key string) (int8, error) {
-	if v := rps.First(key); v != "" {
-		i64, err := strconv.ParseInt(v, 10, 8)
+// Int8 returns an `int8` from the rpv's underlying value.
+func (rpv *RequestParamValue) Int8() (int8, error) {
+	if rpv.i64 == nil {
+		i64, err := strconv.ParseInt(rpv.String(), 10, 8)
 		if err != nil {
 			return 0, err
 		}
 
-		return int8(i64), nil
+		rpv.i64 = &i64
 	}
 
-	return 0, nil
+	return int8(*rpv.i64), nil
 }
 
-// Int8s returns an `int8` slice by parsing the values associated with the key.
-// It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Int8s(key string) ([]int8, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	i8s := make([]int8, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		i64, err := strconv.ParseInt(v, 10, 8)
-		if err != nil {
-			return nil, err
-		}
-
-		i8s = append(i8s, int8(i64))
-	}
-
-	return i8s, nil
-}
-
-// Int16 returns an `int16` by parsing the first value associated with the key.
-// It returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Int16(key string) (int16, error) {
-	if v := rps.First(key); v != "" {
-		i64, err := strconv.ParseInt(v, 10, 16)
+// Int16 returns an `int16` from the rpv's underlying value.
+func (rpv *RequestParamValue) Int16() (int16, error) {
+	if rpv.i64 == nil {
+		i64, err := strconv.ParseInt(rpv.String(), 10, 16)
 		if err != nil {
 			return 0, err
 		}
 
-		return int16(i64), nil
+		rpv.i64 = &i64
 	}
 
-	return 0, nil
+	return int16(*rpv.i64), nil
 }
 
-// Int16s returns an `int16s` slice by parsing the values associated with the
-// key. It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Int16s(key string) ([]int16, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	i16s := make([]int16, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		i64, err := strconv.ParseInt(v, 10, 16)
-		if err != nil {
-			return nil, err
-		}
-
-		i16s = append(i16s, int16(i64))
-	}
-
-	return i16s, nil
-}
-
-// Int32 returns an `int32` by parsing the first value associated with the key.
-// It returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Int32(key string) (int32, error) {
-	if v := rps.First(key); v != "" {
-		i64, err := strconv.ParseInt(v, 10, 32)
+// Int32 returns an `int32` from the rpv's underlying value.
+func (rpv *RequestParamValue) Int32() (int32, error) {
+	if rpv.i64 == nil {
+		i64, err := strconv.ParseInt(rpv.String(), 10, 32)
 		if err != nil {
 			return 0, err
 		}
 
-		return int32(i64), nil
+		rpv.i64 = &i64
 	}
 
-	return 0, nil
+	return int32(*rpv.i64), nil
 }
 
-// Int32s returns an `int32s` slice by parsing the values associated with the
-// key. It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Int32s(key string) ([]int32, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	i32s := make([]int32, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		i64, err := strconv.ParseInt(v, 10, 32)
-		if err != nil {
-			return nil, err
-		}
-
-		i32s = append(i32s, int32(i64))
-	}
-
-	return i32s, nil
-}
-
-// Int64 returns an `int64` by parsing the first value associated with the key.
-// It returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Int64(key string) (int64, error) {
-	if v := rps.First(key); v != "" {
-		return strconv.ParseInt(v, 10, 64)
-	}
-
-	return 0, nil
-}
-
-// Int64s returns an `int64s` slice by parsing the values associated with the
-// key. It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Int64s(key string) ([]int64, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	i64s := make([]int64, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		i64, err := strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		i64s = append(i64s, i64)
-	}
-
-	return i64s, nil
-}
-
-// Uint returns an `uint` by parsing the first value associated with the key. It
-// returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Uint(key string) (uint, error) {
-	if v := rps.First(key); v != "" {
-		ui64, err := strconv.ParseUint(v, 10, 0)
+// Int64 returns an `int64` from the rpv's underlying value.
+func (rpv *RequestParamValue) Int64() (int64, error) {
+	if rpv.i64 == nil {
+		i64, err := strconv.ParseInt(rpv.String(), 10, 64)
 		if err != nil {
 			return 0, err
 		}
 
-		return uint(ui64), nil
+		rpv.i64 = &i64
 	}
 
-	return 0, nil
+	return *rpv.i64, nil
 }
 
-// Uints returns an `uint` slice by parsing the values associated with the key.
-// It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Uints(key string) ([]uint, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	is := make([]uint, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		ui64, err := strconv.ParseUint(v, 10, 0)
-		if err != nil {
-			return nil, err
-		}
-
-		is = append(is, uint(ui64))
-	}
-
-	return is, nil
-}
-
-// Uint8 returns an `uint8` by parsing the first value associated with the key. It
-// returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Uint8(key string) (uint8, error) {
-	if v := rps.First(key); v != "" {
-		ui64, err := strconv.ParseUint(v, 10, 8)
+// Uint returns an `uint` from the rpv's underlying value.
+func (rpv *RequestParamValue) Uint() (uint, error) {
+	if rpv.ui64 == nil {
+		ui64, err := strconv.ParseUint(rpv.String(), 10, 0)
 		if err != nil {
 			return 0, err
 		}
 
-		return uint8(ui64), nil
+		rpv.ui64 = &ui64
 	}
 
-	return 0, nil
+	return uint(*rpv.ui64), nil
 }
 
-// Uint8s returns an `uint8` slice by parsing the values associated with the
-// key. It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Uint8s(key string) ([]uint8, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	ui8s := make([]uint8, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		ui64, err := strconv.ParseUint(v, 10, 8)
-		if err != nil {
-			return nil, err
-		}
-
-		ui8s = append(ui8s, uint8(ui64))
-	}
-
-	return ui8s, nil
-}
-
-// Uint16 returns an `uint16` by parsing the first value associated with the
-// key. It returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Uint16(key string) (uint16, error) {
-	if v := rps.First(key); v != "" {
-		ui64, err := strconv.ParseUint(v, 10, 16)
+// Uint8 returns an `uint8` from the rpv's underlying value.
+func (rpv *RequestParamValue) Uint8() (uint8, error) {
+	if rpv.ui64 == nil {
+		ui64, err := strconv.ParseUint(rpv.String(), 10, 8)
 		if err != nil {
 			return 0, err
 		}
 
-		return uint16(ui64), nil
+		rpv.ui64 = &ui64
 	}
 
-	return 0, nil
+	return uint8(*rpv.ui64), nil
 }
 
-// Uint16s returns an `uint16s` slice by parsing the values associated with the
-// key. It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Uint16s(key string) ([]uint16, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	ui16s := make([]uint16, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		ui64, err := strconv.ParseUint(v, 10, 16)
-		if err != nil {
-			return nil, err
-		}
-
-		ui16s = append(ui16s, uint16(ui64))
-	}
-
-	return ui16s, nil
-}
-
-// Uint32 returns an `uint32` by parsing the first value associated with the
-// key. It returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Uint32(key string) (uint32, error) {
-	if v := rps.First(key); v != "" {
-		ui64, err := strconv.ParseUint(v, 10, 32)
+// Uint16 returns an `uint16` from the rpv's underlying value.
+func (rpv *RequestParamValue) Uint16() (uint16, error) {
+	if rpv.ui64 == nil {
+		ui64, err := strconv.ParseUint(rpv.String(), 10, 16)
 		if err != nil {
 			return 0, err
 		}
 
-		return uint32(ui64), nil
+		rpv.ui64 = &ui64
 	}
 
-	return 0, nil
+	return uint16(*rpv.ui64), nil
 }
 
-// Uint32s returns an `uint32s` slice by parsing the values associated with the
-// key. It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Uint32s(key string) ([]uint32, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	ui32s := make([]uint32, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		ui64, err := strconv.ParseUint(v, 10, 32)
-		if err != nil {
-			return nil, err
-		}
-
-		ui32s = append(ui32s, uint32(ui64))
-	}
-
-	return ui32s, nil
-}
-
-// Uint64 returns an `uint64` by parsing the first value associated with the
-// key. It returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Uint64(key string) (uint64, error) {
-	if v := rps.First(key); v != "" {
-		return strconv.ParseUint(v, 10, 64)
-	}
-
-	return 0, nil
-}
-
-// Uint64s returns an `uint64s` slice by parsing the values associated with the
-// key. It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Uint64s(key string) ([]uint64, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	ui64s := make([]uint64, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		ui64, err := strconv.ParseUint(v, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		ui64s = append(ui64s, ui64)
-	}
-
-	return ui64s, nil
-}
-
-// Float32 returns a `float32` by parsing the first value associated with the
-// key. It returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Float32(key string) (float32, error) {
-	if v := rps.First(key); v != "" {
-		f64, err := strconv.ParseFloat(v, 32)
+// Uint32 returns an `uint32` from the rpv's underlying value.
+func (rpv *RequestParamValue) Uint32() (uint32, error) {
+	if rpv.ui64 == nil {
+		ui64, err := strconv.ParseUint(rpv.String(), 10, 32)
 		if err != nil {
 			return 0, err
 		}
 
-		return float32(f64), nil
+		rpv.ui64 = &ui64
 	}
 
-	return 0, nil
+	return uint32(*rpv.ui64), nil
 }
 
-// Float32s returns a `float32s` slice by parsing the values associated with the
-// key. It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Float32s(key string) ([]float32, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	f32s := make([]float32, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		f64, err := strconv.ParseFloat(v, 32)
+// Uint64 returns an `uint64` from the rpv's underlying value.
+func (rpv *RequestParamValue) Uint64() (uint64, error) {
+	if rpv.ui64 == nil {
+		ui64, err := strconv.ParseUint(rpv.String(), 10, 64)
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
 
-		f32s = append(f32s, float32(f64))
+		rpv.ui64 = &ui64
 	}
 
-	return f32s, nil
+	return *rpv.ui64, nil
 }
 
-// Float64 returns a `float64` by parsing the first value associated with the
-// key. It returns (0, nil) if there are no values associated with the key.
-func (rps RequestParams) Float64(key string) (float64, error) {
-	if v := rps.First(key); v != "" {
-		return strconv.ParseFloat(v, 64)
-	}
-
-	return 0, nil
-}
-
-// Float64s returns a `float64s` slice by parsing the values associated with the
-// key. It returns (nil, nil) if there are no values associated with the key.
-func (rps RequestParams) Float64s(key string) ([]float64, error) {
-	if len(rps[key]) == 0 {
-		return nil, nil
-	}
-
-	f64s := make([]float64, 0, len(rps[key]))
-	for _, v := range rps[key] {
-		f64, err := strconv.ParseFloat(v, 64)
+// Float32 returns a `float32` from the rpv's underlying value.
+func (rpv *RequestParamValue) Float32() (float32, error) {
+	if rpv.f64 == nil {
+		f64, err := strconv.ParseFloat(rpv.String(), 32)
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
 
-		f64s = append(f64s, f64)
+		rpv.f64 = &f64
 	}
 
-	return f64s, nil
+	return float32(*rpv.f64), nil
 }
 
-// RequestFiles is an HTTP request file map.
-type RequestFiles map[string][]*RequestFile
+// Float64 returns a `float64` from the rpv's underlying value.
+func (rpv *RequestParamValue) Float64() (float64, error) {
+	if rpv.f64 == nil {
+		f64, err := strconv.ParseFloat(rpv.String(), 64)
+		if err != nil {
+			return 0, err
+		}
 
-// First returns the first value associated with the key. It returns nil if
-// there are no values associated with the key.
-func (rfs RequestFiles) First(key string) *RequestFile {
-	if vs := rfs[key]; len(vs) > 0 {
-		return vs[0]
+		rpv.f64 = &f64
 	}
 
-	return nil
+	return *rpv.f64, nil
 }
 
-// RequestFile is an HTTP request file.
-type RequestFile struct {
-	io.Reader
-	io.Seeker
-	io.Closer
+// String returns a `string` from the rpv's underlying value.
+func (rpv *RequestParamValue) String() string {
+	if rpv.s == nil {
+		if s, ok := rpv.i.(string); ok {
+			rpv.s = &s
+		} else {
+			s := fmt.Sprintf("%v", rpv.i)
+			rpv.s = &s
+		}
+	}
 
+	return *rpv.s
+}
+
+// File returns a `RequestParamFileValue` from the rpv's underlying value.
+func (rpv *RequestParamValue) File() (*RequestParamFileValue, error) {
+	if rpv.f == nil {
+		fh, ok := rpv.i.(*multipart.FileHeader)
+		if !ok {
+			return nil, errors.New("not a request param file value")
+		}
+
+		rpv.f = &RequestParamFileValue{
+			Filename: fh.Filename,
+			Headers:  make(map[string]*Header, len(fh.Header)),
+
+			fh: fh,
+		}
+
+		for k, v := range fh.Header {
+			h := &Header{
+				Name:   strings.ToLower(k),
+				Values: v,
+			}
+
+			rpv.f.Headers[h.Name] = h
+		}
+
+		if s := reflect.ValueOf(fh).FieldByName("Size"); !s.IsNil() {
+			rpv.f.ContentLength = s.Int()
+		} else {
+			rpv.f.ContentLength, _ = rpv.f.Seek(0, io.SeekEnd)
+			rpv.f.Seek(0, io.SeekStart)
+		}
+	}
+
+	return rpv.f, nil
+}
+
+// RequestParamFileValue is an HTTP request param file value.
+type RequestParamFileValue struct {
 	Filename      string
-	Headers       Headers
+	Headers       map[string]*Header
 	ContentLength int64
+
+	fh *multipart.FileHeader
+	f  multipart.File
+}
+
+// Read implements the `io.Reader`.
+func (v *RequestParamFileValue) Read(b []byte) (int, error) {
+	if v.f == nil {
+		var err error
+		if v.f, err = v.fh.Open(); err != nil {
+			return 0, err
+		}
+	}
+
+	return v.f.Read(b)
+}
+
+// Seek implements the `io.Seeker`.
+func (v *RequestParamFileValue) Seek(offset int64, whence int) (int64, error) {
+	if v.f == nil {
+		var err error
+		if v.f, err = v.fh.Open(); err != nil {
+			return 0, err
+		}
+	}
+
+	return v.f.Seek(offset, whence)
 }

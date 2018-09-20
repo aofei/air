@@ -232,18 +232,19 @@ func (r *router) route(req *Request) Handler {
 	cn := r.tree // Current node as root of the `tree` of the r
 
 	var (
-		p   = req.httpRequest.URL.EscapedPath() // Path
-		s   = pathClean(p)                      // Search
-		nn  *node                               // Next node
-		nk  nodeKind                            // Next kind
-		sn  *node                               // Saved node
-		ss  string                              // Saved search
-		sl  int                                 // Search length
-		pl  int                                 // Prefix length
-		ll  int                                 // LCP length
-		max int                                 // Max number of sl and pl
-		si  int                                 // Start index
-		pvs = make([]string, 0, r.maxParams)    // Param values
+		p = req.httpRequest.URL.EscapedPath() // Path
+		s = pathClean(p)                      // Search
+
+		nn  *node                            // Next node
+		nk  nodeKind                         // Next kind
+		sn  *node                            // Saved node
+		ss  string                           // Saved search
+		sl  int                              // Search length
+		pl  int                              // Prefix length
+		ll  int                              // LCP length
+		max int                              // Max number of sl and pl
+		si  int                              // Start index
+		pvs = make([]string, 0, r.maxParams) // Param values
 	)
 
 	// Search order: static > param > any
@@ -350,8 +351,26 @@ func (r *router) route(req *Request) Handler {
 	}
 
 	if handler := cn.handlers[req.Method]; handler != nil {
-		for i := range pvs {
-			req.Params[cn.paramNames[i]] = []string{pvs[i]}
+		for i, pv := range pvs {
+			if pn := cn.paramNames[i]; req.Params[pn] == nil {
+				req.Params[pn] = &RequestParam{
+					Name: pn,
+					Values: []*RequestParamValue{
+						&RequestParamValue{
+							i: pv,
+						},
+					},
+				}
+			} else {
+				req.Params[pn].Values = append(
+					[]*RequestParamValue{
+						&RequestParamValue{
+							i: pv,
+						},
+					},
+					req.Params[pn].Values...,
+				)
+			}
 		}
 
 		return handler

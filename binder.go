@@ -22,7 +22,9 @@ func (b *binder) bind(v interface{}, r *Request) error {
 		return errors.New("request body cannot be empty")
 	}
 
-	mt, _, err := mime.ParseMediaType(r.Headers.First("content-type"))
+	mt, _, err := mime.ParseMediaType(
+		r.Headers["content-type"].FirstValue(),
+	)
 	if err != nil {
 		return err
 	}
@@ -46,7 +48,10 @@ func (b *binder) bind(v interface{}, r *Request) error {
 }
 
 // bindParams binds the params into the v.
-func (b *binder) bindParams(v interface{}, params RequestParams) error {
+func (b *binder) bindParams(
+	v interface{},
+	params map[string]*RequestParam,
+) error {
 	typ := reflect.TypeOf(v).Elem()
 	if typ.Kind() != reflect.Struct {
 		return errors.New("binding element must be a struct")
@@ -70,33 +75,35 @@ func (b *binder) bindParams(v interface{}, params RequestParams) error {
 		}
 
 		tf := typ.Field(i)
-		if len(params[tf.Name]) == 0 {
+
+		pv := params[tf.Name].FirstValue()
+		if pv == nil {
 			continue
 		}
 
 		switch tf.Type.Kind() {
 		case reflect.Bool:
-			b, _ := params.Bool(tf.Name)
+			b, _ := pv.Bool()
 			vf.SetBool(b)
 		case reflect.Int,
 			reflect.Int8,
 			reflect.Int16,
 			reflect.Int32,
 			reflect.Int64:
-			i64, _ := params.Int64(tf.Name)
+			i64, _ := pv.Int64()
 			vf.SetInt(i64)
 		case reflect.Uint,
 			reflect.Uint8,
 			reflect.Uint16,
 			reflect.Uint32,
 			reflect.Uint64:
-			ui64, _ := params.Uint64(tf.Name)
+			ui64, _ := pv.Uint64()
 			vf.SetUint(ui64)
 		case reflect.Float32, reflect.Float64:
-			f64, _ := params.Float64(tf.Name)
+			f64, _ := pv.Float64()
 			vf.SetFloat(f64)
 		case reflect.String:
-			vf.SetString(params.First(tf.Name))
+			vf.SetString(pv.String())
 		default:
 			return errors.New("unknown type")
 		}

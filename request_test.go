@@ -9,8 +9,15 @@ import (
 func TestRequest(t *testing.T) {
 	r := &Request{
 		Method: "GET",
-		Params: RequestParams{
-			"Foobar": []string{"Foobar"},
+		Params: map[string]*RequestParam{
+			"Foobar": &RequestParam{
+				Name: "Foobar",
+				Values: []*RequestParamValue{
+					&RequestParamValue{
+						i: "Foobar",
+					},
+				},
+			},
 		},
 	}
 

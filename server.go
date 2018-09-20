@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -70,16 +71,20 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Scheme:        "http",
 		Authority:     r.Host,
 		Path:          r.RequestURI,
-		Headers:       make(Headers, len(r.Header)),
+		Headers:       make(map[string]*Header, len(r.Header)),
 		Body:          r.Body,
 		ContentLength: r.ContentLength,
 		Cookies:       map[string]*Cookie{},
-		Params:        make(RequestParams, theRouter.maxParams),
-		Files:         RequestFiles{},
+		Params: make(
+			map[string]*RequestParam,
+			theRouter.maxParams,
+		),
 		RemoteAddress: r.RemoteAddr,
 		Values:        map[string]interface{}{},
 
-		httpRequest: r,
+		httpRequest:      r,
+		parseCookiesOnce: &sync.Once{},
+		parseParamsOnce:  &sync.Once{},
 	}
 
 	if r.TLS != nil {
@@ -87,11 +92,16 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	for k, v := range r.Header {
-		req.Headers.Set(k, v)
+		h := &Header{
+			Name:   strings.ToLower(k),
+			Values: v,
+		}
+
+		req.Headers[h.Name] = h
 	}
 
 	cIPStr, _, _ := net.SplitHostPort(req.RemoteAddress)
-	if f := req.Headers.First("forwarded"); f != "" { // See RFC 7239
+	if f := req.Headers["forwarded"].FirstValue(); f != "" { // See RFC 7239
 		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
 			p := strings.TrimSpace(p)
 			if strings.HasPrefix(p, "for=") {
@@ -100,7 +110,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-	} else if xff := req.Headers.First("x-forwarded-for"); xff != "" {
+	} else if xff := req.Headers["x-forwarded-for"].FirstValue(); xff !=
+		"" {
 		cIPStr = strings.TrimSpace(strings.Split(xff, ",")[0])
 	}
 
@@ -112,7 +123,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	res := &Response{
 		Status:  200,
-		Headers: Headers{},
+		Headers: map[string]*Header{},
 		Cookies: map[string]*Cookie{},
 
 		request: req,
@@ -134,7 +145,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 
 		req.ParseCookies()
-		req.ParseParamAndFiles()
+		req.ParseParams()
 
 		for i := len(Gases) - 1; i >= 0; i-- {
 			h = Gases[i](h)
