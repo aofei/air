@@ -106,7 +106,7 @@ var ErrorHandler = func(err error, req *Request, res *Response) {
 		delete(req.Headers, "last-modified")
 	}
 
-	res.String(m)
+	res.WriteString(m)
 }
 
 // Pregases is the `Gas` chain that performs before routing.
@@ -131,7 +131,7 @@ var MinifierEnabled = false
 // It is called "template_root" in the configuration file.
 var TemplateRoot = "templates"
 
-// TemplateExts is the file name extensions of the HTML templates used to
+// TemplateExts is the filename extensions of the HTML templates used to
 // distinguish the HTML template files in the `TemplateRoot` when parsing them
 // into the renderer.
 //
@@ -169,7 +169,7 @@ var CofferEnabled = false
 // It is called "asset_root" in the configuration file.
 var AssetRoot = "assets"
 
-// AssetExts is the file name extensions of the asset files used to distinguish
+// AssetExts is the filename extensions of the asset files used to distinguish
 // the asset files in the `AssetRoot` when loading them into the coffer.
 //
 // It is called "asset_exts" in the configuration file.
@@ -418,7 +418,7 @@ func TRACE(path string, h Handler, gases ...Gas) {
 // from the provided root with the optional route-level gases.
 func STATIC(prefix, root string, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
-		err := res.File(filepath.Join(
+		err := res.WriteFile(filepath.Join(
 			root,
 			req.Params["*"].FirstValue().String(),
 		))
@@ -435,9 +435,9 @@ func STATIC(prefix, root string, gases ...Gas) {
 
 // FILE registers a new route with the path to serve a static file with the
 // optional route-level gases.
-func FILE(path, file string, gases ...Gas) {
+func FILE(path, filename string, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
-		err := res.File(file)
+		err := res.WriteFile(filename)
 		if os.IsNotExist(err) {
 			return NotFoundHandler(req, res)
 		}

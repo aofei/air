@@ -96,22 +96,22 @@ func (r *renderer) render(
 				}
 
 				for _, e := range TemplateExts {
-					fs, err := filepath.Glob(
+					fns, err := filepath.Glob(
 						filepath.Join(p, "*"+e),
 					)
 					if err != nil {
 						return err
 					}
 
-					for _, f := range fs {
-						b, err := ioutil.ReadFile(f)
+					for _, fn := range fns {
+						b, err := ioutil.ReadFile(fn)
 						if err != nil {
 							return err
 						}
 
 						if _, err := r.template.New(
 							filepath.ToSlash(
-								f[len(tr)+1:],
+								fn[len(tr)+1:],
 							),
 						).Parse(string(b)); err != nil {
 							return err

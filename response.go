@@ -435,22 +435,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 	return nil
 }
 
-// NoContent responds to the client with no content.
-func (r *Response) NoContent() error {
-	return r.Write(nil)
-}
-
-// Redirect responds to the client with a redirection to the url.
-func (r *Response) Redirect(url string) error {
-	r.Headers["location"] = &Header{
-		Name:   "location",
-		Values: []string{url},
-	}
-	return r.Write(nil)
-}
-
-// Blob responds to the client with the content b.
-func (r *Response) Blob(b []byte) error {
+// WriteBlob responds to the client with the content b.
+func (r *Response) WriteBlob(b []byte) error {
 	if ct := r.Headers["content-type"].FirstValue(); ct != "" {
 		var err error
 		if b, err = theMinifier.minify(ct, b); err != nil {
@@ -461,17 +447,18 @@ func (r *Response) Blob(b []byte) error {
 	return r.Write(bytes.NewReader(b))
 }
 
-// String responds to the client with the "text/plain" content s.
-func (r *Response) String(s string) error {
+// WriteString responds to the client with the "text/plain" content s.
+func (r *Response) WriteString(s string) error {
 	r.Headers["content-type"] = &Header{
 		Name:   "content-type",
 		Values: []string{"text/plain; charset=utf-8"},
 	}
-	return r.Blob([]byte(s))
+
+	return r.WriteBlob([]byte(s))
 }
 
-// JSON responds to the client with the "application/json" content v.
-func (r *Response) JSON(v interface{}) error {
+// WriteJSON responds to the client with the "application/json" content v.
+func (r *Response) WriteJSON(v interface{}) error {
 	var (
 		b   []byte
 		err error
@@ -492,11 +479,11 @@ func (r *Response) JSON(v interface{}) error {
 		Values: []string{"application/json; charset=utf-8"},
 	}
 
-	return r.Blob(b)
+	return r.WriteBlob(b)
 }
 
-// XML responds to the client with the "application/xml" content v.
-func (r *Response) XML(v interface{}) error {
+// WriteXML responds to the client with the "application/xml" content v.
+func (r *Response) WriteXML(v interface{}) error {
 	var (
 		b   []byte
 		err error
@@ -518,11 +505,11 @@ func (r *Response) XML(v interface{}) error {
 		Values: []string{"application/xml; charset=utf-8"},
 	}
 
-	return r.Blob(b)
+	return r.WriteBlob(b)
 }
 
-// HTML responds to the client with the "text/html" content h.
-func (r *Response) HTML(h string) error {
+// WriteHTML responds to the client with the "text/html" content h.
+func (r *Response) WriteHTML(h string) error {
 	if AutoPushEnabled && r.request.httpRequest.TLS != nil {
 		tree, err := html.Parse(strings.NewReader(h))
 		if err != nil {
@@ -568,7 +555,7 @@ func (r *Response) HTML(h string) error {
 		Values: []string{"text/html; charset=utf-8"},
 	}
 
-	return r.Blob([]byte(h))
+	return r.WriteBlob([]byte(h))
 }
 
 // Render renders one or more HTML templates with the m and responds to the
@@ -585,15 +572,15 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 		}
 	}
 
-	return r.HTML(buf.String())
+	return r.WriteHTML(buf.String())
 }
 
-// File responds to the client with a file content with the file.
-func (r *Response) File(file string) error {
-	file, err := filepath.Abs(file)
+// WriteFile responds to the client with a file content with the filename.
+func (r *Response) WriteFile(filename string) error {
+	filename, err := filepath.Abs(filename)
 	if err != nil {
 		return err
-	} else if fi, err := os.Stat(file); err != nil {
+	} else if fi, err := os.Stat(filename); err != nil {
 		return err
 	} else if fi.IsDir() {
 		p := r.request.httpRequest.URL.EscapedPath()
@@ -608,18 +595,18 @@ func (r *Response) File(file string) error {
 			return r.Redirect(p)
 		}
 
-		file += "index.html"
+		filename += "index.html"
 	}
 
 	var c io.ReadSeeker
 	mt := time.Time{}
-	if a, err := theCoffer.asset(file); err != nil {
+	if a, err := theCoffer.asset(filename); err != nil {
 		return err
 	} else if a != nil {
 		c = bytes.NewReader(a.content)
 		mt = a.modTime
 	} else {
-		f, err := os.Open(file)
+		f, err := os.Open(filename)
 		if err != nil {
 			return err
 		}
@@ -635,7 +622,7 @@ func (r *Response) File(file string) error {
 	}
 
 	if r.Headers["content-type"].FirstValue() == "" {
-		ct := mime.TypeByExtension(filepath.Ext(file))
+		ct := mime.TypeByExtension(filepath.Ext(filename))
 		if ct == "" {
 			// Read a chunk to decide between UTF-8 text and binary
 			b := [1 << 9]byte{}
@@ -672,6 +659,16 @@ func (r *Response) File(file string) error {
 	}
 
 	return r.Write(c)
+}
+
+// Redirect responds to the client with a redirection to the url.
+func (r *Response) Redirect(url string) error {
+	r.Headers["location"] = &Header{
+		Name:   "location",
+		Values: []string{url},
+	}
+
+	return r.Write(nil)
 }
 
 // WebSocket switches the connection to the WebSocket protocol.
