@@ -90,66 +90,66 @@ func (r *Request) ParseParams() {
 			r.httpRequest.ParseMultipartForm(32 << 20)
 		}
 
-		for k, v := range r.httpRequest.Form {
-			vs := make([]*RequestParamValue, 0, len(v))
-			for _, v := range v {
-				vs = append(vs, &RequestParamValue{
+		for n, vs := range r.httpRequest.Form {
+			pvs := make([]*RequestParamValue, 0, len(vs))
+			for _, v := range vs {
+				pvs = append(pvs, &RequestParamValue{
 					i: v,
 				})
 			}
 
-			if r.Params[k] == nil {
-				r.Params[k] = &RequestParam{
-					Name:   k,
-					Values: vs,
+			if r.Params[n] == nil {
+				r.Params[n] = &RequestParam{
+					Name:   n,
+					Values: pvs,
 				}
 			} else {
-				r.Params[k].Values = append(
-					r.Params[k].Values,
-					vs...,
+				r.Params[n].Values = append(
+					r.Params[n].Values,
+					pvs...,
 				)
 			}
 		}
 
 		if r.httpRequest.MultipartForm != nil {
-			for k, v := range r.httpRequest.MultipartForm.Value {
-				vs := make([]*RequestParamValue, 0, len(v))
-				for _, v := range v {
-					vs = append(vs, &RequestParamValue{
+			for n, vs := range r.httpRequest.MultipartForm.Value {
+				pvs := make([]*RequestParamValue, 0, len(vs))
+				for _, v := range vs {
+					pvs = append(pvs, &RequestParamValue{
 						i: v,
 					})
 				}
 
-				if r.Params[k] == nil {
-					r.Params[k] = &RequestParam{
-						Name:   k,
-						Values: vs,
+				if r.Params[n] == nil {
+					r.Params[n] = &RequestParam{
+						Name:   n,
+						Values: pvs,
 					}
 				} else {
-					r.Params[k].Values = append(
-						r.Params[k].Values,
-						vs...,
+					r.Params[n].Values = append(
+						r.Params[n].Values,
+						pvs...,
 					)
 				}
 			}
 
-			for k, v := range r.httpRequest.MultipartForm.File {
-				vs := make([]*RequestParamValue, 0, len(v))
-				for _, v := range v {
-					vs = append(vs, &RequestParamValue{
+			for n, vs := range r.httpRequest.MultipartForm.File {
+				pvs := make([]*RequestParamValue, 0, len(vs))
+				for _, v := range vs {
+					pvs = append(pvs, &RequestParamValue{
 						i: v,
 					})
 				}
 
-				if r.Params[k] == nil {
-					r.Params[k] = &RequestParam{
-						Name:   k,
-						Values: vs,
+				if r.Params[n] == nil {
+					r.Params[n] = &RequestParam{
+						Name:   n,
+						Values: pvs,
 					}
 				} else {
-					r.Params[k].Values = append(
-						r.Params[k].Values,
-						vs...,
+					r.Params[n].Values = append(
+						r.Params[n].Values,
+						pvs...,
 					)
 				}
 			}
@@ -411,10 +411,10 @@ func (rpv *RequestParamValue) File() (*RequestParamFileValue, error) {
 			fh: fh,
 		}
 
-		for k, v := range fh.Header {
+		for n, vs := range fh.Header {
 			h := &Header{
-				Name:   strings.ToLower(k),
-				Values: v,
+				Name:   strings.ToLower(n),
+				Values: vs,
 			}
 
 			rpv.f.Headers[h.Name] = h

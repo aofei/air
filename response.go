@@ -87,9 +87,9 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			}
 		}
 
-		for k, v := range r.Headers {
-			k := textproto.CanonicalMIMEHeaderKey(k)
-			r.writer.Header()[k] = v.Values
+		for n, h := range r.Headers {
+			n := textproto.CanonicalMIMEHeaderKey(n)
+			r.writer.Header()[n] = h.Values
 		}
 
 		r.writer.WriteHeader(r.Status)
@@ -690,9 +690,9 @@ func (r *Response) WebSocket() (*WebSocketConn, error) {
 		}
 	}
 
-	for k, v := range r.Headers {
-		k := textproto.CanonicalMIMEHeaderKey(k)
-		r.writer.Header()[k] = v.Values
+	for n, h := range r.Headers {
+		n := textproto.CanonicalMIMEHeaderKey(n)
+		r.writer.Header()[n] = h.Values
 	}
 
 	r.Written = true
@@ -781,9 +781,9 @@ func (r *Response) Push(target string, headers map[string]*Header) error {
 		pos = &http.PushOptions{
 			Header: make(http.Header, l),
 		}
-		for k, v := range headers {
-			k := textproto.CanonicalMIMEHeaderKey(k)
-			r.writer.Header()[k] = v.Values
+		for n, h := range headers {
+			n := textproto.CanonicalMIMEHeaderKey(n)
+			r.writer.Header()[n] = h.Values
 		}
 	}
 

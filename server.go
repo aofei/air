@@ -91,10 +91,10 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		req.Scheme = "https"
 	}
 
-	for k, v := range r.Header {
+	for n, vs := range r.Header {
 		h := &Header{
-			Name:   strings.ToLower(k),
-			Values: v,
+			Name:   strings.ToLower(n),
+			Values: vs,
 		}
 
 		req.Headers[h.Name] = h
@@ -164,6 +164,16 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	if err := h(req, res); err != nil {
 		ErrorHandler(err, req, res)
+	}
+
+	// Close opened request param file values
+
+	for _, p := range req.Params {
+		for _, pv := range p.Values {
+			if pv.f != nil && pv.f.f != nil {
+				pv.f.f.Close()
+			}
+		}
 	}
 }
 
