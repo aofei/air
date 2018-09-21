@@ -415,7 +415,7 @@ func TRACE(path string, h Handler, gases ...Gas) {
 }
 
 // STATIC registers a new route with the path prefix to serve the static files
-// from the provided root with the optional route-level gases.
+// from the root with the optional route-level gases.
 func STATIC(prefix, root string, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
 		err := res.WriteFile(filepath.Join(
@@ -434,7 +434,7 @@ func STATIC(prefix, root string, gases ...Gas) {
 }
 
 // FILE registers a new route with the path to serve a static file with the
-// optional route-level gases.
+// filename and the optional route-level gases.
 func FILE(path, filename string, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
 		err := res.WriteFile(filename)

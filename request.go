@@ -29,9 +29,25 @@ type Request struct {
 	Values        map[string]interface{}
 
 	httpRequest      *http.Request
+	localizedString  func(string) string
 	parseCookiesOnce *sync.Once
 	parseParamsOnce  *sync.Once
-	localizedString  func(string) string
+}
+
+// Bind binds the r into the v.
+func (r *Request) Bind(v interface{}) error {
+	return theBinder.bind(v, r)
+}
+
+// LocalizedString returns localized string for the key.
+//
+// It only works if the `I18nEnabled` is true.
+func (r *Request) LocalizedString(key string) string {
+	if r.localizedString != nil {
+		return r.localizedString(key)
+	}
+
+	return key
 }
 
 // ParseCookies parses the cookies sent with the r into the `r.Cookies`.
@@ -40,8 +56,13 @@ type Request struct {
 // routing, it will only take effect on the very first call.
 func (r *Request) ParseCookies() {
 	r.parseCookiesOnce.Do(func() {
-		for _, line := range r.httpRequest.Header["Cookie"] {
-			ps := strings.Split(strings.TrimSpace(line), ";")
+		ch := r.Headers["cookie"]
+		if ch == nil {
+			return
+		}
+
+		for _, c := range ch.Values {
+			ps := strings.Split(strings.TrimSpace(c), ";")
 			if len(ps) == 1 && ps[0] == "" {
 				continue
 			}
@@ -155,22 +176,6 @@ func (r *Request) ParseParams() {
 			}
 		}
 	})
-}
-
-// Bind binds the r into the v.
-func (r *Request) Bind(v interface{}) error {
-	return theBinder.bind(v, r)
-}
-
-// LocalizedString returns localized string for the provided key.
-//
-// It only works if the `I18nEnabled` is true.
-func (r *Request) LocalizedString(key string) string {
-	if r.localizedString != nil {
-		return r.localizedString(key)
-	}
-
-	return key
 }
 
 // RequestParam is an HTTP request param.

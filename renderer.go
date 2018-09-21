@@ -58,7 +58,7 @@ func init() {
 	}()
 }
 
-// render renders the v into the w for the provided HTML template name.
+// render renders the v into the w for the HTML template name.
 func (r *renderer) render(
 	w io.Writer,
 	name string,
@@ -157,8 +157,7 @@ func substr(s string, i, j int) string {
 	return string([]rune(s)[i:j])
 }
 
-// timefmt returns a textual representation of the t formatted for the provided
-// layout.
+// timefmt returns a textual representation of the t formatted for the layout.
 func timefmt(t time.Time, layout string) string {
 	return t.Format(layout)
 }

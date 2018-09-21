@@ -3,7 +3,7 @@ package air
 import (
 	"bufio"
 	"bytes"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -640,7 +640,7 @@ func (r *Response) WriteFile(filename string) error {
 	}
 
 	if r.Headers["etag"].FirstValue() == "" {
-		h := md5.New()
+		h := sha256.New()
 		if _, err := io.Copy(h, c); err != nil {
 			return err
 		}
@@ -663,6 +663,10 @@ func (r *Response) WriteFile(filename string) error {
 
 // Redirect responds to the client with a redirection to the url.
 func (r *Response) Redirect(url string) error {
+	if r.Status < 300 || r.Status >= 400 {
+		r.Status = 302
+	}
+
 	r.Headers["location"] = &Header{
 		Name:   "location",
 		Values: []string{url},
