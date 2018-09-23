@@ -255,8 +255,24 @@ func init() {
 		Address = v
 	}
 
+	if v, ok := Config["read_timeout"].(int64); ok {
+		ReadTimeout = time.Duration(v) * time.Millisecond
+	}
+
+	if v, ok := Config["read_header_timeout"].(int64); ok {
+		ReadHeaderTimeout = time.Duration(v) * time.Millisecond
+	}
+
+	if v, ok := Config["write_timeout"].(int64); ok {
+		WriteTimeout = time.Duration(v) * time.Millisecond
+	}
+
 	if v, ok := Config["idle_timeout"].(int64); ok {
 		IdleTimeout = time.Duration(v) * time.Millisecond
+	}
+
+	if v, ok := Config["max_header_bytes"].(int64); ok {
+		MaxHeaderBytes = int(v)
 	}
 
 	if v, ok := Config["tls_cert_file"].(string); ok {
