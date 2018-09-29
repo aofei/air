@@ -3,7 +3,6 @@ package air
 import (
 	"context"
 	"log"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -80,6 +79,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			theRouter.maxParams,
 		),
 		RemoteAddress: r.RemoteAddr,
+		ClientAddress: r.RemoteAddr,
 		Values:        map[string]interface{}{},
 
 		request:          r,
@@ -100,22 +100,23 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		req.Headers[h.Name] = h
 	}
 
-	cIPStr, _, _ := net.SplitHostPort(req.RemoteAddress)
 	if f := req.Headers["forwarded"].FirstValue(); f != "" { // See RFC 7239
 		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
 			p := strings.TrimSpace(p)
 			if strings.HasPrefix(p, "for=") {
-				cIPStr = strings.TrimPrefix(p[4:], "\"[")
-				cIPStr = strings.TrimSuffix(cIPStr, "]\"")
+				req.ClientAddress = strings.TrimSuffix(
+					strings.TrimPrefix(p[4:], "\"["),
+					"]\"",
+				)
 				break
 			}
 		}
 	} else if xff := req.Headers["x-forwarded-for"].FirstValue(); xff !=
 		"" {
-		cIPStr = strings.TrimSpace(strings.Split(xff, ",")[0])
+		req.ClientAddress = strings.TrimSpace(
+			strings.Split(xff, ",")[0],
+		)
 	}
-
-	req.ClientIP = net.ParseIP(cIPStr)
 
 	theI18n.localize(req)
 

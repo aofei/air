@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-	"net"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -25,7 +24,7 @@ type Request struct {
 	Cookies       map[string]*Cookie
 	Params        map[string]*RequestParam
 	RemoteAddress string
-	ClientIP      net.IP
+	ClientAddress string
 	Values        map[string]interface{}
 
 	request          *http.Request
