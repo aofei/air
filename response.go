@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net"
@@ -510,7 +511,7 @@ func (r *Response) WriteXML(v interface{}) error {
 
 // WriteHTML responds to the client with the "text/html" content h.
 func (r *Response) WriteHTML(h string) error {
-	if AutoPushEnabled && r.request.httpRequest.TLS != nil {
+	if AutoPushEnabled && r.request.request.TLS != nil {
 		tree, err := html.Parse(strings.NewReader(h))
 		if err != nil {
 			return err
@@ -583,10 +584,9 @@ func (r *Response) WriteFile(filename string) error {
 	} else if fi, err := os.Stat(filename); err != nil {
 		return err
 	} else if fi.IsDir() {
-		p := r.request.httpRequest.URL.EscapedPath()
-		if p[len(p)-1] != '/' {
+		if p := r.request.request.URL.EscapedPath(); !hasLastSlash(p) {
 			p = path.Base(p) + "/"
-			if q := r.request.httpRequest.URL.RawQuery; q != "" {
+			if q := r.request.request.URL.RawQuery; q != "" {
 				p += "?" + q
 			}
 
@@ -676,7 +676,7 @@ func (r *Response) Redirect(url string) error {
 }
 
 // WebSocket switches the connection to the WebSocket protocol.
-func (r *Response) WebSocket() (*WebSocketConn, error) {
+func (r *Response) WebSocket() (*WebSocket, error) {
 	r.Status = 101
 
 	if len(r.Cookies) > 0 {
@@ -700,37 +700,37 @@ func (r *Response) WebSocket() (*WebSocketConn, error) {
 
 	conn, err := (&websocket.Upgrader{}).Upgrade(
 		r.writer,
-		r.request.httpRequest,
+		r.request.request,
 		r.writer.Header(),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	wsc := &WebSocketConn{
+	ws := &WebSocket{
 		conn: conn,
 	}
 
 	conn.SetCloseHandler(func(statusCode int, reason string) error {
-		if wsc.ConnectionCloseHandler != nil {
-			return wsc.ConnectionCloseHandler(statusCode, reason)
+		if ws.ConnectionCloseHandler != nil {
+			return ws.ConnectionCloseHandler(statusCode, reason)
 		}
 
 		mt := int(WebSocketMessageTypeConnectionClose)
 		m := websocket.FormatCloseMessage(statusCode, "")
-		wsc.conn.WriteControl(mt, m, time.Now().Add(time.Second))
+		conn.WriteControl(mt, m, time.Now().Add(time.Second))
 
 		return nil
 	})
 
 	conn.SetPingHandler(func(appData string) error {
-		if wsc.PingHandler != nil {
-			return wsc.PingHandler(appData)
+		if ws.PingHandler != nil {
+			return ws.PingHandler(appData)
 		}
 
 		mt := int(WebSocketMessageTypePong)
 		m := []byte(appData)
-		err := wsc.conn.WriteControl(mt, m, time.Now().Add(time.Second))
+		err := conn.WriteControl(mt, m, time.Now().Add(time.Second))
 		if err == websocket.ErrCloseSent {
 			return nil
 		} else if e, ok := err.(net.Error); ok && e.Temporary() {
@@ -741,14 +741,50 @@ func (r *Response) WebSocket() (*WebSocketConn, error) {
 	})
 
 	conn.SetPongHandler(func(appData string) error {
-		if wsc.PongHandler != nil {
-			return wsc.PongHandler(appData)
+		if ws.PongHandler != nil {
+			return ws.PongHandler(appData)
 		}
 
 		return nil
 	})
 
-	return wsc, nil
+	go func() {
+		for {
+			mt, r, err := conn.NextReader()
+			if err != nil {
+				if ws.ErrorHandler != nil {
+					ws.ErrorHandler(err)
+				}
+
+				break
+			}
+
+			switch WebSocketMessageType(mt) {
+			case WebSocketMessageTypeText:
+				if ws.TextHandler != nil {
+					var b []byte
+					b, err = ioutil.ReadAll(r)
+					if err == nil {
+						err = ws.TextHandler(string(b))
+					}
+				}
+			case WebSocketMessageTypeBinary:
+				if ws.BinaryHandler != nil {
+					var b []byte
+					b, err = ioutil.ReadAll(r)
+					if err == nil {
+						err = ws.BinaryHandler(b)
+					}
+				}
+			}
+
+			if err != nil && ws.ErrorHandler != nil {
+				ws.ErrorHandler(err)
+			}
+		}
+	}()
+
+	return ws, nil
 }
 
 // Flush flushes buffered data to the client.

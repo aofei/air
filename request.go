@@ -28,7 +28,7 @@ type Request struct {
 	ClientIP      net.IP
 	Values        map[string]interface{}
 
-	httpRequest      *http.Request
+	request          *http.Request
 	localizedString  func(string) string
 	parseCookiesOnce *sync.Once
 	parseParamsOnce  *sync.Once
@@ -106,12 +106,11 @@ func (r *Request) ParseCookies() {
 // routing, it will only take effect on the very first call.
 func (r *Request) ParseParams() {
 	r.parseParamsOnce.Do(func() {
-		if r.httpRequest.Form == nil ||
-			r.httpRequest.MultipartForm == nil {
-			r.httpRequest.ParseMultipartForm(32 << 20)
+		if r.request.Form == nil || r.request.MultipartForm == nil {
+			r.request.ParseMultipartForm(32 << 20)
 		}
 
-		for n, vs := range r.httpRequest.Form {
+		for n, vs := range r.request.Form {
 			pvs := make([]*RequestParamValue, 0, len(vs))
 			for _, v := range vs {
 				pvs = append(pvs, &RequestParamValue{
@@ -132,8 +131,8 @@ func (r *Request) ParseParams() {
 			}
 		}
 
-		if r.httpRequest.MultipartForm != nil {
-			for n, vs := range r.httpRequest.MultipartForm.Value {
+		if r.request.MultipartForm != nil {
+			for n, vs := range r.request.MultipartForm.Value {
 				pvs := make([]*RequestParamValue, 0, len(vs))
 				for _, v := range vs {
 					pvs = append(pvs, &RequestParamValue{
@@ -154,7 +153,7 @@ func (r *Request) ParseParams() {
 				}
 			}
 
-			for n, vs := range r.httpRequest.MultipartForm.File {
+			for n, vs := range r.request.MultipartForm.File {
 				pvs := make([]*RequestParamValue, 0, len(vs))
 				for _, v := range vs {
 					pvs = append(pvs, &RequestParamValue{

@@ -128,12 +128,12 @@ func (r *router) insert(
 	cn := r.tree // Current node as the root of the `tree` of the r
 
 	var (
-		s   = path // Search
-		nn  *node  // Next node
-		sl  int    // Search length
-		pl  int    // Prefix length
-		ll  int    // LCP length
-		max int    // Max number of sl and pl
+		s  = path // Search
+		nn *node  // Next node
+		sl int    // Search length
+		pl int    // Prefix length
+		ll int    // LCP length
+		ml int    // Max length of sl and pl
 	)
 
 	for {
@@ -141,12 +141,12 @@ func (r *router) insert(
 		pl = len(cn.prefix)
 		ll = 0
 
-		max = pl
-		if sl < max {
-			max = sl
+		ml = pl
+		if sl < ml {
+			ml = sl
 		}
 
-		for ; ll < max && s[ll] == cn.prefix[ll]; ll++ {
+		for ; ll < ml && s[ll] == cn.prefix[ll]; ll++ {
 		}
 
 		if ll == 0 {
@@ -229,12 +229,10 @@ func (r *router) insert(
 
 // route returns a handler registered for the req.
 func (r *router) route(req *Request) Handler {
-	cn := r.tree // Current node as root of the `tree` of the r
-
 	var (
-		p = req.httpRequest.URL.EscapedPath() // Path
-		s = pathClean(p)                      // Search
-
+		p   = req.request.URL.EscapedPath()  // Path
+		s   = pathClean(p)                   // Search
+		cn  = r.tree                         // Current node
 		nn  *node                            // Next node
 		nk  nodeKind                         // Next kind
 		sn  *node                            // Saved node
@@ -242,7 +240,7 @@ func (r *router) route(req *Request) Handler {
 		sl  int                              // Search length
 		pl  int                              // Prefix length
 		ll  int                              // LCP length
-		max int                              // Max number of sl and pl
+		ml  int                              // Max length of sl and pl
 		si  int                              // Start index
 		pvs = make([]string, 0, r.maxParams) // Param values
 	)
@@ -260,12 +258,12 @@ func (r *router) route(req *Request) Handler {
 			sl = len(s)
 			pl = len(cn.prefix)
 
-			max = pl
-			if sl < max {
-				max = sl
+			ml = pl
+			if sl < ml {
+				ml = sl
 			}
 
-			for ; ll < max && s[ll] == cn.prefix[ll]; ll++ {
+			for ; ll < ml && s[ll] == cn.prefix[ll]; ll++ {
 			}
 		}
 

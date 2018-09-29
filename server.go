@@ -82,7 +82,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		RemoteAddress: r.RemoteAddr,
 		Values:        map[string]interface{}{},
 
-		httpRequest:      r,
+		request:          r,
 		parseCookiesOnce: &sync.Once{},
 		parseParamsOnce:  &sync.Once{},
 	}
