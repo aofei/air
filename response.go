@@ -716,9 +716,11 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 			return ws.ConnectionCloseHandler(statusCode, reason)
 		}
 
-		mt := int(WebSocketMessageTypeConnectionClose)
-		m := websocket.FormatCloseMessage(statusCode, "")
-		conn.WriteControl(mt, m, time.Now().Add(time.Second))
+		conn.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(statusCode, ""),
+			time.Now().Add(time.Second),
+		)
 
 		return nil
 	})
@@ -728,9 +730,11 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 			return ws.PingHandler(appData)
 		}
 
-		mt := int(WebSocketMessageTypePong)
-		m := []byte(appData)
-		err := conn.WriteControl(mt, m, time.Now().Add(time.Second))
+		err := conn.WriteControl(
+			websocket.PongMessage,
+			[]byte(appData),
+			time.Now().Add(time.Second),
+		)
 		if err == websocket.ErrCloseSent {
 			return nil
 		} else if e, ok := err.(net.Error); ok && e.Temporary() {
@@ -750,6 +754,14 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 
 	go func() {
 		for {
+			if ws.closed {
+				break
+			} else if ws.TextHandler == nil &&
+				ws.BinaryHandler == nil {
+				time.Sleep(time.Millisecond)
+				continue
+			}
+
 			mt, r, err := conn.NextReader()
 			if err != nil {
 				if ws.ErrorHandler != nil {
@@ -759,8 +771,8 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 				break
 			}
 
-			switch WebSocketMessageType(mt) {
-			case WebSocketMessageTypeText:
+			switch mt {
+			case websocket.TextMessage:
 				if ws.TextHandler != nil {
 					var b []byte
 					b, err = ioutil.ReadAll(r)
@@ -768,7 +780,7 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 						err = ws.TextHandler(string(b))
 					}
 				}
-			case WebSocketMessageTypeBinary:
+			case websocket.BinaryMessage:
 				if ws.BinaryHandler != nil {
 					var b []byte
 					b, err = ioutil.ReadAll(r)

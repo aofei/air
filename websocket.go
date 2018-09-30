@@ -11,51 +11,41 @@ type WebSocket struct {
 	PongHandler            func(appData string) error
 	ErrorHandler           func(err error)
 
-	conn *websocket.Conn
+	conn   *websocket.Conn
+	closed bool
 }
-
-// WebSocketMessageType is the type of a WebSocket message.
-//
-// See RFC 6455, section 11.8.
-type WebSocketMessageType uint8
-
-// The WebSocket message types.
-const (
-	// WebSocketMessageTypeContinuation is the type of a WebSocket message
-	// that denotes a continuation message.
-	WebSocketMessageTypeContinuation WebSocketMessageType = 0
-
-	// WebSocketMessageTypeText is the type of a WebSocket message that
-	// denotes a text data message. The text message payload is interpreted
-	// as UTF-8 encoded text data.
-	WebSocketMessageTypeText WebSocketMessageType = 1
-
-	// WebSocketMessageTypeBinary is the type of a WebSocket message that
-	// denotes a binary data message.
-	WebSocketMessageTypeBinary WebSocketMessageType = 2
-
-	// WebSocketMessageTypeConnectionClose is the type of a WebSocket
-	// message that denotes a close control message. The optional message
-	// payload contains a numeric code and text.
-	WebSocketMessageTypeConnectionClose WebSocketMessageType = 8
-
-	// WebSocketMessageTypePing is the type of a WebSocket message that
-	// denotes a ping control message. The optional message payload is UTF-8
-	// encoded text.
-	WebSocketMessageTypePing WebSocketMessageType = 9
-
-	// WebSocketMessageTypePong is the type of a WebSocket message that
-	// denotes a pong control message. The optional message payload is UTF-8
-	// encoded text.
-	WebSocketMessageTypePong WebSocketMessageType = 10
-)
 
 // Close closes the ws without sending or waiting for a close message.
 func (ws *WebSocket) Close() error {
+	ws.closed = true
 	return ws.conn.Close()
 }
 
-// Write writes the b to the remote peer of the ws with the wsmt.
-func (ws *WebSocket) Write(wsmt WebSocketMessageType, b []byte) error {
-	return ws.conn.WriteMessage(int(wsmt), b)
+// WriteText writes the text to the remote peer of the ws.
+func (ws *WebSocket) WriteText(text string) error {
+	return ws.conn.WriteMessage(websocket.TextMessage, []byte(text))
+}
+
+// WriteBinary writes the b to the remote peer of the ws.
+func (ws *WebSocket) WriteBinary(b []byte) error {
+	return ws.conn.WriteMessage(websocket.BinaryMessage, b)
+}
+
+// WriteConnectionClose writes a connection close to the remote peer of the ws
+// with the statusCode and the reason.
+func (ws *WebSocket) WriteConnectionClose(statusCode int, reason string) error {
+	return ws.conn.WriteMessage(
+		websocket.CloseMessage,
+		websocket.FormatCloseMessage(statusCode, reason),
+	)
+}
+
+// WritePing writes a ping to the remote peer of the ws with the appData.
+func (ws *WebSocket) WritePing(appData string) error {
+	return ws.conn.WriteMessage(websocket.PingMessage, []byte(appData))
+}
+
+// WritePong writes a pong to the remote peer of the ws with the appData.
+func (ws *WebSocket) WritePong(appData string) error {
+	return ws.conn.WriteMessage(websocket.PongMessage, []byte(appData))
 }
