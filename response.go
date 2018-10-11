@@ -698,7 +698,11 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 
 	r.Written = true
 
-	conn, err := (&websocket.Upgrader{}).Upgrade(
+	conn, err := (&websocket.Upgrader{
+		CheckOrigin: func(*http.Request) bool {
+			return true
+		},
+	}).Upgrade(
 		r.writer,
 		r.request.request,
 		r.writer.Header(),
