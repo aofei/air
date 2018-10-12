@@ -41,23 +41,17 @@ var Address = "localhost:2333"
 // ReadTimeout is the maximum duration the server reads the request.
 //
 // It is called "read_timeout" in the configuration file.
-//
-// **Its unit in the configuration file is MILLISECONDS.**
 var ReadTimeout = time.Duration(0)
 
 // ReadHeaderTimeout is the amount of time allowed the server reads the request
 // headers.
 //
 // It is called "read_header_timeout" in the configuration file.
-//
-// **Its unit in the configuration file is MILLISECONDS.**
 var ReadHeaderTimeout = time.Duration(0)
 
 // WriteTimeout is the maximum duration the server writes an response.
 //
 // It is called "write_timeout" in the configuration file.
-//
-// **Its unit in the configuration file is MILLISECONDS.**
 var WriteTimeout = time.Duration(0)
 
 // IdleTimeout is the maximum amount of time the server waits for the next
@@ -65,12 +59,10 @@ var WriteTimeout = time.Duration(0)
 // `ReadHeaderTimeout` is used.
 //
 // It is called "idle_timeout" in the configuration file.
-//
-// **Its unit in the configuration file is MILLISECONDS.**
 var IdleTimeout = time.Duration(0)
 
 // MaxHeaderBytes is the maximum number of bytes the server will read parsing
-// the request header's keys and values, including the request line.
+// the request header's names and values, including the request line.
 //
 // It is called "max_header_bytes" in the configuration file.
 var MaxHeaderBytes = 1 << 20
@@ -256,19 +248,19 @@ func init() {
 	}
 
 	if v, ok := Config["read_timeout"].(int64); ok {
-		ReadTimeout = time.Duration(v) * time.Millisecond
+		ReadTimeout = time.Duration(v)
 	}
 
 	if v, ok := Config["read_header_timeout"].(int64); ok {
-		ReadHeaderTimeout = time.Duration(v) * time.Millisecond
+		ReadHeaderTimeout = time.Duration(v)
 	}
 
 	if v, ok := Config["write_timeout"].(int64); ok {
-		WriteTimeout = time.Duration(v) * time.Millisecond
+		WriteTimeout = time.Duration(v)
 	}
 
 	if v, ok := Config["idle_timeout"].(int64); ok {
-		IdleTimeout = time.Duration(v) * time.Millisecond
+		IdleTimeout = time.Duration(v)
 	}
 
 	if v, ok := Config["max_header_bytes"].(int64); ok {
