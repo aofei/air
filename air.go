@@ -78,6 +78,17 @@ var TLSCertFile = ""
 // It is called "tls_key_file" in the configuration file.
 var TLSKeyFile = ""
 
+// WebSocketHandshakeTimeout is the maximum amount of time the server waits for
+// the WebSocket handshake to complete.
+//
+// It is called "websocket_handshake_timeout" in the configuration file.
+var WebSocketHandshakeTimeout = time.Duration(0)
+
+// WebSocketSubprotocols is the server's supported WebSocket subprotocols.
+//
+// It is called "websocket_subprotocols" in the configuration file.
+var WebSocketSubprotocols = []string{}
+
 // ErrorHandler is the centralized error handler for the server.
 var ErrorHandler = func(err error, req *Request, res *Response) {
 	if res.Written {
@@ -273,6 +284,22 @@ func init() {
 
 	if v, ok := Config["tls_key_file"].(string); ok {
 		TLSKeyFile = v
+	}
+
+	if v, ok := Config["websocket_handshake_timeout"].(int64); ok {
+		WebSocketHandshakeTimeout = time.Duration(v)
+	}
+
+	if v, ok := Config["websocket_subprotocols"].([]interface{}); ok {
+		WebSocketSubprotocols = make([]string, 0, len(v))
+		for _, v := range v {
+			if v, ok := v.(string); ok {
+				WebSocketSubprotocols = append(
+					WebSocketSubprotocols,
+					v,
+				)
+			}
+		}
 	}
 
 	if v, ok := Config["auto_push_enabled"].(bool); ok {

@@ -698,15 +698,26 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 
 	r.Written = true
 
-	conn, err := (&websocket.Upgrader{
+	wsu := &websocket.Upgrader{
+		HandshakeTimeout: WebSocketHandshakeTimeout,
+		Error: func(
+			_ http.ResponseWriter,
+			_ *http.Request,
+			status int,
+			_ error,
+		) {
+			r.Status = status
+			r.Written = false
+		},
 		CheckOrigin: func(*http.Request) bool {
 			return true
 		},
-	}).Upgrade(
-		r.writer,
-		r.request.request,
-		r.writer.Header(),
-	)
+	}
+	if len(WebSocketSubprotocols) > 0 {
+		wsu.Subprotocols = WebSocketSubprotocols
+	}
+
+	conn, err := wsu.Upgrade(r.writer, r.request.request, r.writer.Header())
 	if err != nil {
 		return nil, err
 	}
