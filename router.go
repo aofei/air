@@ -354,7 +354,7 @@ func (r *router) route(req *Request) Handler {
 				req.Params[pn] = &RequestParam{
 					Name: pn,
 					Values: []*RequestParamValue{
-						&RequestParamValue{
+						{
 							i: pv,
 						},
 					},
@@ -362,7 +362,7 @@ func (r *router) route(req *Request) Handler {
 			} else {
 				req.Params[pn].Values = append(
 					[]*RequestParamValue{
-						&RequestParamValue{
+						{
 							i: pv,
 						},
 					},

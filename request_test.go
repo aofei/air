@@ -10,10 +10,10 @@ func TestRequest(t *testing.T) {
 	r := &Request{
 		Method: "GET",
 		Params: map[string]*RequestParam{
-			"Foobar": &RequestParam{
+			"Foobar": {
 				Name: "Foobar",
 				Values: []*RequestParamValue{
-					&RequestParamValue{
+					{
 						i: "Foobar",
 					},
 				},
