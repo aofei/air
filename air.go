@@ -83,6 +83,11 @@ var TLSCertFile = ""
 // It is called "tls_key_file" in the configuration file.
 var TLSKeyFile = ""
 
+// ACMECertRoot is the root of the ACME certificates.
+//
+// It is called "acme_cert_root" in the configuration file.
+var ACMECertRoot = "acme-certs"
+
 // WebSocketHandshakeTimeout is the maximum amount of time the server waits for
 // the WebSocket handshake to complete.
 //
@@ -301,6 +306,10 @@ func init() {
 
 	if v, ok := Config["tls_key_file"].(string); ok {
 		TLSKeyFile = v
+	}
+
+	if v, ok := Config["acme_cert_root"].(string); ok {
+		ACMECertRoot = v
 	}
 
 	if v, ok := Config["websocket_handshake_timeout"].(int64); ok {

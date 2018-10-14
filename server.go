@@ -4,8 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -49,10 +47,7 @@ func (s *server) serve() error {
 
 			acm := autocert.Manager{
 				Prompt: autocert.AcceptTOS,
-				Cache: autocert.DirCache(filepath.Join(
-					os.TempDir(),
-					"air",
-				)),
+				Cache:  autocert.DirCache(ACMECertRoot),
 			}
 			if len(AuthorityWhitelist) > 0 {
 				acm.HostPolicy = autocert.HostWhitelist(
