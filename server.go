@@ -4,9 +4,13 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/crypto/acme/autocert"
 )
 
 // server is an HTTP server.
@@ -36,7 +40,34 @@ func (s *server) serve() error {
 	}
 
 	if TLSCertFile != "" && TLSKeyFile != "" {
-		return s.server.ListenAndServeTLS(TLSCertFile, TLSKeyFile)
+		tlsCertFile, tlsKeyFile := TLSCertFile, TLSKeyFile
+		if tlsCertFile == "Let's Encrypt" && tlsKeyFile == tlsCertFile {
+			a := s.server.Addr
+			if si := strings.Index(a, ":"); si >= 0 {
+				a = a[:si]
+			}
+
+			acm := autocert.Manager{
+				Prompt: autocert.AcceptTOS,
+				Cache: autocert.DirCache(filepath.Join(
+					os.TempDir(),
+					"air",
+				)),
+			}
+			if len(AuthorityWhitelist) > 0 {
+				acm.HostPolicy = autocert.HostWhitelist(
+					AuthorityWhitelist...,
+				)
+			}
+
+			go http.ListenAndServe(a+":http", acm.HTTPHandler(s))
+
+			s.server.Addr = a + ":https"
+			s.server.TLSConfig = acm.TLSConfig()
+			tlsCertFile, tlsKeyFile = "", ""
+		}
+
+		return s.server.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
 	}
 
 	return s.server.ListenAndServe()
@@ -63,6 +94,34 @@ func (s *server) shutdown(timeout time.Duration) error {
 
 // ServeHTTP implements the `http.Handler`.
 func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	// Check authority
+
+	if len(AuthorityWhitelist) > 0 {
+		allowedAuthority := false
+		for _, a := range AuthorityWhitelist {
+			if a == r.Host {
+				allowedAuthority = true
+				break
+			}
+		}
+
+		if !allowedAuthority {
+			scheme := "http"
+			if r.TLS != nil {
+				scheme = "https"
+			}
+
+			http.Redirect(
+				rw,
+				r,
+				scheme+"://"+AuthorityWhitelist[0]+r.RequestURI,
+				301,
+			)
+
+			return
+		}
+	}
+
 	// Request
 
 	req := &Request{

@@ -42,6 +42,7 @@ properly.**
 * Server
 	* HTTP/2 support
 	* SSL/TLS support
+	* ACME support
 	* Graceful shutdown support
 	* WebSocket support
 * Router
