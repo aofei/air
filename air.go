@@ -83,6 +83,11 @@ var TLSCertFile = ""
 // It is called "tls_key_file" in the configuration file.
 var TLSKeyFile = ""
 
+// HTTPSEnforced indicates whether the HTTPS is enforced.
+//
+// It is called "https_enforced" in the configuration file.
+var HTTPSEnforced = false
+
 // ACMECertRoot is the root of the ACME certificates.
 //
 // It is called "acme_cert_root" in the configuration file.
@@ -306,6 +311,10 @@ func init() {
 
 	if v, ok := Config["tls_key_file"].(string); ok {
 		TLSKeyFile = v
+	}
+
+	if v, ok := Config["https_enforced"].(bool); ok {
+		HTTPSEnforced = v
 	}
 
 	if v, ok := Config["acme_cert_root"].(string); ok {

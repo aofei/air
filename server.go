@@ -3,6 +3,7 @@ package air
 import (
 	"context"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -38,13 +39,26 @@ func (s *server) serve() error {
 	}
 
 	if TLSCertFile != "" && TLSKeyFile != "" {
-		tlsCertFile, tlsKeyFile := TLSCertFile, TLSKeyFile
-		if tlsCertFile == "Let's Encrypt" && tlsKeyFile == tlsCertFile {
-			a := s.server.Addr
-			if si := strings.Index(a, ":"); si >= 0 {
-				a = a[:si]
+		host := s.server.Addr
+		if strings.Contains(host, ":") {
+			var err error
+			if host, _, err = net.SplitHostPort(host); err != nil {
+				return err
+			}
+		}
+
+		var h2hs http.HandlerFunc
+		h2hs = func(rw http.ResponseWriter, r *http.Request) {
+			host, _, err := net.SplitHostPort(r.Host)
+			if err != nil {
+				host = r.Host
 			}
 
+			http.Redirect(rw, r, "https://"+host+r.RequestURI, 301)
+		}
+
+		tlsCertFile, tlsKeyFile := TLSCertFile, TLSKeyFile
+		if tlsCertFile == "Let's Encrypt" && tlsKeyFile == tlsCertFile {
 			acm := autocert.Manager{
 				Prompt: autocert.AcceptTOS,
 				Cache:  autocert.DirCache(ACMECertRoot),
@@ -55,11 +69,16 @@ func (s *server) serve() error {
 				)
 			}
 
-			go http.ListenAndServe(a+":http", acm.HTTPHandler(s))
+			go http.ListenAndServe(
+				host+":http",
+				acm.HTTPHandler(h2hs),
+			)
 
-			s.server.Addr = a + ":https"
+			s.server.Addr = host + ":https"
 			s.server.TLSConfig = acm.TLSConfig()
 			tlsCertFile, tlsKeyFile = "", ""
+		} else if HTTPSEnforced {
+			go http.ListenAndServe(host+":http", h2hs)
 		}
 
 		return s.server.ListenAndServeTLS(tlsCertFile, tlsKeyFile)

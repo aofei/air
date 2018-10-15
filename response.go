@@ -52,6 +52,13 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			return
 		}
 
+		if HTTPSEnforced {
+			r.Headers["strict-transport-security"] = &Header{
+				Name:   "strict-transport-security",
+				Values: []string{"max-age=31536000"},
+			}
+		}
+
 		if reader != nil && r.ContentLength == 0 {
 			r.ContentLength, _ = content.Seek(0, io.SeekEnd)
 			content.Seek(0, io.SeekStart)
