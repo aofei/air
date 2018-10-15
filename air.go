@@ -38,10 +38,10 @@ var LoggerOutput = io.Writer(os.Stdout)
 // It is called "address" in the configuration file.
 var Address = "localhost:2333"
 
-// AuthorityWhitelist is the authorities allowed by the server.
+// HostnameWhitelist is the hostnames allowed by the server.
 //
-// It is called "authority_whitelist" in the configuration file.
-var AuthorityWhitelist = []string{}
+// It is called "hostname_whitelist" in the configuration file.
+var HostnameWhitelist = []string{}
 
 // ReadTimeout is the maximum duration the server reads the request.
 //
@@ -273,14 +273,11 @@ func init() {
 		Address = v
 	}
 
-	if v, ok := Config["authority_whitelist"].([]interface{}); ok {
-		AuthorityWhitelist = make([]string, 0, len(v))
+	if v, ok := Config["hostname_whitelist"].([]interface{}); ok {
+		HostnameWhitelist = make([]string, 0, len(v))
 		for _, v := range v {
 			if v, ok := v.(string); ok {
-				AuthorityWhitelist = append(
-					AuthorityWhitelist,
-					v,
-				)
+				HostnameWhitelist = append(HostnameWhitelist, v)
 			}
 		}
 	}

@@ -39,22 +39,23 @@ func (s *server) serve() error {
 	}
 
 	if TLSCertFile != "" && TLSKeyFile != "" {
-		host := s.server.Addr
-		if strings.Contains(host, ":") {
+		hostname := s.server.Addr
+		if strings.Contains(hostname, ":") {
 			var err error
-			if host, _, err = net.SplitHostPort(host); err != nil {
+			hostname, _, err = net.SplitHostPort(hostname)
+			if err != nil {
 				return err
 			}
 		}
 
 		var h2hs http.HandlerFunc
 		h2hs = func(rw http.ResponseWriter, r *http.Request) {
-			host, _, err := net.SplitHostPort(r.Host)
+			hn, _, err := net.SplitHostPort(r.Host)
 			if err != nil {
-				host = r.Host
+				hn = r.Host
 			}
 
-			http.Redirect(rw, r, "https://"+host+r.RequestURI, 301)
+			http.Redirect(rw, r, "https://"+hn+r.RequestURI, 301)
 		}
 
 		tlsCertFile, tlsKeyFile := TLSCertFile, TLSKeyFile
@@ -63,22 +64,22 @@ func (s *server) serve() error {
 				Prompt: autocert.AcceptTOS,
 				Cache:  autocert.DirCache(ACMECertRoot),
 			}
-			if len(AuthorityWhitelist) > 0 {
+			if len(HostnameWhitelist) > 0 {
 				acm.HostPolicy = autocert.HostWhitelist(
-					AuthorityWhitelist...,
+					HostnameWhitelist...,
 				)
 			}
 
 			go http.ListenAndServe(
-				host+":http",
+				hostname+":http",
 				acm.HTTPHandler(h2hs),
 			)
 
-			s.server.Addr = host + ":https"
+			s.server.Addr = hostname + ":https"
 			s.server.TLSConfig = acm.TLSConfig()
 			tlsCertFile, tlsKeyFile = "", ""
 		} else if HTTPSEnforced {
-			go http.ListenAndServe(host+":http", h2hs)
+			go http.ListenAndServe(hostname+":http", h2hs)
 		}
 
 		return s.server.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
@@ -108,18 +109,23 @@ func (s *server) shutdown(timeout time.Duration) error {
 
 // ServeHTTP implements the `http.Handler`.
 func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	// Check authority
+	// Check hostname
 
-	if len(AuthorityWhitelist) > 0 {
-		allowedAuthority := false
-		for _, a := range AuthorityWhitelist {
-			if a == r.Host {
-				allowedAuthority = true
+	if len(HostnameWhitelist) > 0 {
+		hn, _, err := net.SplitHostPort(r.Host)
+		if err != nil {
+			hn = r.Host
+		}
+
+		allowed := false
+		for _, a := range HostnameWhitelist {
+			if a == hn {
+				allowed = true
 				break
 			}
 		}
 
-		if !allowedAuthority {
+		if !allowed {
 			scheme := "http"
 			if r.TLS != nil {
 				scheme = "https"
@@ -128,7 +134,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			http.Redirect(
 				rw,
 				r,
-				scheme+"://"+AuthorityWhitelist[0]+r.RequestURI,
+				scheme+"://"+HostnameWhitelist[0]+r.RequestURI,
 				301,
 			)
 
