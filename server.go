@@ -39,11 +39,10 @@ func (s *server) serve() error {
 	}
 
 	if TLSCertFile != "" && TLSKeyFile != "" {
-		hostname := s.server.Addr
-		if strings.Contains(hostname, ":") {
+		host := s.server.Addr
+		if strings.Contains(host, ":") {
 			var err error
-			hostname, _, err = net.SplitHostPort(hostname)
-			if err != nil {
+			if host, _, err = net.SplitHostPort(host); err != nil {
 				return err
 			}
 		}
@@ -64,22 +63,22 @@ func (s *server) serve() error {
 				Prompt: autocert.AcceptTOS,
 				Cache:  autocert.DirCache(ACMECertRoot),
 			}
-			if len(HostnameWhitelist) > 0 {
+			if len(HostWhitelist) > 0 {
 				acm.HostPolicy = autocert.HostWhitelist(
-					HostnameWhitelist...,
+					HostWhitelist...,
 				)
 			}
 
 			go http.ListenAndServe(
-				hostname+":http",
+				host+":http",
 				acm.HTTPHandler(h2hs),
 			)
 
-			s.server.Addr = hostname + ":https"
+			s.server.Addr = host + ":https"
 			s.server.TLSConfig = acm.TLSConfig()
 			tlsCertFile, tlsKeyFile = "", ""
 		} else if HTTPSEnforced {
-			go http.ListenAndServe(hostname+":http", h2hs)
+			go http.ListenAndServe(host+":http", h2hs)
 		}
 
 		return s.server.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
@@ -109,16 +108,16 @@ func (s *server) shutdown(timeout time.Duration) error {
 
 // ServeHTTP implements the `http.Handler`.
 func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	// Check hostname
+	// Check host
 
-	if len(HostnameWhitelist) > 0 {
+	if len(HostWhitelist) > 0 {
 		hn, _, err := net.SplitHostPort(r.Host)
 		if err != nil {
 			hn = r.Host
 		}
 
 		allowed := false
-		for _, a := range HostnameWhitelist {
+		for _, a := range HostWhitelist {
 			if a == hn {
 				allowed = true
 				break
@@ -134,7 +133,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			http.Redirect(
 				rw,
 				r,
-				scheme+"://"+HostnameWhitelist[0]+r.RequestURI,
+				scheme+"://"+HostWhitelist[0]+r.RequestURI,
 				301,
 			)
 
