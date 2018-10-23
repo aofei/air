@@ -1,7 +1,6 @@
 package air
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
@@ -819,11 +818,6 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 	}()
 
 	return ws, nil
-}
-
-// Hijack took over the connection from the server.
-func (r *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return r.writer.(http.Hijacker).Hijack()
 }
 
 // Push initiates an HTTP/2 server push. This constructs a synthetic request
