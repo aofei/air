@@ -821,11 +821,6 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 	return ws, nil
 }
 
-// Flush flushes buffered data to the client.
-func (r *Response) Flush() {
-	r.writer.(http.Flusher).Flush()
-}
-
 // Hijack took over the connection from the server.
 func (r *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return r.writer.(http.Hijacker).Hijack()
