@@ -827,7 +827,7 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 // that contains a valid host and the same scheme as the parent request. If the
 // target is a path, it will inherit the scheme and host of the parent request.
 // The headers specifies additional promised request headers. The headers
-// cannot include HTTP/2 pseudo header fields like ":path" and ":scheme", which
+// cannot include HTTP/2 pseudo headers like ":path" and ":scheme", which
 // will be added automatically.
 func (r *Response) Push(target string, headers map[string]*Header) error {
 	var pos *http.PushOptions
@@ -837,7 +837,7 @@ func (r *Response) Push(target string, headers map[string]*Header) error {
 		}
 		for n, h := range headers {
 			n := textproto.CanonicalMIMEHeaderKey(n)
-			r.writer.Header()[n] = h.Values
+			pos.Header[n] = h.Values
 		}
 	}
 
@@ -890,7 +890,7 @@ type httpRange struct {
 	start, length int64
 }
 
-// contentRange return a Content-Range header field of the r.
+// contentRange return a Content-Range header of the r.
 func (r httpRange) contentRange(size int64) string {
 	return fmt.Sprintf("bytes %d-%d/%d", r.start, r.start+r.length-1, size)
 }
