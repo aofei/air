@@ -831,12 +831,6 @@ func (r *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return r.writer.(http.Hijacker).Hijack()
 }
 
-// CloseNotify returns a channel that receives at most a single value when the
-// connection has gone away.
-func (r *Response) CloseNotify() <-chan bool {
-	return r.writer.(http.CloseNotifier).CloseNotify()
-}
-
 // Push initiates an HTTP/2 server push. This constructs a synthetic request
 // using the target and headers, serializes that request into a PUSH_PROMISE
 // frame, then dispatches that request using the server's request handler. The

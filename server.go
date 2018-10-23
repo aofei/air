@@ -49,12 +49,12 @@ func (s *server) serve() error {
 
 		var h2hs http.HandlerFunc
 		h2hs = func(rw http.ResponseWriter, r *http.Request) {
-			hn, _, err := net.SplitHostPort(r.Host)
+			host, _, err := net.SplitHostPort(r.Host)
 			if err != nil {
-				hn = r.Host
+				host = r.Host
 			}
 
-			http.Redirect(rw, r, "https://"+hn+r.RequestURI, 301)
+			http.Redirect(rw, r, "https://"+host+r.RequestURI, 301)
 		}
 
 		tlsCertFile, tlsKeyFile := TLSCertFile, TLSKeyFile
@@ -111,14 +111,14 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Check host
 
 	if len(HostWhitelist) > 0 {
-		hn, _, err := net.SplitHostPort(r.Host)
+		host, _, err := net.SplitHostPort(r.Host)
 		if err != nil {
-			hn = r.Host
+			host = r.Host
 		}
 
 		allowed := false
-		for _, a := range HostWhitelist {
-			if a == hn {
+		for _, h := range HostWhitelist {
+			if h == host {
 				allowed = true
 				break
 			}

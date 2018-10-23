@@ -127,7 +127,7 @@ func validCookieDomain(d string) bool {
 		d = d[1:]
 	}
 
-	ok := false // Ok once we have seen a letter.
+	ok := false // OK once we have seen a letter.
 	last := byte('.')
 	partlen := 0
 	for i := 0; i < len(d); i++ {
@@ -174,24 +174,18 @@ func validCookieDomain(d string) bool {
 
 // sanitize sanitizes the s based on the valid.
 func sanitize(s string, valid func(byte) bool) string {
-	ok := true
 	for i := 0; i < len(s); i++ {
 		if !valid(s[i]) {
-			ok = false
-			break
+			buf := make([]byte, 0, len(s))
+			for i := 0; i < len(s); i++ {
+				if valid(s[i]) {
+					buf = append(buf, s[i])
+				}
+			}
+
+			return string(buf)
 		}
 	}
 
-	if ok {
-		return s
-	}
-
-	buf := make([]byte, 0, len(s))
-	for i := 0; i < len(s); i++ {
-		if b := s[i]; valid(b) {
-			buf = append(buf, b)
-		}
-	}
-
-	return string(buf)
+	return s
 }
