@@ -201,6 +201,7 @@ var AssetExts = []string{
 	".jpg",
 	".jpeg",
 	".png",
+	".gif",
 }
 
 // I18nEnabled indicates whether the i18n is enabled.
