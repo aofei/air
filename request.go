@@ -423,7 +423,7 @@ func (rpv *RequestParamValue) File() (*RequestParamFileValue, error) {
 			rpv.f.Headers[h.Name] = h
 		}
 
-		if s := reflect.ValueOf(*fh).FieldByName("Size"); !s.IsNil() {
+		if s := reflect.ValueOf(*fh).FieldByName("Size"); s.IsValid() {
 			rpv.f.ContentLength = s.Int()
 		} else {
 			rpv.f.ContentLength, _ = rpv.f.Seek(0, io.SeekEnd)
