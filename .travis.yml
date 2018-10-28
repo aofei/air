@@ -17,4 +17,6 @@ matrix:
       env: GO111MODULE=on
       install: true
 
-script: goveralls --service=travis-ci
+script:
+  - go test -v --coverprofile=cover.out ./...
+  - goveralls --coverprofile=cover.out --service=travis-ci
