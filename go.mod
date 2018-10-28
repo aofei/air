@@ -9,9 +9,9 @@ require (
 	github.com/stretchr/testify v1.2.2
 	github.com/tdewolff/minify v2.3.5+incompatible
 	github.com/tdewolff/parse v2.3.3+incompatible // indirect
-	github.com/tdewolff/test v0.0.0-20171106182207-265427085153 // indirect
-	golang.org/x/crypto v0.0.0-20181015023909-0c41d7ab0a0e
-	golang.org/x/net v0.0.0-20181017193950-04a2e542c03f
-	golang.org/x/sys v0.0.0-20181022134430-8a28ead16f52 // indirect
+	github.com/tdewolff/test v1.0.0 // indirect
+	golang.org/x/crypto v0.0.0-20181025213731-e84da0312774
+	golang.org/x/net v0.0.0-20181023162649-9b4f9f5ad519
+	golang.org/x/sys v0.0.0-20181026203630-95b1ffbd15a5 // indirect
 	golang.org/x/text v0.3.0
 )
