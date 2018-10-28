@@ -1,16 +1,20 @@
 language: go
 
-go:
-  - 1.8.x
-  - 1.9.x
-  - 1.10.x
-  - 1.11.x
-  - tip
+before_install: go get github.com/mattn/goveralls
 
-install:
-  - go get -t -v ./...
-  - go get github.com/mattn/goveralls
-  - go get golang.org/x/tools/cmd/cover
+matrix:
+  include:
+    - go: "1.8.x"
+      install: go get -t -v ./...
+    - go: "1.9.x"
+      install: go get -t -v ./...
+    - go: "1.10.x"
+      install: go get -t -v ./...
+    - go: "1.11.x"
+      env: GO111MODULE=on
+      install: true
+    - go: "tip"
+      env: GO111MODULE=on
+      install: true
 
-script:
-  - goveralls -service=travis-ci
+script: goveralls --service=travis-ci
