@@ -6,9 +6,9 @@ type Header struct {
 	Values []string
 }
 
-// FirstValue returns the first value of the h. It returns "" if the h is nil or
+// Value returns the first value of the h. It returns "" if the h is nil or
 // there are no values.
-func (h *Header) FirstValue() string {
+func (h *Header) Value() string {
 	if h == nil || len(h.Values) == 0 {
 		return ""
 	}

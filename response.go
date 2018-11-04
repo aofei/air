@@ -72,7 +72,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		}
 
 		if r.ContentLength >= 0 &&
-			r.Headers["transfer-encoding"].FirstValue() == "" &&
+			r.Headers["transfer-encoding"].Value() == "" &&
 			r.Status >= 200 &&
 			r.Status != 204 &&
 			(r.Status >= 300 || r.request.Method != "CONNECT") {
@@ -114,12 +114,12 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		return nil
 	}
 
-	im := r.request.Headers["if-match"].FirstValue()
-	et := r.Headers["etag"].FirstValue()
+	im := r.request.Headers["if-match"].Value()
+	et := r.Headers["etag"].Value()
 	ius, _ := http.ParseTime(
-		r.request.Headers["if-unmodified-since"].FirstValue(),
+		r.request.Headers["if-unmodified-since"].Value(),
 	)
-	lm, _ := http.ParseTime(r.Headers["last-modified"].FirstValue())
+	lm, _ := http.ParseTime(r.Headers["last-modified"].Value())
 	if im != "" {
 		matched := false
 		for {
@@ -158,9 +158,9 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		r.Status = 412
 	}
 
-	inm := r.request.Headers["if-none-match"].FirstValue()
+	inm := r.request.Headers["if-none-match"].Value()
 	ims, _ := http.ParseTime(
-		r.request.Headers["if-modified-since"].FirstValue(),
+		r.request.Headers["if-modified-since"].Value(),
 	)
 	if inm != "" {
 		noneMatched := true
@@ -184,7 +184,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 				break
 			}
 
-			if eTagWeakMatch(eTag, r.Headers["etag"].FirstValue()) {
+			if eTagWeakMatch(eTag, r.Headers["etag"].Value()) {
 				noneMatched = false
 				break
 			}
@@ -215,7 +215,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		return nil
 	}
 
-	ct := r.Headers["content-type"].FirstValue()
+	ct := r.Headers["content-type"].Value()
 	if ct == "" {
 		// Read a chunk to decide between UTF-8 text and binary
 		b := [1 << 9]byte{}
@@ -240,12 +240,12 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 	r.ContentLength = size
 
-	rh := r.request.Headers["range"].FirstValue()
+	rh := r.request.Headers["range"].Value()
 	if rh == "" {
 		canWrite = true
 		return nil
 	} else if r.request.Method == "GET" || r.request.Method == "HEAD" {
-		if ir := r.request.Headers["if-range"].FirstValue(); ir != "" {
+		if ir := r.request.Headers["if-range"].Value(); ir != "" {
 			if eTag, _ := scanETag(ir); eTag != "" &&
 				!eTagStrongMatch(eTag, et) {
 				canWrite = true
@@ -446,7 +446,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 // WriteBlob responds to the client with the content b.
 func (r *Response) WriteBlob(b []byte) error {
-	if ct := r.Headers["content-type"].FirstValue(); ct != "" {
+	if ct := r.Headers["content-type"].Value(); ct != "" {
 		var err error
 		if b, err = theMinifier.minify(ct, b); err != nil {
 			return err
@@ -629,7 +629,7 @@ func (r *Response) WriteFile(filename string) error {
 		mt = fi.ModTime()
 	}
 
-	if r.Headers["content-type"].FirstValue() == "" {
+	if r.Headers["content-type"].Value() == "" {
 		ct := mime.TypeByExtension(filepath.Ext(filename))
 		if ct == "" {
 			// Read a chunk to decide between UTF-8 text and binary
@@ -647,7 +647,7 @@ func (r *Response) WriteFile(filename string) error {
 		}
 	}
 
-	if r.Headers["etag"].FirstValue() == "" {
+	if r.Headers["etag"].Value() == "" {
 		h := sha256.New()
 		if _, err := io.Copy(h, c); err != nil {
 			return err
@@ -659,7 +659,7 @@ func (r *Response) WriteFile(filename string) error {
 		}
 	}
 
-	if r.Headers["last-modified"].FirstValue() == "" {
+	if r.Headers["last-modified"].Value() == "" {
 		r.Headers["last-modified"] = &Header{
 			Name:   "last-modified",
 			Values: []string{mt.UTC().Format(http.TimeFormat)},

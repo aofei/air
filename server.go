@@ -178,7 +178,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		req.Headers[h.Name] = h
 	}
 
-	if f := req.Headers["forwarded"].FirstValue(); f != "" { // See RFC 7239
+	if f := req.Headers["forwarded"].Value(); f != "" { // See RFC 7239
 		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
 			p := strings.TrimSpace(p)
 			if strings.HasPrefix(p, "for=") {
@@ -189,8 +189,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-	} else if xff := req.Headers["x-forwarded-for"].FirstValue(); xff !=
-		"" {
+	} else if xff := req.Headers["x-forwarded-for"].Value(); xff != "" {
 		req.ClientAddress = strings.TrimSpace(
 			strings.Split(xff, ",")[0],
 		)

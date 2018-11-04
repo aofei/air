@@ -22,9 +22,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 		return errors.New("request body cannot be empty")
 	}
 
-	mt, _, err := mime.ParseMediaType(
-		r.Headers["content-type"].FirstValue(),
-	)
+	mt, _, err := mime.ParseMediaType(r.Headers["content-type"].Value())
 	if err != nil {
 		return err
 	}
