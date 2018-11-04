@@ -14,7 +14,8 @@ import (
 
 // server is an HTTP server.
 type server struct {
-	server *http.Server
+	server     *http.Server
+	h2hsServer *http.Server
 }
 
 // theServer is the singleton of the `server`.
@@ -38,61 +39,74 @@ func (s *server) serve() error {
 		DEBUG("air: serving in debug mode")
 	}
 
-	if TLSCertFile != "" && TLSKeyFile != "" {
-		host := s.server.Addr
-		if strings.Contains(host, ":") {
-			var err error
-			if host, _, err = net.SplitHostPort(host); err != nil {
-				return err
-			}
-		}
+	if TLSCertFile == "" || TLSKeyFile == "" {
+		return s.server.ListenAndServe()
+	}
 
-		var h2hs http.HandlerFunc
-		h2hs = func(rw http.ResponseWriter, r *http.Request) {
+	host := s.server.Addr
+	if strings.Contains(host, ":") {
+		var err error
+		if host, _, err = net.SplitHostPort(host); err != nil {
+			return err
+		}
+	}
+
+	h2hss := &http.Server{
+		Addr: host + ":http",
+		Handler: http.HandlerFunc(func(
+			rw http.ResponseWriter,
+			r *http.Request,
+		) {
 			host, _, err := net.SplitHostPort(r.Host)
 			if err != nil {
 				host = r.Host
 			}
 
 			http.Redirect(rw, r, "https://"+host+r.RequestURI, 301)
-		}
-
-		tlsCertFile, tlsKeyFile := TLSCertFile, TLSKeyFile
-		if tlsCertFile == "Let's Encrypt" && tlsKeyFile == tlsCertFile {
-			acm := autocert.Manager{
-				Prompt: autocert.AcceptTOS,
-				Cache:  autocert.DirCache(ACMECertRoot),
-			}
-			if len(HostWhitelist) > 0 {
-				acm.HostPolicy = autocert.HostWhitelist(
-					HostWhitelist...,
-				)
-			}
-			
-			if MaintainerEmail != "" {
-				acm.Email = MaintainerEmail
-			}
-
-			go http.ListenAndServe(
-				host+":http",
-				acm.HTTPHandler(h2hs),
-			)
-
-			s.server.Addr = host + ":https"
-			s.server.TLSConfig = acm.TLSConfig()
-			tlsCertFile, tlsKeyFile = "", ""
-		} else if HTTPSEnforced {
-			go http.ListenAndServe(host+":http", h2hs)
-		}
-
-		return s.server.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
+		}),
 	}
 
-	return s.server.ListenAndServe()
+	tlsCertFile, tlsKeyFile := TLSCertFile, TLSKeyFile
+	if tlsCertFile == "Let's Encrypt" && tlsKeyFile == tlsCertFile {
+		acm := autocert.Manager{
+			Prompt: autocert.AcceptTOS,
+			Cache:  autocert.DirCache(ACMECertRoot),
+		}
+
+		if len(HostWhitelist) > 0 {
+			acm.HostPolicy = autocert.HostWhitelist(
+				HostWhitelist...,
+			)
+		}
+
+		if MaintainerEmail != "" {
+			acm.Email = MaintainerEmail
+		}
+
+		s.server.Addr = host + ":https"
+		s.server.TLSConfig = acm.TLSConfig()
+
+		h2hss.Handler = acm.HTTPHandler(h2hss.Handler)
+		s.h2hsServer = h2hss
+
+		tlsCertFile, tlsKeyFile = "", ""
+	} else if HTTPSEnforced {
+		s.h2hsServer = h2hss
+	}
+
+	if s.h2hsServer != nil {
+		go s.h2hsServer.ListenAndServe()
+	}
+
+	return s.server.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
 }
 
 // close closes the s immediately.
 func (s *server) close() error {
+	if s.h2hsServer != nil {
+		s.h2hsServer.Close()
+	}
+
 	return s.server.Close()
 }
 
@@ -100,6 +114,10 @@ func (s *server) close() error {
 // connections until timeout. It waits indefinitely for connections to return to
 // idle and then shut down when the timeout is less than or equal to zero.
 func (s *server) shutdown(timeout time.Duration) error {
+	if s.h2hsServer != nil {
+		s.h2hsServer.Close()
+	}
+
 	if timeout <= 0 {
 		return s.server.Shutdown(context.Background())
 	}
