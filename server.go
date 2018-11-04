@@ -208,6 +208,9 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		request: req,
 		writer:  rw,
 	}
+	res.Body = &responseBody{
+		response: res,
+	}
 
 	// Chain gases
 

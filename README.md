@@ -17,7 +17,7 @@ properly.**
 
 * Singleton
 	* Air is uncountable
-	* Just one package `air.*`
+	* Only one package `air.*`
 * API
 	* As less as possible
 	* As simple as possible
@@ -89,6 +89,7 @@ properly.**
 * I18n
 	* Adapt to the request's favorite conventions
 	* Implanted into the `air.Response#Render()`
+	* Hot update support
 * Error
 	* Centralized handling
 
