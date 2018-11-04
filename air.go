@@ -72,6 +72,9 @@ var IdleTimeout = time.Duration(0)
 // It is called "max_header_bytes" in the configuration file.
 var MaxHeaderBytes = 1 << 20
 
+// MaintainerEmail is used for autocert/letsencrypt
+var MaintainerEmail = ""
+
 // TLSCertFile is the path to the TLS certificate file used when starting the
 // server.
 //
@@ -301,6 +304,10 @@ func init() {
 
 	if v, ok := Config["max_header_bytes"].(int64); ok {
 		MaxHeaderBytes = int(v)
+	}
+	
+	if v, ok := Config["maintainer_email"].(string); ok {
+	        MaintainerEmail = v
 	}
 
 	if v, ok := Config["tls_cert_file"].(string); ok {
