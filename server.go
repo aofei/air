@@ -68,6 +68,10 @@ func (s *server) serve() error {
 					HostWhitelist...,
 				)
 			}
+			
+			if MaintainerEmail != "" {
+				acm.Email = MaintainerEmail
+			}
 
 			go http.ListenAndServe(
 				host+":http",
