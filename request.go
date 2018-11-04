@@ -182,9 +182,9 @@ type RequestParam struct {
 	Values []*RequestParamValue
 }
 
-// FirstValue returns the first value of the rp. It returns nil if the rp is nil
-// or there are no values.
-func (rp *RequestParam) FirstValue() *RequestParamValue {
+// Value returns the first value of the rp. It returns nil if the rp is nil or
+// there are no values.
+func (rp *RequestParam) Value() *RequestParamValue {
 	if rp == nil || len(rp.Values) == 0 {
 		return nil
 	}

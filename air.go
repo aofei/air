@@ -488,7 +488,7 @@ func STATIC(prefix, root string, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
 		err := res.WriteFile(filepath.Join(
 			root,
-			req.Params["*"].FirstValue().String(),
+			req.Params["*"].Value().String(),
 		))
 		if os.IsNotExist(err) {
 			return NotFoundHandler(req, res)

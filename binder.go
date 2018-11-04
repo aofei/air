@@ -74,7 +74,7 @@ func (b *binder) bindParams(
 
 		tf := typ.Field(i)
 
-		pv := params[tf.Name].FirstValue()
+		pv := params[tf.Name].Value()
 		if pv == nil {
 			continue
 		}
