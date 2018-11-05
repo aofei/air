@@ -2,6 +2,7 @@ package air
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -71,16 +72,19 @@ func (s *server) serve() error {
 		acm := autocert.Manager{
 			Prompt: autocert.AcceptTOS,
 			Cache:  autocert.DirCache(ACMECertRoot),
-		}
+			HostPolicy: func(_ context.Context, h string) error {
+				if len(HostWhitelist) == 0 ||
+					stringsContainsCIly(HostWhitelist, h) {
+					return nil
+				}
 
-		if len(HostWhitelist) > 0 {
-			acm.HostPolicy = autocert.HostWhitelist(
-				HostWhitelist...,
-			)
-		}
-
-		if MaintainerEmail != "" {
-			acm.Email = MaintainerEmail
+				return fmt.Errorf(
+					"acme/autocert: host %q not "+
+						"configured in HostWhitelist",
+					h,
+				)
+			},
+			Email: MaintainerEmail,
 		}
 
 		s.server.Addr = host + ":https"
