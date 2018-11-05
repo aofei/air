@@ -362,7 +362,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 	}
 
 	if l := len(ranges); l == 1 {
-		// RFC 2616, Section 14.16:
+		// RFC 2616, section 14.16:
 		// "When an HTTP message includes the content of a single range
 		// (for example, a response to a request for a single range, or
 		// to a request for a set of ranges that overlap without any
@@ -606,12 +606,18 @@ func (r *Response) WriteFile(filename string) error {
 		filename += "index.html"
 	}
 
-	var c io.ReadSeeker
-	mt := time.Time{}
+	var (
+		c  io.ReadSeeker
+		ct string
+		et []byte
+		mt time.Time
+	)
 	if a, err := theCoffer.asset(filename); err != nil {
 		return err
 	} else if a != nil {
 		c = bytes.NewReader(a.content)
+		ct = a.mimeType
+		et = a.checksum[:]
 		mt = a.modTime
 	} else {
 		f, err := os.Open(filename)
@@ -630,7 +636,10 @@ func (r *Response) WriteFile(filename string) error {
 	}
 
 	if r.Headers["content-type"].Value() == "" {
-		ct := mime.TypeByExtension(filepath.Ext(filename))
+		if ct == "" {
+			ct = mime.TypeByExtension(filepath.Ext(filename))
+		}
+
 		if ct == "" {
 			// Read a chunk to decide between UTF-8 text and binary
 			b := [1 << 9]byte{}
@@ -648,14 +657,18 @@ func (r *Response) WriteFile(filename string) error {
 	}
 
 	if r.Headers["etag"].Value() == "" {
-		h := sha256.New()
-		if _, err := io.Copy(h, c); err != nil {
-			return err
+		if et == nil {
+			h := sha256.New()
+			if _, err := io.Copy(h, c); err != nil {
+				return err
+			}
+
+			et = h.Sum(nil)
 		}
 
 		r.Headers["etag"] = &Header{
 			Name:   "etag",
-			Values: []string{fmt.Sprintf(`"%x"`, h.Sum(nil))},
+			Values: []string{fmt.Sprintf(`"%x"`, et)},
 		}
 	}
 
@@ -866,7 +879,7 @@ func scanETag(s string) (eTag string, remain string) {
 	}
 
 	// ETag is either W/"text" or "text".
-	// See RFC 7232 2.3.
+	// See RFC 7232, section 2.3.
 	for i := start + 1; i < len(s); i++ {
 		c := s[i]
 		switch {
@@ -882,12 +895,14 @@ func scanETag(s string) (eTag string, remain string) {
 	return "", ""
 }
 
-// eTagStrongMatch reports whether a and b match using strong ETag comparison.
+// eTagStrongMatch reports whether the a and the b match using strong ETag
+// comparison.
 func eTagStrongMatch(a, b string) bool {
 	return a == b && a != "" && a[0] == '"'
 }
 
-// eTagWeakMatch reports whether a and b match using weak ETag comparison.
+// eTagWeakMatch reports whether the a and the b match using weak ETag
+// comparison.
 func eTagWeakMatch(a, b string) bool {
 	return strings.TrimPrefix(a, "W/") == strings.TrimPrefix(b, "W/")
 }

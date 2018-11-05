@@ -1,6 +1,7 @@
 package air
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
 	"mime"
@@ -76,13 +77,9 @@ func (c *coffer) asset(name string) (*asset, error) {
 		return nil, nil
 	}
 
-	ext := strings.ToLower(filepath.Ext(name))
-	for i := range AssetExts {
-		if strings.ToLower(AssetExts[i]) == ext {
-			break
-		} else if i == len(AssetExts)-1 {
-			return nil, nil
-		}
+	ext := filepath.Ext(name)
+	if !stringsContainsCIly(AssetExts, ext) {
+		return nil, nil
 	}
 
 	fi, err := os.Stat(name)
@@ -95,7 +92,8 @@ func (c *coffer) asset(name string) (*asset, error) {
 		return nil, err
 	}
 
-	if mt := mime.TypeByExtension(ext); mt != "" {
+	mt := mime.TypeByExtension(ext)
+	if mt != "" {
 		if b, err = theMinifier.minify(mt, b); err != nil {
 			return nil, err
 		}
@@ -106,9 +104,11 @@ func (c *coffer) asset(name string) (*asset, error) {
 	}
 
 	c.assets[name] = &asset{
-		name:    name,
-		content: b,
-		modTime: fi.ModTime(),
+		name:     name,
+		content:  b,
+		mimeType: mt,
+		checksum: sha256.Sum256(b),
+		modTime:  fi.ModTime(),
 	}
 
 	return c.assets[name], nil
@@ -116,7 +116,21 @@ func (c *coffer) asset(name string) (*asset, error) {
 
 // asset is a binary asset file.
 type asset struct {
-	name    string
-	content []byte
-	modTime time.Time
+	name     string
+	content  []byte
+	mimeType string
+	checksum [sha256.Size]byte
+	modTime  time.Time
+}
+
+// stringsContainsCIly reports whether the ss contains the s case-insensitively.
+func stringsContainsCIly(ss []string, s string) bool {
+	s = strings.ToLower(s)
+	for _, v := range ss {
+		if strings.ToLower(v) == s {
+			return true
+		}
+	}
+
+	return false
 }
