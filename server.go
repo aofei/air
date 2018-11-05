@@ -138,15 +138,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			host = r.Host
 		}
 
-		allowed := false
-		for _, h := range HostWhitelist {
-			if h == host {
-				allowed = true
-				break
-			}
-		}
-
-		if !allowed {
+		// See RFC 3986, section 3.2.2.
+		if !stringsContainsCIly(HostWhitelist, host) {
 			scheme := "http"
 			if r.TLS != nil {
 				scheme = "https"
