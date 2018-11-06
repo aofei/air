@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/v2"
 )
 
 func TestMinifier(t *testing.T) {
