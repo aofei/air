@@ -6,6 +6,8 @@ import (
 	"errors"
 	"mime"
 	"reflect"
+	
+	"github.com/vmihailenco/msgpack"
 )
 
 // binder is a binder that binds request based on the MIME types.
@@ -30,6 +32,8 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	switch mt {
 	case "application/json":
 		err = json.NewDecoder(r.Body).Decode(v)
+	case "application/msgpack":
+		err = msgpack.NewDecoder(r.Body).Decode(v)
 	case "application/xml":
 		err = xml.NewDecoder(r.Body).Decode(v)
 	case "application/x-www-form-urlencoded", "multipart/form-data":
