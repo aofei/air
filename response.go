@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/vmihailenco/msgpack"
 	"golang.org/x/net/html"
 )
 
@@ -541,6 +542,23 @@ func (r *Response) WriteJSON(v interface{}) error {
 	}
 
 	r.SetHeader("content-type", "application/json; charset=utf-8")
+
+	return r.WriteBlob(b)
+}
+
+// WriteMsgpack responds to the client with the "application/msgpack" content v.
+func (r *Response) WriteMsgpack(v interface{}) error {
+	var (
+		b   []byte
+		err error
+	)
+
+	b, err = msgpack.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	r.SetHeader("content-type", "application/msgpack")
 
 	return r.WriteBlob(b)
 }
