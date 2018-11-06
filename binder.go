@@ -32,7 +32,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	switch mt {
 	case "application/json":
 		err = json.NewDecoder(r.Body).Decode(v)
-	case "application/msgpack":
+	case "application/msgpack", "application/x-msgpack":
 		err = msgpack.NewDecoder(r.Body).Decode(v)
 	case "application/xml":
 		err = xml.NewDecoder(r.Body).Decode(v)
