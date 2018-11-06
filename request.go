@@ -6,7 +6,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -408,8 +407,9 @@ func (rpv *RequestParamValue) File() (*RequestParamFileValue, error) {
 		}
 
 		rpv.f = &RequestParamFileValue{
-			Filename: fh.Filename,
-			Headers:  make(map[string]*Header, len(fh.Header)),
+			Filename:      fh.Filename,
+			Headers:       make(map[string]*Header, len(fh.Header)),
+			ContentLength: fh.Size,
 
 			fh: fh,
 		}
@@ -421,13 +421,6 @@ func (rpv *RequestParamValue) File() (*RequestParamFileValue, error) {
 			}
 
 			rpv.f.Headers[h.Name] = h
-		}
-
-		if s := reflect.ValueOf(*fh).FieldByName("Size"); s.IsValid() {
-			rpv.f.ContentLength = s.Int()
-		} else {
-			rpv.f.ContentLength, _ = rpv.f.Seek(0, io.SeekEnd)
-			rpv.f.Seek(0, io.SeekStart)
 		}
 	}
 
