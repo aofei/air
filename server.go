@@ -167,61 +167,24 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Scheme:        "http",
 		Authority:     r.Host,
 		Path:          r.RequestURI,
-		Headers:       make(map[string]*Header, len(r.Header)),
 		Body:          r.Body,
 		ContentLength: r.ContentLength,
-		Cookies:       map[string]*Cookie{},
-		Params: make(
-			map[string]*RequestParam,
-			theRouter.maxParams,
-		),
-		RemoteAddress: r.RemoteAddr,
-		ClientAddress: r.RemoteAddr,
 		Values:        map[string]interface{}{},
 
-		request:          r,
-		parseCookiesOnce: &sync.Once{},
-		parseParamsOnce:  &sync.Once{},
+		request:                r,
+		parseClientAddressOnce: &sync.Once{},
+		parseHeadersOnce:       &sync.Once{},
+		parseCookiesOnce:       &sync.Once{},
+		parseParamsOnce:        &sync.Once{},
 	}
-
 	if r.TLS != nil {
 		req.Scheme = "https"
 	}
 
-	for n, vs := range r.Header {
-		h := &Header{
-			Name:   strings.ToLower(n),
-			Values: vs,
-		}
-
-		req.Headers[h.Name] = h
-	}
-
-	if f := req.Headers["forwarded"].Value(); f != "" { // See RFC 7239
-		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
-			p := strings.TrimSpace(p)
-			if strings.HasPrefix(p, "for=") {
-				req.ClientAddress = strings.TrimSuffix(
-					strings.TrimPrefix(p[4:], "\"["),
-					"]\"",
-				)
-				break
-			}
-		}
-	} else if xff := req.Headers["x-forwarded-for"].Value(); xff != "" {
-		req.ClientAddress = strings.TrimSpace(
-			strings.Split(xff, ",")[0],
-		)
-	}
-
-	theI18n.localize(req)
-
 	// Response
 
 	res := &Response{
-		Status:  200,
-		Headers: map[string]*Header{},
-		Cookies: map[string]*Cookie{},
+		Status: 200,
 
 		request: req,
 		writer:  rw,
@@ -244,9 +207,6 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
-		req.ParseCookies()
-		req.ParseParams()
-
 		for i := len(Gases) - 1; i >= 0; i-- {
 			h = Gases[i](h)
 		}
@@ -268,7 +228,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// Close opened request param file values
 
-	for _, p := range req.Params {
+	for _, p := range req.params {
 		for _, pv := range p.Values {
 			if pv.f != nil && pv.f.f != nil {
 				pv.f.f.Close()

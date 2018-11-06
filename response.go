@@ -29,14 +29,83 @@ import (
 // Response is an HTTP response.
 type Response struct {
 	Status        int
-	Headers       map[string]*Header
 	Body          io.Writer
 	ContentLength int64
-	Cookies       map[string]*Cookie
 	Written       bool
 
 	request *Request
 	writer  http.ResponseWriter
+	headers []*Header
+	cookies []*Cookie
+}
+
+// Header returns the matched `Header` for the name case-insensitively. It
+// returns nil if not found.
+func (r *Response) Header(name string) *Header {
+	name = strings.ToLower(name)
+	for _, h := range r.headers {
+		if strings.ToLower(h.Name) == name {
+			return h
+		}
+	}
+
+	return nil
+}
+
+// Headers returns all the `Header` in the r.
+func (r *Response) Headers() []*Header {
+	return r.headers
+}
+
+// SetHeader sets the `Header` entries associated with the name to the values.
+func (r *Response) SetHeader(name string, values ...string) {
+	if h := r.Header(name); h != nil {
+		h.Values = values
+	} else if len(values) > 0 {
+		r.headers = append(r.headers, &Header{
+			Name:   strings.ToLower(name),
+			Values: values,
+		})
+	}
+}
+
+// Cookie returns the matched `Cookie` for the name. It returns nil if not
+// found.
+func (r *Response) Cookie(name string) *Cookie {
+	for _, c := range r.cookies {
+		if c.Name == name {
+			return c
+		}
+	}
+
+	return nil
+}
+
+// Cookies returns all the `Cookie` in the r.
+func (r *Response) Cookies() []*Cookie {
+	return r.cookies
+}
+
+// SetCookie sets the `Cookie` entries associated with the name to the c.
+func (r *Response) SetCookie(name string, c *Cookie) {
+	for i := range r.cookies {
+		if r.cookies[i].Name == name {
+			if c != nil {
+				r.cookies[i] = c
+			} else if i == 0 {
+				r.cookies = r.cookies[1:]
+			} else if l := len(r.cookies); i == l-1 {
+				r.cookies = r.cookies[:l-2]
+			} else {
+				r.cookies = append(
+					r.cookies[:i],
+					r.cookies[i+1:]...,
+				)
+			}
+
+			break
+		}
+	}
 }
 
 // Write responds to the client with the content.
@@ -52,54 +121,57 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			return
 		}
 
-		if HTTPSEnforced {
-			r.Headers["strict-transport-security"] = &Header{
-				Name:   "strict-transport-security",
-				Values: []string{"max-age=31536000"},
-			}
+		if HTTPSEnforced &&
+			r.Header("strict-transport-security").Value() == "" {
+			r.SetHeader(
+				"strict-transport-security",
+				"max-age=31536000",
+			)
 		}
 
 		if reader != nil {
-			if r.Status >= 200 && r.Status < 400 {
-				r.Headers["accept-ranges"] = &Header{
-					Name:   "accept-ranges",
-					Values: []string{"bytes"},
-				}
+			if r.Status >= 200 &&
+				r.Status < 400 &&
+				r.Header("accept-ranges").Value() == "" {
+				r.SetHeader("accept-ranges", "bytes")
 			}
 
 			if reader == content && r.ContentLength == 0 {
-				r.ContentLength, _ = content.Seek(0, io.SeekEnd)
+				r.ContentLength, _ = content.Seek(
+					0,
+					io.SeekEnd,
+				)
 				content.Seek(0, io.SeekStart)
 			}
 		}
 
 		if r.ContentLength >= 0 &&
-			r.Headers["transfer-encoding"].Value() == "" &&
+			r.Header("content-length").Value() == "" &&
+			r.Header("transfer-encoding").Value() == "" &&
 			r.Status >= 200 &&
 			r.Status != 204 &&
 			(r.Status >= 300 || r.request.Method != "CONNECT") {
-			r.Headers["content-length"] = &Header{
-				Name: "content-length",
-				Values: []string{
-					strconv.FormatInt(r.ContentLength, 10),
-				},
-			}
+			r.SetHeader(
+				"content-length",
+				strconv.FormatInt(r.ContentLength, 10),
+			)
 		}
 
-		if len(r.Cookies) > 0 {
-			vs := make([]string, 0, len(r.Cookies))
-			for _, c := range r.Cookies {
+		if cs := r.Cookies(); len(cs) > 0 {
+			vs := make([]string, 0, len(cs))
+			for _, c := range cs {
 				vs = append(vs, c.String())
 			}
 
-			r.Headers["set-cookie"] = &Header{
-				Name:   "set-cookie",
-				Values: vs,
-			}
+			r.SetHeader("set-cookie", vs...)
 		}
 
-		for n, h := range r.Headers {
-			n := textproto.CanonicalMIMEHeaderKey(n)
+		for _, h := range r.Headers() {
+			if len(h.Values) == 0 {
+				continue
+			}
+
+			n := textproto.CanonicalMIMEHeaderKey(h.Name)
 			r.writer.Header()[n] = h.Values
 		}
 
@@ -116,12 +188,12 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		return nil
 	}
 
-	im := r.request.Headers["if-match"].Value()
-	et := r.Headers["etag"].Value()
+	im := r.request.Header("if-match").Value()
+	et := r.Header("etag").Value()
 	ius, _ := http.ParseTime(
-		r.request.Headers["if-unmodified-since"].Value(),
+		r.request.Header("if-unmodified-since").Value(),
 	)
-	lm, _ := http.ParseTime(r.Headers["last-modified"].Value())
+	lm, _ := http.ParseTime(r.Header("last-modified").Value())
 	if im != "" {
 		matched := false
 		for {
@@ -160,10 +232,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		r.Status = 412
 	}
 
-	inm := r.request.Headers["if-none-match"].Value()
-	ims, _ := http.ParseTime(
-		r.request.Headers["if-modified-since"].Value(),
-	)
+	inm := r.request.Header("if-none-match").Value()
+	ims, _ := http.ParseTime(r.request.Header("if-modified-since").Value())
 	if inm != "" {
 		noneMatched := true
 		for {
@@ -186,7 +256,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 				break
 			}
 
-			if eTagWeakMatch(eTag, r.Headers["etag"].Value()) {
+			if eTagWeakMatch(eTag, r.Header("etag").Value()) {
 				noneMatched = false
 				break
 			}
@@ -207,8 +277,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 	}
 
 	if r.Status == 304 {
-		delete(r.Headers, "content-type")
-		delete(r.Headers, "content-length")
+		r.SetHeader("content-type")
+		r.SetHeader("content-length")
 		canWrite = true
 		return nil
 	} else if r.Status == 412 {
@@ -218,7 +288,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		return nil
 	}
 
-	ct := r.Headers["content-type"].Value()
+	ct := r.Header("content-type").Value()
 	if ct == "" {
 		// Read a chunk to decide between UTF-8 text and binary.
 		b := [1 << 9]byte{}
@@ -228,10 +298,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			return err
 		}
 
-		r.Headers["content-type"] = &Header{
-			Name:   "content-type",
-			Values: []string{ct},
-		}
+		r.SetHeader("content-type", ct)
 	}
 
 	size, err := content.Seek(0, io.SeekEnd)
@@ -243,12 +310,12 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 	r.ContentLength = size
 
-	rh := r.request.Headers["range"].Value()
+	rh := r.request.Header("range").Value()
 	if rh == "" {
 		canWrite = true
 		return nil
 	} else if r.request.Method == "GET" || r.request.Method == "HEAD" {
-		if ir := r.request.Headers["if-range"].Value(); ir != "" {
+		if ir := r.request.Header("if-range").Value(); ir != "" {
 			if eTag, _ := scanETag(ir); eTag != "" &&
 				!eTagStrongMatch(eTag, et) {
 				canWrite = true
@@ -345,13 +412,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 	if noOverlap && len(ranges) == 0 {
 		// The specified ranges did not overlap with the content.
-		r.Headers["content-range"] = &Header{
-			Name:   "content-range",
-			Values: []string{fmt.Sprintf("bytes */%d", size)},
-		}
-
+		r.SetHeader("content-range", fmt.Sprintf("bytes */%d", size))
 		r.Status = 416
-
 		return errors.New("invalid range: failed to overlap")
 	}
 
@@ -383,10 +445,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 		r.ContentLength = ra.length
 		r.Status = 206
-		r.Headers["content-range"] = &Header{
-			Name:   "content-range",
-			Values: []string{ra.contentRange(size)},
-		}
+		r.SetHeader("content-range", ra.contentRange(size))
 	} else if l > 1 {
 		var w countingWriter
 		mw := multipart.NewWriter(&w)
@@ -402,13 +461,10 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 		pr, pw := io.Pipe()
 		mw = multipart.NewWriter(pw)
-		r.Headers["content-type"] = &Header{
-			Name: "content-type",
-			Values: []string{
-				"multipart/byteranges; boundary=" +
-					mw.Boundary(),
-			},
-		}
+		r.SetHeader(
+			"content-type",
+			"multipart/byteranges; boundary="+mw.Boundary(),
+		)
 
 		reader = pr
 		defer pr.Close()
@@ -451,7 +507,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 // WriteBlob responds to the client with the content b.
 func (r *Response) WriteBlob(b []byte) error {
-	if ct := r.Headers["content-type"].Value(); ct != "" {
+	if ct := r.Header("content-type").Value(); ct != "" {
 		var err error
 		if b, err = theMinifier.minify(ct, b); err != nil {
 			return err
@@ -463,11 +519,7 @@ func (r *Response) WriteBlob(b []byte) error {
 
 // WriteString responds to the client with the "text/plain" content s.
 func (r *Response) WriteString(s string) error {
-	r.Headers["content-type"] = &Header{
-		Name:   "content-type",
-		Values: []string{"text/plain; charset=utf-8"},
-	}
-
+	r.SetHeader("content-type", "text/plain; charset=utf-8")
 	return r.WriteBlob([]byte(s))
 }
 
@@ -488,10 +540,7 @@ func (r *Response) WriteJSON(v interface{}) error {
 		return err
 	}
 
-	r.Headers["content-type"] = &Header{
-		Name:   "content-type",
-		Values: []string{"application/json; charset=utf-8"},
-	}
+	r.SetHeader("content-type", "application/json; charset=utf-8")
 
 	return r.WriteBlob(b)
 }
@@ -513,13 +562,9 @@ func (r *Response) WriteXML(v interface{}) error {
 		return err
 	}
 
-	b = append([]byte(xml.Header), b...)
-	r.Headers["content-type"] = &Header{
-		Name:   "content-type",
-		Values: []string{"application/xml; charset=utf-8"},
-	}
+	r.SetHeader("content-type", "application/xml; charset=utf-8")
 
-	return r.WriteBlob(b)
+	return r.WriteBlob(append([]byte(xml.Header), b...))
 }
 
 // WriteHTML responds to the client with the "text/html" content h.
@@ -564,10 +609,7 @@ func (r *Response) WriteHTML(h string) error {
 		f(tree)
 	}
 
-	r.Headers["content-type"] = &Header{
-		Name:   "content-type",
-		Values: []string{"text/html; charset=utf-8"},
-	}
+	r.SetHeader("content-type", "text/html; charset=utf-8")
 
 	return r.WriteBlob([]byte(h))
 }
@@ -580,7 +622,7 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	for _, t := range templates {
 		m["InheritedHTML"] = template.HTML(buf.String())
 		buf.Reset()
-		err := theRenderer.render(&buf, t, m, r.request.localizedString)
+		err := theRenderer.render(&buf, t, m, r.request.LocalizedString)
 		if err != nil {
 			return err
 		}
@@ -640,20 +682,17 @@ func (r *Response) WriteFile(filename string) error {
 		mt = fi.ModTime()
 	}
 
-	if r.Headers["content-type"].Value() == "" {
+	if r.Header("content-type").Value() == "" {
 		if ct == "" {
 			ct = mime.TypeByExtension(filepath.Ext(filename))
 		}
 
 		if ct != "" { // Don't worry, someone will check it later
-			r.Headers["content-type"] = &Header{
-				Name:   "content-type",
-				Values: []string{ct},
-			}
+			r.SetHeader("content-type", ct)
 		}
 	}
 
-	if r.Headers["etag"].Value() == "" {
+	if r.Header("etag").Value() == "" {
 		if et == nil {
 			h := sha256.New()
 			if _, err := io.Copy(h, c); err != nil {
@@ -663,17 +702,11 @@ func (r *Response) WriteFile(filename string) error {
 			et = h.Sum(nil)
 		}
 
-		r.Headers["etag"] = &Header{
-			Name:   "etag",
-			Values: []string{fmt.Sprintf(`"%x"`, et)},
-		}
+		r.SetHeader("etag", fmt.Sprintf(`"%x"`, et))
 	}
 
-	if r.Headers["last-modified"].Value() == "" {
-		r.Headers["last-modified"] = &Header{
-			Name:   "last-modified",
-			Values: []string{mt.UTC().Format(http.TimeFormat)},
-		}
+	if r.Header("last-modified").Value() == "" {
+		r.SetHeader("last-modified", mt.UTC().Format(http.TimeFormat))
 	}
 
 	return r.Write(c)
@@ -685,10 +718,7 @@ func (r *Response) Redirect(url string) error {
 		r.Status = 302
 	}
 
-	r.Headers["location"] = &Header{
-		Name:   "location",
-		Values: []string{url},
-	}
+	r.SetHeader("location", url)
 
 	return r.Write(nil)
 }
@@ -697,20 +727,21 @@ func (r *Response) Redirect(url string) error {
 func (r *Response) WebSocket() (*WebSocket, error) {
 	r.Status = 101
 
-	if len(r.Cookies) > 0 {
-		vs := make([]string, 0, len(r.Cookies))
-		for _, c := range r.Cookies {
+	if cs := r.Cookies(); len(cs) > 0 {
+		vs := make([]string, 0, len(cs))
+		for _, c := range cs {
 			vs = append(vs, c.String())
 		}
 
-		r.Headers["set-cookie"] = &Header{
-			Name:   "set-cookie",
-			Values: vs,
-		}
+		r.SetHeader("set-cookie", vs...)
 	}
 
-	for n, h := range r.Headers {
-		n := textproto.CanonicalMIMEHeaderKey(n)
+	for _, h := range r.Headers() {
+		if len(h.Values) == 0 {
+			continue
+		}
+
+		n := textproto.CanonicalMIMEHeaderKey(h.Name)
 		r.writer.Header()[n] = h.Values
 	}
 

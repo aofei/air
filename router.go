@@ -350,25 +350,31 @@ func (r *router) route(req *Request) Handler {
 
 	if handler := cn.handlers[req.Method]; handler != nil {
 		for i, pv := range pvs {
-			if pn := cn.paramNames[i]; req.Params[pn] == nil {
-				req.Params[pn] = &RequestParam{
-					Name: pn,
-					Values: []*RequestParamValue{
-						{
-							i: pv,
+			pn := cn.paramNames[i]
+
+		OuterLoop:
+			for _, p := range req.params {
+				if p.Name == pn {
+					p.Values = append(
+						[]*RequestParamValue{
+							{
+								i: pv,
+							},
 						},
-					},
+						p.Values...,
+					)
+					continue OuterLoop
 				}
-			} else {
-				req.Params[pn].Values = append(
-					[]*RequestParamValue{
-						{
-							i: pv,
-						},
-					},
-					req.Params[pn].Values...,
-				)
 			}
+
+			req.params = append(req.params, &RequestParam{
+				Name: pn,
+				Values: []*RequestParamValue{
+					{
+						i: pv,
+					},
+				},
+			})
 		}
 
 		return handler

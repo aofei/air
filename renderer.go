@@ -131,7 +131,7 @@ func (r *renderer) render(
 		}
 	})
 
-	if locstr != nil {
+	if I18nEnabled {
 		t, err := r.template.Clone()
 		if err != nil {
 			return err

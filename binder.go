@@ -17,12 +17,12 @@ var theBinder = &binder{}
 // bind binds the r into the v.
 func (b *binder) bind(v interface{}, r *Request) error {
 	if r.Method == "GET" {
-		return b.bindParams(v, r.Params)
+		return b.bindParams(v, r.Params())
 	} else if r.Body == nil {
 		return errors.New("request body cannot be empty")
 	}
 
-	mt, _, err := mime.ParseMediaType(r.Headers["content-type"].Value())
+	mt, _, err := mime.ParseMediaType(r.Header("content-type").Value())
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	case "application/xml":
 		err = xml.NewDecoder(r.Body).Decode(v)
 	case "application/x-www-form-urlencoded", "multipart/form-data":
-		err = b.bindParams(v, r.Params)
+		err = b.bindParams(v, r.Params())
 	default:
 		return errors.New("unsupported media type")
 	}
@@ -46,10 +46,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 }
 
 // bindParams binds the params into the v.
-func (b *binder) bindParams(
-	v interface{},
-	params map[string]*RequestParam,
-) error {
+func (b *binder) bindParams(v interface{}, params []*RequestParam) error {
 	typ := reflect.TypeOf(v).Elem()
 	if typ.Kind() != reflect.Struct {
 		return errors.New("binding element must be a struct")
@@ -74,7 +71,14 @@ func (b *binder) bindParams(
 
 		tf := typ.Field(i)
 
-		pv := params[tf.Name].Value()
+		var pv *RequestParamValue
+		for _, p := range params {
+			if p.Name == tf.Name {
+				pv = p.Value()
+				break
+			}
+		}
+
 		if pv == nil {
 			continue
 		}

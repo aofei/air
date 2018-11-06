@@ -64,6 +64,10 @@ func init() {
 // localize localizes the r.
 func (i *i18n) localize(r *Request) {
 	if !I18nEnabled {
+		r.localizedString = func(key string) string {
+			return key
+		}
+
 		return
 	}
 
@@ -155,7 +159,7 @@ func (i *i18n) localize(r *Request) {
 	})
 
 	als := []string{}
-	if alh := r.Headers["accept-language"]; alh != nil {
+	if alh := r.Header("accept-language"); alh != nil {
 		als = alh.Values
 	}
 

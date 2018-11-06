@@ -126,8 +126,8 @@ var ErrorHandler = func(err error, req *Request, res *Response) {
 	}
 
 	if req.Method == "GET" || req.Method == "HEAD" {
-		delete(req.Headers, "etag")
-		delete(req.Headers, "last-modified")
+		res.SetHeader("etag")
+		res.SetHeader("last-modified")
 	}
 
 	res.WriteString(m)
@@ -498,7 +498,7 @@ func STATIC(prefix, root string, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
 		err := res.WriteFile(filepath.Join(
 			root,
-			req.Params["*"].Value().String(),
+			req.Param("*").Value().String(),
 		))
 		if os.IsNotExist(err) {
 			return NotFoundHandler(req, res)

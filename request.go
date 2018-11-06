@@ -17,19 +17,243 @@ type Request struct {
 	Scheme        string
 	Authority     string
 	Path          string
-	Headers       map[string]*Header
 	Body          io.Reader
 	ContentLength int64
-	Cookies       map[string]*Cookie
-	Params        map[string]*RequestParam
-	RemoteAddress string
-	ClientAddress string
 	Values        map[string]interface{}
 
-	request          *http.Request
-	localizedString  func(string) string
-	parseCookiesOnce *sync.Once
-	parseParamsOnce  *sync.Once
+	request                *http.Request
+	clientAddress          string
+	parseClientAddressOnce *sync.Once
+	headers                []*Header
+	parseHeadersOnce       *sync.Once
+	cookies                []*Cookie
+	parseCookiesOnce       *sync.Once
+	params                 []*RequestParam
+	parseParamsOnce        *sync.Once
+	localizedString        func(string) string
+}
+
+// RemoteAddress returns the last network address that sent the r.
+func (r *Request) RemoteAddress() string {
+	return r.request.RemoteAddr
+}
+
+// ClientAddress returns the original network address that sent the r.
+func (r *Request) ClientAddress() string {
+	r.parseClientAddressOnce.Do(r.parseClientAddress)
+	return r.clientAddress
+}
+
+// parseClientAddress parses the original network address that sent the r into
+// the `r.clientAddress`.
+func (r *Request) parseClientAddress() {
+	r.clientAddress = r.RemoteAddress()
+	if f := r.Header("forwarded").Value(); f != "" { // See RFC 7239
+		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
+			p := strings.TrimSpace(p)
+			if strings.HasPrefix(p, "for=") {
+				r.clientAddress = strings.TrimSuffix(
+					strings.TrimPrefix(p[4:], "\"["),
+					"]\"",
+				)
+				break
+			}
+		}
+	} else if xff := r.Header("x-forwarded-for").Value(); xff != "" {
+		r.clientAddress = strings.TrimSpace(strings.Split(xff, ",")[0])
+	}
+}
+
+// Header returns the matched `Header` for the name case-insensitively. It
+// returns nil if not found.
+func (r *Request) Header(name string) *Header {
+	r.parseHeadersOnce.Do(r.parseHeaders)
+
+	name = strings.ToLower(name)
+	for _, h := range r.headers {
+		if strings.ToLower(h.Name) == name {
+			return h
+		}
+	}
+
+	return nil
+}
+
+// Headers returns all the `Header` in the r.
+func (r *Request) Headers() []*Header {
+	r.parseHeadersOnce.Do(r.parseHeaders)
+	return r.headers
+}
+
+// parseHeaders parses the headers sent with the r into the `r.headers`.
+func (r *Request) parseHeaders() {
+	r.headers = make([]*Header, 0, len(r.request.Header))
+	for n, vs := range r.request.Header {
+		r.headers = append(r.headers, &Header{
+			Name:   strings.ToLower(n),
+			Values: vs,
+		})
+	}
+}
+
+// Cookie returns the matched `Cookie` for the name. It returns nil if not
+// found.
+func (r *Request) Cookie(name string) *Cookie {
+	r.parseCookiesOnce.Do(r.parseCookies)
+
+	for _, c := range r.cookies {
+		if c.Name == name {
+			return c
+		}
+	}
+
+	return nil
+}
+
+// Cookies returns all the `Cookie` in the r.
+func (r *Request) Cookies() []*Cookie {
+	r.parseCookiesOnce.Do(r.parseCookies)
+	return r.cookies
+}
+
+// parseCookies parses the cookies sent with the r into the `r.cookies`.
+func (r *Request) parseCookies() {
+	ch := r.Header("cookie")
+	if ch == nil {
+		return
+	}
+
+	r.cookies = make([]*Cookie, 0, len(ch.Values))
+	for _, c := range ch.Values {
+		ps := strings.Split(strings.TrimSpace(c), ";")
+		if len(ps) == 1 && ps[0] == "" {
+			continue
+		}
+
+		for i := 0; i < len(ps); i++ {
+			ps[i] = strings.TrimSpace(ps[i])
+			if len(ps[i]) == 0 {
+				continue
+			}
+
+			n, v := ps[i], ""
+			if i := strings.Index(n, "="); i >= 0 {
+				n, v = n[:i], n[i+1:]
+			}
+
+			if !validCookieName(n) {
+				continue
+			}
+
+			if len(v) > 1 && v[0] == '"' && v[len(v)-1] == '"' {
+				v = v[1 : len(v)-1]
+			}
+
+			if !validCookieValue(v) {
+				continue
+			}
+
+			r.cookies = append(r.cookies, &Cookie{
+				Name:  n,
+				Value: v,
+			})
+		}
+	}
+}
+
+// Param returns the matched `RequestParam` for the name. It returns nil if not
+// found.
+func (r *Request) Param(name string) *RequestParam {
+	r.parseParamsOnce.Do(r.parseParams)
+
+	for _, p := range r.params {
+		if p.Name == name {
+			return p
+		}
+	}
+
+	return nil
+}
+
+// Params returns all the `RequestParam` in the r.
+func (r *Request) Params() []*RequestParam {
+	r.parseParamsOnce.Do(r.parseParams)
+	return r.params
+}
+
+// parseParams parses the params sent with the r into the `r.params`.
+func (r *Request) parseParams() {
+	if r.request.Form == nil || r.request.MultipartForm == nil {
+		r.request.ParseMultipartForm(32 << 20)
+	}
+
+FormLoop:
+	for n, vs := range r.request.Form {
+		pvs := make([]*RequestParamValue, 0, len(vs))
+		for _, v := range vs {
+			pvs = append(pvs, &RequestParamValue{
+				i: v,
+			})
+		}
+
+		for _, p := range r.params {
+			if p.Name == n {
+				p.Values = append(p.Values, pvs...)
+				continue FormLoop
+			}
+		}
+
+		r.params = append(r.params, &RequestParam{
+			Name:   n,
+			Values: pvs,
+		})
+	}
+
+	if r.request.MultipartForm != nil {
+	MultipartFormValueLoop:
+		for n, vs := range r.request.MultipartForm.Value {
+			pvs := make([]*RequestParamValue, 0, len(vs))
+			for _, v := range vs {
+				pvs = append(pvs, &RequestParamValue{
+					i: v,
+				})
+			}
+
+			for _, p := range r.params {
+				if p.Name == n {
+					p.Values = append(p.Values, pvs...)
+					continue MultipartFormValueLoop
+				}
+			}
+
+			r.params = append(r.params, &RequestParam{
+				Name:   n,
+				Values: pvs,
+			})
+		}
+
+	MultipartFormFileLoop:
+		for n, vs := range r.request.MultipartForm.File {
+			pvs := make([]*RequestParamValue, 0, len(vs))
+			for _, v := range vs {
+				pvs = append(pvs, &RequestParamValue{
+					i: v,
+				})
+			}
+
+			for _, p := range r.params {
+				if p.Name == n {
+					p.Values = append(p.Values, pvs...)
+					continue MultipartFormFileLoop
+				}
+			}
+
+			r.params = append(r.params, &RequestParam{
+				Name:   n,
+				Values: pvs,
+			})
+		}
+	}
 }
 
 // Bind binds the r into the v.
@@ -41,138 +265,11 @@ func (r *Request) Bind(v interface{}) error {
 //
 // It only works if the `I18nEnabled` is true.
 func (r *Request) LocalizedString(key string) string {
-	if r.localizedString != nil {
-		return r.localizedString(key)
+	if r.localizedString == nil {
+		theI18n.localize(r)
 	}
 
-	return key
-}
-
-// ParseCookies parses the cookies sent with the r into the `r.Cookies`.
-//
-// It will be called after routing. Relax, you can of course call it before
-// routing, it will only take effect on the very first call.
-func (r *Request) ParseCookies() {
-	r.parseCookiesOnce.Do(func() {
-		ch := r.Headers["cookie"]
-		if ch == nil {
-			return
-		}
-
-		for _, c := range ch.Values {
-			ps := strings.Split(strings.TrimSpace(c), ";")
-			if len(ps) == 1 && ps[0] == "" {
-				continue
-			}
-
-			for i := 0; i < len(ps); i++ {
-				ps[i] = strings.TrimSpace(ps[i])
-				if len(ps[i]) == 0 {
-					continue
-				}
-
-				n, v := ps[i], ""
-				if i := strings.Index(n, "="); i >= 0 {
-					n, v = n[:i], n[i+1:]
-				}
-
-				if !validCookieName(n) {
-					continue
-				}
-
-				if len(v) > 1 && v[0] == '"' &&
-					v[len(v)-1] == '"' {
-					v = v[1 : len(v)-1]
-				}
-
-				if !validCookieValue(v) {
-					continue
-				}
-
-				r.Cookies[n] = &Cookie{
-					Name:  n,
-					Value: v,
-				}
-			}
-		}
-	})
-}
-
-// ParseParams parses the params sent with the r into the `r.Params`.
-//
-// It will be called after routing. Relax, you can of course call it before
-// routing, it will only take effect on the very first call.
-func (r *Request) ParseParams() {
-	r.parseParamsOnce.Do(func() {
-		if r.request.Form == nil || r.request.MultipartForm == nil {
-			r.request.ParseMultipartForm(32 << 20)
-		}
-
-		for n, vs := range r.request.Form {
-			pvs := make([]*RequestParamValue, 0, len(vs))
-			for _, v := range vs {
-				pvs = append(pvs, &RequestParamValue{
-					i: v,
-				})
-			}
-
-			if r.Params[n] == nil {
-				r.Params[n] = &RequestParam{
-					Name:   n,
-					Values: pvs,
-				}
-			} else {
-				r.Params[n].Values = append(
-					r.Params[n].Values,
-					pvs...,
-				)
-			}
-		}
-
-		if r.request.MultipartForm != nil {
-			for n, vs := range r.request.MultipartForm.Value {
-				pvs := make([]*RequestParamValue, 0, len(vs))
-				for _, v := range vs {
-					pvs = append(pvs, &RequestParamValue{
-						i: v,
-					})
-				}
-
-				if r.Params[n] == nil {
-					r.Params[n] = &RequestParam{
-						Name:   n,
-						Values: pvs,
-					}
-				} else {
-					r.Params[n].Values = append(
-						r.Params[n].Values,
-						pvs...,
-					)
-				}
-			}
-
-			for n, vs := range r.request.MultipartForm.File {
-				pvs := make([]*RequestParamValue, 0, len(vs))
-				for _, v := range vs {
-					pvs = append(pvs, &RequestParamValue{
-						i: v,
-					})
-				}
-
-				if r.Params[n] == nil {
-					r.Params[n] = &RequestParam{
-						Name:   n,
-						Values: pvs,
-					}
-				} else {
-					r.Params[n].Values = append(
-						r.Params[n].Values,
-						pvs...,
-					)
-				}
-			}
-		}
-	})
+	return r.localizedString(key)
 }
 
 // RequestParam is an HTTP request param.

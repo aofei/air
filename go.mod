@@ -9,6 +9,7 @@ require (
 	github.com/stretchr/testify v1.2.2
 	github.com/tdewolff/minify/v2 v2.3.7
 	golang.org/x/crypto v0.0.0-20181030102418-4d3f4d9ffa16
-	golang.org/x/net v0.0.0-20181102091132-c10e9556a7bc
+	golang.org/x/net v0.0.0-20181106065722-10aee1819953
+	golang.org/x/sys v0.0.0-20181106073832-7155702f2d47 // indirect
 	golang.org/x/text v0.3.0
 )

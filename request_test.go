@@ -1,6 +1,8 @@
 package air
 
 import (
+	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,23 +10,15 @@ import (
 
 func TestRequest(t *testing.T) {
 	r := &Request{
-		Method: "GET",
-		Params: map[string]*RequestParam{
-			"Foobar": {
-				Name: "Foobar",
-				Values: []*RequestParamValue{
-					{
-						i: "Foobar",
-					},
-				},
-			},
-		},
+		Method:          "GET",
+		request:         httptest.NewRequest("GET", "/?Foo=Bar", nil),
+		parseParamsOnce: &sync.Once{},
 	}
 
 	var s struct {
-		Foobar string
+		Foo string
 	}
 
 	assert.NoError(t, r.Bind(&s))
-	assert.Equal(t, "Foobar", s.Foobar)
+	assert.Equal(t, "Bar", s.Foo)
 }
