@@ -558,7 +558,7 @@ func (r *Response) WriteMsgpack(v interface{}) error {
 		return err
 	}
 
-	r.SetHeader("content-type", "application/msgpack")
+	r.SetHeader("content-type", "application/msgpack; charset=utf-8")
 
 	return r.WriteBlob(b)
 }

@@ -187,11 +187,22 @@ var TemplateFuncMap = map[string]interface{}{
 // It is called "coffer_enabled" in the configuration file.
 var CofferEnabled = false
 
+// CofferMaxMemoryBytes is the maximum number of bytes of the runtime memory
+// the coffer will use.
+//
+// It is called "coffer_max_memory_bytes" in the configuration file.
+var CofferMaxMemoryBytes = 32 << 20
+
 // AssetRoot is the root of the asset files. All the asset files inside it will
 // be recursively parsed into the coffer.
 //
 // It is called "asset_root" in the configuration file.
 var AssetRoot = "assets"
+
+// AssetCacheRoot is the root of the asset cache files.
+//
+// It is called "asset_cache_root" in the configuration file.
+var AssetCacheRoot = AssetRoot + "/.cache"
 
 // AssetExts is the filename extensions of the asset files used to distinguish
 // the asset files in the `AssetRoot` when loading them into the coffer.
@@ -378,8 +389,16 @@ func init() {
 		CofferEnabled = v
 	}
 
+	if v, ok := Config["coffer_max_memory_bytes"].(int64); ok {
+		CofferMaxMemoryBytes = int(v)
+	}
+
 	if v, ok := Config["asset_root"].(string); ok {
 		AssetRoot = v
+	}
+
+	if v, ok := Config["asset_cache_root"].(string); ok {
+		AssetCacheRoot = v
 	}
 
 	if v, ok := Config["asset_exts"].([]interface{}); ok {
