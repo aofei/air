@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -561,6 +562,24 @@ func Close() error {
 // idle and then shut down when the timeout is less than or equal to zero.
 func Shutdown(timeout time.Duration) error {
 	return theServer.shutdown(timeout)
+}
+
+
+// WrapHTTPMiddleware is a convenience method allowing the use of conventional
+// http.Handler middleware by wrapping it and internally converting
+// the middleware into a Gas.
+func WrapHTTPMiddleware(m func(http.Handler) http.Handler) Gas {
+	return func(next Handler) Handler {
+		return func(req *Request, res *Response) error {
+			var err error
+			m(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				req.request = r
+				res.writer = rw
+				err = next(req, res)
+			})).ServeHTTP(res.writer, req.request)
+			return err
+		}
+	}
 }
 
 // Handler defines a function to serve requests.
