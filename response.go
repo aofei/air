@@ -59,15 +59,17 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			}
 		}
 
-		if reader != nil && r.ContentLength == 0 {
-			r.ContentLength, _ = content.Seek(0, io.SeekEnd)
-			content.Seek(0, io.SeekStart)
-		}
+		if reader != nil {
+			if r.Status >= 200 && r.Status < 400 {
+				r.Headers["accept-ranges"] = &Header{
+					Name:   "accept-ranges",
+					Values: []string{"bytes"},
+				}
+			}
 
-		if r.Status >= 200 && r.Status < 400 {
-			r.Headers["accept-ranges"] = &Header{
-				Name:   "accept-ranges",
-				Values: []string{"bytes"},
+			if reader == content && r.ContentLength == 0 {
+				r.ContentLength, _ = content.Seek(0, io.SeekEnd)
+				content.Seek(0, io.SeekStart)
 			}
 		}
 
@@ -191,6 +193,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 			inm = remain
 		}
+
 		if !noneMatched {
 			if r.request.Method == "GET" ||
 				r.request.Method == "HEAD" {
@@ -210,14 +213,14 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		return nil
 	} else if r.Status == 412 {
 		return errors.New("precondition failed")
-	} else if content == nil {
+	} else if content == nil { // Nothing needs to be written
 		canWrite = true
 		return nil
 	}
 
 	ct := r.Headers["content-type"].Value()
 	if ct == "" {
-		// Read a chunk to decide between UTF-8 text and binary
+		// Read a chunk to decide between UTF-8 text and binary.
 		b := [1 << 9]byte{}
 		n, _ := io.ReadFull(content, b[:])
 		ct = http.DetectContentType(b[:n])
@@ -289,8 +292,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		end := strings.TrimSpace(ra[i+1:])
 		hr := httpRange{}
 		if start == "" {
-			// If no start is specified, end specifies the
-			// range start relative to the end of the file.
+			// If no start is specified, end specifies the range
+			// start relative to the end of the file.
 			i, err := strconv.ParseInt(end, 10, 64)
 			if err != nil {
 				r.Status = 416
@@ -406,8 +409,10 @@ func (r *Response) Write(content io.ReadSeeker) error {
 					mw.Boundary(),
 			},
 		}
+
 		reader = pr
 		defer pr.Close()
+
 		go func() {
 			for _, ra := range ranges {
 				part, err := mw.CreatePart(ra.header(ct, size))
@@ -640,19 +645,11 @@ func (r *Response) WriteFile(filename string) error {
 			ct = mime.TypeByExtension(filepath.Ext(filename))
 		}
 
-		if ct == "" {
-			// Read a chunk to decide between UTF-8 text and binary
-			b := [1 << 9]byte{}
-			n, _ := io.ReadFull(c, b[:])
-			ct = http.DetectContentType(b[:n])
-			if _, err := c.Seek(0, io.SeekStart); err != nil {
-				return err
+		if ct != "" { // Don't worry, someone will check it later
+			r.Headers["content-type"] = &Header{
+				Name:   "content-type",
+				Values: []string{ct},
 			}
-		}
-
-		r.Headers["content-type"] = &Header{
-			Name:   "content-type",
-			Values: []string{ct},
 		}
 	}
 
