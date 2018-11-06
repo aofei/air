@@ -245,8 +245,11 @@ var LocaleBase = "en-US"
 var Config = map[string]interface{}{}
 
 func init() {
-	cf := flag.String("config", "config.toml", "configuration file")
+	cf := flag.String("config", "config.toml", "configuration file")	
+	debugmode := *flag.Bool("debug", false, "launch in debug_mode")
+	
 	flag.Parse()
+
 	if b, err := ioutil.ReadFile(*cf); err != nil {
 		if !os.IsNotExist(err) {
 			panic(fmt.Errorf(
@@ -269,7 +272,9 @@ func init() {
 		MaintainerEmail = v
 	}
 
-	if v, ok := Config["debug_mode"].(bool); ok {
+	if debugmode {
+		DebugMode = debugmode
+	} else if v, ok := Config["debug_mode"].(bool); ok {
 		DebugMode = v
 	}
 
