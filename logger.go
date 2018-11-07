@@ -70,7 +70,7 @@ func (ll LoggerLevel) String() string {
 
 // log logs the m at the ll with the optional es.
 func (l *logger) log(ll LoggerLevel, m string, es ...map[string]interface{}) {
-	if ll < LoggerLowestLevel {
+	if !DebugMode && ll < LoggerLowestLevel {
 		return
 	}
 

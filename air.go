@@ -27,12 +27,14 @@ var MaintainerEmail = ""
 
 // DebugMode indicates whether the current web application is in debug mode.
 //
+// ATTENTION: Some features will be affected in debug mode.
+//
 // It is called "debug_mode" in the configuration file.
 var DebugMode = false
 
 // LoggerLowestLevel is the lowest level of the logger.
 //
-// It will be forced to `LoggerLevelDebug` when the `DebugMode` is true.
+// It only works when the `DebugMode` is false.
 //
 // It is called "logger_lowest_level" in the configuration file.
 var LoggerLowestLevel = LoggerLevelDebug
@@ -46,6 +48,8 @@ var LoggerOutput = io.Writer(os.Stdout)
 var Address = "localhost:2333"
 
 // HostWhitelist is the hosts allowed by the server.
+//
+// It only works when the `DebugMode` is false.
 //
 // It is called "host_whitelist" in the configuration file.
 var HostWhitelist = []string{}
@@ -96,6 +100,8 @@ var TLSKeyFile = ""
 var HTTPSEnforced = false
 
 // ACMEEnabled indicates whether the ACME is enabled.
+//
+// It only works when the `DebugMode` is false.
 //
 // It is called "acme_enabled" in the configuration file.
 var ACMEEnabled = false

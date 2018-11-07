@@ -36,7 +36,6 @@ func (s *server) serve() error {
 	s.server.ErrorLog = log.New(&serverErrorLogWriter{}, "air: ", 0)
 
 	if DebugMode {
-		LoggerLowestLevel = LoggerLevelDebug
 		DEBUG("air: serving in debug mode")
 	}
 

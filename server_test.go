@@ -38,7 +38,6 @@ func TestServerServe(t *testing.T) {
 	assert.Equal(t, Address, ss.Addr)
 	assert.Equal(t, theServer, ss.Handler)
 	assert.Equal(t, IdleTimeout, ss.IdleTimeout)
-	assert.Equal(t, LoggerLowestLevel, LoggerLevelDebug)
 
 	m := map[string]interface{}{}
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &m))
