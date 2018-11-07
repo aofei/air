@@ -245,9 +245,9 @@ var LocaleBase = "en-US"
 var Config = map[string]interface{}{}
 
 func init() {
-	cf := flag.String("config", "config.toml", "configuration file")	
-	debugmode := *flag.Bool("debug", false, "launch in debug_mode")
-	
+	cf := flag.String("config", "config.toml", "configuration file")
+	debugMode := *flag.Bool("debug-mode", false, "serve in debug mode")
+
 	flag.Parse()
 
 	if b, err := ioutil.ReadFile(*cf); err != nil {
@@ -272,8 +272,8 @@ func init() {
 		MaintainerEmail = v
 	}
 
-	if debugmode {
-		DebugMode = debugmode
+	if debugMode {
+		DebugMode = debugMode
 	} else if v, ok := Config["debug_mode"].(bool); ok {
 		DebugMode = v
 	}
@@ -569,24 +569,6 @@ func Shutdown(timeout time.Duration) error {
 	return theServer.shutdown(timeout)
 }
 
-
-// WrapHTTPMiddleware is a convenience method allowing the use of conventional
-// http.Handler middleware by wrapping it and internally converting
-// the middleware into a Gas.
-func WrapHTTPMiddleware(m func(http.Handler) http.Handler) Gas {
-	return func(next Handler) Handler {
-		return func(req *Request, res *Response) error {
-			var err error
-			m(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				req.request = r
-				res.writer = rw
-				err = next(req, res)
-			})).ServeHTTP(res.writer, req.request)
-			return err
-		}
-	}
-}
-
 // Handler defines a function to serve requests.
 type Handler func(*Request, *Response) error
 
@@ -604,3 +586,23 @@ var MethodNotAllowedHandler = func(req *Request, res *Response) error {
 
 // Gas defines a function to process gases.
 type Gas func(Handler) Handler
+
+// WrapHTTPMiddleware is a convenience method allowing the use of conventional
+// `http.Handler` middleware by wrapping it and internally converting the
+// middleware into a `Gas`.
+func WrapHTTPMiddleware(m func(http.Handler) http.Handler) Gas {
+	return func(next Handler) Handler {
+		return func(req *Request, res *Response) error {
+			var err error
+			m(http.HandlerFunc(func(
+				rw http.ResponseWriter,
+				r *http.Request,
+			) {
+				req.request = r
+				res.writer = rw
+				err = next(req, res)
+			})).ServeHTTP(res.writer, req.request)
+			return err
+		}
+	}
+}

@@ -136,7 +136,7 @@ func (s *server) shutdown(timeout time.Duration) error {
 func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Check host
 
-	if len(HostWhitelist) > 0 {
+	if !DebugMode && len(HostWhitelist) > 0 {
 		host, _, err := net.SplitHostPort(r.Host)
 		if err != nil {
 			host = r.Host
