@@ -2,6 +2,7 @@ package air
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net"
@@ -39,10 +40,6 @@ func (s *server) serve() error {
 		DEBUG("air: serving in debug mode")
 	}
 
-	if TLSCertFile == "" || TLSKeyFile == "" {
-		return s.server.ListenAndServe()
-	}
-
 	host := s.server.Addr
 	if strings.Contains(host, ":") {
 		var err error
@@ -65,43 +62,48 @@ func (s *server) serve() error {
 			http.Redirect(rw, r, "https://"+host+r.RequestURI, 301)
 		}),
 	}
+	defer func() {
+		if s.h2hsServer != nil {
+			go s.h2hsServer.ListenAndServe()
+		}
+	}()
 
-	tlsCertFile, tlsKeyFile := TLSCertFile, TLSKeyFile
-	if !DebugMode && ACMEEnabled {
-		acm := autocert.Manager{
-			Prompt: autocert.AcceptTOS,
-			Cache:  autocert.DirCache(ACMECertRoot),
-			HostPolicy: func(_ context.Context, h string) error {
-				if len(HostWhitelist) == 0 ||
-					stringsContainsCIly(HostWhitelist, h) {
-					return nil
-				}
-
-				return fmt.Errorf(
-					"acme/autocert: host %q not "+
-						"configured in HostWhitelist",
-					h,
-				)
-			},
-			Email: MaintainerEmail,
+	if TLSCertFile != "" && TLSKeyFile != "" {
+		s.server.TLSConfig = &tls.Config{}
+		if HTTPSEnforced {
+			s.h2hsServer = h2hss
 		}
 
-		s.server.Addr = host + ":https"
-		s.server.TLSConfig = acm.TLSConfig()
-
-		h2hss.Handler = acm.HTTPHandler(h2hss.Handler)
-		s.h2hsServer = h2hss
-
-		tlsCertFile, tlsKeyFile = "", ""
-	} else if HTTPSEnforced {
-		s.h2hsServer = h2hss
+		return s.server.ListenAndServeTLS(TLSCertFile, TLSKeyFile)
+	} else if DebugMode || !ACMEEnabled {
+		return s.server.ListenAndServe()
 	}
 
-	if s.h2hsServer != nil {
-		go s.h2hsServer.ListenAndServe()
+	acm := autocert.Manager{
+		Prompt: autocert.AcceptTOS,
+		Cache:  autocert.DirCache(ACMECertRoot),
+		HostPolicy: func(_ context.Context, h string) error {
+			if len(HostWhitelist) == 0 ||
+				stringsContainsCIly(HostWhitelist, h) {
+				return nil
+			}
+
+			return fmt.Errorf(
+				"acme/autocert: host %q not "+
+					"configured in HostWhitelist",
+				h,
+			)
+		},
+		Email: MaintainerEmail,
 	}
 
-	return s.server.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
+	s.server.Addr = host + ":https"
+	s.server.TLSConfig = acm.TLSConfig()
+
+	h2hss.Handler = acm.HTTPHandler(h2hss.Handler)
+	s.h2hsServer = h2hss
+
+	return s.server.ListenAndServeTLS("", "")
 }
 
 // close closes the s immediately.

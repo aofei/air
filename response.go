@@ -122,7 +122,9 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			return
 		}
 
-		if HTTPSEnforced &&
+		if !DebugMode &&
+			HTTPSEnforced &&
+			theServer.server.TLSConfig != nil &&
 			r.Header("strict-transport-security").Value() == "" {
 			r.SetHeader(
 				"strict-transport-security",
