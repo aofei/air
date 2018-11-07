@@ -16,8 +16,7 @@ import (
 
 // server is an HTTP server.
 type server struct {
-	server     *http.Server
-	h2hsServer *http.Server
+	server *http.Server
 }
 
 // theServer is the singleton of the `server`.
@@ -63,15 +62,13 @@ func (s *server) serve() error {
 		}),
 	}
 	defer func() {
-		if s.h2hsServer != nil {
-			go s.h2hsServer.ListenAndServe()
-		}
+		h2hss.Close() // Close anyway, even if it doesn't start
 	}()
 
 	if TLSCertFile != "" && TLSKeyFile != "" {
 		s.server.TLSConfig = &tls.Config{}
 		if HTTPSEnforced {
-			s.h2hsServer = h2hss
+			go h2hss.ListenAndServe()
 		}
 
 		return s.server.ListenAndServeTLS(TLSCertFile, TLSKeyFile)
@@ -101,17 +98,13 @@ func (s *server) serve() error {
 	s.server.TLSConfig = acm.TLSConfig()
 
 	h2hss.Handler = acm.HTTPHandler(h2hss.Handler)
-	s.h2hsServer = h2hss
+	go h2hss.ListenAndServe()
 
 	return s.server.ListenAndServeTLS("", "")
 }
 
 // close closes the s immediately.
 func (s *server) close() error {
-	if s.h2hsServer != nil {
-		s.h2hsServer.Close()
-	}
-
 	return s.server.Close()
 }
 
@@ -119,10 +112,6 @@ func (s *server) close() error {
 // connections until timeout. It waits indefinitely for connections to return to
 // idle and then shut down when the timeout is less than or equal to zero.
 func (s *server) shutdown(timeout time.Duration) error {
-	if s.h2hsServer != nil {
-		s.h2hsServer.Close()
-	}
-
 	if timeout <= 0 {
 		return s.server.Shutdown(context.Background())
 	}
