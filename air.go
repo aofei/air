@@ -95,6 +95,11 @@ var TLSKeyFile = ""
 // It is called "https_enforced" in the configuration file.
 var HTTPSEnforced = false
 
+// ACMEEnabled indicates whether the ACME is enabled.
+//
+// It is called "acme_enabled" in the configuration file.
+var ACMEEnabled = false
+
 // ACMECertRoot is the root of the ACME certificates.
 //
 // It is called "acme_cert_root" in the configuration file.
@@ -340,6 +345,10 @@ func init() {
 
 	if v, ok := Config["https_enforced"].(bool); ok {
 		HTTPSEnforced = v
+	}
+
+	if v, ok := Config["acme_enabled"].(bool); ok {
+		ACMEEnabled = v
 	}
 
 	if v, ok := Config["acme_cert_root"].(string); ok {
