@@ -15,6 +15,7 @@ import (
 	"net"
 	"net/http"
 	"net/textproto"
+	netURL "net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -134,7 +135,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 		if reader != nil {
 			if r.Status >= 200 &&
-				r.Status < 400 &&
+				r.Status < 300 &&
 				r.Header("accept-ranges").Value() == "" {
 				r.SetHeader("accept-ranges", "bytes")
 			}
@@ -279,10 +280,14 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		r.Status = 304
 	}
 
-	if r.Status == 304 {
-		r.SetHeader("content-type")
-		r.SetHeader("content-length")
+	if r.Status >= 300 && r.Status < 400 {
+		if r.Status == 304 {
+			r.SetHeader("content-type")
+			r.SetHeader("content-length")
+		}
+
 		canWrite = true
+
 		return nil
 	} else if r.Status == 412 {
 		return errors.New("precondition failed")
@@ -738,9 +743,57 @@ func (r *Response) Redirect(url string) error {
 		r.Status = 302
 	}
 
-	r.SetHeader("location", url)
+	// If the url was relative, make its path absolute by combining with the
+	// request path. The client would probably do this for us, but doing it
+	// ourselves is more reliable.
+	// See RFC 7231, section 7.1.2.
+	if u, err := netURL.Parse(url); err != nil {
+		return err
+	} else if u.Scheme == "" && u.Host == "" {
+		if url == "" || url[0] != '/' {
+			// Make relative path absolute.
+			od, _ := path.Split(r.request.request.URL.Path)
+			url = od + url
+		}
 
-	return r.Write(nil)
+		query := ""
+		if i := strings.Index(url, "?"); i != -1 {
+			url, query = url[:i], url[i:]
+		}
+
+		// Clean up but preserve trailing slash.
+		trailing := strings.HasSuffix(url, "/")
+		url = path.Clean(url)
+		if trailing && !strings.HasSuffix(url, "/") {
+			url += "/"
+		}
+
+		url += query
+	}
+
+	r.SetHeader("location", url)
+	if r.Header("content-type").Value() != "" {
+		return r.Write(nil)
+	}
+
+	// RFC 7231 notes that a short HTML body is usually included in the
+	// response because older user agents may not understand status 301 and
+	// 307.
+	if r.request.Method == "GET" || r.request.Method == "HEAD" {
+		r.SetHeader("content-type", "text/html; charset=utf-8")
+	}
+
+	// Shouldn't send the body for POST or HEAD; that leaves GET.
+	var body io.ReadSeeker
+	if r.request.Method == "GET" {
+		body = strings.NewReader(fmt.Sprintf(
+			"<a href=\"%s\">%s</a>.\n",
+			template.HTMLEscapeString(url),
+			strings.ToLower(http.StatusText(r.Status)),
+		))
+	}
+
+	return r.Write(body)
 }
 
 // WebSocket switches the connection to the WebSocket protocol.
