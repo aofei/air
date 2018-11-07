@@ -194,6 +194,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		response: res,
 	}
 
+	req.response = res
+
 	// Chain gases
 
 	h := func(req *Request, res *Response) error {

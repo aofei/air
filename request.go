@@ -22,6 +22,7 @@ type Request struct {
 	Values        map[string]interface{}
 
 	request                *http.Request
+	response               *Response
 	clientAddress          string
 	parseClientAddressOnce *sync.Once
 	headers                []*Header

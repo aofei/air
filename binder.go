@@ -39,6 +39,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	case "application/x-www-form-urlencoded", "multipart/form-data":
 		err = b.bindParams(v, r.Params())
 	default:
+		r.response.Status = 415
 		return errors.New("unsupported media type")
 	}
 
