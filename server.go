@@ -61,9 +61,7 @@ func (s *server) serve() error {
 			http.Redirect(rw, r, "https://"+host+r.RequestURI, 301)
 		}),
 	}
-	defer func() {
-		h2hss.Close() // Close anyway, even if it doesn't start
-	}()
+	defer h2hss.Close() // Close anyway, even if it doesn't start
 
 	if TLSCertFile != "" && TLSKeyFile != "" {
 		s.server.TLSConfig = &tls.Config{}

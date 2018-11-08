@@ -2,10 +2,7 @@ package air
 
 import (
 	"errors"
-	"flag"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,27 +13,27 @@ import (
 
 // AppName is the name of the current web application.
 //
-// It is called "app_name" in the configuration file.
+// It is called "app_name" when it is used as a configuration item.
 var AppName = "air"
 
 // MaintainerEmail is the e-mail address of the one who is responsible for
 // maintaining the current web application.
 //
-// It is called "maintainer_email" in the configuration file.
+// It is called "maintainer_email" when it is used as a configuration item.
 var MaintainerEmail = ""
 
 // DebugMode indicates whether the current web application is in debug mode.
 //
 // ATTENTION: Some features will be affected in debug mode.
 //
-// It is called "debug_mode" in the configuration file.
+// It is called "debug_mode" when it is used as a configuration item.
 var DebugMode = false
 
 // LoggerLowestLevel is the lowest level of the logger.
 //
 // It only works when the `DebugMode` is false.
 //
-// It is called "logger_lowest_level" in the configuration file.
+// It is called "logger_lowest_level" when it is used as a configuration item.
 var LoggerLowestLevel = LoggerLevelDebug
 
 // LoggerOutput is the output destination of the logger.
@@ -44,54 +41,54 @@ var LoggerOutput = io.Writer(os.Stdout)
 
 // Address is the TCP address that the server listens on.
 //
-// It is called "address" in the configuration file.
+// It is called "address" when it is used as a configuration item.
 var Address = "localhost:2333"
 
 // HostWhitelist is the hosts allowed by the server.
 //
 // It only works when the `DebugMode` is false.
 //
-// It is called "host_whitelist" in the configuration file.
+// It is called "host_whitelist" when it is used as a configuration item.
 var HostWhitelist = []string{}
 
 // ReadTimeout is the maximum duration the server reads the request.
 //
-// It is called "read_timeout" in the configuration file.
+// It is called "read_timeout" when it is used as a configuration item.
 var ReadTimeout = time.Duration(0)
 
 // ReadHeaderTimeout is the amount of time allowed the server reads the request
 // headers.
 //
-// It is called "read_header_timeout" in the configuration file.
+// It is called "read_header_timeout" when it is used as a configuration item.
 var ReadHeaderTimeout = time.Duration(0)
 
 // WriteTimeout is the maximum duration the server writes an response.
 //
-// It is called "write_timeout" in the configuration file.
+// It is called "write_timeout" when it is used as a configuration item.
 var WriteTimeout = time.Duration(0)
 
 // IdleTimeout is the maximum amount of time the server waits for the next
 // request. If it is zero, the value of `ReadTimeout` is used. If both are zero,
 // `ReadHeaderTimeout` is used.
 //
-// It is called "idle_timeout" in the configuration file.
+// It is called "idle_timeout" when it is used as a configuration item.
 var IdleTimeout = time.Duration(0)
 
 // MaxHeaderBytes is the maximum number of bytes the server will read parsing
 // the request header's names and values, including the request line.
 //
-// It is called "max_header_bytes" in the configuration file.
+// It is called "max_header_bytes" when it is used as a configuration item.
 var MaxHeaderBytes = 1 << 20
 
 // TLSCertFile is the path to the TLS certificate file used when starting the
 // server.
 //
-// It is called "tls_cert_file" in the configuration file.
+// It is called "tls_cert_file" when it is used as a configuration item.
 var TLSCertFile = ""
 
 // TLSKeyFile is the path to the TLS key file used when starting the server.
 //
-// It is called "tls_key_file" in the configuration file.
+// It is called "tls_key_file" when it is used as a configuration item.
 var TLSKeyFile = ""
 
 // ACMEEnabled indicates whether the ACME is enabled.
@@ -99,28 +96,30 @@ var TLSKeyFile = ""
 // It only works when the `DebugMode` is false and both the `TLSCertFile` and
 // the `TLSKeyFile` are empty.
 //
-// It is called "acme_enabled" in the configuration file.
+// It is called "acme_enabled" when it is used as a configuration item.
 var ACMEEnabled = false
 
 // ACMECertRoot is the root of the ACME certificates.
 //
-// It is called "acme_cert_root" in the configuration file.
+// It is called "acme_cert_root" when it is used as a configuration item.
 var ACMECertRoot = "acme-certs"
 
 // HTTPSEnforced indicates whether the HTTPS is enforced.
 //
-// It is called "https_enforced" in the configuration file.
+// It is called "https_enforced" when it is used as a configuration item.
 var HTTPSEnforced = false
 
 // WebSocketHandshakeTimeout is the maximum amount of time the server waits for
 // the WebSocket handshake to complete.
 //
-// It is called "websocket_handshake_timeout" in the configuration file.
+// It is called "websocket_handshake_timeout" when it is used as a configuration
+// item.
 var WebSocketHandshakeTimeout = time.Duration(0)
 
 // WebSocketSubprotocols is the server's supported WebSocket subprotocols.
 //
-// It is called "websocket_subprotocols" in the configuration file.
+// It is called "websocket_subprotocols" when it is used as a configuration
+// item.
 var WebSocketSubprotocols = []string{}
 
 // ErrorHandler is the centralized error handler for the server.
@@ -154,37 +153,37 @@ var Gases = []Gas{}
 
 // AutoPushEnabled indicates whether the auto push is enabled.
 //
-// It is called "auto_push_enabled" in the configuration file.
+// It is called "auto_push_enabled" when it is used as a configuration item.
 var AutoPushEnabled = false
 
 // MinifierEnabled indicates whether the minifier is enabled.
 //
-// It is called "minifier_enabled" in the configuration file.
+// It is called "minifier_enabled" when it is used as a configuration item.
 var MinifierEnabled = false
 
 // TemplateRoot is the root of the HTML templates. All the HTML templates inside
 // it will be recursively parsed into the renderer.
 //
-// It is called "template_root" in the configuration file.
+// It is called "template_root" when it is used as a configuration item.
 var TemplateRoot = "templates"
 
 // TemplateExts is the filename extensions of the HTML templates used to
 // distinguish the HTML template files in the `TemplateRoot` when parsing them
 // into the renderer.
 //
-// It is called "template_exts" in the configuration file.
+// It is called "template_exts" when it is used as a configuration item.
 var TemplateExts = []string{".html"}
 
 // TemplateLeftDelim is the left side of the HTML template delimiter the
 // renderer renders the HTML templates.
 //
-// It is called "template_left_delim" in the configuration file.
+// It is called "template_left_delim" when it is used as a configuration item.
 var TemplateLeftDelim = "{{"
 
 // TemplateRightDelim is the right side of the HTML template delimiter the
 // renderer renders the HTML templates.
 //
-// It is called "template_right_delim" in the configuration file.
+// It is called "template_right_delim" when it is used as a configuration item.
 var TemplateRightDelim = "}}"
 
 // TemplateFuncMap is the HTML template function map the renderer renders the
@@ -197,30 +196,31 @@ var TemplateFuncMap = map[string]interface{}{
 
 // CofferEnabled indicates whether the coffer is enabled.
 //
-// It is called "coffer_enabled" in the configuration file.
+// It is called "coffer_enabled" when it is used as a configuration item.
 var CofferEnabled = false
 
 // CofferMaxMemoryBytes is the maximum number of bytes of the runtime memory
 // the coffer will use.
 //
-// It is called "coffer_max_memory_bytes" in the configuration file.
+// It is called "coffer_max_memory_bytes" when it is used as a configuration
+// item.
 var CofferMaxMemoryBytes = 32 << 20
 
 // AssetRoot is the root of the asset files. All the asset files inside it will
 // be recursively parsed into the coffer.
 //
-// It is called "asset_root" in the configuration file.
+// It is called "asset_root" when it is used as a configuration item.
 var AssetRoot = "assets"
 
 // AssetCacheRoot is the root of the asset cache files.
 //
-// It is called "asset_cache_root" in the configuration file.
+// It is called "asset_cache_root" when it is used as a configuration item.
 var AssetCacheRoot = AssetRoot + "/.cache"
 
 // AssetExts is the filename extensions of the asset files used to distinguish
 // the asset files in the `AssetRoot` when loading them into the coffer.
 //
-// It is called "asset_exts" in the configuration file.
+// It is called "asset_exts" when it is used as a configuration item.
 var AssetExts = []string{
 	".html",
 	".css",
@@ -236,214 +236,24 @@ var AssetExts = []string{
 
 // I18nEnabled indicates whether the i18n is enabled.
 //
-// It is called "i18n_enabled" in the configuration file.
+// It is called "i18n_enabled" when it is used as a configuration item.
 var I18nEnabled = false
 
 // LocaleRoot is the root of the locale files. All the locale files inside it
 // will be parsed into the i18n.
 //
-// It is called "locale_root" in the configuration file.
+// It is called "locale_root" when it is used as a configuration item.
 var LocaleRoot = "locales"
 
 // LocaleBase is the base of the locale files. It will be used when a locale
 // file cannot be found.
 //
-// It is called "locale_base" in the configuration file.
+// It is called "locale_base" when it is used as a configuration item.
 var LocaleBase = "en-US"
 
-// Config is a set of key-value pairs parsed from the configuration file found
-// in the path specified by a command-line flag named "config". The default path
-// of the configuration file is "config.toml".
-var Config = map[string]interface{}{}
-
-func init() {
-	cf := flag.String("config", "config.toml", "configuration file")
-	debugMode := *flag.Bool("debug-mode", false, "serve in debug mode")
-
-	flag.Parse()
-
-	if b, err := ioutil.ReadFile(*cf); err != nil {
-		if !os.IsNotExist(err) {
-			panic(fmt.Errorf(
-				"air: failed to read configuration file: %v",
-				err,
-			))
-		}
-	} else if err := toml.Unmarshal(b, &Config); err != nil {
-		panic(fmt.Errorf(
-			"air: failed to unmarshal configuration file: %v",
-			err,
-		))
-	}
-
-	if v, ok := Config["app_name"].(string); ok {
-		AppName = v
-	}
-
-	if v, ok := Config["maintainer_email"].(string); ok {
-		MaintainerEmail = v
-	}
-
-	if debugMode {
-		DebugMode = debugMode
-	} else if v, ok := Config["debug_mode"].(bool); ok {
-		DebugMode = v
-	}
-
-	if v, ok := Config["logger_lowest_level"].(string); ok {
-		switch v {
-		case LoggerLevelDebug.String():
-			LoggerLowestLevel = LoggerLevelDebug
-		case LoggerLevelInfo.String():
-			LoggerLowestLevel = LoggerLevelInfo
-		case LoggerLevelWarn.String():
-			LoggerLowestLevel = LoggerLevelWarn
-		case LoggerLevelError.String():
-			LoggerLowestLevel = LoggerLevelError
-		case LoggerLevelFatal.String():
-			LoggerLowestLevel = LoggerLevelFatal
-		case LoggerLevelPanic.String():
-			LoggerLowestLevel = LoggerLevelPanic
-		case LoggerLevelOff.String():
-			LoggerLowestLevel = LoggerLevelOff
-		}
-	}
-
-	if v, ok := Config["address"].(string); ok {
-		Address = v
-	}
-
-	if v, ok := Config["host_whitelist"].([]interface{}); ok {
-		HostWhitelist = make([]string, 0, len(v))
-		for _, v := range v {
-			if v, ok := v.(string); ok {
-				HostWhitelist = append(HostWhitelist, v)
-			}
-		}
-	}
-
-	if v, ok := Config["read_timeout"].(int64); ok {
-		ReadTimeout = time.Duration(v)
-	}
-
-	if v, ok := Config["read_header_timeout"].(int64); ok {
-		ReadHeaderTimeout = time.Duration(v)
-	}
-
-	if v, ok := Config["write_timeout"].(int64); ok {
-		WriteTimeout = time.Duration(v)
-	}
-
-	if v, ok := Config["idle_timeout"].(int64); ok {
-		IdleTimeout = time.Duration(v)
-	}
-
-	if v, ok := Config["max_header_bytes"].(int64); ok {
-		MaxHeaderBytes = int(v)
-	}
-
-	if v, ok := Config["tls_cert_file"].(string); ok {
-		TLSCertFile = v
-	}
-
-	if v, ok := Config["tls_key_file"].(string); ok {
-		TLSKeyFile = v
-	}
-
-	if v, ok := Config["acme_enabled"].(bool); ok {
-		ACMEEnabled = v
-	}
-
-	if v, ok := Config["acme_cert_root"].(string); ok {
-		ACMECertRoot = v
-	}
-
-	if v, ok := Config["https_enforced"].(bool); ok {
-		HTTPSEnforced = v
-	}
-
-	if v, ok := Config["websocket_handshake_timeout"].(int64); ok {
-		WebSocketHandshakeTimeout = time.Duration(v)
-	}
-
-	if v, ok := Config["websocket_subprotocols"].([]interface{}); ok {
-		WebSocketSubprotocols = make([]string, 0, len(v))
-		for _, v := range v {
-			if v, ok := v.(string); ok {
-				WebSocketSubprotocols = append(
-					WebSocketSubprotocols,
-					v,
-				)
-			}
-		}
-	}
-
-	if v, ok := Config["auto_push_enabled"].(bool); ok {
-		AutoPushEnabled = v
-	}
-
-	if v, ok := Config["minifier_enabled"].(bool); ok {
-		MinifierEnabled = v
-	}
-
-	if v, ok := Config["template_root"].(string); ok {
-		TemplateRoot = v
-	}
-
-	if v, ok := Config["template_exts"].([]interface{}); ok {
-		TemplateExts = make([]string, 0, len(v))
-		for _, v := range v {
-			if v, ok := v.(string); ok {
-				TemplateExts = append(TemplateExts, v)
-			}
-		}
-	}
-
-	if v, ok := Config["template_left_delim"].(string); ok {
-		TemplateLeftDelim = v
-	}
-
-	if v, ok := Config["template_right_delim"].(string); ok {
-		TemplateRightDelim = v
-	}
-
-	if v, ok := Config["coffer_enabled"].(bool); ok {
-		CofferEnabled = v
-	}
-
-	if v, ok := Config["coffer_max_memory_bytes"].(int64); ok {
-		CofferMaxMemoryBytes = int(v)
-	}
-
-	if v, ok := Config["asset_root"].(string); ok {
-		AssetRoot = v
-	}
-
-	if v, ok := Config["asset_cache_root"].(string); ok {
-		AssetCacheRoot = v
-	}
-
-	if v, ok := Config["asset_exts"].([]interface{}); ok {
-		AssetExts = make([]string, 0, len(v))
-		for _, v := range v {
-			if v, ok := v.(string); ok {
-				AssetExts = append(AssetExts, v)
-			}
-		}
-	}
-
-	if v, ok := Config["i18n_enabled"].(bool); ok {
-		I18nEnabled = v
-	}
-
-	if v, ok := Config["locale_root"].(string); ok {
-		LocaleRoot = v
-	}
-
-	if v, ok := Config["locale_base"].(string); ok {
-		LocaleBase = v
-	}
-}
+// ConfigFile is the TOML-based configuration file that will be parsed into the
+// matching configuration items before starting the server.
+var ConfigFile = ""
 
 // DEBUG logs the msg at the `LoggerLevelDebug` with the optional extras.
 func DEBUG(msg string, extras ...map[string]interface{}) {
@@ -570,6 +380,236 @@ func FILE(path, filename string, gases ...Gas) {
 
 // Serve starts the server.
 func Serve() error {
+	if ConfigFile == "" {
+		return theServer.serve()
+	}
+
+	m := map[string]toml.Primitive{}
+	md, err := toml.DecodeFile(ConfigFile, &m)
+	if err != nil {
+		return err
+	}
+
+	if p, ok := m["app_name"]; ok {
+		if err := md.PrimitiveDecode(p, &AppName); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["maintainer_email"]; ok {
+		if err := md.PrimitiveDecode(p, &MaintainerEmail); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["debug_mode"]; ok {
+		if err := md.PrimitiveDecode(p, &DebugMode); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["logger_lowest_level"]; ok {
+		lll := ""
+		if err := md.PrimitiveDecode(p, &lll); err != nil {
+			return err
+		}
+
+		switch lll {
+		case LoggerLevelDebug.String():
+			LoggerLowestLevel = LoggerLevelDebug
+		case LoggerLevelInfo.String():
+			LoggerLowestLevel = LoggerLevelInfo
+		case LoggerLevelWarn.String():
+			LoggerLowestLevel = LoggerLevelWarn
+		case LoggerLevelError.String():
+			LoggerLowestLevel = LoggerLevelError
+		case LoggerLevelFatal.String():
+			LoggerLowestLevel = LoggerLevelFatal
+		case LoggerLevelPanic.String():
+			LoggerLowestLevel = LoggerLevelPanic
+		case LoggerLevelOff.String():
+			LoggerLowestLevel = LoggerLevelOff
+		}
+	}
+
+	if p, ok := m["address"]; ok {
+		if err := md.PrimitiveDecode(p, &Address); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["host_whitelist"]; ok {
+		HostWhitelist = HostWhitelist[:0]
+		if err := md.PrimitiveDecode(p, &HostWhitelist); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["read_timeout"]; ok {
+		if err := md.PrimitiveDecode(p, &ReadTimeout); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["read_header_timeout"]; ok {
+		err := md.PrimitiveDecode(p, &ReadHeaderTimeout)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["write_timeout"]; ok {
+		if err := md.PrimitiveDecode(p, &WriteTimeout); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["idle_timeout"]; ok {
+		if err := md.PrimitiveDecode(p, &IdleTimeout); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["max_header_bytes"]; ok {
+		if err := md.PrimitiveDecode(p, &MaxHeaderBytes); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["tls_cert_file"]; ok {
+		if err := md.PrimitiveDecode(p, &TLSCertFile); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["tls_key_file"]; ok {
+		if err := md.PrimitiveDecode(p, &TLSKeyFile); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["acme_enabled"]; ok {
+		if err := md.PrimitiveDecode(p, &ACMEEnabled); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["acme_cert_root"]; ok {
+		if err := md.PrimitiveDecode(p, &ACMECertRoot); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["https_enforced"]; ok {
+		if err := md.PrimitiveDecode(p, &HTTPSEnforced); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["websocket_handshake_timeout"]; ok {
+		err := md.PrimitiveDecode(p, &WebSocketHandshakeTimeout)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["websocket_subprotocols"]; ok {
+		WebSocketSubprotocols = WebSocketSubprotocols[:0]
+		err := md.PrimitiveDecode(p, &WebSocketSubprotocols)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["auto_push_enabled"]; ok {
+		if err := md.PrimitiveDecode(p, &AutoPushEnabled); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["minifier_enabled"]; ok {
+		if err := md.PrimitiveDecode(p, &MinifierEnabled); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["template_root"]; ok {
+		if err := md.PrimitiveDecode(p, &TemplateRoot); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["template_exts"]; ok {
+		TemplateExts = TemplateExts[:0]
+		if err := md.PrimitiveDecode(p, &TemplateExts); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["template_left_delim"]; ok {
+		err := md.PrimitiveDecode(p, &TemplateLeftDelim)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["template_right_delim"]; ok {
+		err := md.PrimitiveDecode(p, &TemplateRightDelim)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["coffer_enabled"]; ok {
+		if err := md.PrimitiveDecode(p, &CofferEnabled); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["coffer_max_memory_bytes"]; ok {
+		err := md.PrimitiveDecode(p, &CofferMaxMemoryBytes)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["asset_root"]; ok {
+		if err := md.PrimitiveDecode(p, &AssetRoot); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["asset_cache_root"]; ok {
+		if err := md.PrimitiveDecode(p, &AssetCacheRoot); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["asset_exts"]; ok {
+		AssetExts = AssetExts[:0]
+		if err := md.PrimitiveDecode(p, &AssetExts); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["i18n_enabled"]; ok {
+		if err := md.PrimitiveDecode(p, &I18nEnabled); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["locale_root"]; ok {
+		if err := md.PrimitiveDecode(p, &LocaleRoot); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["locale_base"]; ok {
+		if err := md.PrimitiveDecode(p, &LocaleBase); err != nil {
+			return err
+		}
+	}
+
 	return theServer.serve()
 }
 
