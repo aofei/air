@@ -107,8 +107,12 @@ func (r *Response) SetCookie(name string, c *Cookie) {
 				)
 			}
 
-			break
+			return
 		}
+	}
+
+	if c != nil {
+		r.cookies = append(r.cookies, c)
 	}
 }
 
@@ -584,7 +588,7 @@ func (r *Response) WriteMsgpack(v interface{}) error {
 		return err
 	}
 
-	r.SetHeader("content-type", "application/msgpack; charset=utf-8")
+	r.SetHeader("content-type", "application/msgpack")
 
 	return r.WriteBlob(b)
 }
@@ -597,7 +601,7 @@ func (r *Response) WriteProtobuf(v interface{}) error {
 		return err
 	}
 
-	r.SetHeader("content-type", "application/protobuf; charset=utf-8")
+	r.SetHeader("content-type", "application/protobuf")
 
 	return r.WriteBlob(b)
 }
