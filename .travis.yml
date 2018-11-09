@@ -1,7 +1,5 @@
 language: go
 
-before_install: go get github.com/mattn/goveralls
-
 matrix:
   include:
     - go: "1.9.x"
@@ -12,7 +10,7 @@ matrix:
     - go: "tip"
       env: GO111MODULE=on
       install: true
-
-script:
-  - go test -v --coverprofile=cover.out ./...
-  - goveralls --coverprofile=cover.out --service=travis-ci
+      script:
+        - go test -v --coverprofile=cover.out ./...
+        - go get github.com/mattn/goveralls
+        - goveralls --coverprofile=cover.out --service=travis-ci
