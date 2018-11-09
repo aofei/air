@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -655,9 +656,21 @@ func WrapHTTPMiddleware(m func(http.Handler) http.Handler) Gas {
 				r *http.Request,
 			) {
 				req.request = r
-				res.writer = rw
+
+				rb := res.Body.(*responseBody)
+				res.headers = make([]*Header, 0, len(rb.header))
+				for n, vs := range rb.header {
+					h := &Header{
+						Name:   strings.ToLower(n),
+						Values: vs,
+					}
+					res.headers = append(res.headers, h)
+				}
+
+				rb.header = nil
+
 				err = next(req, res)
-			})).ServeHTTP(res.writer, req.request)
+			})).ServeHTTP(res.Body.(*responseBody), req.request)
 			return err
 		}
 	}

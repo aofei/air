@@ -169,28 +169,23 @@ func (r *Response) Write(content io.ReadSeeker) error {
 				"content-length",
 				strconv.FormatInt(r.ContentLength, 10),
 			)
-		}
-
-		if cs := r.Cookies(); len(cs) > 0 {
-			vs := make([]string, 0, len(cs))
-			for _, c := range cs {
-				vs = append(vs, c.String())
-			}
-
-			r.SetHeader("set-cookie", vs...)
+		} else {
+			r.ContentLength = 0
 		}
 
 		for _, h := range r.Headers() {
-			if len(h.Values) == 0 {
-				continue
-			}
-
 			n := textproto.CanonicalMIMEHeaderKey(h.Name)
-			r.writer.Header()[n] = h.Values
+			for _, v := range h.Values {
+				r.writer.Header().Add(n, v)
+			}
+		}
+
+		for _, c := range r.Cookies() {
+			r.writer.Header().Add("Set-Cookie", c.String())
 		}
 
 		r.writer.WriteHeader(r.Status)
-		if r.request.Method != "HEAD" {
+		if r.request.Method != "HEAD" && reader != nil {
 			io.CopyN(r.writer, reader, r.ContentLength)
 		}
 
@@ -830,22 +825,15 @@ func (r *Response) Redirect(url string) error {
 func (r *Response) WebSocket() (*WebSocket, error) {
 	r.Status = 101
 
-	if cs := r.Cookies(); len(cs) > 0 {
-		vs := make([]string, 0, len(cs))
-		for _, c := range cs {
-			vs = append(vs, c.String())
+	for _, h := range r.Headers() {
+		n := textproto.CanonicalMIMEHeaderKey(h.Name)
+		for _, v := range h.Values {
+			r.writer.Header().Add(n, v)
 		}
-
-		r.SetHeader("set-cookie", vs...)
 	}
 
-	for _, h := range r.Headers() {
-		if len(h.Values) == 0 {
-			continue
-		}
-
-		n := textproto.CanonicalMIMEHeaderKey(h.Name)
-		r.writer.Header()[n] = h.Values
+	for _, c := range r.Cookies() {
+		r.writer.Header().Add("Set-Cookie", c.String())
 	}
 
 	r.Written = true
@@ -859,6 +847,11 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 			_ error,
 		) {
 			r.Status = status
+
+			for k := range r.writer.Header() {
+				delete(r.writer.Header(), k)
+			}
+
 			r.Written = false
 		},
 		CheckOrigin: func(*http.Request) bool {
@@ -1069,17 +1062,39 @@ func (w *countingWriter) Write(p []byte) (int, error) {
 // streaming content.
 type responseBody struct {
 	response *Response
+	header   http.Header
 }
 
-// Write implements the `io.Writer`.
+// Header implements the `http.ResponseWriter`.
+func (rb *responseBody) Header() http.Header {
+	if rb.header != nil {
+		return rb.header
+	}
+
+	rb.header = make(http.Header, len(rb.response.Headers()))
+	for _, h := range rb.response.Headers() {
+		rb.header[textproto.CanonicalMIMEHeaderKey(h.Name)] = h.Values
+	}
+
+	return rb.header
+}
+
+// WriteHeader implements the `http.ResponseWriter`.
+func (rb *responseBody) WriteHeader(status int) {
+	if rb.response.Written {
+		return
+	}
+
+	rb.response.Status = status
+	rb.Write(nil)
+}
+
+// Write implements the `http.ResponseWriter`.
 func (rb *responseBody) Write(b []byte) (int, error) {
 	if !rb.response.Written {
-		rb.response.ContentLength = -1
 		if err := rb.response.Write(nil); err != nil {
 			return 0, err
 		}
-
-		rb.response.ContentLength = 0
 	}
 
 	n, err := rb.response.writer.Write(b)
