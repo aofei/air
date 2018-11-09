@@ -92,6 +92,10 @@ func (r *Response) Cookies() []*Cookie {
 
 // SetCookie sets the `Cookie` entries associated with the name to the c.
 func (r *Response) SetCookie(name string, c *Cookie) {
+	if c != nil && c.Name != name {
+		return
+	}
+
 	for i := range r.cookies {
 		if r.cookies[i].Name == name {
 			if c != nil {
@@ -971,7 +975,7 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 // The headers specifies additional promised request headers. The headers
 // cannot include HTTP/2 pseudo headers like ":path" and ":scheme", which
 // will be added automatically.
-func (r *Response) Push(target string, headers map[string]*Header) error {
+func (r *Response) Push(target string, headers []*Header) error {
 	p, ok := r.writer.(http.Pusher)
 	if !ok {
 		return nil
@@ -982,8 +986,8 @@ func (r *Response) Push(target string, headers map[string]*Header) error {
 		pos = &http.PushOptions{
 			Header: make(http.Header, l),
 		}
-		for n, h := range headers {
-			n := textproto.CanonicalMIMEHeaderKey(n)
+		for _, h := range headers {
+			n := textproto.CanonicalMIMEHeaderKey(h.Name)
 			pos.Header[n] = h.Values
 		}
 	}
