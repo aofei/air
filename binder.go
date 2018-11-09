@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"io/ioutil"
 	"mime"
 	"reflect"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/vmihailenco/msgpack"
 )
 
@@ -32,10 +34,15 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	switch mt {
 	case "application/json":
 		err = json.NewDecoder(r.Body).Decode(v)
-	case "application/msgpack", "application/x-msgpack":
-		err = msgpack.NewDecoder(r.Body).Decode(v)
 	case "application/xml":
 		err = xml.NewDecoder(r.Body).Decode(v)
+	case "application/msgpack", "application/x-msgpack":
+		err = msgpack.NewDecoder(r.Body).Decode(v)
+	case "application/protobuf", "application/x-protobuf":
+		var b []byte
+		if b, err = ioutil.ReadAll(r.Body); err == nil {
+			err = proto.Unmarshal(b, v.(proto.Message))
+		}
 	case "application/x-www-form-urlencoded", "multipart/form-data":
 		err = b.bindParams(v, r.Params())
 	default:

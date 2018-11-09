@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack"
 	"golang.org/x/net/html"
@@ -553,23 +554,6 @@ func (r *Response) WriteJSON(v interface{}) error {
 	return r.WriteBlob(b)
 }
 
-// WriteMsgpack responds to the client with the "application/msgpack" content v.
-func (r *Response) WriteMsgpack(v interface{}) error {
-	var (
-		b   []byte
-		err error
-	)
-
-	b, err = msgpack.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	r.SetHeader("content-type", "application/msgpack; charset=utf-8")
-
-	return r.WriteBlob(b)
-}
-
 // WriteXML responds to the client with the "application/xml" content v.
 func (r *Response) WriteXML(v interface{}) error {
 	var (
@@ -590,6 +574,31 @@ func (r *Response) WriteXML(v interface{}) error {
 	r.SetHeader("content-type", "application/xml; charset=utf-8")
 
 	return r.WriteBlob(append([]byte(xml.Header), b...))
+}
+
+// WriteMsgpack responds to the client with the "application/msgpack" content v.
+func (r *Response) WriteMsgpack(v interface{}) error {
+	b, err := msgpack.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	r.SetHeader("content-type", "application/msgpack; charset=utf-8")
+
+	return r.WriteBlob(b)
+}
+
+// WriteProtobuf responds to the client with the "application/protobuf" content
+// v.
+func (r *Response) WriteProtobuf(v interface{}) error {
+	b, err := proto.Marshal(v.(proto.Message))
+	if err != nil {
+		return err
+	}
+
+	r.SetHeader("content-type", "application/protobuf; charset=utf-8")
+
+	return r.WriteBlob(b)
 }
 
 // WriteHTML responds to the client with the "text/html" content h.
