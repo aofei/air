@@ -8,6 +8,7 @@ import (
 	"mime"
 	"reflect"
 
+	"github.com/BurntSushi/toml"
 	"github.com/golang/protobuf/proto"
 	"github.com/vmihailenco/msgpack"
 )
@@ -43,6 +44,8 @@ func (b *binder) bind(v interface{}, r *Request) error {
 		if b, err = ioutil.ReadAll(r.Body); err == nil {
 			err = proto.Unmarshal(b, v.(proto.Message))
 		}
+	case "application/toml", "application/x-toml":
+		_, err = toml.DecodeReader(r.Body, v)
 	case "application/x-www-form-urlencoded", "multipart/form-data":
 		err = b.bindParams(v, r.Params())
 	default:

@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack"
@@ -599,6 +600,18 @@ func (r *Response) WriteProtobuf(v interface{}) error {
 	r.SetHeader("content-type", "application/protobuf; charset=utf-8")
 
 	return r.WriteBlob(b)
+}
+
+// WriteTOML responds to the client with the "application/toml" content v.
+func (r *Response) WriteTOML(v interface{}) error {
+	buf := &bytes.Buffer{}
+	if err := toml.NewEncoder(buf).Encode(v); err != nil {
+		return err
+	}
+
+	r.SetHeader("content-type", "application/toml; charset=utf-8")
+
+	return r.WriteBlob(buf.Bytes())
 }
 
 // WriteHTML responds to the client with the "text/html" content h.
