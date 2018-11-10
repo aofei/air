@@ -1,6 +1,10 @@
 package air
 
-import "github.com/gorilla/websocket"
+import (
+	"io/ioutil"
+
+	"github.com/gorilla/websocket"
+)
 
 // WebSocket is a WebSocket peer.
 type WebSocket struct {
@@ -11,14 +15,61 @@ type WebSocket struct {
 	PongHandler            func(appData string) error
 	ErrorHandler           func(err error)
 
-	conn   *websocket.Conn
-	closed bool
+	conn     *websocket.Conn
+	listened bool
+	closed   bool
 }
 
-// Close closes the ws without sending or waiting for a close message.
-func (ws *WebSocket) Close() error {
-	ws.closed = true
-	return ws.conn.Close()
+// Listen listens for the messages sent from the remote peer of the ws.
+func (ws *WebSocket) Listen() {
+	if ws.listened {
+		return
+	}
+
+	ws.listened = true
+
+	go func() {
+		for {
+			if ws.closed {
+				break
+			}
+
+			mt, r, err := ws.conn.NextReader()
+			if err != nil {
+				if !websocket.IsCloseError(
+					err,
+					websocket.CloseNormalClosure,
+				) && ws.ErrorHandler != nil {
+					ws.ErrorHandler(err)
+				}
+
+				break
+			}
+
+			switch mt {
+			case websocket.TextMessage:
+				if ws.TextHandler != nil {
+					var b []byte
+					b, err = ioutil.ReadAll(r)
+					if err == nil {
+						err = ws.TextHandler(string(b))
+					}
+				}
+			case websocket.BinaryMessage:
+				if ws.BinaryHandler != nil {
+					var b []byte
+					b, err = ioutil.ReadAll(r)
+					if err == nil {
+						err = ws.BinaryHandler(b)
+					}
+				}
+			}
+
+			if err != nil && ws.ErrorHandler != nil {
+				ws.ErrorHandler(err)
+			}
+		}
+	}()
 }
 
 // WriteText writes the text to the remote peer of the ws.
@@ -48,4 +99,10 @@ func (ws *WebSocket) WritePing(appData string) error {
 // WritePong writes a pong to the remote peer of the ws with the appData.
 func (ws *WebSocket) WritePong(appData string) error {
 	return ws.conn.WriteMessage(websocket.PongMessage, []byte(appData))
+}
+
+// Close closes the ws without sending or waiting for a close message.
+func (ws *WebSocket) Close() error {
+	ws.closed = true
+	return ws.conn.Close()
 }

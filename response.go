@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net"
@@ -872,6 +871,8 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 	}
 
 	conn.SetCloseHandler(func(statusCode int, reason string) error {
+		ws.closed = true
+
 		if ws.ConnectionCloseHandler != nil {
 			return ws.ConnectionCloseHandler(statusCode, reason)
 		}
@@ -911,50 +912,6 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 
 		return nil
 	})
-
-	go func() {
-		for {
-			if ws.closed {
-				break
-			} else if ws.TextHandler == nil &&
-				ws.BinaryHandler == nil {
-				time.Sleep(time.Millisecond)
-				continue
-			}
-
-			mt, r, err := conn.NextReader()
-			if err != nil {
-				if ws.ErrorHandler != nil {
-					ws.ErrorHandler(err)
-				}
-
-				break
-			}
-
-			switch mt {
-			case websocket.TextMessage:
-				if ws.TextHandler != nil {
-					var b []byte
-					b, err = ioutil.ReadAll(r)
-					if err == nil {
-						err = ws.TextHandler(string(b))
-					}
-				}
-			case websocket.BinaryMessage:
-				if ws.BinaryHandler != nil {
-					var b []byte
-					b, err = ioutil.ReadAll(r)
-					if err == nil {
-						err = ws.BinaryHandler(b)
-					}
-				}
-			}
-
-			if err != nil && ws.ErrorHandler != nil {
-				ws.ErrorHandler(err)
-			}
-		}
-	}()
 
 	return ws, nil
 }
