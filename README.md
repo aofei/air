@@ -44,7 +44,6 @@ properly.**
 	* SSL/TLS support
 	* ACME support
 	* Graceful shutdown support
-	* WebSocket support
 * Router
 	* Based on the Radix Tree
 	* Has a good inspection mechanism
@@ -55,9 +54,17 @@ properly.**
 		* After router
 	* Route level
 	* Group level
+* WebSocket
+	* Full-duplex communication
 * Binder
 	* `application/json`
 	* `application/xml`
+	* `application/msgpack`
+	* `application/x-msgpack`
+	* `application/protobuf`
+	* `application/x-protobuf`
+	* `application/toml`
+	* `application/x-toml`
 	* `application/x-www-form-urlencoded`
 	* `multipart/form-data`
 * Minifier
