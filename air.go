@@ -389,6 +389,18 @@ func FILE(path, filename string, gases ...Gas) {
 // proxy with the pc and the optional route-level gases.
 func PROXY(path string, pc *ProxyConfig, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
+		if !DebugMode && len(HostWhitelist) > 0 {
+			host, _, err := net.SplitHostPort(req.Authority)
+			if err != nil {
+				host = req.Authority
+			}
+
+			// See RFC 3986, section 3.2.2.
+			if !stringsContainsCIly(HostWhitelist, host) {
+				return NotFoundHandler(req, res)
+			}
+		}
+
 		u, err := url.Parse(pc.Address)
 		if err != nil {
 			return err
@@ -729,7 +741,8 @@ func WrapHTTPMiddleware(m func(http.Handler) http.Handler) Gas {
 
 // ProxyConfig is the config of the `PROXY()`.
 type ProxyConfig struct {
-	Address string
+	Address       string
+	HostWhitelist []string
 }
 
 // errorLogWriter is an error log writer.
