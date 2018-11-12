@@ -70,6 +70,11 @@ func (r *Response) SetHeader(name string, values ...string) {
 			Values: values,
 		})
 	}
+
+	if r.Written {
+		n := textproto.CanonicalMIMEHeaderKey(name)
+		r.writer.Header()[n] = values
+	}
 }
 
 // Cookie returns the matched `Cookie` for the name. It returns nil if not
@@ -1051,15 +1056,7 @@ func (rb *responseBody) WriteHeader(status int) {
 // Write implements the `http.ResponseWriter`.
 func (rb *responseBody) Write(b []byte) (int, error) {
 	if !rb.response.Written {
-		if rb.header != nil {
-			rb.response.headers = rb.response.headers[:0]
-			for n, vs := range rb.header {
-				rb.response.SetHeader(n, vs...)
-			}
-
-			rb.header = nil
-		}
-
+		rb.syncHeaders()
 		if err := rb.response.Write(nil); err != nil {
 			return 0, err
 		}
@@ -1069,4 +1066,19 @@ func (rb *responseBody) Write(b []byte) (int, error) {
 	rb.response.ContentLength += int64(n)
 
 	return n, err
+}
+
+// syncHeaders syncs the `rb#response#headers` with the `rb#header`.
+func (rb *responseBody) syncHeaders() {
+	if rb.header == nil {
+		return
+	}
+	defer func() {
+		rb.header = nil
+	}()
+
+	rb.response.headers = rb.response.headers[:0]
+	for n, vs := range rb.header {
+		rb.response.SetHeader(n, vs...)
+	}
 }

@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -410,6 +411,7 @@ func PROXY(path string, pc *ProxyConfig, gases ...Gas) {
 				) (net.Conn, error) {
 					return net.Dial(network, address)
 				},
+				AllowHTTP: true,
 			}
 		case "grpcs":
 			u.Scheme = "https"
@@ -422,7 +424,9 @@ func PROXY(path string, pc *ProxyConfig, gases ...Gas) {
 		rp.Transport = transport
 		rp.ErrorLog = log.New(&errorLogWriter{}, "air: ", 0)
 
-		rp.ServeHTTP(res.Body.(*responseBody), req.request)
+		rb := res.Body.(*responseBody)
+		rp.ServeHTTP(rb, req.request)
+		rb.syncHeaders()
 
 		return nil
 	}
@@ -715,17 +719,7 @@ func WrapHTTPMiddleware(m func(http.Handler) http.Handler) Gas {
 				r *http.Request,
 			) {
 				req.request = r
-
-				rb := res.Body.(*responseBody)
-				if rb.header != nil {
-					res.headers = res.headers[:0]
-					for n, vs := range rb.header {
-						res.SetHeader(n, vs...)
-					}
-
-					rb.header = nil
-				}
-
+				res.Body.(*responseBody).syncHeaders()
 				err = next(req, res)
 			})).ServeHTTP(res.Body.(*responseBody), req.request)
 			return err
@@ -743,6 +737,6 @@ type errorLogWriter struct{}
 
 // Write implements the `io.Writer`.
 func (*errorLogWriter) Write(b []byte) (int, error) {
-	ERROR(string(b))
+	ERROR(strings.TrimSuffix(string(b), "\n"))
 	return len(b), nil
 }
