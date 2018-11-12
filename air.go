@@ -440,7 +440,11 @@ func PROXY(path string, pc *ProxyConfig, gases ...Gas) {
 		rp.ServeHTTP(rb, req.request)
 		rb.syncHeaders()
 
-		return nil
+		if res.Status < 400 {
+			return nil
+		}
+
+		return errors.New(strings.ToLower(http.StatusText(res.Status)))
 	}
 
 	GET(path, h, gases...)
