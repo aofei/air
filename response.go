@@ -1051,6 +1051,15 @@ func (rb *responseBody) WriteHeader(status int) {
 // Write implements the `http.ResponseWriter`.
 func (rb *responseBody) Write(b []byte) (int, error) {
 	if !rb.response.Written {
+		if rb.header != nil {
+			rb.response.headers = rb.response.headers[:0]
+			for n, vs := range rb.header {
+				rb.response.SetHeader(n, vs...)
+			}
+
+			rb.header = nil
+		}
+
 		if err := rb.response.Write(nil); err != nil {
 			return 0, err
 		}

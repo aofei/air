@@ -35,7 +35,7 @@ func (s *server) serve() error {
 	s.server.WriteTimeout = WriteTimeout
 	s.server.IdleTimeout = IdleTimeout
 	s.server.MaxHeaderBytes = MaxHeaderBytes
-	s.server.ErrorLog = log.New(&serverErrorLogWriter{}, "air: ", 0)
+	s.server.ErrorLog = log.New(&errorLogWriter{}, "air: ", 0)
 
 	if DebugMode {
 		DEBUG("air: serving in debug mode")
@@ -227,13 +227,4 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-}
-
-// serverErrorLogWriter is an HTTP server error log writer.
-type serverErrorLogWriter struct{}
-
-// Write implements the `io.Writer`.
-func (selw *serverErrorLogWriter) Write(b []byte) (int, error) {
-	ERROR(string(b))
-	return len(b), nil
 }

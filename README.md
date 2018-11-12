@@ -56,6 +56,10 @@ properly.**
 	* Group level
 * WebSocket
 	* Full-duplex communication
+* Reverse proxy
+	* HTTP(S)
+	* WebSocket
+	* gRPC
 * Binder
 	* `application/json`
 	* `application/xml`

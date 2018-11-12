@@ -1,15 +1,20 @@
 package air
 
 import (
+	"crypto/tls"
 	"errors"
 	"io"
+	"log"
+	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"golang.org/x/net/http2"
 )
 
 // AppName is the name of the current web application.
@@ -379,6 +384,60 @@ func FILE(path, filename string, gases ...Gas) {
 	HEAD(path, h, gases...)
 }
 
+// PROXY registers a new route with the path to serve an HTTP(S)/WebSocket/gRPC
+// proxy with the pc and the optional route-level gases.
+func PROXY(path string, pc *ProxyConfig, gases ...Gas) {
+	h := func(req *Request, res *Response) error {
+		u, err := url.Parse(pc.Address)
+		if err != nil {
+			return err
+		}
+
+		var transport http.RoundTripper
+		switch u.Scheme {
+		case "http", "https":
+		case "ws":
+			u.Scheme = "http"
+		case "wss":
+			u.Scheme = "https"
+		case "grpc":
+			u.Scheme = "http"
+			transport = &http2.Transport{
+				DialTLS: func(
+					network string,
+					address string,
+					_ *tls.Config,
+				) (net.Conn, error) {
+					return net.Dial(network, address)
+				},
+			}
+		case "grpcs":
+			u.Scheme = "https"
+			transport = &http2.Transport{}
+		default:
+			return errors.New("unsupported proxy scheme")
+		}
+
+		rp := httputil.NewSingleHostReverseProxy(u)
+		rp.Transport = transport
+		rp.ErrorLog = log.New(&errorLogWriter{}, "air: ", 0)
+
+		rp.ServeHTTP(res.Body.(*responseBody), req.request)
+
+		return nil
+	}
+
+	GET(path, h, gases...)
+	HEAD(path, h, gases...)
+	POST(path, h, gases...)
+	PUT(path, h, gases...)
+	PATCH(path, h, gases...)
+	DELETE(path, h, gases...)
+	CONNECT(path, h, gases...)
+	OPTIONS(path, h, gases...)
+	TRACE(path, h, gases...)
+}
+
 // Serve starts the server.
 func Serve() error {
 	if ConfigFile == "" {
@@ -658,20 +717,32 @@ func WrapHTTPMiddleware(m func(http.Handler) http.Handler) Gas {
 				req.request = r
 
 				rb := res.Body.(*responseBody)
-				res.headers = make([]*Header, 0, len(rb.header))
-				for n, vs := range rb.header {
-					h := &Header{
-						Name:   strings.ToLower(n),
-						Values: vs,
+				if rb.header != nil {
+					res.headers = res.headers[:0]
+					for n, vs := range rb.header {
+						res.SetHeader(n, vs...)
 					}
-					res.headers = append(res.headers, h)
-				}
 
-				rb.header = nil
+					rb.header = nil
+				}
 
 				err = next(req, res)
 			})).ServeHTTP(res.Body.(*responseBody), req.request)
 			return err
 		}
 	}
+}
+
+// ProxyConfig is the config of the `PROXY()`.
+type ProxyConfig struct {
+	Address string
+}
+
+// errorLogWriter is an error log writer.
+type errorLogWriter struct{}
+
+// Write implements the `io.Writer`.
+func (*errorLogWriter) Write(b []byte) (int, error) {
+	ERROR(string(b))
+	return len(b), nil
 }
