@@ -36,7 +36,6 @@ func TestServerServe(t *testing.T) {
 
 	ss := theServer.server
 	assert.Equal(t, Address, ss.Addr)
-	assert.Equal(t, theServer, ss.Handler)
 	assert.Equal(t, IdleTimeout, ss.IdleTimeout)
 
 	m := map[string]interface{}{}

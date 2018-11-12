@@ -183,6 +183,8 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			r.writer.Header().Add("Set-Cookie", c.String())
 		}
 
+		r.writer.Header().Set("Server", "Air")
+
 		r.writer.WriteHeader(r.Status)
 		if r.request.Method != "HEAD" && reader != nil {
 			io.CopyN(r.writer, reader, r.ContentLength)

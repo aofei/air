@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 // server is an HTTP server.
@@ -27,7 +29,7 @@ var theServer = &server{
 // serve starts the s.
 func (s *server) serve() error {
 	s.server.Addr = Address
-	s.server.Handler = s
+	s.server.Handler = h2c.NewHandler(s, &http2.Server{})
 	s.server.ReadTimeout = ReadTimeout
 	s.server.ReadHeaderTimeout = ReadHeaderTimeout
 	s.server.WriteTimeout = WriteTimeout
