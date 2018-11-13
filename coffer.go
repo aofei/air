@@ -122,15 +122,3 @@ type asset struct {
 	checksum [sha256.Size]byte
 	modTime  time.Time
 }
-
-// stringsContainsCIly reports whether the ss contains the s case-insensitively.
-func stringsContainsCIly(ss []string, s string) bool {
-	s = strings.ToLower(s)
-	for _, v := range ss {
-		if strings.ToLower(v) == s {
-			return true
-		}
-	}
-
-	return false
-}

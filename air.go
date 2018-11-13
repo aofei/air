@@ -1,21 +1,15 @@
 package air
 
 import (
-	"crypto/tls"
 	"errors"
 	"io"
-	"log"
-	"net"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"golang.org/x/net/http2"
 )
 
 // AppName is the name of the current web application.
@@ -385,79 +379,6 @@ func FILE(path, filename string, gases ...Gas) {
 	HEAD(path, h, gases...)
 }
 
-// PROXY registers a new route with the path to serve an HTTP(S)/WebSocket/gRPC
-// proxy with the pc and the optional route-level gases.
-func PROXY(path string, pc *ProxyConfig, gases ...Gas) {
-	h := func(req *Request, res *Response) error {
-		if !DebugMode && len(HostWhitelist) > 0 {
-			host, _, err := net.SplitHostPort(req.Authority)
-			if err != nil {
-				host = req.Authority
-			}
-
-			// See RFC 3986, section 3.2.2.
-			if !stringsContainsCIly(HostWhitelist, host) {
-				return NotFoundHandler(req, res)
-			}
-		}
-
-		u, err := url.Parse(pc.Address)
-		if err != nil {
-			return err
-		}
-
-		var transport http.RoundTripper
-		switch u.Scheme {
-		case "http", "https":
-		case "ws":
-			u.Scheme = "http"
-		case "wss":
-			u.Scheme = "https"
-		case "grpc":
-			u.Scheme = "http"
-			transport = &http2.Transport{
-				DialTLS: func(
-					network string,
-					address string,
-					_ *tls.Config,
-				) (net.Conn, error) {
-					return net.Dial(network, address)
-				},
-				AllowHTTP: true,
-			}
-		case "grpcs":
-			u.Scheme = "https"
-			transport = &http2.Transport{}
-		default:
-			return errors.New("unsupported proxy scheme")
-		}
-
-		rp := httputil.NewSingleHostReverseProxy(u)
-		rp.Transport = transport
-		rp.ErrorLog = log.New(&errorLogWriter{}, "air: ", 0)
-
-		rb := res.Body.(*responseBody)
-		rp.ServeHTTP(rb, req.request)
-		rb.syncHeaders()
-
-		if res.Status < 400 {
-			return nil
-		}
-
-		return errors.New(strings.ToLower(http.StatusText(res.Status)))
-	}
-
-	GET(path, h, gases...)
-	HEAD(path, h, gases...)
-	POST(path, h, gases...)
-	PUT(path, h, gases...)
-	PATCH(path, h, gases...)
-	DELETE(path, h, gases...)
-	CONNECT(path, h, gases...)
-	OPTIONS(path, h, gases...)
-	TRACE(path, h, gases...)
-}
-
 // Serve starts the server.
 func Serve() error {
 	if ConfigFile == "" {
@@ -737,16 +658,14 @@ func WrapHTTPMiddleware(m func(http.Handler) http.Handler) Gas {
 				req.request = r
 				res.Body.(*responseBody).syncHeaders()
 				err = next(req, res)
-			})).ServeHTTP(res.Body.(*responseBody), req.request)
+			})).ServeHTTP(
+				res.Body.(http.ResponseWriter),
+				req.request,
+			)
+
 			return err
 		}
 	}
-}
-
-// ProxyConfig is the config of the `PROXY()`.
-type ProxyConfig struct {
-	Address       string
-	HostWhitelist []string
 }
 
 // errorLogWriter is an error log writer.
@@ -756,4 +675,16 @@ type errorLogWriter struct{}
 func (*errorLogWriter) Write(b []byte) (int, error) {
 	ERROR(strings.TrimSuffix(string(b), "\n"))
 	return len(b), nil
+}
+
+// stringsContainsCIly reports whether the ss contains the s case-insensitively.
+func stringsContainsCIly(ss []string, s string) bool {
+	s = strings.ToLower(s)
+	for _, v := range ss {
+		if strings.ToLower(v) == s {
+			return true
+		}
+	}
+
+	return false
 }
