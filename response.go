@@ -941,6 +941,7 @@ func (r *Response) Push(target string, headers []*Header) error {
 	var pos *http.PushOptions
 	if l := len(headers); l > 0 {
 		pos = &http.PushOptions{
+			Method: "GET",
 			Header: make(http.Header, l),
 		}
 		for _, h := range headers {
@@ -1022,41 +1023,15 @@ func (w *countingWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// responseBody provides a convenient way to respond to the client with the
-// streaming content.
+// responseBody provides a convenient way to continuously write content to the
+// client.
 type responseBody struct {
 	response *Response
-	header   http.Header
 }
 
-// Header implements the `http.ResponseWriter`.
-func (rb *responseBody) Header() http.Header {
-	if rb.header != nil {
-		return rb.header
-	}
-
-	rb.header = make(http.Header, len(rb.response.Headers()))
-	for _, h := range rb.response.Headers() {
-		rb.header[textproto.CanonicalMIMEHeaderKey(h.Name)] = h.Values
-	}
-
-	return rb.header
-}
-
-// WriteHeader implements the `http.ResponseWriter`.
-func (rb *responseBody) WriteHeader(status int) {
-	if rb.response.Written {
-		return
-	}
-
-	rb.response.Status = status
-	rb.Write(nil)
-}
-
-// Write implements the `http.ResponseWriter`.
+// Write implements the `io.Writer`.
 func (rb *responseBody) Write(b []byte) (int, error) {
 	if !rb.response.Written {
-		rb.syncHeaders()
 		if err := rb.response.Write(nil); err != nil {
 			return 0, err
 		}
@@ -1066,19 +1041,4 @@ func (rb *responseBody) Write(b []byte) (int, error) {
 	rb.response.ContentLength += int64(n)
 
 	return n, err
-}
-
-// syncHeaders syncs the `rb#response#headers` with the `rb#header`.
-func (rb *responseBody) syncHeaders() {
-	if rb.header == nil {
-		return
-	}
-	defer func() {
-		rb.header = nil
-	}()
-
-	rb.response.headers = rb.response.headers[:0]
-	for n, vs := range rb.header {
-		rb.response.SetHeader(n, vs...)
-	}
 }

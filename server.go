@@ -124,7 +124,7 @@ func (s *server) shutdown(timeout time.Duration) error {
 
 // ServeHTTP implements the `http.Handler`.
 func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	// Check host
+	// Check host.
 
 	if !DebugMode && len(HostWhitelist) > 0 {
 		host, _, err := net.SplitHostPort(r.Host)
@@ -150,7 +150,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Request
+	// Make request.
 
 	req := &Request{
 		Method:        r.Method,
@@ -171,7 +171,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		req.Scheme = "https"
 	}
 
-	// Response
+	// Make response.
 
 	res := &Response{
 		Status: 200,
@@ -185,7 +185,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	req.response = res
 
-	// Chain gases
+	// Chain gases.
 
 	h := func(req *Request, res *Response) error {
 		rh := theRouter.route(req)
@@ -206,19 +206,19 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return h(req, res)
 	}
 
-	// Chain pregases
+	// Chain pregases.
 
 	for i := len(Pregases) - 1; i >= 0; i-- {
 		h = Pregases[i](h)
 	}
 
-	// Execute chain
+	// Execute chain.
 
 	if err := h(req, res); err != nil {
 		ErrorHandler(err, req, res)
 	}
 
-	// Close opened request param file values
+	// Close opened request param file values.
 
 	for _, p := range req.params {
 		for _, pv := range p.Values {

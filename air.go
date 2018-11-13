@@ -3,7 +3,6 @@ package air
 import (
 	"errors"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -643,30 +642,6 @@ var MethodNotAllowedHandler = func(req *Request, res *Response) error {
 
 // Gas defines a function to process gases.
 type Gas func(Handler) Handler
-
-// WrapHTTPMiddleware is a convenience method allowing the use of conventional
-// `http.Handler` middleware by wrapping it and internally converting the
-// middleware into a `Gas`.
-func WrapHTTPMiddleware(m func(http.Handler) http.Handler) Gas {
-	return func(next Handler) Handler {
-		return func(req *Request, res *Response) error {
-			var err error
-			m(http.HandlerFunc(func(
-				rw http.ResponseWriter,
-				r *http.Request,
-			) {
-				req.request = r
-				res.Body.(*responseBody).syncHeaders()
-				err = next(req, res)
-			})).ServeHTTP(
-				res.Body.(http.ResponseWriter),
-				req.request,
-			)
-
-			return err
-		}
-	}
-}
 
 // errorLogWriter is an error log writer.
 type errorLogWriter struct{}
