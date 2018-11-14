@@ -193,6 +193,11 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 		r.writer.Header()["server"] = []string{"Air"}
 
+		r.writer.Header()["Date"] = nil
+		r.writer.Header()["date"] = []string{
+			time.Now().Format(http.TimeFormat),
+		}
+
 		r.writer.WriteHeader(r.Status)
 		if r.request.Method != "HEAD" && reader != nil {
 			io.CopyN(r.writer, reader, r.ContentLength)
