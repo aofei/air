@@ -62,18 +62,18 @@ func (r *Response) Headers() []*Header {
 
 // SetHeader sets the `Header` entries associated with the name to the values.
 func (r *Response) SetHeader(name string, values ...string) {
+	name = strings.ToLower(name)
 	if h := r.Header(name); h != nil {
 		h.Values = values
 	} else if len(values) > 0 {
 		r.headers = append(r.headers, &Header{
-			Name:   strings.ToLower(name),
+			Name:   name,
 			Values: values,
 		})
 	}
 
 	if r.Written {
-		n := textproto.CanonicalMIMEHeaderKey(name)
-		r.writer.Header()[n] = values
+		r.writer.Header()[name] = values
 	}
 }
 
@@ -178,17 +178,20 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		}
 
 		for _, h := range r.Headers() {
-			n := textproto.CanonicalMIMEHeaderKey(h.Name)
-			for _, v := range h.Values {
-				r.writer.Header().Add(n, v)
-			}
+			r.writer.Header()[h.Name] = h.Values
 		}
 
 		for _, c := range r.Cookies() {
-			r.writer.Header().Add("Set-Cookie", c.String())
+			if vs := r.writer.Header()["set-cookie"]; len(vs) > 0 {
+				vs = append(vs, c.String())
+			} else {
+				r.writer.Header()["set-cookie"] = []string{
+					c.String(),
+				}
+			}
 		}
 
-		r.writer.Header().Set("Server", "Air")
+		r.writer.Header()["server"] = []string{"Air"}
 
 		r.writer.WriteHeader(r.Status)
 		if r.request.Method != "HEAD" && reader != nil {
@@ -832,14 +835,17 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 	r.Status = 101
 
 	for _, h := range r.Headers() {
-		n := textproto.CanonicalMIMEHeaderKey(h.Name)
-		for _, v := range h.Values {
-			r.writer.Header().Add(n, v)
-		}
+		r.writer.Header()[h.Name] = h.Values
 	}
 
 	for _, c := range r.Cookies() {
-		r.writer.Header().Add("Set-Cookie", c.String())
+		if vs := r.writer.Header()["set-cookie"]; len(vs) > 0 {
+			vs = append(vs, c.String())
+		} else {
+			r.writer.Header()["set-cookie"] = []string{
+				c.String(),
+			}
+		}
 	}
 
 	r.Written = true
@@ -945,8 +951,7 @@ func (r *Response) Push(target string, headers []*Header) error {
 			Header: make(http.Header, l),
 		}
 		for _, h := range headers {
-			n := textproto.CanonicalMIMEHeaderKey(h.Name)
-			pos.Header[n] = h.Values
+			pos.Header[h.Name] = h.Values
 		}
 	}
 
@@ -1009,8 +1014,8 @@ func (r httpRange) contentRange(size int64) string {
 // header return  the MIME header of the r.
 func (r httpRange) header(contentType string, size int64) textproto.MIMEHeader {
 	return textproto.MIMEHeader{
-		"Content-Range": {r.contentRange(size)},
-		"Content-Type":  {contentType},
+		"content-range": {r.contentRange(size)},
+		"content-type":  {contentType},
 	}
 }
 
