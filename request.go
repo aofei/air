@@ -506,19 +506,17 @@ func (rpv *RequestParamValue) File() (*RequestParamFileValue, error) {
 
 		rpv.f = &RequestParamFileValue{
 			Filename:      fh.Filename,
-			Headers:       make(map[string]*Header, len(fh.Header)),
+			Headers:       make([]*Header, 0, len(fh.Header)),
 			ContentLength: fh.Size,
 
 			fh: fh,
 		}
 
 		for n, vs := range fh.Header {
-			h := &Header{
+			rpv.f.Headers = append(rpv.f.Headers, &Header{
 				Name:   strings.ToLower(n),
 				Values: vs,
-			}
-
-			rpv.f.Headers[h.Name] = h
+			})
 		}
 	}
 
@@ -528,7 +526,7 @@ func (rpv *RequestParamValue) File() (*RequestParamFileValue, error) {
 // RequestParamFileValue is an HTTP request param file value.
 type RequestParamFileValue struct {
 	Filename      string
-	Headers       map[string]*Header
+	Headers       []*Header
 	ContentLength int64
 
 	fh *multipart.FileHeader
