@@ -135,18 +135,23 @@ func (r *renderer) render(
 		}
 	})
 
+	t := r.template.Lookup(name)
+	if t == nil {
+		fmt.Errorf("html/template: %q is undefined", name)
+	}
+
 	if r.a.I18nEnabled {
-		t, err := r.template.Clone()
+		t, err := t.Clone()
 		if err != nil {
 			return err
 		}
 
 		return t.Funcs(template.FuncMap{
 			"locstr": locstr,
-		}).ExecuteTemplate(w, name, v)
+		}).Execute(w, v)
 	}
 
-	return r.template.ExecuteTemplate(w, name, v)
+	return t.Execute(w, v)
 }
 
 // strlen returns the number of characters in the s.

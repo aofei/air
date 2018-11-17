@@ -64,7 +64,7 @@ func (g *Group) FILE(path, file string, gases ...Gas) {
 	g.Air.FILE(g.Prefix+path, file, append(g.Gases, gases...)...)
 }
 
-// Group implements the `Air#GROUP()`.
+// Group implements the `Air#Group()`.
 func (g *Group) Group(prefix string, gases ...Gas) *Group {
 	return g.Air.Group(g.Prefix+prefix, append(g.Gases, gases...)...)
 }
