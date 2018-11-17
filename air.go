@@ -340,7 +340,7 @@ type Air struct {
 	i18n           *i18n
 }
 
-// Default is the default `Air`.
+// Default is the default instance of the `Air`.
 var Default = New()
 
 // New returns a new instance of the `Air`.
@@ -516,6 +516,16 @@ func (a *Air) FILE(path, filename string, gases ...Gas) {
 
 	a.GET(path, h, gases...)
 	a.HEAD(path, h, gases...)
+}
+
+// Group returns a new instance of the `Group` with the prefix and the optional
+// group-level gases.
+func (a *Air) Group(prefix string, gases ...Gas) *Group {
+	return &Group{
+		Air:    a,
+		Prefix: prefix,
+		Gases:  gases,
+	}
 }
 
 // Serve starts the server.
@@ -771,14 +781,14 @@ func (a *Air) Shutdown(timeout time.Duration) error {
 // Handler defines a function to serve requests.
 type Handler func(*Request, *Response) error
 
-// DefaultNotFoundHandler is a `Handler` that returns not found error.
+// DefaultNotFoundHandler is the default `Handler` that returns not found error.
 func DefaultNotFoundHandler(req *Request, res *Response) error {
 	res.Status = http.StatusNotFound
 	return errors.New(http.StatusText(res.Status))
 }
 
-// DefaultMethodNotAllowedHandler is a `Handler` that returns method not allowed
-// error.
+// DefaultMethodNotAllowedHandler is the default `Handler` that returns method
+// not allowed error.
 func DefaultMethodNotAllowedHandler(req *Request, res *Response) error {
 	res.Status = http.StatusMethodNotAllowed
 	return errors.New(http.StatusText(res.Status))

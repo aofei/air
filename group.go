@@ -9,57 +9,62 @@ type Group struct {
 	Gases  []Gas
 }
 
-// GET implements the `GET()`.
+// GET implements the `Air#GET()`.
 func (g *Group) GET(path string, h Handler, gases ...Gas) {
 	g.Air.GET(g.Prefix+path, h, append(g.Gases, gases...)...)
 }
 
-// HEAD implements the `HEAD()`.
+// HEAD implements the `Air#HEAD()`.
 func (g *Group) HEAD(path string, h Handler, gases ...Gas) {
 	g.Air.HEAD(g.Prefix+path, h, append(g.Gases, gases...)...)
 }
 
-// POST implements the `POST()`.
+// POST implements the `Air#POST()`.
 func (g *Group) POST(path string, h Handler, gases ...Gas) {
 	g.Air.POST(g.Prefix+path, h, append(g.Gases, gases...)...)
 }
 
-// PUT implements the `PUT()`.
+// PUT implements the `Air#PUT()`.
 func (g *Group) PUT(path string, h Handler, gases ...Gas) {
 	g.Air.PUT(g.Prefix+path, h, append(g.Gases, gases...)...)
 }
 
-// PATCH implements the `PATCH()`.
+// PATCH implements the `Air#PATCH()`.
 func (g *Group) PATCH(path string, h Handler, gases ...Gas) {
 	g.Air.PATCH(g.Prefix+path, h, append(g.Gases, gases...)...)
 }
 
-// DELETE implements the `DELETE()`.
+// DELETE implements the `Air#DELETE()`.
 func (g *Group) DELETE(path string, h Handler, gases ...Gas) {
 	g.Air.DELETE(g.Prefix+path, h, append(g.Gases, gases...)...)
 }
 
-// CONNECT implements the `CONNECT()`.
+// CONNECT implements the `Air#CONNECT()`.
 func (g *Group) CONNECT(path string, h Handler, gases ...Gas) {
 	g.Air.CONNECT(g.Prefix+path, h, append(g.Gases, gases...)...)
 }
 
-// OPTIONS implements the `OPTIONS()`.
+// OPTIONS implements the `Air#OPTIONS()`.
 func (g *Group) OPTIONS(path string, h Handler, gases ...Gas) {
 	g.Air.OPTIONS(g.Prefix+path, h, append(g.Gases, gases...)...)
 }
 
-// TRACE implements the `TRACE()`.
+// TRACE implements the `Air#TRACE()`.
 func (g *Group) TRACE(path string, h Handler, gases ...Gas) {
 	g.Air.TRACE(g.Prefix+path, h, append(g.Gases, gases...)...)
 }
 
-// STATIC implements the `STATIC()`.
+// STATIC implements the `Air#STATIC()`.
 func (g *Group) STATIC(prefix, root string, gases ...Gas) {
 	g.Air.STATIC(g.Prefix+prefix, root, append(g.Gases, gases...)...)
 }
 
-// FILE implements the `FILE()`.
+// FILE implements the `Air#FILE()`.
 func (g *Group) FILE(path, file string, gases ...Gas) {
 	g.Air.FILE(g.Prefix+path, file, append(g.Gases, gases...)...)
+}
+
+// Group implements the `Air#GROUP()`.
+func (g *Group) Group(prefix string, gases ...Gas) *Group {
+	return g.Air.Group(g.Prefix+prefix, append(g.Gases, gases...)...)
 }
