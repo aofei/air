@@ -1,7 +1,6 @@
 package air
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -17,149 +16,86 @@ type Request struct {
 	Scheme        string
 	Authority     string
 	Path          string
+	Header        http.Header
 	Body          io.Reader
 	ContentLength int64
 	Values        map[string]interface{}
 
-	request                *http.Request
-	response               *Response
-	clientAddress          string
-	parseClientAddressOnce *sync.Once
-	headers                []*Header
-	parseHeadersOnce       *sync.Once
-	cookies                []*Cookie
-	parseCookiesOnce       *sync.Once
-	params                 []*RequestParam
-	parseParamsOnce        *sync.Once
-	localizedString        func(string) string
+	hr              *http.Request
+	res             *Response
+	params          []*RequestParam
+	parseParamsOnce *sync.Once
+	localizedString func(string) string
+}
+
+// HTTPRequest returns the underlying `http.Request` of the r.
+//
+// ATTENTION: You should never call this method unless you know what you are
+// doing. And, be sure to call the `Request#SetHTTPRequest()` when you have
+// modified it.
+func (r *Request) HTTPRequest() *http.Request {
+	r.hr.Method = r.Method
+	r.hr.Host = r.Authority
+	r.hr.RequestURI = r.Path
+	r.hr.Body = r.Body.(io.ReadCloser)
+	r.hr.ContentLength = r.ContentLength
+	return r.hr
+}
+
+// SetHTTPRequest sets the r to the r's underlying `http.Request`.
+//
+// ATTENTION: You should never call this method unless you know what you are
+// doing.
+func (r *Request) SetHTTPRequest(hr *http.Request) {
+	r.Method = hr.Method
+	r.Scheme = "http"
+	if hr.TLS != nil {
+		r.Scheme = "https"
+	}
+
+	r.Authority = hr.Host
+	r.Path = hr.RequestURI
+	r.Body = hr.Body
+	r.ContentLength = hr.ContentLength
+	r.hr = hr
 }
 
 // RemoteAddress returns the last network address that sent the r.
 func (r *Request) RemoteAddress() string {
-	return r.request.RemoteAddr
+	return r.hr.RemoteAddr
 }
 
 // ClientAddress returns the original network address that sent the r.
 func (r *Request) ClientAddress() string {
-	r.parseClientAddressOnce.Do(r.parseClientAddress)
-	return r.clientAddress
-}
-
-// parseClientAddress parses the original network address that sent the r into
-// the `r.clientAddress`.
-func (r *Request) parseClientAddress() {
-	r.clientAddress = r.RemoteAddress()
-	if f := r.Header("forwarded").Value(); f != "" { // See RFC 7239
+	ca := r.RemoteAddress()
+	if f := r.Header.Get("Forwarded"); f != "" { // See RFC 7239
 		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
 			p := strings.TrimSpace(p)
 			if strings.HasPrefix(p, "for=") {
-				r.clientAddress = strings.TrimSuffix(
+				ca = strings.TrimSuffix(
 					strings.TrimPrefix(p[4:], "\"["),
 					"]\"",
 				)
 				break
 			}
 		}
-	} else if xff := r.Header("x-forwarded-for").Value(); xff != "" {
-		r.clientAddress = strings.TrimSpace(strings.Split(xff, ",")[0])
-	}
-}
-
-// Header returns the matched `Header` for the name case-insensitively. It
-// returns nil if not found.
-func (r *Request) Header(name string) *Header {
-	r.parseHeadersOnce.Do(r.parseHeaders)
-
-	name = strings.ToLower(name)
-	for _, h := range r.headers {
-		if strings.ToLower(h.Name) == name {
-			return h
-		}
+	} else if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		ca = strings.TrimSpace(strings.Split(xff, ",")[0])
 	}
 
-	return nil
+	return ca
 }
 
-// Headers returns all the `Header` in the r.
-func (r *Request) Headers() []*Header {
-	r.parseHeadersOnce.Do(r.parseHeaders)
-	return r.headers
-}
-
-// parseHeaders parses the headers sent with the r into the `r.headers`.
-func (r *Request) parseHeaders() {
-	r.headers = make([]*Header, 0, len(r.request.Header))
-	for n, vs := range r.request.Header {
-		r.headers = append(r.headers, &Header{
-			Name:   strings.ToLower(n),
-			Values: vs,
-		})
-	}
-}
-
-// Cookie returns the matched `Cookie` for the name. It returns nil if not
+// Cookie returns the matched `http.Cookie` for the name. It returns nil if not
 // found.
-func (r *Request) Cookie(name string) *Cookie {
-	r.parseCookiesOnce.Do(r.parseCookies)
-
-	for _, c := range r.cookies {
-		if c.Name == name {
-			return c
-		}
-	}
-
-	return nil
+func (r *Request) Cookie(name string) *http.Cookie {
+	c, _ := r.hr.Cookie(name)
+	return c
 }
 
-// Cookies returns all the `Cookie` in the r.
-func (r *Request) Cookies() []*Cookie {
-	r.parseCookiesOnce.Do(r.parseCookies)
-	return r.cookies
-}
-
-// parseCookies parses the cookies sent with the r into the `r.cookies`.
-func (r *Request) parseCookies() {
-	ch := r.Header("cookie")
-	if ch == nil {
-		return
-	}
-
-	r.cookies = make([]*Cookie, 0, len(ch.Values))
-	for _, c := range ch.Values {
-		ps := strings.Split(strings.TrimSpace(c), ";")
-		if len(ps) == 1 && ps[0] == "" {
-			continue
-		}
-
-		for i := 0; i < len(ps); i++ {
-			ps[i] = strings.TrimSpace(ps[i])
-			if len(ps[i]) == 0 {
-				continue
-			}
-
-			n, v := ps[i], ""
-			if i := strings.Index(n, "="); i >= 0 {
-				n, v = n[:i], n[i+1:]
-			}
-
-			if !validCookieName(n) {
-				continue
-			}
-
-			if len(v) > 1 && v[0] == '"' && v[len(v)-1] == '"' {
-				v = v[1 : len(v)-1]
-			}
-
-			if !validCookieValue(v) {
-				continue
-			}
-
-			r.cookies = append(r.cookies, &Cookie{
-				Name:  n,
-				Value: v,
-			})
-		}
-	}
+// Cookies returns all the `http.Cookie` in the r.
+func (r *Request) Cookies() []*http.Cookie {
+	return r.hr.Cookies()
 }
 
 // Param returns the matched `RequestParam` for the name. It returns nil if not
@@ -184,12 +120,12 @@ func (r *Request) Params() []*RequestParam {
 
 // parseParams parses the params sent with the r into the `r.params`.
 func (r *Request) parseParams() {
-	if r.request.Form == nil || r.request.MultipartForm == nil {
-		r.request.ParseMultipartForm(32 << 20)
+	if r.hr.Form == nil || r.hr.MultipartForm == nil {
+		r.hr.ParseMultipartForm(32 << 20)
 	}
 
 FormLoop:
-	for n, vs := range r.request.Form {
+	for n, vs := range r.hr.Form {
 		pvs := make([]*RequestParamValue, 0, len(vs))
 		for _, v := range vs {
 			pvs = append(pvs, &RequestParamValue{
@@ -210,9 +146,9 @@ FormLoop:
 		})
 	}
 
-	if r.request.MultipartForm != nil {
+	if r.hr.MultipartForm != nil {
 	MultipartFormValueLoop:
-		for n, vs := range r.request.MultipartForm.Value {
+		for n, vs := range r.hr.MultipartForm.Value {
 			pvs := make([]*RequestParamValue, 0, len(vs))
 			for _, v := range vs {
 				pvs = append(pvs, &RequestParamValue{
@@ -234,7 +170,7 @@ FormLoop:
 		}
 
 	MultipartFormFileLoop:
-		for n, vs := range r.request.MultipartForm.File {
+		for n, vs := range r.hr.MultipartForm.File {
 			pvs := make([]*RequestParamValue, 0, len(vs))
 			for _, v := range vs {
 				pvs = append(pvs, &RequestParamValue{
@@ -297,7 +233,7 @@ type RequestParamValue struct {
 	ui64 *uint64
 	f64  *float64
 	s    *string
-	f    *RequestParamFileValue
+	f    *multipart.FileHeader
 }
 
 // Bool returns a `bool` from the rpv's underlying value.
@@ -496,63 +432,16 @@ func (rpv *RequestParamValue) String() string {
 	return *rpv.s
 }
 
-// File returns a `RequestParamFileValue` from the rpv's underlying value.
-func (rpv *RequestParamValue) File() (*RequestParamFileValue, error) {
+// File returns a `multipart.FileHeader` from the rpv's underlying value.
+func (rpv *RequestParamValue) File() (*multipart.FileHeader, error) {
 	if rpv.f == nil {
 		fh, ok := rpv.i.(*multipart.FileHeader)
 		if !ok {
-			return nil, errors.New("not a request param file value")
+			return nil, http.ErrMissingFile
 		}
 
-		rpv.f = &RequestParamFileValue{
-			Filename:      fh.Filename,
-			Headers:       make([]*Header, 0, len(fh.Header)),
-			ContentLength: fh.Size,
-
-			fh: fh,
-		}
-
-		for n, vs := range fh.Header {
-			rpv.f.Headers = append(rpv.f.Headers, &Header{
-				Name:   strings.ToLower(n),
-				Values: vs,
-			})
-		}
+		rpv.f = fh
 	}
 
 	return rpv.f, nil
-}
-
-// RequestParamFileValue is an HTTP request param file value.
-type RequestParamFileValue struct {
-	Filename      string
-	Headers       []*Header
-	ContentLength int64
-
-	fh *multipart.FileHeader
-	f  multipart.File
-}
-
-// Read implements the `io.Reader`.
-func (v *RequestParamFileValue) Read(b []byte) (int, error) {
-	if v.f == nil {
-		var err error
-		if v.f, err = v.fh.Open(); err != nil {
-			return 0, err
-		}
-	}
-
-	return v.f.Read(b)
-}
-
-// Seek implements the `io.Seeker`.
-func (v *RequestParamFileValue) Seek(offset int64, whence int) (int64, error) {
-	if v.f == nil {
-		var err error
-		if v.f, err = v.fh.Open(); err != nil {
-			return 0, err
-		}
-	}
-
-	return v.f.Seek(offset, whence)
 }

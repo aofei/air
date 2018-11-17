@@ -3,6 +3,7 @@ package air
 import (
 	"errors"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -128,18 +129,18 @@ var ErrorHandler = func(err error, req *Request, res *Response) {
 		return
 	}
 
-	if res.Status < 400 {
-		res.Status = 500
+	if res.Status < http.StatusBadRequest {
+		res.Status = http.StatusInternalServerError
 	}
 
 	m := err.Error()
-	if res.Status == 500 && !DebugMode {
-		m = "internal server error"
+	if !DebugMode && res.Status == http.StatusInternalServerError {
+		m = http.StatusText(res.Status)
 	}
 
-	if req.Method == "GET" || req.Method == "HEAD" {
-		res.SetHeader("etag")
-		res.SetHeader("last-modified")
+	if req.Method == http.MethodGet || req.Method == http.MethodHead {
+		res.Header.Del("ETag")
+		res.Header.Del("Last-Modified")
 	}
 
 	res.WriteString(m)
@@ -292,55 +293,55 @@ func PANIC(msg string, extras ...map[string]interface{}) {
 // GET registers a new GET route for the path with the matching h in the router
 // with the optional route-level gases.
 func GET(path string, h Handler, gases ...Gas) {
-	theRouter.register("GET", path, h, gases...)
+	theRouter.register(http.MethodGet, path, h, gases...)
 }
 
 // HEAD registers a new HEAD route for the path with the matching h in the
 // router with the optional route-level gases.
 func HEAD(path string, h Handler, gases ...Gas) {
-	theRouter.register("HEAD", path, h, gases...)
+	theRouter.register(http.MethodHead, path, h, gases...)
 }
 
 // POST registers a new POST route for the path with the matching h in the
 // router with the optional route-level gases.
 func POST(path string, h Handler, gases ...Gas) {
-	theRouter.register("POST", path, h, gases...)
+	theRouter.register(http.MethodPost, path, h, gases...)
 }
 
 // PUT registers a new PUT route for the path with the matching h in the router
 // with the optional route-level gases.
 func PUT(path string, h Handler, gases ...Gas) {
-	theRouter.register("PUT", path, h, gases...)
+	theRouter.register(http.MethodPut, path, h, gases...)
 }
 
 // PATCH registers a new PATCH route for the path with the matching h in the
 // router with the optional route-level gases.
 func PATCH(path string, h Handler, gases ...Gas) {
-	theRouter.register("PATCH", path, h, gases...)
+	theRouter.register(http.MethodPatch, path, h, gases...)
 }
 
 // DELETE registers a new DELETE route for the path with the matching h in the
 // router with the optional route-level gases.
 func DELETE(path string, h Handler, gases ...Gas) {
-	theRouter.register("DELETE", path, h, gases...)
+	theRouter.register(http.MethodDelete, path, h, gases...)
 }
 
 // CONNECT registers a new CONNECT route for the path with the matching h in the
 // router with the optional route-level gases.
 func CONNECT(path string, h Handler, gases ...Gas) {
-	theRouter.register("CONNECT", path, h, gases...)
+	theRouter.register(http.MethodConnect, path, h, gases...)
 }
 
 // OPTIONS registers a new OPTIONS route for the path with the matching h in the
 // router with the optional route-level gases.
 func OPTIONS(path string, h Handler, gases ...Gas) {
-	theRouter.register("OPTIONS", path, h, gases...)
+	theRouter.register(http.MethodOptions, path, h, gases...)
 }
 
 // TRACE registers a new TRACE route for the path with the matching h in the
 // router with the optional route-level gases.
 func TRACE(path string, h Handler, gases ...Gas) {
-	theRouter.register("TRACE", path, h, gases...)
+	theRouter.register(http.MethodTrace, path, h, gases...)
 }
 
 // STATIC registers a new route with the path prefix to serve the static files
@@ -630,18 +631,41 @@ type Handler func(*Request, *Response) error
 
 // NotFoundHandler is a `Handler` that returns not found error.
 var NotFoundHandler = func(req *Request, res *Response) error {
-	res.Status = 404
-	return errors.New("not found")
+	res.Status = http.StatusNotFound
+	return errors.New(http.StatusText(res.Status))
 }
 
 // MethodNotAllowedHandler is a `Handler` that returns method not allowed error.
 var MethodNotAllowedHandler = func(req *Request, res *Response) error {
-	res.Status = 405
-	return errors.New("method not allowed")
+	res.Status = http.StatusMethodNotAllowed
+	return errors.New(http.StatusText(res.Status))
 }
 
 // Gas defines a function to process gases.
 type Gas func(Handler) Handler
+
+// WrapHTTPMiddleware provides a convenient way to wrap an `http.Handler`
+// middleware into a `Gas`.
+func WrapHTTPMiddleware(m func(http.Handler) http.Handler) Gas {
+	return func(next Handler) Handler {
+		return func(req *Request, res *Response) error {
+			var err error
+			m(http.HandlerFunc(func(
+				rw http.ResponseWriter,
+				r *http.Request,
+			) {
+				req.SetHTTPRequest(r)
+				res.SetHTTPResponseWriter(rw)
+				err = next(req, res)
+			})).ServeHTTP(
+				res.HTTPResponseWriter(),
+				req.HTTPRequest(),
+			)
+
+			return err
+		}
+	}
+}
 
 // errorLogWriter is an error log writer.
 type errorLogWriter struct{}

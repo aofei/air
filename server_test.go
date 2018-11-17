@@ -185,13 +185,13 @@ func TestServerSeveHTTP(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	req := httptest.NewRequest("GET", "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	theServer.ServeHTTP(rec, req)
 
 	assert.Equal(t, "Pregas\nGas\nRoute gas\nHandler", buf.String())
-	assert.Equal(t, 500, rec.Code)
-	assert.Equal(t, "internal server error", rec.Body.String())
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Equal(t, "Internal Server Error", rec.Body.String())
 
 	theServer.server = &http.Server{}
 

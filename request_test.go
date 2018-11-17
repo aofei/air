@@ -1,6 +1,7 @@
 package air
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
@@ -10,10 +11,9 @@ import (
 
 func TestRequest(t *testing.T) {
 	r := &Request{
-		Method:          "GET",
-		request:         httptest.NewRequest("GET", "/?Foo=Bar", nil),
 		parseParamsOnce: &sync.Once{},
 	}
+	r.SetHTTPRequest(httptest.NewRequest(http.MethodGet, "/?Foo=Bar", nil))
 
 	var s struct {
 		Foo string

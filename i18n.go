@@ -158,13 +158,8 @@ func (i *i18n) localize(r *Request) {
 		}
 	})
 
-	als := []string{}
-	if alh := r.Header("accept-language"); alh != nil {
-		als = alh.Values
-	}
-
-	mt, _ := language.MatchStrings(i.matcher, als...)
-	l := i.locales[mt.String()]
+	t, _ := language.MatchStrings(i.matcher, r.Header["Accept-Language"]...)
+	l := i.locales[t.String()]
 
 	r.localizedString = func(key string) string {
 		if v, ok := l[key]; ok {

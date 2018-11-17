@@ -60,7 +60,14 @@ func (s *server) serve() error {
 				host = r.Host
 			}
 
-			http.Redirect(rw, r, "https://"+host+r.RequestURI, 301)
+			rw.Header().Set("Server", "Air")
+
+			http.Redirect(
+				rw,
+				r,
+				"https://"+host+r.RequestURI,
+				http.StatusMovedPermanently,
+			)
 		}),
 	}
 	defer h2hss.Close() // Close anyway, even if it doesn't start
@@ -139,11 +146,13 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				scheme = "https"
 			}
 
+			rw.Header().Set("Server", "Air")
+
 			http.Redirect(
 				rw,
 				r,
 				scheme+"://"+HostWhitelist[0]+r.RequestURI,
-				301,
+				http.StatusMovedPermanently,
 			)
 
 			return
@@ -153,37 +162,29 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Make request.
 
 	req := &Request{
-		Method:        r.Method,
-		Scheme:        "http",
-		Authority:     r.Host,
-		Path:          r.RequestURI,
-		Body:          r.Body,
-		ContentLength: r.ContentLength,
-		Values:        map[string]interface{}{},
+		Values: map[string]interface{}{},
 
-		request:                r,
-		parseClientAddressOnce: &sync.Once{},
-		parseHeadersOnce:       &sync.Once{},
-		parseCookiesOnce:       &sync.Once{},
-		parseParamsOnce:        &sync.Once{},
+		parseParamsOnce: &sync.Once{},
 	}
-	if r.TLS != nil {
-		req.Scheme = "https"
-	}
+	req.SetHTTPRequest(r)
 
 	// Make response.
 
 	res := &Response{
-		Status: 200,
+		Status: http.StatusOK,
 
-		request: req,
-		writer:  rw,
+		req:  req,
+		ohrw: rw,
 	}
+	res.SetHTTPResponseWriter(&responseWriter{
+		r: res,
+		w: rw,
+	})
 	res.Body = &responseBody{
-		response: res,
+		r: res,
 	}
 
-	req.response = res
+	req.res = res
 
 	// Chain gases.
 
@@ -216,15 +217,5 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	if err := h(req, res); err != nil {
 		ErrorHandler(err, req, res)
-	}
-
-	// Close opened request param file values.
-
-	for _, p := range req.params {
-		for _, pv := range p.Values {
-			if pv.f != nil && pv.f.f != nil {
-				pv.f.f.Close()
-			}
-		}
 	}
 }

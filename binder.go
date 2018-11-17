@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"mime"
+	"net/http"
 	"reflect"
 
 	"github.com/BurntSushi/toml"
@@ -21,13 +22,13 @@ var theBinder = &binder{}
 
 // bind binds the r into the v.
 func (b *binder) bind(v interface{}, r *Request) error {
-	if r.Method == "GET" {
+	if r.Method == http.MethodGet {
 		return b.bindParams(v, r.Params())
 	} else if r.Body == nil {
 		return errors.New("request body cannot be empty")
 	}
 
-	mt, _, err := mime.ParseMediaType(r.Header("content-type").Value())
+	mt, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
 		return err
 	}
@@ -49,8 +50,8 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	case "application/x-www-form-urlencoded", "multipart/form-data":
 		err = b.bindParams(v, r.Params())
 	default:
-		r.response.Status = 415
-		return errors.New("unsupported media type")
+		r.res.Status = http.StatusUnsupportedMediaType
+		return errors.New(http.StatusText(r.res.Status))
 	}
 
 	if err != nil {

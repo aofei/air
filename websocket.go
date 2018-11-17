@@ -10,7 +10,7 @@ import (
 type WebSocket struct {
 	TextHandler            func(text string) error
 	BinaryHandler          func(b []byte) error
-	ConnectionCloseHandler func(statusCode int, reason string) error
+	ConnectionCloseHandler func(status int, reason string) error
 	PingHandler            func(appData string) error
 	PongHandler            func(appData string) error
 	ErrorHandler           func(err error)
@@ -83,11 +83,11 @@ func (ws *WebSocket) WriteBinary(b []byte) error {
 }
 
 // WriteConnectionClose writes a connection close to the remote peer of the ws
-// with the statusCode and the reason.
-func (ws *WebSocket) WriteConnectionClose(statusCode int, reason string) error {
+// with the status and the reason.
+func (ws *WebSocket) WriteConnectionClose(status int, reason string) error {
 	return ws.conn.WriteMessage(
 		websocket.CloseMessage,
-		websocket.FormatCloseMessage(statusCode, reason),
+		websocket.FormatCloseMessage(status, reason),
 	)
 }
 

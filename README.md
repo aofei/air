@@ -13,6 +13,49 @@ to tell people that they are the best. Maybe they are, maybe not. Air does not
 intend to follow the crowd. It can only guarantee you one thing: **it can serve
 properly.**
 
+## FAQ
+
+**Q: Why named Air?**
+
+A: "A" for "An", "I" for "Ideally" and "R" for "Refined". So, Air.
+
+**Q: Why based on the `net/http`?**
+
+A: In fact, I've tried to implement a full-featured HTTP server (just like the
+awesome [valyala/fasthttp](https://github.com/valyala/fasthttp)). But when I
+finished about half of the work, I suddenly realized: What about stability? What
+about those awesome middleware outside? And, seriously, what am I doing?
+
+**Q: Why not just use the `net/http`?**
+
+A: Yeah, we can of course use the `net/http` directly, after all, it can meet
+many requirements. But, ummm... It's really too stable, isn't it? I mean, to
+ensure Go's backward compatibility (which is extremely good), we can't easily
+add some handy features to the `net/http`. And, the `http.Request` not only
+represents the request received by the server, but also represents the request
+made by the client. In some cases it can be confusing. So why not just use the
+`net/http` as the underlying server, and then implement a refined web framework
+that are only used for the server-side on top of it?
+
+**Q: Do you know we already got the
+[gin-gonic/gin](https://github.com/gin-gonic/gin) and the
+[labstack/echo](https://github.com/labstack/echo)?**
+
+A: Of course, I knew it when I started Go. And, I love both of them! But, why
+not try some new flavors? Are you sure you prefer them instead of Air? Don't
+even give Air a try? Wow... Well, maybe Air is not for you. After all, it is for
+ people who love to try new things. Relax and continue to maintain the status
+quo, you will be fine.
+
+**Q: What about the fantastic
+[Gorilla web toolkit](https://github.com/gorilla)?**
+
+A: Just call the `air.WrapHTTPMiddleware()`.
+
+**Q: Is Air good enough?**
+
+A: Far from enough. But it is already working.
+
 ## Features
 
 * Singleton
@@ -152,6 +195,9 @@ it within this framework simply.
 A gas is a function chained in the HTTP request-response cycle with access to
 `air.Request` and `air.Response` which it uses to perform a specific action, for
 example, logging every request or recovering from panics.
+
+If you've got a good HTTP middleware, you can simply wrap it into a gas by
+calling the `air.WrapHTTPMiddleware()`.
 
 If you are looking for some useful gases, simply visit
 [here](https://github.com/air-gases).
