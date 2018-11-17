@@ -16,18 +16,20 @@ import (
 // coffer is a binary asset file manager that uses runtime memory to reduce disk
 // I/O pressure.
 type coffer struct {
+	a       *Air
 	assets  map[string]*asset
 	watcher *fsnotify.Watcher
 }
 
-// theCoffer is the singleton of the `coffer`.
-var theCoffer = &coffer{
-	assets: map[string]*asset{},
-}
+// newCoffer returns a new instance of the `coffer` with the a.
+func newCoffer(a *Air) *coffer {
+	c := &coffer{
+		a:      a,
+		assets: map[string]*asset{},
+	}
 
-func init() {
 	var err error
-	if theCoffer.watcher, err = fsnotify.NewWatcher(); err != nil {
+	if c.watcher, err = fsnotify.NewWatcher(); err != nil {
 		panic(fmt.Errorf(
 			"air: failed to build coffer watcher: %v",
 			err,
@@ -37,9 +39,9 @@ func init() {
 	go func() {
 		for {
 			select {
-			case e := <-theCoffer.watcher.Events:
-				if CofferEnabled {
-					DEBUG(
+			case e := <-c.watcher.Events:
+				if a.CofferEnabled {
+					a.DEBUG(
 						"air: asset file event occurs",
 						map[string]interface{}{
 							"file":  e.Name,
@@ -48,10 +50,10 @@ func init() {
 					)
 				}
 
-				delete(theCoffer.assets, e.Name)
-			case err := <-theCoffer.watcher.Errors:
-				if CofferEnabled {
-					ERROR(
+				delete(c.assets, e.Name)
+			case err := <-c.watcher.Errors:
+				if a.CofferEnabled {
+					a.ERROR(
 						"air: coffer watcher error",
 						map[string]interface{}{
 							"error": err.Error(),
@@ -61,24 +63,26 @@ func init() {
 			}
 		}
 	}()
+
+	return c
 }
 
 // asset returns an `asset` from the c for the name.
 func (c *coffer) asset(name string) (*asset, error) {
-	if !CofferEnabled {
+	if !c.a.CofferEnabled {
 		return nil, nil
 	}
 
 	if a, ok := c.assets[name]; ok {
 		return a, nil
-	} else if ar, err := filepath.Abs(AssetRoot); err != nil {
+	} else if ar, err := filepath.Abs(c.a.AssetRoot); err != nil {
 		return nil, err
 	} else if !strings.HasPrefix(name, ar) {
 		return nil, nil
 	}
 
 	ext := filepath.Ext(name)
-	if !stringsContainsCIly(AssetExts, ext) {
+	if !stringsContainsCIly(c.a.AssetExts, ext) {
 		return nil, nil
 	}
 
@@ -94,7 +98,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 
 	mt := mime.TypeByExtension(ext)
 	if mt != "" {
-		if b, err = theMinifier.minify(mt, b); err != nil {
+		if b, err = c.a.minifier.minify(mt, b); err != nil {
 			return nil, err
 		}
 	}

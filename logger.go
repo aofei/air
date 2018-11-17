@@ -10,12 +10,67 @@ import (
 
 // logger is an active logging object that generates lines of output.
 type logger struct {
+	a     *Air
 	mutex *sync.Mutex
 }
 
-// theLogger is the singleton of the `logger`.
-var theLogger = &logger{
-	mutex: &sync.Mutex{},
+// newLogger returns a new instance of the `logger` with the a.
+func newLogger(a *Air) *logger {
+	return &logger{
+		a:     a,
+		mutex: &sync.Mutex{},
+	}
+}
+
+// log logs the m at the ll with the optional es.
+func (l *logger) log(ll LoggerLevel, m string, es ...map[string]interface{}) {
+	if !l.a.DebugMode && ll < l.a.LoggerLowestLevel {
+		return
+	}
+
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	fs := map[string]interface{}{
+		"app_name": l.a.AppName,
+		"time":     time.Now().UnixNano(),
+		"level":    ll.String(),
+		"message":  m,
+	}
+	if l.a.DebugMode {
+		_, fn, l, _ := runtime.Caller(2)
+		fs["caller"] = fmt.Sprintf("%s:%d", fn, l)
+	}
+
+	for _, e := range es {
+		for k, v := range e {
+			fs[k] = v
+		}
+	}
+
+	var (
+		b   []byte
+		err error
+	)
+
+	if l.a.DebugMode {
+		b, err = json.MarshalIndent(fs, "", "\t")
+	} else {
+		b, err = json.Marshal(fs)
+	}
+
+	if err != nil {
+		if l.a.DebugMode {
+			b = []byte(fmt.Sprintf(
+				"{\n\t\"logger_error\": \"%v\"\n}",
+				err,
+			))
+		} else {
+			b = []byte(fmt.Sprintf(`{"logger_error":"%v"}`, err))
+		}
+	}
+
+	l.a.LoggerOutput.Write(append(b, '\n'))
 }
 
 // LoggerLevel is the level of the logger.
@@ -66,55 +121,4 @@ func (ll LoggerLevel) String() string {
 	}
 
 	return ""
-}
-
-// log logs the m at the ll with the optional es.
-func (l *logger) log(ll LoggerLevel, m string, es ...map[string]interface{}) {
-	if !DebugMode && ll < LoggerLowestLevel {
-		return
-	}
-
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-
-	fs := map[string]interface{}{
-		"app_name": AppName,
-		"time":     time.Now().UnixNano(),
-		"level":    ll.String(),
-		"message":  m,
-	}
-	if DebugMode {
-		_, fn, l, _ := runtime.Caller(2)
-		fs["caller"] = fmt.Sprintf("%s:%d", fn, l)
-	}
-
-	for _, e := range es {
-		for k, v := range e {
-			fs[k] = v
-		}
-	}
-
-	var (
-		b   []byte
-		err error
-	)
-
-	if DebugMode {
-		b, err = json.MarshalIndent(fs, "", "\t")
-	} else {
-		b, err = json.Marshal(fs)
-	}
-
-	if err != nil {
-		if DebugMode {
-			b = []byte(fmt.Sprintf(
-				"{\n\t\"logger_error\": \"%v\"\n}",
-				err,
-			))
-		} else {
-			b = []byte(fmt.Sprintf(`{"logger_error":"%v"}`, err))
-		}
-	}
-
-	LoggerOutput.Write(append(b, '\n'))
 }

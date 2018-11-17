@@ -12,6 +12,7 @@ import (
 
 // Request is an HTTP request.
 type Request struct {
+	Air           *Air
 	Method        string
 	Scheme        string
 	Authority     string
@@ -195,7 +196,7 @@ FormLoop:
 
 // Bind binds the r into the v.
 func (r *Request) Bind(v interface{}) error {
-	return theBinder.bind(v, r)
+	return r.Air.binder.bind(v, r)
 }
 
 // LocalizedString returns localized string for the key.
@@ -203,7 +204,7 @@ func (r *Request) Bind(v interface{}) error {
 // It only works if the `I18nEnabled` is true.
 func (r *Request) LocalizedString(key string) string {
 	if r.localizedString == nil {
-		theI18n.localize(r)
+		r.Air.i18n.localize(r)
 	}
 
 	return r.localizedString(key)

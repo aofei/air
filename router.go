@@ -7,17 +7,21 @@ import (
 
 // router is a registry of all registered routes.
 type router struct {
+	a         *Air
 	tree      *node
 	maxParams int
 	routes    map[string]bool
 }
 
-// theRouter is the singleton of the `router`.
-var theRouter = &router{
-	tree: &node{
-		handlers: map[string]Handler{},
-	},
-	routes: map[string]bool{},
+// newRouter returns a new instance of the `router` with the a.
+func newRouter(a *Air) *router {
+	return &router{
+		a: a,
+		tree: &node{
+			handlers: map[string]Handler{},
+		},
+		routes: map[string]bool{},
+	}
 }
 
 // register registers a new route for the method and the path with the matching
@@ -115,7 +119,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 
 // insert inserts a new route into the `tree` of the r.
 func (r *router) insert(
-	method,
+	method string,
 	path string,
 	h Handler,
 	nk nodeKind,
@@ -346,7 +350,7 @@ func (r *router) route(req *Request) Handler {
 			}
 		}
 
-		return NotFoundHandler
+		return r.a.NotFoundHandler
 	}
 
 	if handler := cn.handlers[req.Method]; handler != nil {
@@ -380,11 +384,65 @@ func (r *router) route(req *Request) Handler {
 
 		return handler
 	} else if len(cn.handlers) != 0 {
-		return MethodNotAllowedHandler
+		return r.a.MethodNotAllowedHandler
 	}
 
-	return NotFoundHandler
+	return r.a.NotFoundHandler
 }
+
+// node is the node of the radix tree.
+type node struct {
+	kind       nodeKind
+	label      byte
+	prefix     string
+	handlers   map[string]Handler
+	parent     *node
+	children   []*node
+	paramNames []string
+}
+
+// child returns a child `node` of the n by the label and the kind.
+func (n *node) child(label byte, kind nodeKind) *node {
+	for _, c := range n.children {
+		if c.label == label && c.kind == kind {
+			return c
+		}
+	}
+
+	return nil
+}
+
+// childByLabel returns a child `node` of the n by the l.
+func (n *node) childByLabel(l byte) *node {
+	for _, c := range n.children {
+		if c.label == l {
+			return c
+		}
+	}
+
+	return nil
+}
+
+// childByKind returns a child `node` of the n by the k.
+func (n *node) childByKind(k nodeKind) *node {
+	for _, c := range n.children {
+		if c.kind == k {
+			return c
+		}
+	}
+
+	return nil
+}
+
+// nodeKind is a kind of the `node`.
+type nodeKind uint8
+
+// the node kinds.
+const (
+	static nodeKind = iota
+	param
+	any
+)
 
 // hasLastSlash reports whether the s has the last '/'.
 func hasLastSlash(s string) bool {
@@ -502,58 +560,4 @@ func unhex(c byte) byte {
 	}
 
 	return 0
-}
-
-// node is the node of the radix tree.
-type node struct {
-	kind       nodeKind
-	label      byte
-	prefix     string
-	handlers   map[string]Handler
-	parent     *node
-	children   []*node
-	paramNames []string
-}
-
-// nodeKind is a kind of the `node`.
-type nodeKind uint8
-
-// the node kinds.
-const (
-	static nodeKind = iota
-	param
-	any
-)
-
-// child returns a child `node` of the n by the label and the kind.
-func (n *node) child(label byte, kind nodeKind) *node {
-	for _, c := range n.children {
-		if c.label == label && c.kind == kind {
-			return c
-		}
-	}
-
-	return nil
-}
-
-// childByLabel returns a child `node` of the n by the l.
-func (n *node) childByLabel(l byte) *node {
-	for _, c := range n.children {
-		if c.label == l {
-			return c
-		}
-	}
-
-	return nil
-}
-
-// childByKind returns a child `node` of the n by the k.
-func (n *node) childByKind(k nodeKind) *node {
-	for _, c := range n.children {
-		if c.kind == k {
-			return c
-		}
-	}
-
-	return nil
 }

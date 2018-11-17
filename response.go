@@ -26,6 +26,7 @@ import (
 
 // Response is an HTTP response.
 type Response struct {
+	Air           *Air
 	Status        int
 	Header        http.Header
 	Body          io.Writer
@@ -79,7 +80,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 func (r *Response) WriteBlob(b []byte) error {
 	if ct := r.Header.Get("Content-Type"); ct != "" {
 		var err error
-		if b, err = theMinifier.minify(ct, b); err != nil {
+		if b, err = r.Air.minifier.minify(ct, b); err != nil {
 			return err
 		}
 	}
@@ -100,7 +101,7 @@ func (r *Response) WriteJSON(v interface{}) error {
 		err error
 	)
 
-	if DebugMode {
+	if r.Air.DebugMode {
 		b, err = json.MarshalIndent(v, "", "\t")
 	} else {
 		b, err = json.Marshal(v)
@@ -122,7 +123,7 @@ func (r *Response) WriteXML(v interface{}) error {
 		err error
 	)
 
-	if DebugMode {
+	if r.Air.DebugMode {
 		b, err = xml.MarshalIndent(v, "", "\t")
 	} else {
 		b, err = xml.Marshal(v)
@@ -176,7 +177,7 @@ func (r *Response) WriteTOML(v interface{}) error {
 
 // WriteHTML responds to the client with the "text/html" content h.
 func (r *Response) WriteHTML(h string) error {
-	if AutoPushEnabled && r.req.HTTPRequest().ProtoMajor == 2 {
+	if r.Air.AutoPushEnabled && r.req.HTTPRequest().ProtoMajor == 2 {
 		tree, err := html.Parse(strings.NewReader(h))
 		if err != nil {
 			return err
@@ -229,7 +230,7 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	for _, t := range templates {
 		m["InheritedHTML"] = template.HTML(buf.String())
 		buf.Reset()
-		err := theRenderer.render(&buf, t, m, r.req.LocalizedString)
+		err := r.Air.renderer.render(&buf, t, m, r.req.LocalizedString)
 		if err != nil {
 			return err
 		}
@@ -267,7 +268,8 @@ func (r *Response) WriteFile(filename string) error {
 		et []byte
 		mt time.Time
 	)
-	if a, err := theCoffer.asset(filename); err != nil {
+
+	if a, err := r.Air.coffer.asset(filename); err != nil {
 		return err
 	} else if a != nil {
 		c = bytes.NewReader(a.content)
@@ -338,7 +340,7 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 	r.Written = true
 
 	wsu := &websocket.Upgrader{
-		HandshakeTimeout: WebSocketHandshakeTimeout,
+		HandshakeTimeout: r.Air.WebSocketHandshakeTimeout,
 		Error: func(
 			_ http.ResponseWriter,
 			_ *http.Request,
@@ -352,8 +354,8 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 			return true
 		},
 	}
-	if len(WebSocketSubprotocols) > 0 {
-		wsu.Subprotocols = WebSocketSubprotocols
+	if len(r.Air.WebSocketSubprotocols) > 0 {
+		wsu.Subprotocols = r.Air.WebSocketSubprotocols
 	}
 
 	conn, err := wsu.Upgrade(r.ohrw, r.req.HTTPRequest(), r.Header)
@@ -488,9 +490,9 @@ func (rw *responseWriter) WriteHeader(status int) {
 	}
 
 	h := rw.w.Header()
-	if !DebugMode &&
-		HTTPSEnforced &&
-		theServer.server.TLSConfig != nil &&
+	if !rw.r.Air.DebugMode &&
+		rw.r.Air.HTTPSEnforced &&
+		rw.r.Air.server.server.TLSConfig != nil &&
 		h.Get("Strict-Transport-Security") == "" {
 		h.Set("Strict-Transport-Security", "max-age=31536000")
 	}

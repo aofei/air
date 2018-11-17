@@ -15,10 +15,16 @@ import (
 )
 
 // binder is a binder that binds request based on the MIME types.
-type binder struct{}
+type binder struct {
+	a *Air
+}
 
-// theBinder is the singleton of the `binder`.
-var theBinder = &binder{}
+// newBinder returns a new instance of the `binder` with the a.
+func newBinder(a *Air) *binder {
+	return &binder{
+		a: a,
+	}
+}
 
 // bind binds the r into the v.
 func (b *binder) bind(v interface{}, r *Request) error {

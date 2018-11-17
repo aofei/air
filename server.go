@@ -18,27 +18,31 @@ import (
 
 // server is an HTTP server.
 type server struct {
+	a      *Air
 	server *http.Server
 }
 
-// theServer is the singleton of the `server`.
-var theServer = &server{
-	server: &http.Server{},
+// newServer returns a new instance of the `server` with the a.
+func newServer(a *Air) *server {
+	return &server{
+		a:      a,
+		server: &http.Server{},
+	}
 }
 
 // serve starts the s.
 func (s *server) serve() error {
-	s.server.Addr = Address
+	s.server.Addr = s.a.Address
 	s.server.Handler = h2c.NewHandler(s, &http2.Server{})
-	s.server.ReadTimeout = ReadTimeout
-	s.server.ReadHeaderTimeout = ReadHeaderTimeout
-	s.server.WriteTimeout = WriteTimeout
-	s.server.IdleTimeout = IdleTimeout
-	s.server.MaxHeaderBytes = MaxHeaderBytes
-	s.server.ErrorLog = log.New(&errorLogWriter{}, "air: ", 0)
+	s.server.ReadTimeout = s.a.ReadTimeout
+	s.server.ReadHeaderTimeout = s.a.ReadHeaderTimeout
+	s.server.WriteTimeout = s.a.WriteTimeout
+	s.server.IdleTimeout = s.a.IdleTimeout
+	s.server.MaxHeaderBytes = s.a.MaxHeaderBytes
+	s.server.ErrorLog = log.New(s.a.errorLogWriter, "air: ", 0)
 
-	if DebugMode {
-		DEBUG("air: serving in debug mode")
+	if s.a.DebugMode {
+		s.a.DEBUG("air: serving in debug mode")
 	}
 
 	host := s.server.Addr
@@ -72,23 +76,26 @@ func (s *server) serve() error {
 	}
 	defer h2hss.Close() // Close anyway, even if it doesn't start
 
-	if TLSCertFile != "" && TLSKeyFile != "" {
+	if s.a.TLSCertFile != "" && s.a.TLSKeyFile != "" {
 		s.server.TLSConfig = &tls.Config{}
-		if HTTPSEnforced {
+		if s.a.HTTPSEnforced {
 			go h2hss.ListenAndServe()
 		}
 
-		return s.server.ListenAndServeTLS(TLSCertFile, TLSKeyFile)
-	} else if DebugMode || !ACMEEnabled {
+		return s.server.ListenAndServeTLS(
+			s.a.TLSCertFile,
+			s.a.TLSKeyFile,
+		)
+	} else if s.a.DebugMode || !s.a.ACMEEnabled {
 		return s.server.ListenAndServe()
 	}
 
 	acm := autocert.Manager{
 		Prompt: autocert.AcceptTOS,
-		Cache:  autocert.DirCache(ACMECertRoot),
+		Cache:  autocert.DirCache(s.a.ACMECertRoot),
 		HostPolicy: func(_ context.Context, h string) error {
-			if len(HostWhitelist) == 0 ||
-				stringsContainsCIly(HostWhitelist, h) {
+			if len(s.a.HostWhitelist) == 0 ||
+				stringsContainsCIly(s.a.HostWhitelist, h) {
 				return nil
 			}
 
@@ -98,7 +105,7 @@ func (s *server) serve() error {
 				h,
 			)
 		},
-		Email: MaintainerEmail,
+		Email: s.a.MaintainerEmail,
 	}
 
 	s.server.Addr = host + ":https"
@@ -133,14 +140,14 @@ func (s *server) shutdown(timeout time.Duration) error {
 func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Check host.
 
-	if !DebugMode && len(HostWhitelist) > 0 {
+	if !s.a.DebugMode && len(s.a.HostWhitelist) > 0 {
 		host, _, err := net.SplitHostPort(r.Host)
 		if err != nil {
 			host = r.Host
 		}
 
 		// See RFC 3986, section 3.2.2.
-		if !stringsContainsCIly(HostWhitelist, host) {
+		if !stringsContainsCIly(s.a.HostWhitelist, host) {
 			scheme := "http"
 			if r.TLS != nil {
 				scheme = "https"
@@ -151,7 +158,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			http.Redirect(
 				rw,
 				r,
-				scheme+"://"+HostWhitelist[0]+r.RequestURI,
+				scheme+"://"+s.a.HostWhitelist[0]+r.RequestURI,
 				http.StatusMovedPermanently,
 			)
 
@@ -189,7 +196,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Chain gases.
 
 	h := func(req *Request, res *Response) error {
-		rh := theRouter.route(req)
+		rh := s.a.router.route(req)
 		h := func(req *Request, res *Response) error {
 			if err := rh(req, res); err != nil {
 				return err
@@ -200,8 +207,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
-		for i := len(Gases) - 1; i >= 0; i-- {
-			h = Gases[i](h)
+		for i := len(s.a.Gases) - 1; i >= 0; i-- {
+			h = s.a.Gases[i](h)
 		}
 
 		return h(req, res)
@@ -209,13 +216,13 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// Chain pregases.
 
-	for i := len(Pregases) - 1; i >= 0; i-- {
-		h = Pregases[i](h)
+	for i := len(s.a.Pregases) - 1; i >= 0; i-- {
+		h = s.a.Pregases[i](h)
 	}
 
 	// Execute chain.
 
 	if err := h(req, res); err != nil {
-		ErrorHandler(err, req, res)
+		s.a.ErrorHandler(err, req, res)
 	}
 }

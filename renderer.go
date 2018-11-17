@@ -15,19 +15,21 @@ import (
 
 // renderer is a renderer for rendering HTML templates.
 type renderer struct {
+	a        *Air
 	template *template.Template
 	watcher  *fsnotify.Watcher
 	once     *sync.Once
 }
 
-// theRenderer is the singleton of the `renderer`.
-var theRenderer = &renderer{
-	once: &sync.Once{},
-}
+// newRenderer returns a new instance of the `renderer` with the a.
+func newRenderer(a *Air) *renderer {
+	r := &renderer{
+		a:    a,
+		once: &sync.Once{},
+	}
 
-func init() {
 	var err error
-	if theRenderer.watcher, err = fsnotify.NewWatcher(); err != nil {
+	if r.watcher, err = fsnotify.NewWatcher(); err != nil {
 		panic(fmt.Errorf(
 			"air: failed to build renderer watcher: %v",
 			err,
@@ -37,17 +39,17 @@ func init() {
 	go func() {
 		for {
 			select {
-			case e := <-theRenderer.watcher.Events:
-				DEBUG(
+			case e := <-r.watcher.Events:
+				a.DEBUG(
 					"air: template file event occurs",
 					map[string]interface{}{
 						"file":  e.Name,
 						"event": e.Op.String(),
 					},
 				)
-				theRenderer.once = &sync.Once{}
-			case err := <-theRenderer.watcher.Errors:
-				ERROR(
+				r.once = &sync.Once{}
+			case err := <-r.watcher.Errors:
+				a.ERROR(
 					"air: renderer watcher error",
 					map[string]interface{}{
 						"error": err.Error(),
@@ -56,6 +58,8 @@ func init() {
 			}
 		}
 	}()
+
+	return r
 }
 
 // render renders the v into the w for the HTML template name.
@@ -66,9 +70,9 @@ func (r *renderer) render(
 	locstr func(string) string,
 ) error {
 	r.once.Do(func() {
-		tr, err := filepath.Abs(TemplateRoot)
+		tr, err := filepath.Abs(r.a.TemplateRoot)
 		if err != nil {
-			ERROR(
+			r.a.ERROR(
 				"air: failed to get absolute representation "+
 					"of template root",
 				map[string]interface{}{
@@ -81,13 +85,13 @@ func (r *renderer) render(
 
 		r.template = template.
 			New("template").
-			Delims(TemplateLeftDelim, TemplateRightDelim).
+			Delims(r.a.TemplateLeftDelim, r.a.TemplateRightDelim).
 			Funcs(template.FuncMap{
 				"locstr": func(key string) string {
 					return key
 				},
 			}).
-			Funcs(TemplateFuncMap)
+			Funcs(r.a.TemplateFuncMap)
 		if err := filepath.Walk(
 			tr,
 			func(p string, fi os.FileInfo, err error) error {
@@ -95,7 +99,7 @@ func (r *renderer) render(
 					return err
 				}
 
-				for _, e := range TemplateExts {
+				for _, e := range r.a.TemplateExts {
 					fns, err := filepath.Glob(
 						filepath.Join(p, "*"+e),
 					)
@@ -122,7 +126,7 @@ func (r *renderer) render(
 				return r.watcher.Add(p)
 			},
 		); err != nil {
-			ERROR(
+			r.a.ERROR(
 				"air: failed to walk template files",
 				map[string]interface{}{
 					"error": err.Error(),
@@ -131,7 +135,7 @@ func (r *renderer) render(
 		}
 	})
 
-	if I18nEnabled {
+	if r.a.I18nEnabled {
 		t, err := r.template.Clone()
 		if err != nil {
 			return err

@@ -19,19 +19,24 @@ import (
 
 // minifier is a minifier that minifies contents based on the MIME types.
 type minifier struct {
+	a        *Air
 	minifier *minify.M
 	once     *sync.Once
 }
 
-// theMinifier is the singleton of the `minifier`.
-var theMinifier = &minifier{
-	minifier: minify.New(),
-	once:     &sync.Once{},
+// newMinifier returns a new instance of the `minifier` with the a.
+func newMinifier(a *Air) *minifier {
+	return &minifier{
+		a:        a,
+		minifier: minify.New(),
+		once:     &sync.Once{},
+	}
 }
 
+// bind binds the r into the v.
 // minify minifies the b based on the mimeType.
 func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
-	if !MinifierEnabled {
+	if !m.a.MinifierEnabled {
 		return b, nil
 	}
 

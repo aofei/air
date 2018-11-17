@@ -30,12 +30,12 @@ about those awesome middleware outside? And, seriously, what am I doing?
 
 A: Yeah, we can of course use the `net/http` directly, after all, it can meet
 many requirements. But, ummm... It's really too stable, isn't it? I mean, to
-ensure Go's backward compatibility (which is extremely good), we can't easily
-add some handy features to the `net/http`. And, the `http.Request` not only
-represents the request received by the server, but also represents the request
-made by the client. In some cases it can be confusing. So why not just use the
-`net/http` as the underlying server, and then implement a refined web framework
-that are only used for the server-side on top of it?
+ensure Go's backward compatibility (which is extremely necessary), we can't
+easily add some handy features to the `net/http`. And, the `http.Request` does
+not only represents the request received by the server, but also represents the
+request made by the client. In some cases it can be confusing. So why not just
+use the `net/http` as the underlying server, and then implement a refined web
+framework that are only used for the server-side on top of it?
 
 **Q: Do you know we already got the
 [gin-gonic/gin](https://github.com/gin-gonic/gin) and the
@@ -58,9 +58,6 @@ A: Far from enough. But it is already working.
 
 ## Features
 
-* Singleton
-	* Air is uncountable
-	* Only one package `air.*`
 * API
 	* As less as possible
 	* As simple as possible
@@ -193,11 +190,11 @@ framework adopts the gas as its composition. Everyone can create new gas and use
 it within this framework simply.
 
 A gas is a function chained in the HTTP request-response cycle with access to
-`air.Request` and `air.Response` which it uses to perform a specific action, for
-example, logging every request or recovering from panics.
+the `air.Request` and the `air.Response` which it uses to perform a specific
+action, for example, logging every request or recovering from panics.
 
-If you've got a good HTTP middleware, you can simply wrap it into a gas by
-calling the `air.WrapHTTPMiddleware()`.
+If you have got some good HTTP middleware, you can simply wrap them into gases
+by calling the `air.WrapHTTPMiddleware()`.
 
 If you are looking for some useful gases, simply visit
 [here](https://github.com/air-gases).
