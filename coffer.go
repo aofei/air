@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -19,6 +20,7 @@ type coffer struct {
 	a       *Air
 	assets  map[string]*asset
 	watcher *fsnotify.Watcher
+	sync.Mutex
 }
 
 // newCoffer returns a new instance of the `coffer` with the a.
@@ -50,7 +52,9 @@ func newCoffer(a *Air) *coffer {
 					)
 				}
 
+				c.Lock()
 				delete(c.assets, e.Name)
+				c.Unlock()
 			case err := <-c.watcher.Errors:
 				if a.CofferEnabled {
 					a.ERROR(
@@ -107,6 +111,8 @@ func (c *coffer) asset(name string) (*asset, error) {
 		return nil, err
 	}
 
+	c.Lock()
+	defer c.Unlock()
 	c.assets[name] = &asset{
 		name:     name,
 		content:  b,
