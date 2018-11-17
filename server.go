@@ -169,6 +169,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Make request.
 
 	req := &Request{
+		Air:    s.a,
 		Values: map[string]interface{}{},
 
 		parseParamsOnce: &sync.Once{},
@@ -178,6 +179,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Make response.
 
 	res := &Response{
+		Air:    s.a,
 		Status: http.StatusOK,
 
 		req:  req,
