@@ -27,10 +27,6 @@ func newRouter(a *Air) *router {
 // register registers a new route for the method and the path with the matching
 // h in the r with the optional route-level gases.
 func (r *router) register(method, path string, h Handler, gases ...Gas) {
-	if path != "/" && hasLastSlash(path) {
-		path = path[:len(path)-1]
-	}
-
 	msg := ""
 	if path == "" {
 		msg = "air: route path cannot be empty"
@@ -154,7 +150,7 @@ func (r *router) insert(
 		}
 
 		if ll == 0 {
-			// At root node
+			// At root node.
 			cn.label = s[0]
 			cn.prefix = s
 			if h != nil {
@@ -163,7 +159,7 @@ func (r *router) insert(
 				cn.paramNames = paramNames
 			}
 		} else if ll < pl {
-			// Split node
+			// Split node.
 			nn = &node{
 				kind:       cn.kind,
 				label:      cn.prefix[ll],
@@ -174,7 +170,7 @@ func (r *router) insert(
 				paramNames: cn.paramNames,
 			}
 
-			// Reset parent node
+			// Reset parent node.
 			cn.kind = static
 			cn.label = cn.prefix[0]
 			cn.prefix = cn.prefix[:ll]
@@ -184,12 +180,12 @@ func (r *router) insert(
 			cn.children = append(cn.children, nn)
 
 			if ll == sl {
-				// At parent node
+				// At parent node.
 				cn.kind = nk
 				cn.handlers[method] = h
 				cn.paramNames = paramNames
 			} else {
-				// Create child node
+				// Create child node.
 				nn = &node{
 					kind:       nk,
 					label:      s[ll],
@@ -205,12 +201,12 @@ func (r *router) insert(
 			s = s[ll:]
 
 			if nn = cn.childByLabel(s[0]); nn != nil {
-				// Go deeper
+				// Go deeper.
 				cn = nn
 				continue
 			}
 
-			// Create child node
+			// Create child node.
 			nn = &node{
 				kind:       nk,
 				label:      s[0],
@@ -222,7 +218,7 @@ func (r *router) insert(
 			nn.handlers[method] = h
 			cn.children = append(cn.children, nn)
 		} else if h != nil {
-			// Node already exists
+			// Node already exists.
 			cn.handlers[method] = h
 			cn.paramNames = paramNames
 		}
@@ -234,9 +230,8 @@ func (r *router) insert(
 // route returns a handler registered for the req.
 func (r *router) route(req *Request) Handler {
 	var (
-		hru = req.HTTPRequest().URL
-		p   = hru.EscapedPath()              // Path
-		s   = pathClean(p)                   // Search
+		s = neatPath(req.HTTPRequest().URL.EscapedPath()) // Search
+
 		cn  = r.tree                         // Current node
 		nn  *node                            // Next node
 		nk  nodeKind                         // Next kind
@@ -250,7 +245,7 @@ func (r *router) route(req *Request) Handler {
 		pvs = make([]string, 0, r.maxParams) // Param values
 	)
 
-	// Search order: static > param > any
+	// Search order: static > param > any.
 	for {
 		if s == "" {
 			break
@@ -277,12 +272,16 @@ func (r *router) route(req *Request) Handler {
 		}
 
 		if s = s[ll:]; s == "" {
+			if len(cn.handlers) == 0 && cn.childByKind(any) != nil {
+				goto Any
+			}
+
 			break
 		}
 
-		// Static node
+		// Static node.
 		if nn = cn.child(s[0], static); nn != nil {
-			// Save next
+			// Save next.
 			if hasLastSlash(cn.prefix) {
 				nk = param
 				sn = cn
@@ -294,10 +293,10 @@ func (r *router) route(req *Request) Handler {
 			continue
 		}
 
-		// Param node
+		// Param node.
 	Param:
 		if nn = cn.childByKind(param); nn != nil {
-			// Save next
+			// Save next.
 			if hasLastSlash(cn.prefix) {
 				nk = any
 				sn = cn
@@ -315,17 +314,9 @@ func (r *router) route(req *Request) Handler {
 			continue
 		}
 
-		// Any node
+		// Any node.
 	Any:
 		if cn = cn.childByKind(any); cn != nil {
-			if hasLastSlash(p) {
-				si = len(p) - 1
-				for ; si > 0 && p[si] == '/'; si-- {
-				}
-
-				s += p[si+1:]
-			}
-
 			if len(pvs) < len(cn.paramNames) {
 				pvs = append(pvs, unescape(s))
 			} else {
@@ -335,7 +326,7 @@ func (r *router) route(req *Request) Handler {
 			break
 		}
 
-		// Struggle for the former node
+		// Struggle for the former node.
 	Struggle:
 		if sn != nil {
 			cn = sn
@@ -470,22 +461,25 @@ func pathWithoutParamNames(p string) string {
 	return p
 }
 
-// pathClean returns a clean path from the p.
-func pathClean(p string) string {
+// neatPath returns a neat path from the p.
+func neatPath(p string) string {
+	if p == "" {
+		return "/"
+	}
+
 	b := make([]byte, 0, len(p))
 	for i, l := 0, len(p); i < l; {
 		if p[i] == '/' {
 			i++
+			if i == l {
+				b = append(b, '/')
+			}
 		} else {
 			b = append(b, '/')
 			for ; i < l && p[i] != '/'; i++ {
 				b = append(b, p[i])
 			}
 		}
-	}
-
-	if len(b) == 0 {
-		return "/"
 	}
 
 	return *(*string)(unsafe.Pointer(&b))
