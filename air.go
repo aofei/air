@@ -796,25 +796,27 @@ func DefaultMethodNotAllowedHandler(req *Request, res *Response) error {
 
 // DefaultErrorHandler is the default centralized error handler for the server.
 func DefaultErrorHandler(err error, req *Request, res *Response) {
-	if res.Written {
-		return
+	if !res.Written {
+		if res.Status < http.StatusBadRequest {
+			res.Status = http.StatusInternalServerError
+		}
+
+		if req.Method == http.MethodGet ||
+			req.Method == http.MethodHead {
+			res.Header.Del("ETag")
+			res.Header.Del("Last-Modified")
+		}
 	}
 
-	if res.Status < http.StatusBadRequest {
-		res.Status = http.StatusInternalServerError
-	}
+	if res.ContentLength == 0 {
+		m := err.Error()
+		if !req.Air.DebugMode &&
+			res.Status == http.StatusInternalServerError {
+			m = http.StatusText(res.Status)
+		}
 
-	m := err.Error()
-	if !req.Air.DebugMode && res.Status == http.StatusInternalServerError {
-		m = http.StatusText(res.Status)
+		res.WriteString(m)
 	}
-
-	if req.Method == http.MethodGet || req.Method == http.MethodHead {
-		res.Header.Del("ETag")
-		res.Header.Del("Last-Modified")
-	}
-
-	res.WriteString(m)
 }
 
 // Gas defines a function to process gases.
