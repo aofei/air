@@ -5,6 +5,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -38,6 +39,8 @@ func (r *Request) HTTPRequest() *http.Request {
 	r.hr.Method = r.Method
 	r.hr.Host = r.Authority
 	r.hr.RequestURI = r.Path
+	r.hr.URL, _ = url.ParseRequestURI(r.Path)
+	r.hr.Header = r.Header
 	r.hr.Body = r.Body.(io.ReadCloser)
 	r.hr.ContentLength = r.ContentLength
 	return r.hr
@@ -56,6 +59,7 @@ func (r *Request) SetHTTPRequest(hr *http.Request) {
 
 	r.Authority = hr.Host
 	r.Path = hr.RequestURI
+	r.Header = hr.Header
 	r.Body = hr.Body
 	r.ContentLength = hr.ContentLength
 	r.hr = hr

@@ -3,14 +3,19 @@ package air
 import (
 	"bytes"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
+	"log"
 	"mime"
 	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -22,6 +27,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack"
 	"golang.org/x/net/html"
+	"golang.org/x/net/http2"
 )
 
 // Response is an HTTP response.
@@ -432,6 +438,55 @@ func (r *Response) Push(target string, pos *http.PushOptions) error {
 	}
 
 	return p.Push(target, pos)
+}
+
+// ProxyPass passes the request to the target and responds to the client by
+// using the reverse proxy technique.
+//
+// The target must be based on the HTTP protocol (such as HTTP(S), WebSocket and
+// gRPC). So, the scheme of the target must either be "http", "https", "ws",
+// "wss", "grpc" or "grpcs".
+func (r *Response) ProxyPass(target string) error {
+	u, err := url.Parse(target)
+	if err != nil {
+		return err
+	}
+
+	var transport http.RoundTripper
+	switch u.Scheme {
+	case "http", "https":
+	case "ws":
+		u.Scheme = "http"
+	case "wss":
+		u.Scheme = "https"
+	case "grpc":
+		u.Scheme = "http"
+		transport = &http2.Transport{
+			DialTLS: func(
+				network string,
+				address string,
+				_ *tls.Config,
+			) (net.Conn, error) {
+				return net.Dial(network, address)
+			},
+			AllowHTTP: true,
+		}
+	case "grpcs":
+		u.Scheme = "https"
+		transport = &http2.Transport{}
+	default:
+		return errors.New("unsupported reverse proxy scheme")
+	}
+
+	rp := httputil.NewSingleHostReverseProxy(u)
+	rp.Transport = transport
+	rp.ErrorLog = log.New(r.Air.errorLogWriter, "air: ", 0)
+	rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
+	if r.Status < http.StatusBadRequest {
+		return nil
+	}
+
+	return errors.New(strings.ToLower(http.StatusText(r.Status)))
 }
 
 // responseBody provides a convenient way to continuously write content to the
