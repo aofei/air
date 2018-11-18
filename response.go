@@ -47,8 +47,8 @@ type Response struct {
 // HTTPResponseWriter returns the underlying `http.ResponseWriter` of the r.
 //
 // ATTENTION: You should never call this method unless you know what you are
-// doing. And, be sure to call the `Response#SetHTTPResponseWriter()` when you
-// have modified it.
+// doing. And, be sure to call the `r#SetHTTPResponseWriter()` when you have
+// modified it.
 func (r *Response) HTTPResponseWriter() http.ResponseWriter {
 	return r.hrw
 }

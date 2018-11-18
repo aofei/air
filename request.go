@@ -33,13 +33,16 @@ type Request struct {
 // HTTPRequest returns the underlying `http.Request` of the r.
 //
 // ATTENTION: You should never call this method unless you know what you are
-// doing. And, be sure to call the `Request#SetHTTPRequest()` when you have
-// modified it.
+// doing. And, be sure to call the `r#SetHTTPRequest()` when you have modified
+// it.
 func (r *Request) HTTPRequest() *http.Request {
 	r.hr.Method = r.Method
 	r.hr.Host = r.Authority
+	if r.hr.RequestURI != r.Path {
+		r.hr.URL, _ = url.ParseRequestURI(r.Path)
+	}
+
 	r.hr.RequestURI = r.Path
-	r.hr.URL, _ = url.ParseRequestURI(r.Path)
 	r.hr.Header = r.Header
 	r.hr.Body = r.Body.(io.ReadCloser)
 	r.hr.ContentLength = r.ContentLength
