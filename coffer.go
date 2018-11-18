@@ -18,16 +18,15 @@ import (
 // I/O pressure.
 type coffer struct {
 	a       *Air
-	assets  map[string]*asset
+	assets  *sync.Map
 	watcher *fsnotify.Watcher
-	sync.Mutex
 }
 
 // newCoffer returns a new instance of the `coffer` with the a.
 func newCoffer(a *Air) *coffer {
 	c := &coffer{
 		a:      a,
-		assets: map[string]*asset{},
+		assets: &sync.Map{},
 	}
 
 	var err error
@@ -52,9 +51,7 @@ func newCoffer(a *Air) *coffer {
 					)
 				}
 
-				c.Lock()
-				delete(c.assets, e.Name)
-				c.Unlock()
+				c.assets.Delete(e.Name)
 			case err := <-c.watcher.Errors:
 				if a.CofferEnabled {
 					a.ERROR(
@@ -77,8 +74,12 @@ func (c *coffer) asset(name string) (*asset, error) {
 		return nil, nil
 	}
 
-	if a, ok := c.assets[name]; ok {
-		return a, nil
+	if ai, ok := c.assets.Load(name); ok {
+		if a, ok := ai.(*asset); ok {
+			return a, nil
+		}
+
+		c.assets.Delete(name)
 	} else if ar, err := filepath.Abs(c.a.AssetRoot); err != nil {
 		return nil, err
 	} else if !strings.HasPrefix(name, ar) {
@@ -111,9 +112,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 		return nil, err
 	}
 
-	c.Lock()
-	defer c.Unlock()
-	c.assets[name] = &asset{
+	a := &asset{
 		name:     name,
 		content:  b,
 		mimeType: mt,
@@ -121,7 +120,9 @@ func (c *coffer) asset(name string) (*asset, error) {
 		modTime:  fi.ModTime(),
 	}
 
-	return c.assets[name], nil
+	c.assets.Store(name, a)
+
+	return a, nil
 }
 
 // asset is a binary asset file.

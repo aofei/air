@@ -10,15 +10,15 @@ import (
 
 // logger is an active logging object that generates lines of output.
 type logger struct {
-	a     *Air
-	mutex *sync.Mutex
+	sync.Mutex
+
+	a *Air
 }
 
 // newLogger returns a new instance of the `logger` with the a.
 func newLogger(a *Air) *logger {
 	return &logger{
-		a:     a,
-		mutex: &sync.Mutex{},
+		a: a,
 	}
 }
 
@@ -28,8 +28,8 @@ func (l *logger) log(ll LoggerLevel, m string, es ...map[string]interface{}) {
 		return
 	}
 
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
+	l.Lock()
+	defer l.Unlock()
 
 	fs := map[string]interface{}{
 		"app_name": l.a.AppName,
