@@ -486,6 +486,16 @@ func (a *Air) TRACE(path string, h Handler, gases ...Gas) {
 // STATIC registers a new route with the path prefix to serve the static files
 // from the root with the optional route-level gases.
 func (a *Air) STATIC(prefix, root string, gases ...Gas) {
+	if hasLastSlash(prefix) {
+		prefix += "*"
+	} else {
+		prefix += "/*"
+	}
+
+	if root == "" {
+		root = "."
+	}
+
 	h := func(req *Request, res *Response) error {
 		err := res.WriteFile(filepath.Join(
 			root,
@@ -498,8 +508,8 @@ func (a *Air) STATIC(prefix, root string, gases ...Gas) {
 		return err
 	}
 
-	a.GET(prefix+"*", h, gases...)
-	a.HEAD(prefix+"*", h, gases...)
+	a.GET(prefix, h, gases...)
+	a.HEAD(prefix, h, gases...)
 }
 
 // FILE registers a new route with the path to serve a static file with the
