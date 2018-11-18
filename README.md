@@ -96,6 +96,12 @@ A: Far from enough. But it is already working.
 	* Group level
 * WebSocket
 	* Full-duplex communication
+* Reverse proxy
+	* Retrieves resources on behalf of a client from another server
+	* Protocols:
+		* HTTP(S)
+		* WebSocket
+		* gRPC
 * Binder
 	* `application/json`
 	* `application/xml`
