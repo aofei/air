@@ -457,6 +457,20 @@ func (r *Response) Push(target string, pos *http.PushOptions) error {
 	return p.Push(target, pos)
 }
 
+var (
+	h2Transport  = &http2.Transport{}
+	h2cTransport = &http2.Transport{
+		DialTLS: func(
+			network string,
+			address string,
+			_ *tls.Config,
+		) (net.Conn, error) {
+			return net.Dial(network, address)
+		},
+		AllowHTTP: true,
+	}
+)
+
 // ProxyPass passes the request to the target and responds to the client by
 // using the reverse proxy technique.
 //
@@ -478,19 +492,10 @@ func (r *Response) ProxyPass(target string) error {
 		u.Scheme = "https"
 	case "grpc":
 		u.Scheme = "http"
-		transport = &http2.Transport{
-			DialTLS: func(
-				network string,
-				address string,
-				_ *tls.Config,
-			) (net.Conn, error) {
-				return net.Dial(network, address)
-			},
-			AllowHTTP: true,
-		}
+		transport = h2cTransport
 	case "grpcs":
 		u.Scheme = "https"
-		transport = &http2.Transport{}
+		transport = h2Transport
 	default:
 		return errors.New("unsupported reverse proxy scheme")
 	}
