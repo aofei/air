@@ -32,8 +32,15 @@ func newServer(a *Air) *server {
 
 // serve starts the s.
 func (s *server) serve() error {
+	h2cs := &http2.Server{}
+	if s.a.IdleTimeout != 0 {
+		h2cs.IdleTimeout = s.a.IdleTimeout
+	} else {
+		h2cs.IdleTimeout = s.a.ReadTimeout
+	}
+
 	s.server.Addr = s.a.Address
-	s.server.Handler = h2c.NewHandler(s, &http2.Server{})
+	s.server.Handler = h2c.NewHandler(s, h2cs)
 	s.server.ReadTimeout = s.a.ReadTimeout
 	s.server.ReadHeaderTimeout = s.a.ReadHeaderTimeout
 	s.server.WriteTimeout = s.a.WriteTimeout
