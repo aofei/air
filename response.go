@@ -192,25 +192,42 @@ func (r *Response) WriteHTML(h string) error {
 		var f func(*html.Node)
 		f = func(n *html.Node) {
 			if n.Type == html.ElementNode {
-				target := ""
+				avoid, target := false, ""
 				switch n.Data {
 				case "link":
+					relChecked := false
+				LinkLoop:
 					for _, a := range n.Attr {
-						if a.Key == "href" {
+						switch strings.ToLower(a.Key) {
+						case "rel":
+							if v := strings.ToLower(
+								a.Val,
+							); v == "preload" ||
+								v == "icon" {
+								avoid = true
+								break LinkLoop
+							}
+
+							relChecked = true
+						case "href":
 							target = a.Val
-							break
+							if relChecked {
+								break LinkLoop
+							}
 						}
 					}
 				case "img", "script":
+				ImgScriptLoop:
 					for _, a := range n.Attr {
-						if a.Key == "src" {
+						switch strings.ToLower(a.Key) {
+						case "src":
 							target = a.Val
-							break
+							break ImgScriptLoop
 						}
 					}
 				}
 
-				if path.IsAbs(target) {
+				if !avoid && path.IsAbs(target) {
 					r.Push(target, nil)
 				}
 			}
