@@ -491,6 +491,51 @@ func (a *Air) TRACE(path string, h Handler, gases ...Gas) {
 	a.router.register(http.MethodTrace, path, h, gases...)
 }
 
+// BATCH registers a batch of routes for the methods and the path with the
+// matching h in the router with the optional route-level gases.
+//
+// The methods must either be nil (means all) or consists of one or more of the
+// "GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS" and
+// "TRACE". Invalid methods will be silently dropped.
+func (a *Air) BATCH(methods []string, path string, h Handler, gases ...Gas) {
+	if methods == nil {
+		methods = []string{
+			http.MethodGet,
+			http.MethodHead,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+			http.MethodConnect,
+			http.MethodOptions,
+			http.MethodTrace,
+		}
+	}
+
+	for _, m := range methods {
+		switch m {
+		case http.MethodGet:
+			a.GET(path, h, gases...)
+		case http.MethodHead:
+			a.HEAD(path, h, gases...)
+		case http.MethodPost:
+			a.POST(path, h, gases...)
+		case http.MethodPut:
+			a.PUT(path, h, gases...)
+		case http.MethodPatch:
+			a.PATCH(path, h, gases...)
+		case http.MethodDelete:
+			a.DELETE(path, h, gases...)
+		case http.MethodConnect:
+			a.CONNECT(path, h, gases...)
+		case http.MethodOptions:
+			a.OPTIONS(path, h, gases...)
+		case http.MethodTrace:
+			a.TRACE(path, h, gases...)
+		}
+	}
+}
+
 // STATIC registers a new route with the path prefix to serve the static files
 // from the root with the optional route-level gases.
 func (a *Air) STATIC(prefix, root string, gases ...Gas) {
@@ -516,8 +561,7 @@ func (a *Air) STATIC(prefix, root string, gases ...Gas) {
 		return err
 	}
 
-	a.GET(prefix, h, gases...)
-	a.HEAD(prefix, h, gases...)
+	a.BATCH([]string{http.MethodGet, http.MethodHead}, prefix, h, gases...)
 }
 
 // FILE registers a new route with the path to serve a static file with the
@@ -532,8 +576,7 @@ func (a *Air) FILE(path, filename string, gases ...Gas) {
 		return err
 	}
 
-	a.GET(path, h, gases...)
-	a.HEAD(path, h, gases...)
+	a.BATCH([]string{http.MethodGet, http.MethodHead}, path, h, gases...)
 }
 
 // Group returns a new instance of the `Group` with the prefix and the optional

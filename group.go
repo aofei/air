@@ -54,6 +54,11 @@ func (g *Group) TRACE(path string, h Handler, gases ...Gas) {
 	g.Air.TRACE(g.Prefix+path, h, append(g.Gases, gases...)...)
 }
 
+// BATCH implements the `Air#BATCH()`.
+func (g *Group) BATCH(methods []string, path string, h Handler, gases ...Gas) {
+	g.Air.BATCH(methods, g.Prefix+path, h, append(g.Gases, gases...)...)
+}
+
 // STATIC implements the `Air#STATIC()`.
 func (g *Group) STATIC(prefix, root string, gases ...Gas) {
 	g.Air.STATIC(g.Prefix+prefix, root, append(g.Gases, gases...)...)
