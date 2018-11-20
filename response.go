@@ -483,7 +483,11 @@ func (r *Response) ProxyPass(target string) error {
 		return err
 	}
 
-	var transport http.RoundTripper
+	var (
+		transport     http.RoundTripper
+		flushInterval time.Duration
+	)
+
 	switch u.Scheme {
 	case "http", "https":
 	case "ws":
@@ -493,15 +497,18 @@ func (r *Response) ProxyPass(target string) error {
 	case "grpc":
 		u.Scheme = "http"
 		transport = h2cTransport
+		flushInterval = time.Millisecond
 	case "grpcs":
 		u.Scheme = "https"
 		transport = h2Transport
+		flushInterval = time.Millisecond
 	default:
 		return errors.New("unsupported reverse proxy scheme")
 	}
 
 	rp := httputil.NewSingleHostReverseProxy(u)
 	rp.Transport = transport
+	rp.FlushInterval = flushInterval
 	rp.ErrorLog = log.New(r.Air.errorLogWriter, "air: ", 0)
 	rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
 	if r.Status < http.StatusBadRequest {
