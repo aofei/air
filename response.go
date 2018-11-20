@@ -474,6 +474,7 @@ func (r *Response) ProxyPass(target string) error {
 
 	switch u.Scheme {
 	case "http", "https":
+		rp.FlushInterval = 100 * time.Millisecond
 	case "ws", "wss", "grpc", "grpcs":
 		rp.FlushInterval = time.Millisecond
 	default:
@@ -557,6 +558,11 @@ func (rw *responseWriter) WriteHeader(status int) {
 
 	rw.r.Status = status
 	rw.r.Written = true
+}
+
+// Flush implements the `http.Flusher`.
+func (rw *responseWriter) Flush() {
+	rw.w.(http.Flusher).Flush()
 }
 
 // Push implements the `http.Pusher`.
