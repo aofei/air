@@ -1,15 +1,19 @@
 package air
 
 import (
+	"crypto/tls"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"golang.org/x/net/http2"
 )
 
 // Air is the top-level struct of this framework.
@@ -329,15 +333,17 @@ type Air struct {
 	// The default value is "".
 	ConfigFile string
 
-	logger         *logger
-	errorLogWriter *errorLogWriter
-	server         *server
-	router         *router
-	binder         *binder
-	minifier       *minifier
-	renderer       *renderer
-	coffer         *coffer
-	i18n           *i18n
+	logger                 *logger
+	errorLogWriter         *errorLogWriter
+	server                 *server
+	router                 *router
+	binder                 *binder
+	minifier               *minifier
+	renderer               *renderer
+	coffer                 *coffer
+	i18n                   *i18n
+	reverseProxyTransport  *http.Transport
+	reverseProxyBufferPool *reverseProxyBufferPool
 }
 
 // Default is the default instance of the `Air`.
@@ -391,6 +397,8 @@ func New() *Air {
 	a.renderer = newRenderer(a)
 	a.coffer = newCoffer(a)
 	a.i18n = newI18n(a)
+	a.reverseProxyTransport = newReverseProxyTransport()
+	a.reverseProxyBufferPool = newReverseProxyBufferPool()
 
 	return a
 }
@@ -871,6 +879,125 @@ func newErrorLogWriter(a *Air) *errorLogWriter {
 func (elw *errorLogWriter) Write(b []byte) (int, error) {
 	elw.a.ERROR(strings.TrimSuffix(string(b), "\n"))
 	return len(b), nil
+}
+
+// newReverseProxyTransport returns a new instance of the `http.Transport` with
+// reverse proxy support.
+func newReverseProxyTransport() *http.Transport {
+	rpt := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConnsPerHost:   200,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
+	rpt.RegisterProtocol("ws", newWSTransport(false))
+	rpt.RegisterProtocol("wss", newWSTransport(true))
+	rpt.RegisterProtocol("grpc", newGRPCTransport(false))
+	rpt.RegisterProtocol("grpcs", newGRPCTransport(true))
+
+	return rpt
+}
+
+// wsTransport is a transport with WebSocket support.
+type wsTransport struct {
+	*http.Transport
+
+	tlsed bool
+}
+
+// newWSTransport returns a new instance of the `wsTransport` with the tlsed.
+func newWSTransport(tlsed bool) *wsTransport {
+	return &wsTransport{
+		Transport: &http.Transport{},
+
+		tlsed: tlsed,
+	}
+}
+
+// RoundTrip implements the `http.Transport`.
+func (wst *wsTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if wst.tlsed {
+		req.URL.Scheme = "https"
+	} else {
+		req.URL.Scheme = "http"
+	}
+
+	return wst.Transport.RoundTrip(req)
+}
+
+// grpcTransport is a transport with gRPC support.
+type grpcTransport struct {
+	*http2.Transport
+
+	tlsed bool
+}
+
+// newGRPCTransport returns a new instance of the `grpcTransport` with the
+// tlsed.
+func newGRPCTransport(tlsed bool) *grpcTransport {
+	gt := &grpcTransport{
+		Transport: &http2.Transport{},
+
+		tlsed: tlsed,
+	}
+	if !tlsed {
+		gt.DialTLS = func(
+			network string,
+			address string,
+			_ *tls.Config,
+		) (net.Conn, error) {
+			return net.Dial(network, address)
+		}
+
+		gt.AllowHTTP = true
+	}
+
+	return gt
+}
+
+// RoundTrip implements the `http2.Transport`.
+func (gt *grpcTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if gt.tlsed {
+		req.URL.Scheme = "https"
+	} else {
+		req.URL.Scheme = "http"
+	}
+
+	return gt.Transport.RoundTrip(req)
+}
+
+// reverseProxyBufferPool is a buffer pool for the reverse proxy.
+type reverseProxyBufferPool struct {
+	pool sync.Pool
+}
+
+// newReverseProxyBufferPool returns a new instance of the
+// `reverseProxyBufferPool`.
+func newReverseProxyBufferPool() *reverseProxyBufferPool {
+	return &reverseProxyBufferPool{
+		pool: sync.Pool{
+			New: func() interface{} {
+				return make([]byte, 32<<20)
+			},
+		},
+	}
+}
+
+// Get implements the `httputil.BufferPool`.
+func (rpbp *reverseProxyBufferPool) Get() []byte {
+	return rpbp.pool.Get().([]byte)
+}
+
+// Put implements the `httputil.BufferPool`.
+func (rpbp *reverseProxyBufferPool) Put(bytes []byte) {
+	rpbp.pool.Put(bytes)
 }
 
 // stringsContainsCIly reports whether the ss contains the s case-insensitively.

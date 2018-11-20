@@ -3,7 +3,6 @@ package air
 import (
 	"bytes"
 	"crypto/sha256"
-	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -27,7 +26,6 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack"
 	"golang.org/x/net/html"
-	"golang.org/x/net/http2"
 )
 
 // Response is an HTTP response.
@@ -457,59 +455,31 @@ func (r *Response) Push(target string, pos *http.PushOptions) error {
 	return p.Push(target, pos)
 }
 
-var (
-	h2Transport  = &http2.Transport{}
-	h2cTransport = &http2.Transport{
-		DialTLS: func(
-			network string,
-			address string,
-			_ *tls.Config,
-		) (net.Conn, error) {
-			return net.Dial(network, address)
-		},
-		AllowHTTP: true,
-	}
-)
-
 // ProxyPass passes the request to the target and responds to the client by
 // using the reverse proxy technique.
 //
 // The target must be based on the HTTP protocol (such as HTTP(S), WebSocket and
-// gRPC). So, the scheme of the target must either be "http", "https", "ws",
-// "wss", "grpc" or "grpcs".
+// gRPC). So, the scheme of the target must be "http", "https", "ws", "wss",
+// "grpc" or "grpcs".
 func (r *Response) ProxyPass(target string) error {
 	u, err := url.Parse(target)
 	if err != nil {
 		return err
 	}
 
-	var (
-		transport     http.RoundTripper
-		flushInterval time.Duration
-	)
+	rp := httputil.NewSingleHostReverseProxy(u)
+	rp.Transport = r.Air.reverseProxyTransport
+	rp.ErrorLog = log.New(r.Air.errorLogWriter, "air: ", 0)
+	rp.BufferPool = r.Air.reverseProxyBufferPool
 
 	switch u.Scheme {
 	case "http", "https":
-	case "ws":
-		u.Scheme = "http"
-	case "wss":
-		u.Scheme = "https"
-	case "grpc":
-		u.Scheme = "http"
-		transport = h2cTransport
-		flushInterval = time.Millisecond
-	case "grpcs":
-		u.Scheme = "https"
-		transport = h2Transport
-		flushInterval = time.Millisecond
+	case "ws", "wss", "grpc", "grpcs":
+		rp.FlushInterval = time.Millisecond
 	default:
 		return errors.New("unsupported reverse proxy scheme")
 	}
 
-	rp := httputil.NewSingleHostReverseProxy(u)
-	rp.Transport = transport
-	rp.FlushInterval = flushInterval
-	rp.ErrorLog = log.New(r.Air.errorLogWriter, "air: ", 0)
 	rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
 	if r.Status < http.StatusBadRequest {
 		return nil
