@@ -207,6 +207,12 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h := func(req *Request, res *Response) error {
 		rh := s.a.router.route(req)
 		h := func(req *Request, res *Response) error {
+			defer func() {
+				for _, after := range res.afters {
+					after()
+				}
+			}()
+
 			if err := rh(req, res); err != nil {
 				return err
 			} else if !res.Written {

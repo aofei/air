@@ -38,9 +38,10 @@ type Response struct {
 	ContentLength int64
 	Written       bool
 
-	req  *Request
-	hrw  http.ResponseWriter
-	ohrw http.ResponseWriter
+	req    *Request
+	hrw    http.ResponseWriter
+	ohrw   http.ResponseWriter
+	afters []func()
 }
 
 // HTTPResponseWriter returns the underlying `http.ResponseWriter` of the r.
@@ -573,6 +574,9 @@ func (rw *responseWriter) WriteHeader(status int) {
 			if rw.gw != nil {
 				h.Set("Content-Encoding", "gzip")
 				h.Del("Content-Length")
+				rw.r.afters = append(rw.r.afters, func() {
+					rw.gw.Close()
+				})
 			}
 		}
 	}
