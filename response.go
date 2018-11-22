@@ -572,6 +572,7 @@ func (rw *responseWriter) WriteHeader(status int) {
 			)
 			if rw.gw != nil {
 				h.Set("Content-Encoding", "gzip")
+				h.Del("Content-Length")
 			}
 		}
 	}
