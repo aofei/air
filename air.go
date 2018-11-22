@@ -1,6 +1,7 @@
 package air
 
 import (
+	"compress/gzip"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -220,6 +221,31 @@ type Air struct {
 	// item.
 	MinifierEnabled bool
 
+	// GzipEnabled indicates whether the gzip is enabled.
+	//
+	// The default value is false.
+	//
+	// It is called "gzip_enabled" when it is used as a configuration item.
+	GzipEnabled bool
+
+	// GzipCompressionLevel is the compression level of the gzip.
+	//
+	// The default value is `gzip.DefaultCompression`.
+	//
+	// It is called "gzip_compression_level" when it is used as a
+	// configuration item.
+	GzipCompressionLevel int
+
+	// GzipMIMETypes is the MIME types that will be gzipped.
+	//
+	// The default value is ["text/plain", "text/html", "text/css",
+	// "application/javascript", "application/json", "application/xml",
+	// "image/svg+xml"].
+	//
+	// It is called "gzip_mime_types" when it is used as a configuration
+	// item.
+	GzipMIMETypes []string
+
 	// TemplateRoot is the root of the HTML templates. All the HTML
 	// templates inside it will be recursively parsed into the renderer.
 	//
@@ -360,10 +386,20 @@ func New() *Air {
 		NotFoundHandler:         DefaultNotFoundHandler,
 		MethodNotAllowedHandler: DefaultMethodNotAllowedHandler,
 		ErrorHandler:            DefaultErrorHandler,
-		TemplateRoot:            "templates",
-		TemplateExts:            []string{".html"},
-		TemplateLeftDelim:       "{{",
-		TemplateRightDelim:      "}}",
+		GzipCompressionLevel:    gzip.DefaultCompression,
+		GzipMIMETypes: []string{
+			"text/plain",
+			"text/html",
+			"text/css",
+			"application/javascript",
+			"application/json",
+			"application/xml",
+			"image/svg+xml",
+		},
+		TemplateRoot:       "templates",
+		TemplateExts:       []string{".html"},
+		TemplateLeftDelim:  "{{",
+		TemplateRightDelim: "}}",
 		TemplateFuncMap: map[string]interface{}{
 			"strlen":  strlen,
 			"substr":  substr,
@@ -747,6 +783,26 @@ func (a *Air) Serve() error {
 		}
 	}
 
+	if p, ok := m["gzip_enabled"]; ok {
+		if err := md.PrimitiveDecode(p, &a.GzipEnabled); err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["gzip_compression_level"]; ok {
+		err := md.PrimitiveDecode(p, &a.GzipCompressionLevel)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["gzip_mime_types"]; ok {
+		a.GzipMIMETypes = a.GzipMIMETypes[:0]
+		if err := md.PrimitiveDecode(p, &a.GzipMIMETypes); err != nil {
+			return err
+		}
+	}
+
 	if p, ok := m["template_root"]; ok {
 		if err := md.PrimitiveDecode(p, &a.TemplateRoot); err != nil {
 			return err
@@ -1043,8 +1099,20 @@ func (rpbp *reverseProxyBufferPool) Put(bytes []byte) {
 	rpbp.pool.Put(bytes)
 }
 
-// stringsContainsCIly reports whether the ss contains the s case-insensitively.
-func stringsContainsCIly(ss []string, s string) bool {
+// stringSliceContains reports whether the ss contains the s.
+func stringSliceContains(ss []string, s string) bool {
+	for _, v := range ss {
+		if v == s {
+			return true
+		}
+	}
+
+	return false
+}
+
+// stringSliceContainsCIly reports whether the ss contains the s
+// case-insensitively.
+func stringSliceContainsCIly(ss []string, s string) bool {
 	s = strings.ToLower(s)
 	for _, v := range ss {
 		if strings.ToLower(v) == s {

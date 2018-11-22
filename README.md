@@ -122,6 +122,16 @@ A: Far from enough. But it is already working.
 	* `image/svg+xml`
 	* `image/jpeg`
 	* `image/png`
+* Gzip
+	* Compresses HTTP response by using the gzip
+	* Default MIME types:
+		* `text/plain`
+		* `text/html`
+		* `text/css`
+		* `application/javascript`
+		* `application/json`
+		* `application/xml`
+		* `image/svg+xml`
 * Renderer
 	* Rich template functions
 	* Hot update support

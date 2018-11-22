@@ -102,7 +102,7 @@ func (s *server) serve() error {
 		Cache:  autocert.DirCache(s.a.ACMECertRoot),
 		HostPolicy: func(_ context.Context, h string) error {
 			if len(s.a.HostWhitelist) == 0 ||
-				stringsContainsCIly(s.a.HostWhitelist, h) {
+				stringSliceContainsCIly(s.a.HostWhitelist, h) {
 				return nil
 			}
 
@@ -154,7 +154,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 
 		// See RFC 3986, section 3.2.2.
-		if !stringsContainsCIly(s.a.HostWhitelist, host) {
+		if !stringSliceContainsCIly(s.a.HostWhitelist, host) {
 			scheme := "http"
 			if r.TLS != nil {
 				scheme = "https"

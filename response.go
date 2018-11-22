@@ -2,6 +2,7 @@ package air
 
 import (
 	"bytes"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/json"
 	"encoding/xml"
@@ -509,8 +510,9 @@ func (rb *responseBody) Write(b []byte) (int, error) {
 // responseWriter used to tie the `Response` and the `http.ResponseWriter`
 // together.
 type responseWriter struct {
-	r *Response
-	w http.ResponseWriter
+	r  *Response
+	w  http.ResponseWriter
+	gw *gzip.Writer
 }
 
 // Header implements the `http.ResponseWriter`.
@@ -524,7 +526,17 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 		rw.WriteHeader(rw.r.Status)
 	}
 
-	n, err := rw.w.Write(b)
+	var (
+		n   int
+		err error
+	)
+
+	if rw.gw != nil {
+		n, err = rw.gw.Write(b)
+	} else {
+		n, err = rw.w.Write(b)
+	}
+
 	if err != nil {
 		return 0, err
 	}
@@ -545,6 +557,27 @@ func (rw *responseWriter) WriteHeader(status int) {
 	}
 
 	h := rw.w.Header()
+
+	if rw.r.Air.GzipEnabled &&
+		stringSliceContains(
+			rw.r.Air.GzipMIMETypes,
+			h.Get("Content-Type"),
+		) {
+		h.Add("Vary", "Accept-Encoding")
+		if strings.Contains(
+			rw.r.req.Header.Get("Accept-Encoding"),
+			"gzip",
+		) {
+			rw.gw, _ = gzip.NewWriterLevel(
+				rw.w,
+				rw.r.Air.GzipCompressionLevel,
+			)
+			if rw.gw != nil {
+				h.Set("Content-Encoding", "gzip")
+			}
+		}
+	}
+
 	if !rw.r.Air.DebugMode &&
 		rw.r.Air.HTTPSEnforced &&
 		rw.r.Air.server.server.TLSConfig != nil &&
@@ -562,7 +595,11 @@ func (rw *responseWriter) WriteHeader(status int) {
 
 // Flush implements the `http.Flusher`.
 func (rw *responseWriter) Flush() {
-	rw.w.(http.Flusher).Flush()
+	if rw.gw != nil {
+		rw.gw.Flush()
+	} else {
+		rw.w.(http.Flusher).Flush()
+	}
 }
 
 // Push implements the `http.Pusher`.

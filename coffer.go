@@ -87,7 +87,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 	}
 
 	ext := filepath.Ext(name)
-	if !stringsContainsCIly(c.a.AssetExts, ext) {
+	if !stringSliceContainsCIly(c.a.AssetExts, ext) {
 		return nil, nil
 	}
 
