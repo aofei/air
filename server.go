@@ -208,8 +208,10 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		rh := s.a.router.route(req)
 		h := func(req *Request, res *Response) error {
 			defer func() {
-				for _, df := range res.deferredFuncs {
-					df()
+				if l := len(res.deferredFuncs); l > 0 {
+					for i := l - 1; i >= 0; i-- {
+						res.deferredFuncs[i]()
+					}
 				}
 			}()
 

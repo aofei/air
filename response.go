@@ -60,7 +60,8 @@ func (r *Response) SetHTTPResponseWriter(hrw http.ResponseWriter) {
 	r.hrw = hrw
 }
 
-// SetCookie sets the c to the `r#Header`.
+// SetCookie sets the c to the `r#Header`. Invalid cookies will be silently
+// dropped.
 func (r *Response) SetCookie(c *http.Cookie) {
 	if v := c.String(); v != "" {
 		r.Header.Add("Set-Cookie", v)
@@ -493,6 +494,14 @@ func (r *Response) ProxyPass(target string) error {
 	return errors.New(strings.ToLower(http.StatusText(r.Status)))
 }
 
+// Defer pushes the f onto the stack of functions that will be called after
+// responding. Nil functions will be silently dropped.
+func (r *Response) Defer(f func()) {
+	if f != nil {
+		r.deferredFuncs = append(r.deferredFuncs, f)
+	}
+}
+
 // responseBody provides a convenient way to continuously write content to the
 // client.
 type responseBody struct {
@@ -582,12 +591,9 @@ func (rw *responseWriter) WriteHeader(status int) {
 				rw.r.Air.GzipCompressionLevel,
 			); rw.gw != nil {
 				rw.r.Gzipped = true
-				rw.r.deferredFuncs = append(
-					rw.r.deferredFuncs,
-					func() {
-						rw.gw.Close()
-					},
-				)
+				rw.r.Defer(func() {
+					rw.gw.Close()
+				})
 			}
 		}
 	}
