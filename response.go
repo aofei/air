@@ -20,6 +20,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -37,11 +38,12 @@ type Response struct {
 	Body          io.Writer
 	ContentLength int64
 	Written       bool
+	Gzipped       bool
 
-	req    *Request
-	hrw    http.ResponseWriter
-	ohrw   http.ResponseWriter
-	afters []func()
+	req           *Request
+	hrw           http.ResponseWriter
+	ohrw          http.ResponseWriter
+	deferredFuncs []func()
 }
 
 // HTTPResponseWriter returns the underlying `http.ResponseWriter` of the r.
@@ -511,6 +513,8 @@ func (rb *responseBody) Write(b []byte) (int, error) {
 // responseWriter used to tie the `Response` and the `http.ResponseWriter`
 // together.
 type responseWriter struct {
+	sync.Mutex
+
 	r  *Response
 	w  http.ResponseWriter
 	gw *gzip.Writer
@@ -549,6 +553,9 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 
 // WriteHeader implements the `http.ResponseWriter`.
 func (rw *responseWriter) WriteHeader(status int) {
+	rw.Lock()
+	defer rw.Unlock()
+
 	if rw.r.Written {
 		return
 	}
@@ -562,23 +569,32 @@ func (rw *responseWriter) WriteHeader(status int) {
 	mt, _, _ := mime.ParseMediaType(h.Get("Content-Type"))
 	if rw.r.Air.GzipEnabled &&
 		stringSliceContains(rw.r.Air.GzipMIMETypes, mt) {
-		h.Add("Vary", "Accept-Encoding")
-		if strings.Contains(
+		if !strings.Contains(h.Get("Vary"), "Accept-Encoding") {
+			h.Add("Vary", "Accept-Encoding")
+		}
+
+		if !rw.r.Gzipped && strings.Contains(
 			rw.r.req.Header.Get("Accept-Encoding"),
 			"gzip",
 		) {
-			rw.gw, _ = gzip.NewWriterLevel(
+			if rw.gw, _ = gzip.NewWriterLevel(
 				rw.w,
 				rw.r.Air.GzipCompressionLevel,
-			)
-			if rw.gw != nil {
-				h.Set("Content-Encoding", "gzip")
-				h.Del("Content-Length")
-				rw.r.afters = append(rw.r.afters, func() {
-					rw.gw.Close()
-				})
+			); rw.gw != nil {
+				rw.r.Gzipped = true
+				rw.r.deferredFuncs = append(
+					rw.r.deferredFuncs,
+					func() {
+						rw.gw.Close()
+					},
+				)
 			}
 		}
+	}
+
+	if rw.r.Gzipped {
+		h.Set("Content-Encoding", "gzip")
+		h.Del("Content-Length")
 	}
 
 	if !rw.r.Air.DebugMode &&
