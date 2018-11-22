@@ -558,11 +558,9 @@ func (rw *responseWriter) WriteHeader(status int) {
 
 	h := rw.w.Header()
 
+	mt, _, _ := mime.ParseMediaType(h.Get("Content-Type"))
 	if rw.r.Air.GzipEnabled &&
-		stringSliceContains(
-			rw.r.Air.GzipMIMETypes,
-			h.Get("Content-Type"),
-		) {
+		stringSliceContains(rw.r.Air.GzipMIMETypes, mt) {
 		h.Add("Vary", "Accept-Encoding")
 		if strings.Contains(
 			rw.r.req.Header.Get("Accept-Encoding"),
