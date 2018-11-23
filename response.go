@@ -298,7 +298,18 @@ func (r *Response) WriteFile(filename string) error {
 	if a, err := r.Air.coffer.asset(filename); err != nil {
 		return err
 	} else if a != nil {
-		c = bytes.NewReader(a.content)
+		if r.Air.GzipEnabled &&
+			a.gzippedContent != nil &&
+			strings.Contains(
+				r.req.Header.Get("Accept-Encoding"),
+				"gzip",
+			) {
+			c = bytes.NewReader(a.gzippedContent)
+			r.Gzipped = true
+		} else if c == nil {
+			c = bytes.NewReader(a.content)
+		}
+
 		ct = a.mimeType
 		et = a.checksum[:]
 		mt = a.modTime

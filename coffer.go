@@ -1,6 +1,8 @@
 package air
 
 import (
+	"bytes"
+	"compress/gzip"
 	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
@@ -101,10 +103,28 @@ func (c *coffer) asset(name string) (*asset, error) {
 		return nil, err
 	}
 
+	var gb []byte
 	mt := mime.TypeByExtension(ext)
 	if mt != "" {
 		if b, err = c.a.minifier.minify(mt, b); err != nil {
 			return nil, err
+		}
+
+		if c.a.GzipEnabled &&
+			stringSliceContains(c.a.GzipMIMETypes, mt) {
+			buf := &bytes.Buffer{}
+			if gw, err := gzip.NewWriterLevel(
+				buf,
+				c.a.GzipCompressionLevel,
+			); err != nil {
+				return nil, err
+			} else if _, err = gw.Write(b); err != nil {
+				return nil, err
+			} else if err = gw.Close(); err != nil {
+				return nil, err
+			}
+
+			gb = buf.Bytes()
 		}
 	}
 
@@ -113,11 +133,12 @@ func (c *coffer) asset(name string) (*asset, error) {
 	}
 
 	a := &asset{
-		name:     name,
-		content:  b,
-		mimeType: mt,
-		checksum: sha256.Sum256(b),
-		modTime:  fi.ModTime(),
+		name:           name,
+		content:        b,
+		gzippedContent: gb,
+		mimeType:       mt,
+		checksum:       sha256.Sum256(b),
+		modTime:        fi.ModTime(),
 	}
 
 	c.assets.Store(name, a)
@@ -127,9 +148,10 @@ func (c *coffer) asset(name string) (*asset, error) {
 
 // asset is a binary asset file.
 type asset struct {
-	name     string
-	content  []byte
-	mimeType string
-	checksum [sha256.Size]byte
-	modTime  time.Time
+	name           string
+	content        []byte
+	gzippedContent []byte
+	mimeType       string
+	checksum       [sha256.Size]byte
+	modTime        time.Time
 }
