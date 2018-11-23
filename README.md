@@ -120,8 +120,6 @@ A: Far from enough. But it is already working.
 	* `application/json`
 	* `application/xml`
 	* `image/svg+xml`
-	* `image/jpeg`
-	* `image/png`
 * Gzip
 	* Compresses HTTP response by using the gzip
 	* Default MIME types:

@@ -2,9 +2,6 @@ package air
 
 import (
 	"bytes"
-	"image/jpeg"
-	"image/png"
-	"io"
 	"mime"
 	"sync"
 
@@ -47,34 +44,6 @@ func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 		m.minifier.Add("application/json", json.DefaultMinifier)
 		m.minifier.Add("application/xml", xml.DefaultMinifier)
 		m.minifier.Add("image/svg+xml", svg.DefaultMinifier)
-		m.minifier.AddFunc("image/jpeg", func(
-			m *minify.M,
-			w io.Writer,
-			r io.Reader,
-			params map[string]string,
-		) error {
-			img, err := jpeg.Decode(r)
-			if err != nil {
-				return err
-			}
-
-			return jpeg.Encode(w, img, nil)
-		})
-		m.minifier.AddFunc("image/png", func(
-			m *minify.M,
-			w io.Writer,
-			r io.Reader,
-			params map[string]string,
-		) error {
-			img, err := png.Decode(r)
-			if err != nil {
-				return err
-			}
-
-			return (&png.Encoder{
-				CompressionLevel: png.BestCompression,
-			}).Encode(w, img)
-		})
 	})
 
 	mimeType, _, err := mime.ParseMediaType(mimeType)
