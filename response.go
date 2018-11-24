@@ -349,7 +349,10 @@ func (r *Response) WriteFile(filename string) error {
 			et = h.Sum(nil)
 		}
 
-		r.Header.Set("ETag", base64.StdEncoding.EncodeToString(et))
+		r.Header.Set(
+			"ETag",
+			"\""+base64.StdEncoding.EncodeToString(et)+"\"",
+		)
 	}
 
 	if r.Header.Get("Last-Modified") == "" {
