@@ -221,6 +221,17 @@ type Air struct {
 	// item.
 	MinifierEnabled bool
 
+	// MinifierMIMETypes is the MIME types that will be minified.
+	// Unsupported MIME types will be silently ignored.
+	//
+	// The default value is ["text/html", "text/css",
+	// "application/javascript", "application/json", "application/xml",
+	// "image/svg+xml"].
+	//
+	// It is called "minifier_mime_types" when it is used as a configuration
+	// item.
+	MinifierMIMETypes []string
+
 	// GzipEnabled indicates whether the gzip is enabled.
 	//
 	// The default value is false.
@@ -386,7 +397,15 @@ func New() *Air {
 		NotFoundHandler:         DefaultNotFoundHandler,
 		MethodNotAllowedHandler: DefaultMethodNotAllowedHandler,
 		ErrorHandler:            DefaultErrorHandler,
-		GzipCompressionLevel:    gzip.DefaultCompression,
+		MinifierMIMETypes: []string{
+			"text/html",
+			"text/css",
+			"application/javascript",
+			"application/json",
+			"application/xml",
+			"image/svg+xml",
+		},
+		GzipCompressionLevel: gzip.DefaultCompression,
 		GzipMIMETypes: []string{
 			"text/plain",
 			"text/html",
@@ -778,6 +797,14 @@ func (a *Air) Serve() error {
 
 	if p, ok := m["minifier_enabled"]; ok {
 		err := md.PrimitiveDecode(p, &a.MinifierEnabled)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p, ok := m["minifier_mime_types"]; ok {
+		a.MinifierMIMETypes = a.MinifierMIMETypes[:0]
+		err := md.PrimitiveDecode(p, &a.MinifierMIMETypes)
 		if err != nil {
 			return err
 		}

@@ -43,8 +43,8 @@ framework that are only used for the server-side on top of it?
 
 A: Of course, I knew it when I started Go. And, I love both of them! But, why
 not try some new flavors? Are you sure you prefer them instead of Air? Don't
-even give Air a try? Wow... Well, maybe Air is not for you. After all, it is for
- people who love to try new things. Relax and continue to maintain the status
+even give Air a try? Wow... Well, maybe Air is not for you. After all, it's for
+people who love to try new things. Relax and continue to maintain the status
 quo, you will be fine.
 
 **Q: What about the fantastic
@@ -54,7 +54,7 @@ A: Just call the `air.WrapHTTPMiddleware()`.
 
 **Q: Is Air good enough?**
 
-A: Far from enough. But it is already working.
+A: Far from enough. But it's already working.
 
 ## Features
 

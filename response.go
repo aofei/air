@@ -38,6 +38,7 @@ type Response struct {
 	Body          io.Writer
 	ContentLength int64
 	Written       bool
+	Minified      bool
 	Gzipped       bool
 
 	req           *Request
@@ -87,13 +88,6 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 // WriteBlob responds to the client with the content b.
 func (r *Response) WriteBlob(b []byte) error {
-	if ct := r.Header.Get("Content-Type"); ct != "" {
-		var err error
-		if b, err = r.Air.minifier.minify(ct, b); err != nil {
-			return err
-		}
-	}
-
 	return r.Write(bytes.NewReader(b))
 }
 
@@ -174,8 +168,8 @@ func (r *Response) WriteProtobuf(v interface{}) error {
 
 // WriteTOML responds to the client with the "application/toml" content v.
 func (r *Response) WriteTOML(v interface{}) error {
-	buf := &bytes.Buffer{}
-	if err := toml.NewEncoder(buf).Encode(v); err != nil {
+	buf := bytes.Buffer{}
+	if err := toml.NewEncoder(&buf).Encode(v); err != nil {
 		return err
 	}
 
@@ -298,6 +292,7 @@ func (r *Response) WriteFile(filename string) error {
 	if a, err := r.Air.coffer.asset(filename); err != nil {
 		return err
 	} else if a != nil {
+		r.Minified = a.minified
 		if r.Air.GzipEnabled &&
 			a.gzippedContent != nil &&
 			strings.Contains(
@@ -540,6 +535,7 @@ type responseWriter struct {
 
 	r  *Response
 	w  http.ResponseWriter
+	mw io.WriteCloser
 	gw *gzip.Writer
 }
 
@@ -559,7 +555,9 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 		err error
 	)
 
-	if rw.gw != nil {
+	if rw.mw != nil {
+		n, err = rw.mw.Write(b)
+	} else if rw.gw != nil {
 		n, err = rw.gw.Write(b)
 	} else {
 		n, err = rw.w.Write(b)
@@ -617,6 +615,21 @@ func (rw *responseWriter) WriteHeader(status int) {
 		h.Del("Content-Length")
 	}
 
+	if !rw.r.Minified &&
+		rw.r.Air.MinifierEnabled &&
+		stringSliceContains(rw.r.Air.MinifierMIMETypes, mt) {
+		w := io.Writer(rw.w)
+		if rw.gw != nil {
+			w = rw.gw
+		}
+
+		rw.mw = rw.r.Air.minifier.minifier.Writer(mt, w)
+		rw.r.Minified = true
+		rw.r.Defer(func() {
+			rw.mw.Close()
+		})
+	}
+
 	if !rw.r.Air.DebugMode &&
 		rw.r.Air.HTTPSEnforced &&
 		rw.r.Air.server.server.TLSConfig != nil &&
@@ -634,6 +647,10 @@ func (rw *responseWriter) WriteHeader(status int) {
 
 // Flush implements the `http.Flusher`.
 func (rw *responseWriter) Flush() {
+	if rw.mw != nil {
+		rw.mw.Close() // It has no flush method
+	}
+
 	if rw.gw != nil {
 		rw.gw.Flush()
 	} else {

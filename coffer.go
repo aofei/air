@@ -103,18 +103,32 @@ func (c *coffer) asset(name string) (*asset, error) {
 		return nil, err
 	}
 
-	var gb []byte
-	mt := mime.TypeByExtension(ext)
+	var (
+		mt       = mime.TypeByExtension(ext)
+		minified bool
+		gb       []byte
+	)
+
 	if mt != "" {
-		if b, err = c.a.minifier.minify(mt, b); err != nil {
+		mt, _, err := mime.ParseMediaType(mt)
+		if err != nil {
 			return nil, err
+		}
+
+		if c.a.MinifierEnabled &&
+			stringSliceContains(c.a.MinifierMIMETypes, mt) {
+			if b, err = c.a.minifier.minify(mt, b); err != nil {
+				return nil, err
+			}
+
+			minified = true
 		}
 
 		if c.a.GzipEnabled &&
 			stringSliceContains(c.a.GzipMIMETypes, mt) {
-			buf := &bytes.Buffer{}
+			buf := bytes.Buffer{}
 			if gw, err := gzip.NewWriterLevel(
-				buf,
+				&buf,
 				c.a.GzipCompressionLevel,
 			); err != nil {
 				return nil, err
@@ -135,6 +149,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 	a := &asset{
 		name:           name,
 		content:        b,
+		minified:       minified,
 		gzippedContent: gb,
 		mimeType:       mt,
 		checksum:       sha256.Sum256(b),
@@ -150,6 +165,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 type asset struct {
 	name           string
 	content        []byte
+	minified       bool
 	gzippedContent []byte
 	mimeType       string
 	checksum       [sha256.Size]byte
