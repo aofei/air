@@ -941,11 +941,11 @@ type Gas func(Handler) Handler
 
 // WrapHTTPMiddleware provides a convenient way to wrap an `http.Handler`
 // middleware into a `Gas`.
-func WrapHTTPMiddleware(m func(http.Handler) http.Handler) Gas {
+func WrapHTTPMiddleware(hm func(http.Handler) http.Handler) Gas {
 	return func(next Handler) Handler {
 		return func(req *Request, res *Response) error {
 			var err error
-			m(http.HandlerFunc(func(
+			hm(http.HandlerFunc(func(
 				rw http.ResponseWriter,
 				r *http.Request,
 			) {

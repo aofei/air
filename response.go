@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -349,7 +349,7 @@ func (r *Response) WriteFile(filename string) error {
 			et = h.Sum(nil)
 		}
 
-		r.Header.Set("ETag", fmt.Sprintf(`"%x"`, et))
+		r.Header.Set("ETag", base64.StdEncoding.EncodeToString(et))
 	}
 
 	if r.Header.Get("Last-Modified") == "" {
