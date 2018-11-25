@@ -1,9 +1,6 @@
 package air
 
 import (
-	"bytes"
-	"mime"
-
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
 	"github.com/tdewolff/minify/v2/html"
@@ -38,21 +35,14 @@ func newMinifier(a *Air) *minifier {
 
 // minify minifies the b based on the mimeType.
 func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
-	mimeType, _, err := mime.ParseMediaType(mimeType)
+	b, err := m.minifier.Bytes(mimeType, b)
 	if err != nil {
+		if err == minify.ErrNotExist {
+			return b, nil
+		}
+
 		return nil, err
 	}
 
-	buf := bytes.Buffer{}
-	if err := m.minifier.Minify(
-		mimeType,
-		&buf,
-		bytes.NewReader(b),
-	); err == minify.ErrNotExist {
-		return b, nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
+	return b, nil
 }

@@ -10,6 +10,7 @@ import (
 	"errors"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	"mime"
 	"net"
@@ -80,6 +81,23 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		return err
 	}
 
+	if !r.Minified && r.Air.MinifierEnabled {
+		mt, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+		if stringSliceContains(r.Air.MinifierMIMETypes, mt) {
+			b, err := ioutil.ReadAll(content)
+			if err != nil {
+				return err
+			}
+
+			if b, err = r.Air.minifier.minify(mt, b); err != nil {
+				return err
+			}
+
+			content = bytes.NewReader(b)
+			r.Minified = true
+		}
+	}
+
 	lm, _ := http.ParseTime(r.Header.Get("Last-Modified"))
 	http.ServeContent(r.hrw, r.req.HTTPRequest(), "", lm, content)
 
@@ -88,18 +106,6 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 // WriteBlob responds to the client with the content b.
 func (r *Response) WriteBlob(b []byte) error {
-	mt, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	if !r.Minified &&
-		r.Air.MinifierEnabled &&
-		stringSliceContains(r.Air.MinifierMIMETypes, mt) {
-		var err error
-		if b, err = r.Air.minifier.minify(mt, b); err != nil {
-			return err
-		}
-
-		r.Minified = true
-	}
-
 	return r.Write(bytes.NewReader(b))
 }
 
