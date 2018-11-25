@@ -88,6 +88,18 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 // WriteBlob responds to the client with the content b.
 func (r *Response) WriteBlob(b []byte) error {
+	mt, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if !r.Minified &&
+		r.Air.MinifierEnabled &&
+		stringSliceContains(r.Air.MinifierMIMETypes, mt) {
+		var err error
+		if b, err = r.Air.minifier.minify(mt, b); err != nil {
+			return err
+		}
+
+		r.Minified = true
+	}
+
 	return r.Write(bytes.NewReader(b))
 }
 
@@ -535,7 +547,6 @@ type responseWriter struct {
 
 	r  *Response
 	w  http.ResponseWriter
-	mw io.WriteCloser
 	gw *gzip.Writer
 }
 
@@ -555,9 +566,7 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 		err error
 	)
 
-	if rw.mw != nil {
-		n, err = rw.mw.Write(b)
-	} else if rw.gw != nil {
+	if rw.gw != nil {
 		n, err = rw.gw.Write(b)
 	} else {
 		n, err = rw.w.Write(b)
@@ -615,21 +624,6 @@ func (rw *responseWriter) WriteHeader(status int) {
 		h.Del("Content-Length")
 	}
 
-	if !rw.r.Minified &&
-		rw.r.Air.MinifierEnabled &&
-		stringSliceContains(rw.r.Air.MinifierMIMETypes, mt) {
-		w := io.Writer(rw.w)
-		if rw.gw != nil {
-			w = rw.gw
-		}
-
-		rw.mw = rw.r.Air.minifier.minifier.Writer(mt, w)
-		rw.r.Minified = true
-		rw.r.Defer(func() {
-			rw.mw.Close()
-		})
-	}
-
 	if !rw.r.Air.DebugMode &&
 		rw.r.Air.HTTPSEnforced &&
 		rw.r.Air.server.server.TLSConfig != nil &&
@@ -647,10 +641,6 @@ func (rw *responseWriter) WriteHeader(status int) {
 
 // Flush implements the `http.Flusher`.
 func (rw *responseWriter) Flush() {
-	if rw.mw != nil {
-		rw.mw.Close() // It has no flush method
-	}
-
 	if rw.gw != nil {
 		rw.gw.Flush()
 	} else {
