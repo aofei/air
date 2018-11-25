@@ -488,6 +488,7 @@ func (r *Response) ProxyPass(target string) error {
 
 	switch u.Scheme {
 	case "http", "https":
+		rp.FlushInterval = 100 * time.Millisecond
 	case "ws", "wss", "grpc", "grpcs":
 		rp.FlushInterval = time.Millisecond
 	default:
