@@ -104,15 +104,10 @@ func (r *Response) Write(content io.ReadSeeker) error {
 	return nil
 }
 
-// WriteBlob responds to the client with the content b.
-func (r *Response) WriteBlob(b []byte) error {
-	return r.Write(bytes.NewReader(b))
-}
-
 // WriteString responds to the client with the "text/plain" content s.
 func (r *Response) WriteString(s string) error {
 	r.Header.Set("Content-Type", "text/plain; charset=utf-8")
-	return r.WriteBlob([]byte(s))
+	return r.Write(strings.NewReader(s))
 }
 
 // WriteJSON responds to the client with the "application/json" content v.
@@ -134,7 +129,7 @@ func (r *Response) WriteJSON(v interface{}) error {
 
 	r.Header.Set("Content-Type", "application/json; charset=utf-8")
 
-	return r.WriteBlob(b)
+	return r.Write(bytes.NewReader(b))
 }
 
 // WriteXML responds to the client with the "application/xml" content v.
@@ -156,7 +151,7 @@ func (r *Response) WriteXML(v interface{}) error {
 
 	r.Header.Set("Content-Type", "application/xml; charset=utf-8")
 
-	return r.WriteBlob(append([]byte(xml.Header), b...))
+	return r.Write(bytes.NewReader(append([]byte(xml.Header), b...)))
 }
 
 // WriteMsgpack responds to the client with the "application/msgpack" content v.
@@ -168,7 +163,7 @@ func (r *Response) WriteMsgpack(v interface{}) error {
 
 	r.Header.Set("Content-Type", "application/msgpack")
 
-	return r.WriteBlob(b)
+	return r.Write(bytes.NewReader(b))
 }
 
 // WriteProtobuf responds to the client with the "application/protobuf" content
@@ -181,7 +176,7 @@ func (r *Response) WriteProtobuf(v interface{}) error {
 
 	r.Header.Set("Content-Type", "application/protobuf")
 
-	return r.WriteBlob(b)
+	return r.Write(bytes.NewReader(b))
 }
 
 // WriteTOML responds to the client with the "application/toml" content v.
@@ -193,7 +188,7 @@ func (r *Response) WriteTOML(v interface{}) error {
 
 	r.Header.Set("Content-Type", "application/toml; charset=utf-8")
 
-	return r.WriteBlob(buf.Bytes())
+	return r.Write(bytes.NewReader(buf.Bytes()))
 }
 
 // WriteHTML responds to the client with the "text/html" content h.
@@ -257,7 +252,7 @@ func (r *Response) WriteHTML(h string) error {
 
 	r.Header.Set("Content-Type", "text/html; charset=utf-8")
 
-	return r.WriteBlob([]byte(h))
+	return r.Write(strings.NewReader(h))
 }
 
 // Render renders one or more HTML templates with the m and responds to the
@@ -537,12 +532,6 @@ type responseBody struct {
 
 // Write implements the `io.Writer`.
 func (rb *responseBody) Write(b []byte) (int, error) {
-	if !rb.r.Written {
-		if err := rb.r.Write(nil); err != nil {
-			return 0, err
-		}
-	}
-
 	return rb.r.hrw.Write(b)
 }
 
