@@ -196,9 +196,6 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		r: res,
 		w: rw,
 	})
-	res.Body = &responseBody{
-		r: res,
-	}
 
 	req.res = res
 

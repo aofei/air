@@ -57,8 +57,14 @@ func (r *Response) HTTPResponseWriter() http.ResponseWriter {
 	return r.hrw
 }
 
+// SetHTTPResponseWriter sets the hrw to the r's underlying
+// `http.ResponseWriter`.
+//
+// ATTENTION: You should never call this method unless you know what you are
+// doing.
 func (r *Response) SetHTTPResponseWriter(hrw http.ResponseWriter) {
 	r.Header = hrw.Header()
+	r.Body = hrw
 	r.hrw = hrw
 }
 
@@ -522,17 +528,6 @@ func (r *Response) Defer(f func()) {
 	if f != nil {
 		r.deferredFuncs = append(r.deferredFuncs, f)
 	}
-}
-
-// responseBody provides a convenient way to continuously write content to the
-// client.
-type responseBody struct {
-	r *Response
-}
-
-// Write implements the `io.Writer`.
-func (rb *responseBody) Write(b []byte) (int, error) {
-	return rb.r.hrw.Write(b)
 }
 
 // responseWriter used to tie the `Response` and the `http.ResponseWriter`
