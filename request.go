@@ -210,6 +210,10 @@ func (r *Request) Bind(v interface{}) error {
 //
 // It only works if the `I18nEnabled` is true.
 func (r *Request) LocalizedString(key string) string {
+	if !r.Air.I18nEnabled {
+		return key
+	}
+
 	if r.localizedString == nil {
 		r.Air.i18n.localize(r)
 	}

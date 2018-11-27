@@ -72,10 +72,6 @@ func newCoffer(a *Air) *coffer {
 
 // asset returns an `asset` from the c for the name.
 func (c *coffer) asset(name string) (*asset, error) {
-	if !c.a.CofferEnabled {
-		return nil, nil
-	}
-
 	if ai, ok := c.assets.Load(name); ok {
 		if a, ok := ai.(*asset); ok {
 			return a, nil

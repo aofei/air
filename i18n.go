@@ -67,14 +67,6 @@ func newI18n(a *Air) *i18n {
 
 // localize localizes the r.
 func (i *i18n) localize(r *Request) {
-	if !i.a.I18nEnabled {
-		r.localizedString = func(key string) string {
-			return key
-		}
-
-		return
-	}
-
 	i.once.Do(func() {
 		lr, err := filepath.Abs(i.a.LocaleRoot)
 		if err != nil {

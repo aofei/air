@@ -157,7 +157,7 @@ func (r *Response) WriteXML(v interface{}) error {
 
 	r.Header.Set("Content-Type", "application/xml; charset=utf-8")
 
-	return r.Write(bytes.NewReader(append([]byte(xml.Header), b...)))
+	return r.Write(strings.NewReader(xml.Header + string(b)))
 }
 
 // WriteMsgpack responds to the client with the "application/msgpack" content v.
@@ -308,26 +308,30 @@ func (r *Response) WriteFile(filename string) error {
 		mt time.Time
 	)
 
-	if a, err := r.Air.coffer.asset(filename); err != nil {
-		return err
-	} else if a != nil {
-		r.Minified = a.minified
-		if r.Air.GzipEnabled &&
-			a.gzippedContent != nil &&
-			strings.Contains(
-				r.req.Header.Get("Accept-Encoding"),
-				"gzip",
-			) {
-			c = bytes.NewReader(a.gzippedContent)
-			r.Gzipped = true
-		} else if c == nil {
-			c = bytes.NewReader(a.content)
-		}
+	if r.Air.CofferEnabled {
+		if a, err := r.Air.coffer.asset(filename); err != nil {
+			return err
+		} else if a != nil {
+			r.Minified = a.minified
+			if r.Air.GzipEnabled &&
+				a.gzippedContent != nil &&
+				strings.Contains(
+					r.req.Header.Get("Accept-Encoding"),
+					"gzip",
+				) {
+				c = bytes.NewReader(a.gzippedContent)
+				r.Gzipped = true
+			} else {
+				c = bytes.NewReader(a.content)
+			}
 
-		ct = a.mimeType
-		et = a.checksum[:]
-		mt = a.modTime
-	} else {
+			ct = a.mimeType
+			et = a.checksum[:]
+			mt = a.modTime
+		}
+	}
+
+	if c == nil {
 		f, err := os.Open(filename)
 		if err != nil {
 			return err
@@ -348,8 +352,10 @@ func (r *Response) WriteFile(filename string) error {
 			ct = mime.TypeByExtension(filepath.Ext(filename))
 		}
 
-		if ct != "" { // Don't worry, someone will check it later
+		if ct != "" {
 			r.Header.Set("Content-Type", ct)
+		} else {
+			r.Header.Del("Content-Type") // Make it sniffable
 		}
 	}
 
