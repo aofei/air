@@ -125,15 +125,15 @@ func (r *router) insert(
 		r.maxParams = l
 	}
 
-	cn := r.tree // Current node as the root of the `tree` of the r
-
 	var (
-		s  = path // Search
-		nn *node  // Next node
-		sl int    // Search length
-		pl int    // Prefix length
-		ll int    // LCP length
-		ml int    // Max length of sl and pl
+		s = path // Search
+
+		cn = r.tree // Current node
+		nn *node    // Next node
+		sl int      // Search length
+		pl int      // Prefix length
+		ll int      // LCP length
+		ml int      // Max length of sl and pl
 	)
 
 	for {
@@ -223,7 +223,7 @@ func (r *router) insert(
 			cn.paramNames = paramNames
 		}
 
-		return
+		break
 	}
 }
 
