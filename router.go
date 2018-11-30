@@ -79,7 +79,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 		if path[i] == ':' {
 			j := i + 1
 
-			r.insert(method, path[:i], nil, static, nil)
+			r.insert(method, path[:i], nil, nodeKindStatic, nil)
 
 			for ; i < l && path[i] != '/'; i++ {
 			}
@@ -97,20 +97,38 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 			path = path[:j] + path[i:]
 
 			if i, l = j, len(path); i == l {
-				r.insert(method, path, nh, param, paramNames)
+				r.insert(
+					method,
+					path,
+					nh,
+					nodeKindParam,
+					paramNames,
+				)
 				return
 			}
 
-			r.insert(method, path[:i], nil, param, paramNames)
+			r.insert(
+				method,
+				path[:i],
+				nil,
+				nodeKindParam,
+				paramNames,
+			)
 		} else if path[i] == '*' {
-			r.insert(method, path[:i], nil, static, nil)
+			r.insert(method, path[:i], nil, nodeKindStatic, nil)
 			paramNames = append(paramNames, "*")
-			r.insert(method, path[:i+1], nh, any, paramNames)
+			r.insert(
+				method,
+				path[:i+1],
+				nh,
+				nodeKindAny,
+				paramNames,
+			)
 			return
 		}
 	}
 
-	r.insert(method, path, nh, static, paramNames)
+	r.insert(method, path, nh, nodeKindStatic, paramNames)
 }
 
 // insert inserts a new route into the `tree` of the r.
@@ -149,17 +167,16 @@ func (r *router) insert(
 		for ; ll < ml && s[ll] == cn.prefix[ll]; ll++ {
 		}
 
-		if ll == 0 {
-			// At root node.
+		if ll == 0 { // At root node
 			cn.label = s[0]
 			cn.prefix = s
+			cn.kind = nk
 			if h != nil {
-				cn.kind = nk
 				cn.handlers[method] = h
-				cn.paramNames = paramNames
 			}
-		} else if ll < pl {
-			// Split node.
+
+			cn.paramNames = paramNames
+		} else if ll < pl { // Split node
 			nn = &node{
 				kind:       cn.kind,
 				label:      cn.prefix[ll],
@@ -171,7 +188,7 @@ func (r *router) insert(
 			}
 
 			// Reset parent node.
-			cn.kind = static
+			cn.kind = nodeKindStatic
 			cn.label = cn.prefix[0]
 			cn.prefix = cn.prefix[:ll]
 			cn.children = nil
@@ -179,13 +196,14 @@ func (r *router) insert(
 			cn.paramNames = nil
 			cn.children = append(cn.children, nn)
 
-			if ll == sl {
-				// At parent node.
+			if ll == sl { // At parent node
 				cn.kind = nk
-				cn.handlers[method] = h
+				if h != nil {
+					cn.handlers[method] = h
+				}
+
 				cn.paramNames = paramNames
-			} else {
-				// Create child node.
+			} else { // Create child node
 				nn = &node{
 					kind:       nk,
 					label:      s[ll],
@@ -194,7 +212,10 @@ func (r *router) insert(
 					parent:     cn,
 					paramNames: paramNames,
 				}
-				nn.handlers[method] = h
+				if h != nil {
+					nn.handlers[method] = h
+				}
+
 				cn.children = append(cn.children, nn)
 			}
 		} else if ll < sl {
@@ -215,12 +236,19 @@ func (r *router) insert(
 				parent:     cn,
 				paramNames: paramNames,
 			}
-			nn.handlers[method] = h
+			if h != nil {
+				nn.handlers[method] = h
+			}
+
 			cn.children = append(cn.children, nn)
-		} else if h != nil {
-			// Node already exists.
-			cn.handlers[method] = h
-			cn.paramNames = paramNames
+		} else { // Node already exists
+			if h != nil {
+				cn.handlers[method] = h
+			}
+
+			if len(cn.paramNames) == 0 {
+				cn.paramNames = paramNames
+			}
 		}
 
 		break
@@ -272,18 +300,22 @@ func (r *router) route(req *Request) Handler {
 		}
 
 		if s = s[ll:]; s == "" {
-			if len(cn.handlers) == 0 && cn.childByKind(any) != nil {
-				goto Any
+			if len(cn.handlers) == 0 {
+				if cn.childByKind(nodeKindParam) != nil {
+					goto Param
+				} else if cn.childByKind(nodeKindAny) != nil {
+					goto Any
+				}
 			}
 
 			break
 		}
 
 		// Static node.
-		if nn = cn.child(s[0], static); nn != nil {
+		if nn = cn.child(s[0], nodeKindStatic); nn != nil {
 			// Save next.
 			if hasLastSlash(cn.prefix) {
-				nk = param
+				nk = nodeKindParam
 				sn = cn
 				ss = s
 			}
@@ -295,10 +327,10 @@ func (r *router) route(req *Request) Handler {
 
 		// Param node.
 	Param:
-		if nn = cn.childByKind(param); nn != nil {
+		if nn = cn.childByKind(nodeKindParam); nn != nil {
 			// Save next.
 			if hasLastSlash(cn.prefix) {
-				nk = any
+				nk = nodeKindAny
 				sn = cn
 				ss = s
 			}
@@ -316,7 +348,7 @@ func (r *router) route(req *Request) Handler {
 
 		// Any node.
 	Any:
-		if cn = cn.childByKind(any); cn != nil {
+		if cn = cn.childByKind(nodeKindAny); cn != nil {
 			if len(pvs) < len(cn.paramNames) {
 				pvs = append(pvs, unescape(s))
 			} else {
@@ -334,9 +366,9 @@ func (r *router) route(req *Request) Handler {
 			s = ss
 
 			switch nk {
-			case param:
+			case nodeKindParam:
 				goto Param
-			case any:
+			case nodeKindAny:
 				goto Any
 			}
 		}
@@ -430,9 +462,9 @@ type nodeKind uint8
 
 // the node kinds.
 const (
-	static nodeKind = iota
-	param
-	any
+	nodeKindStatic nodeKind = iota
+	nodeKindParam
+	nodeKindAny
 )
 
 // hasLastSlash reports whether the s has the last '/'.
