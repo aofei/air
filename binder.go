@@ -69,13 +69,13 @@ func (b *binder) bind(v interface{}, r *Request) error {
 
 // bindParams binds the params into the v.
 func (b *binder) bindParams(v interface{}, params []*RequestParam) error {
-	typ := reflect.TypeOf(v).Elem()
-	if typ.Kind() != reflect.Struct {
+	t := reflect.TypeOf(v).Elem()
+	if t.Kind() != reflect.Struct {
 		return errors.New("binding element must be a struct")
 	}
 
 	val := reflect.ValueOf(v).Elem()
-	for i := 0; i < typ.NumField(); i++ {
+	for i := 0; i < t.NumField(); i++ {
 		vf := val.Field(i)
 		if !vf.CanSet() {
 			continue
@@ -91,7 +91,7 @@ func (b *binder) bindParams(v interface{}, params []*RequestParam) error {
 			continue
 		}
 
-		tf := typ.Field(i)
+		tf := t.Field(i)
 
 		var pv *RequestParamValue
 		for _, p := range params {

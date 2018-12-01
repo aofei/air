@@ -132,6 +132,8 @@ func (r *Request) parseParams() {
 		r.hr.ParseMultipartForm(32 << 20)
 	}
 
+	r.growParams(len(r.hr.Form))
+
 FormLoop:
 	for n, vs := range r.hr.Form {
 		pvs := make([]*RequestParamValue, 0, len(vs))
@@ -154,9 +156,11 @@ FormLoop:
 		})
 	}
 
-	if r.hr.MultipartForm != nil {
+	if mf := r.hr.MultipartForm; mf != nil {
+		r.growParams(len(mf.Value) + len(mf.File))
+
 	MultipartFormValueLoop:
-		for n, vs := range r.hr.MultipartForm.Value {
+		for n, vs := range mf.Value {
 			pvs := make([]*RequestParamValue, 0, len(vs))
 			for _, v := range vs {
 				pvs = append(pvs, &RequestParamValue{
@@ -178,7 +182,7 @@ FormLoop:
 		}
 
 	MultipartFormFileLoop:
-		for n, vs := range r.hr.MultipartForm.File {
+		for n, vs := range mf.File {
 			pvs := make([]*RequestParamValue, 0, len(vs))
 			for _, v := range vs {
 				pvs = append(pvs, &RequestParamValue{
@@ -198,6 +202,16 @@ FormLoop:
 				Values: pvs,
 			})
 		}
+	}
+}
+
+// growParams grows `r.params`'s capacity, if necessary, to guarantee space for
+// another n.
+func (r *Request) growParams(n int) {
+	if cap(r.params)-len(r.params) < n {
+		ps := make([]*RequestParam, len(r.params), cap(r.params)+n)
+		copy(ps, r.params)
+		r.params = ps
 	}
 }
 

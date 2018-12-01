@@ -2,26 +2,35 @@ package air
 
 import (
 	"strings"
+	"sync"
 	"unsafe"
 )
 
 // router is a registry of all registered routes.
 type router struct {
-	a         *Air
-	tree      *node
-	maxParams int
-	routes    map[string]bool
+	a               *Air
+	tree            *node
+	routes          map[string]bool
+	maxParams       int
+	paramValuesPool *sync.Pool
 }
 
 // newRouter returns a new instance of the `router` with the a.
 func newRouter(a *Air) *router {
-	return &router{
+	r := &router{
 		a: a,
 		tree: &node{
 			handlers: map[string]Handler{},
 		},
 		routes: map[string]bool{},
 	}
+	r.paramValuesPool = &sync.Pool{
+		New: func() interface{} {
+			return make([]string, 0, r.maxParams)
+		},
+	}
+
+	return r
 }
 
 // register registers a new route for the method and the path with the matching
@@ -260,18 +269,20 @@ func (r *router) route(req *Request) Handler {
 	var (
 		s = neatPath(req.HTTPRequest().URL.EscapedPath()) // Search
 
-		cn  = r.tree                         // Current node
-		nn  *node                            // Next node
-		nk  nodeKind                         // Next kind
-		sn  *node                            // Saved node
-		ss  string                           // Saved search
-		sl  int                              // Search length
-		pl  int                              // Prefix length
-		ll  int                              // LCP length
-		ml  int                              // Max length of sl and pl
-		si  int                              // Start index
-		pvs = make([]string, 0, r.maxParams) // Param values
+		cn = r.tree // Current node
+		nn *node    // Next node
+		nk nodeKind // Next kind
+		sn *node    // Saved node
+		ss string   // Saved search
+		sl int      // Search length
+		pl int      // Prefix length
+		ll int      // LCP length
+		ml int      // Max length of sl and pl
+		si int      // Start index
 	)
+
+	pvs := r.paramValuesPool.Get().([]string)[:0] // Param values
+	defer r.paramValuesPool.Put(pvs)
 
 	// Search order: static > param > any.
 	for {
@@ -377,32 +388,44 @@ func (r *router) route(req *Request) Handler {
 	}
 
 	if handler := cn.handlers[req.Method]; handler != nil {
-		for i, pv := range pvs {
-			pn := cn.paramNames[i]
+		if len(pvs) == 0 {
+			return handler
+		}
 
-		OuterLoop:
-			for _, p := range req.params {
-				if p.Name == pn {
-					p.Values = append(
-						[]*RequestParamValue{
-							{
-								i: pv,
-							},
+		if len(req.params) == 0 {
+			req.params = make([]*RequestParam, 0, len(pvs))
+			for i, pv := range pvs {
+				req.params = append(req.params, &RequestParam{
+					Name: cn.paramNames[i],
+					Values: []*RequestParamValue{
+						{
+							i: pv,
 						},
+					},
+				})
+			}
+		} else {
+			req.growParams(len(pvs))
+			for i, pv := range pvs {
+				pn := cn.paramNames[i]
+				rpv := &RequestParamValue{
+					i: pv,
+				}
+				if p := req.Param(pn); p != nil {
+					p.Values = append(
+						[]*RequestParamValue{rpv},
 						p.Values...,
 					)
-					continue OuterLoop
+				} else {
+					p := &RequestParam{
+						Name: pn,
+						Values: []*RequestParamValue{
+							rpv,
+						},
+					}
+					req.params = append(req.params, p)
 				}
 			}
-
-			req.params = append(req.params, &RequestParam{
-				Name: pn,
-				Values: []*RequestParamValue{
-					{
-						i: pv,
-					},
-				},
-			})
 		}
 
 		return handler
