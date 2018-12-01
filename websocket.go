@@ -8,12 +8,29 @@ import (
 
 // WebSocket is a WebSocket peer.
 type WebSocket struct {
-	TextHandler            func(text string) error
-	BinaryHandler          func(b []byte) error
+	// TextHandler is the handler that handles the incoming text messages of
+	// the current WebSocket.
+	TextHandler func(text string) error
+
+	// BinaryHandler is the handler that handles the incoming binary
+	// messages of the current WebSocket.
+	BinaryHandler func(b []byte) error
+
+	// ConnectionCloseHandler is the handler that handles the incoming
+	// connection close messages of the current WebSocket.
 	ConnectionCloseHandler func(status int, reason string) error
-	PingHandler            func(appData string) error
-	PongHandler            func(appData string) error
-	ErrorHandler           func(err error)
+
+	// PingHandler is the handler that handles the incoming ping messages of
+	// the current WebSocket.
+	PingHandler func(appData string) error
+
+	// PongHandler is the handler that handles the incoming pong messages of
+	// the current WebSocket.
+	PongHandler func(appData string) error
+
+	// ErrorHandler is the handler that handles error occurs in the incoming
+	// messages of the current WebSocket.
+	ErrorHandler func(err error)
 
 	conn     *websocket.Conn
 	listened bool

@@ -4,9 +4,14 @@ package air
 // routes that share common gases or functionality that should be separate from
 // the parent while still inheriting from it.
 type Group struct {
-	Air    *Air
+	// Air is where the current group belong.
+	Air *Air
+
+	// Prefix is the prefix of all the route paths of the current group.
 	Prefix string
-	Gases  []Gas
+
+	// Gases is the group-level gases of the current group.
+	Gases []Gas
 }
 
 // GET implements the `Air#GET()`.

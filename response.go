@@ -33,14 +33,45 @@ import (
 
 // Response is an HTTP response.
 type Response struct {
-	Air           *Air
-	Status        int
-	Header        http.Header
-	Body          io.Writer
+	// Air is where the current response belong.
+	Air *Air
+
+	// Status is the status code giving the result of the attempt to
+	// understand and satisfy the request.
+	//
+	// See RFC 7231, section 6.
+	//
+	// For HTTP/1.x, it will be put in response-line.
+	//
+	// For HTTP/2, it will be the ":status" pseudo-header.
+	Status int
+
+	// Header is the header key-value pair map of the current response.
+	//
+	// See RFC 7231, section 7.
+	//
+	// It is basically the same for HTTP/1.x and HTTP/2. The only difference
+	// is that HTTP/2 requires header names to be lowercase. See RFC 7540,
+	// section 8.1.2.
+	Header http.Header
+
+	// Body is the message body of the current response. It can be used to
+	// write a streaming response.
+	Body io.Writer
+
+	// ContentLength records the length of the bytes that has been written.
 	ContentLength int64
-	Written       bool
-	Minified      bool
-	Gzipped       bool
+
+	// Written indicates whether the current response has been written.
+	Written bool
+
+	// Minified indicates whether the message body of the current response
+	// has been minifed.
+	Minified bool
+
+	// Gzipped indicates whether the message body of the current response
+	// has been Gzipped.
+	Gzipped bool
 
 	req           *Request
 	hrw           http.ResponseWriter

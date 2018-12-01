@@ -13,15 +13,65 @@ import (
 
 // Request is an HTTP request.
 type Request struct {
-	Air           *Air
-	Method        string
-	Scheme        string
-	Authority     string
-	Path          string
-	Header        http.Header
-	Body          io.Reader
+	// Air is where the current request belong.
+	Air *Air
+
+	// Method is the method of the current request.
+	//
+	// See RFC 7231, section 4.3.
+	//
+	// For HTTP/1.x, it is from the request-line.
+	//
+	// For HTTP/2, it is from the ":method" pseudo-header.
+	Method string
+
+	// Scheme is the scheme of the current request, it is "http" or "https".
+	//
+	// See RFC 3986, section 3.1.
+	//
+	// For HTTP/1.x, it is from the request-line.
+	//
+	// For HTTP/2, it is from the ":scheme" pseudo-header.
+	Scheme string
+
+	// Authority is the authority of the current request. It may be of the
+	// form "host:port".
+	//
+	// See RFC 3986, Section 3.2.
+	//
+	// For HTTP/1.x, it is from the "Host" header.
+	//
+	// For HTTP/2, it is from the ":authority" pseudo-header.
+	Authority string
+
+	// Path is the path of the current request.
+	//
+	// For HTTP/1.x, it represents the request-target of the request-line.
+	// See RFC 7230, section 3.1.1.
+	//
+	// For HTTP/2, it represents the ":path" pseudo-header. See RFC 7540,
+	// section 8.1.2.3.
+	Path string
+
+	// Header is the header key-value pair map of the current request.
+	//
+	// See RFC 7231, section 5.
+	//
+	// It is basically the same for HTTP/1.x and HTTP/2. The only difference
+	// is that HTTP/2 requires header names to be lowercase. See RFC 7540,
+	// section 8.1.2.
+	Header http.Header
+
+	// Body is the message body of the current request.
+	Body io.Reader
+
+	// ContentLength records the length of the associated content. The value
+	// -1 indicates that the length is unknown. Values >= 0 indicate that
+	// the given number of bytes may be read from the `Body`.
 	ContentLength int64
-	Values        map[string]interface{}
+
+	// Values is the custom values that associated with the current request.
+	Values map[string]interface{}
 
 	hr              *http.Request
 	res             *Response
@@ -237,7 +287,15 @@ func (r *Request) LocalizedString(key string) string {
 
 // RequestParam is an HTTP request param.
 type RequestParam struct {
-	Name   string
+	// Name is the name of the current request param.
+	Name string
+
+	// Values is the values of the current request param.
+	//
+	// It represents a route path param value, a request query value,
+	// a request form value, a request multipart form value or a request
+	// multipart form file value. The route param value always has the
+	// highest weight.
 	Values []*RequestParamValue
 }
 
