@@ -323,14 +323,6 @@ type Air struct {
 	// It is called "asset_root" when it is used as a configuration item.
 	AssetRoot string
 
-	// AssetCacheRoot is the root of the asset cache files.
-	//
-	// The default value is "assets/.cache".
-	//
-	// It is called "asset_cache_root" when it is used as a configuration
-	// item.
-	AssetCacheRoot string
-
 	// AssetExts is the filename extensions of the asset files used to
 	// distinguish the asset files in the `AssetRoot` when loading them into
 	// the coffer.
@@ -426,7 +418,6 @@ func New() *Air {
 		},
 		CofferMaxMemoryBytes: 32 << 20,
 		AssetRoot:            "assets",
-		AssetCacheRoot:       "assets/.cache",
 		AssetExts: []string{
 			".html",
 			".css",
@@ -872,12 +863,6 @@ func (a *Air) Serve() error {
 
 	if p, ok := m["asset_root"]; ok {
 		if err := md.PrimitiveDecode(p, &a.AssetRoot); err != nil {
-			return err
-		}
-	}
-
-	if p, ok := m["asset_cache_root"]; ok {
-		if err := md.PrimitiveDecode(p, &a.AssetCacheRoot); err != nil {
 			return err
 		}
 	}

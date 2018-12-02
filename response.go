@@ -70,7 +70,7 @@ type Response struct {
 	Minified bool
 
 	// Gzipped indicates whether the message body of the current response
-	// has been Gzipped.
+	// has been gzipped.
 	Gzipped bool
 
 	req           *Request
@@ -344,21 +344,27 @@ func (r *Response) WriteFile(filename string) error {
 			return err
 		} else if a != nil {
 			r.Minified = a.minified
+
+			var ac []byte
 			if r.Air.GzipEnabled &&
-				a.gzippedContent != nil &&
 				strings.Contains(
 					r.req.Header.Get("Accept-Encoding"),
 					"gzip",
 				) {
-				c = bytes.NewReader(a.gzippedContent)
-				r.Gzipped = true
+				ac = a.content(true)
+				if ac != nil {
+					r.Gzipped = true
+				}
 			} else {
-				c = bytes.NewReader(a.content)
+				ac = a.content(false)
 			}
 
-			ct = a.mimeType
-			et = a.checksum[:]
-			mt = a.modTime
+			if ac != nil {
+				c = bytes.NewReader(ac)
+				ct = a.mimeType
+				et = a.contentChecksum[:]
+				mt = a.modTime
+			}
 		}
 	}
 

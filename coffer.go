@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/VictoriaMetrics/fastcache"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -20,7 +21,9 @@ import (
 // I/O pressure.
 type coffer struct {
 	a       *Air
+	once    *sync.Once
 	assets  *sync.Map
+	cache   *fastcache.Cache
 	watcher *fsnotify.Watcher
 }
 
@@ -28,6 +31,7 @@ type coffer struct {
 func newCoffer(a *Air) *coffer {
 	c := &coffer{
 		a:      a,
+		once:   &sync.Once{},
 		assets: &sync.Map{},
 	}
 
@@ -53,7 +57,12 @@ func newCoffer(a *Air) *coffer {
 					)
 				}
 
-				c.assets.Delete(e.Name)
+				if ai, ok := c.assets.Load(e.Name); ok {
+					a := ai.(*asset)
+					c.assets.Delete(a.name)
+					c.cache.Del(a.contentChecksum[:])
+					c.cache.Del(a.gzippedContentChecksum[:])
+				}
 			case err := <-c.watcher.Errors:
 				if a.CofferEnabled {
 					a.ERROR(
@@ -72,12 +81,12 @@ func newCoffer(a *Air) *coffer {
 
 // asset returns an `asset` from the c for the name.
 func (c *coffer) asset(name string) (*asset, error) {
-	if ai, ok := c.assets.Load(name); ok {
-		if a, ok := ai.(*asset); ok {
-			return a, nil
-		}
+	c.once.Do(func() {
+		c.cache = fastcache.New(c.a.CofferMaxMemoryBytes)
+	})
 
-		c.assets.Delete(name)
+	if ai, ok := c.assets.Load(name); ok {
+		return ai.(*asset), nil
 	} else if ar, err := filepath.Abs(c.a.AssetRoot); err != nil {
 		return nil, err
 	} else if !strings.HasPrefix(name, ar) {
@@ -143,13 +152,18 @@ func (c *coffer) asset(name string) (*asset, error) {
 	}
 
 	a := &asset{
-		name:           name,
-		content:        b,
-		minified:       minified,
-		gzippedContent: gb,
-		mimeType:       mt,
-		checksum:       sha256.Sum256(b),
-		modTime:        fi.ModTime(),
+		coffer:          c,
+		name:            name,
+		mimeType:        mt,
+		modTime:         fi.ModTime(),
+		minified:        minified,
+		contentChecksum: sha256.Sum256(b),
+	}
+
+	c.cache.Set(a.contentChecksum[:], b)
+	if gb != nil {
+		a.gzippedContentChecksum = sha256.Sum256(gb)
+		c.cache.Set(a.gzippedContentChecksum[:], gb)
 	}
 
 	c.assets.Store(name, a)
@@ -159,11 +173,30 @@ func (c *coffer) asset(name string) (*asset, error) {
 
 // asset is a binary asset file.
 type asset struct {
-	name           string
-	content        []byte
-	minified       bool
-	gzippedContent []byte
-	mimeType       string
-	checksum       [sha256.Size]byte
-	modTime        time.Time
+	coffer                 *coffer
+	name                   string
+	mimeType               string
+	modTime                time.Time
+	minified               bool
+	contentChecksum        [sha256.Size]byte
+	gzippedContentChecksum [sha256.Size]byte
+}
+
+// content returns the content of the a with the gzipped.
+func (a *asset) content(gzipped bool) []byte {
+	var c []byte
+	if gzipped {
+		c = a.coffer.cache.Get(nil, a.gzippedContentChecksum[:])
+	} else {
+		c = a.coffer.cache.Get(nil, a.contentChecksum[:])
+	}
+
+	if len(c) == 0 {
+		a.coffer.assets.Delete(a.name)
+		a.coffer.cache.Del(a.contentChecksum[:])
+		a.coffer.cache.Del(a.gzippedContentChecksum[:])
+		return nil
+	}
+
+	return c
 }
