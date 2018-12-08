@@ -11,7 +11,6 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime"
 	"net"
 	"net/http"
@@ -545,7 +544,7 @@ func (r *Response) ProxyPass(target string) error {
 
 	rp := httputil.NewSingleHostReverseProxy(u)
 	rp.Transport = r.Air.reverseProxyTransport
-	rp.ErrorLog = log.New(r.Air.errorLogWriter, "air: ", 0)
+	rp.ErrorLog = r.Air.errorLogger
 	rp.BufferPool = r.Air.reverseProxyBufferPool
 
 	switch u.Scheme {

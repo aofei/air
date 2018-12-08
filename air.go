@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -363,7 +364,7 @@ type Air struct {
 	ConfigFile string
 
 	logger                 *logger
-	errorLogWriter         *errorLogWriter
+	errorLogger            *log.Logger
 	server                 *server
 	router                 *router
 	binder                 *binder
@@ -435,7 +436,7 @@ func New() *Air {
 	}
 
 	a.logger = newLogger(a)
-	a.errorLogWriter = newErrorLogWriter(a)
+	a.errorLogger = log.New(newErrorLogWriter(a), "air: ", 0)
 	a.server = newServer(a)
 	a.router = newRouter(a)
 	a.binder = newBinder(a)

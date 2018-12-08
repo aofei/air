@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -46,7 +45,7 @@ func (s *server) serve() error {
 	s.server.WriteTimeout = s.a.WriteTimeout
 	s.server.IdleTimeout = s.a.IdleTimeout
 	s.server.MaxHeaderBytes = s.a.MaxHeaderBytes
-	s.server.ErrorLog = log.New(s.a.errorLogWriter, "air: ", 0)
+	s.server.ErrorLog = s.a.errorLogger
 
 	if s.a.DebugMode {
 		s.a.DEBUG("air: serving in debug mode")
