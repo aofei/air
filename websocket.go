@@ -45,48 +45,48 @@ func (ws *WebSocket) Listen() {
 
 	ws.listened = true
 
-	go func() {
-		for {
-			if ws.closed {
-				break
-			}
+	for {
+		if ws.closed {
+			break
+		}
 
-			mt, r, err := ws.conn.NextReader()
-			if err != nil {
-				if !websocket.IsCloseError(
-					err,
-					websocket.CloseNormalClosure,
-				) && ws.ErrorHandler != nil {
-					ws.ErrorHandler(err)
-				}
-
-				break
-			}
-
-			switch mt {
-			case websocket.TextMessage:
-				if ws.TextHandler != nil {
-					var b []byte
-					b, err = ioutil.ReadAll(r)
-					if err == nil {
-						err = ws.TextHandler(string(b))
-					}
-				}
-			case websocket.BinaryMessage:
-				if ws.BinaryHandler != nil {
-					var b []byte
-					b, err = ioutil.ReadAll(r)
-					if err == nil {
-						err = ws.BinaryHandler(b)
-					}
-				}
-			}
-
-			if err != nil && ws.ErrorHandler != nil {
+		mt, r, err := ws.conn.NextReader()
+		if err != nil {
+			if !websocket.IsCloseError(
+				err,
+				websocket.CloseNormalClosure,
+			) && ws.ErrorHandler != nil {
 				ws.ErrorHandler(err)
 			}
+
+			break
 		}
-	}()
+
+		switch mt {
+		case websocket.TextMessage:
+			if ws.TextHandler == nil {
+				break
+			}
+
+			var b []byte
+			if b, err = ioutil.ReadAll(r); err == nil {
+				err = ws.TextHandler(string(b))
+			}
+		case websocket.BinaryMessage:
+			if ws.BinaryHandler != nil {
+				break
+			}
+
+			var b []byte
+			if b, err = ioutil.ReadAll(r); err == nil {
+				err = ws.BinaryHandler(b)
+			}
+		}
+
+		if err != nil && ws.ErrorHandler != nil {
+			ws.ErrorHandler(err)
+		}
+	}
 }
 
 // WriteText writes the text to the remote peer of the ws.
