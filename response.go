@@ -3,7 +3,6 @@ package air
 import (
 	"bytes"
 	"compress/gzip"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
@@ -24,6 +23,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/cespare/xxhash"
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack"
@@ -346,6 +346,7 @@ func (r *Response) WriteFile(filename string) error {
 
 			var ac []byte
 			if r.Air.GzipEnabled &&
+				a.gzippedDigest != nil &&
 				strings.Contains(
 					r.req.Header.Get("Accept-Encoding"),
 					"gzip",
@@ -361,7 +362,7 @@ func (r *Response) WriteFile(filename string) error {
 			if ac != nil {
 				c = bytes.NewReader(ac)
 				ct = a.mimeType
-				et = a.contentChecksum[:]
+				et = a.digest
 				mt = a.modTime
 			}
 		}
@@ -397,7 +398,7 @@ func (r *Response) WriteFile(filename string) error {
 
 	if r.Header.Get("ETag") == "" {
 		if et == nil {
-			h := sha256.New()
+			h := xxhash.New()
 			if _, err := io.Copy(h, c); err != nil {
 				return err
 			}

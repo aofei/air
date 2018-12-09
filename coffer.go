@@ -3,7 +3,7 @@ package air
 import (
 	"bytes"
 	"compress/gzip"
-	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"mime"
@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/fastcache"
+	"github.com/cespare/xxhash"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -60,8 +61,10 @@ func newCoffer(a *Air) *coffer {
 				if ai, ok := c.assets.Load(e.Name); ok {
 					a := ai.(*asset)
 					c.assets.Delete(a.name)
-					c.cache.Del(a.contentChecksum[:])
-					c.cache.Del(a.gzippedContentChecksum[:])
+					c.cache.Del(a.digest)
+					if a.gzippedDigest != nil {
+						c.cache.Del(a.gzippedDigest)
+					}
 				}
 			case err := <-c.watcher.Errors:
 				if a.CofferEnabled {
@@ -152,18 +155,21 @@ func (c *coffer) asset(name string) (*asset, error) {
 	}
 
 	a := &asset{
-		coffer:          c,
-		name:            name,
-		mimeType:        mt,
-		modTime:         fi.ModTime(),
-		minified:        minified,
-		contentChecksum: sha256.Sum256(b),
+		coffer:   c,
+		name:     name,
+		mimeType: mt,
+		modTime:  fi.ModTime(),
+		minified: minified,
+		digest:   make([]byte, 8),
 	}
 
-	c.cache.Set(a.contentChecksum[:], b)
+	binary.BigEndian.PutUint64(a.digest, xxhash.Sum64(b))
+	c.cache.Set(a.digest, b)
+
 	if gb != nil {
-		a.gzippedContentChecksum = sha256.Sum256(gb)
-		c.cache.Set(a.gzippedContentChecksum[:], gb)
+		a.gzippedDigest = make([]byte, 8)
+		binary.BigEndian.PutUint64(a.gzippedDigest, xxhash.Sum64(gb))
+		c.cache.Set(a.gzippedDigest, gb)
 	}
 
 	c.assets.Store(name, a)
@@ -173,28 +179,31 @@ func (c *coffer) asset(name string) (*asset, error) {
 
 // asset is a binary asset file.
 type asset struct {
-	coffer                 *coffer
-	name                   string
-	mimeType               string
-	modTime                time.Time
-	minified               bool
-	contentChecksum        [sha256.Size]byte
-	gzippedContentChecksum [sha256.Size]byte
+	coffer        *coffer
+	name          string
+	mimeType      string
+	modTime       time.Time
+	minified      bool
+	digest        []byte
+	gzippedDigest []byte
 }
 
 // content returns the content of the a with the gzipped.
 func (a *asset) content(gzipped bool) []byte {
 	var c []byte
 	if gzipped {
-		c = a.coffer.cache.Get(nil, a.gzippedContentChecksum[:])
+		c = a.coffer.cache.Get(nil, a.gzippedDigest)
 	} else {
-		c = a.coffer.cache.Get(nil, a.contentChecksum[:])
+		c = a.coffer.cache.Get(nil, a.digest)
 	}
 
 	if len(c) == 0 {
 		a.coffer.assets.Delete(a.name)
-		a.coffer.cache.Del(a.contentChecksum[:])
-		a.coffer.cache.Del(a.gzippedContentChecksum[:])
+		a.coffer.cache.Del(a.digest)
+		if a.gzippedDigest != nil {
+			a.coffer.cache.Del(a.gzippedDigest)
+		}
+
 		return nil
 	}
 
