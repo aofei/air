@@ -664,8 +664,6 @@ func (rw *responseWriter) WriteHeader(status int) {
 		h.Set("Strict-Transport-Security", "max-age=31536000")
 	}
 
-	h.Set("Server", "Air")
-
 	rw.w.WriteHeader(status)
 
 	rw.r.Status = status

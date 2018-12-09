@@ -70,8 +70,6 @@ func (s *server) serve() error {
 				host = r.Host
 			}
 
-			rw.Header().Set("Server", "Air")
-
 			http.Redirect(
 				rw,
 				r,
@@ -158,8 +156,6 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			if r.TLS != nil {
 				scheme = "https"
 			}
-
-			rw.Header().Set("Server", "Air")
 
 			http.Redirect(
 				rw,
