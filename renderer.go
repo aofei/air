@@ -137,7 +137,7 @@ func (r *renderer) render(
 
 	t := r.template.Lookup(name)
 	if t == nil {
-		fmt.Errorf("html/template: %q is undefined", name)
+		return fmt.Errorf("html/template: %q is undefined", name)
 	}
 
 	if r.a.I18nEnabled {
