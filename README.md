@@ -100,7 +100,7 @@ A: Far from enough. But it's already working.
 	* Retrieves resources on behalf of a client from another server
 	* Protocols:
 		* HTTP(S)
-		* WebSocket (Coming soon...)
+		* WebSocket
 		* gRPC
 * Binder
 	* `application/json`
