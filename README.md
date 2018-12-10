@@ -189,7 +189,7 @@ and run it
 $ go run hello.go
 ```
 
-then visit `http://localhost:2333`.
+then visit `http://localhost:8080`.
 
 ## Documentation
 
