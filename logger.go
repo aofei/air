@@ -60,17 +60,18 @@ func (l *logger) log(ll LoggerLevel, m string, es ...map[string]interface{}) {
 	}
 
 	if err != nil {
+		s := ""
 		if l.a.DebugMode {
-			b = []byte(fmt.Sprintf(
-				"{\n\t\"logger_error\": \"%v\"\n}",
-				err,
-			))
+			s = fmt.Sprintf("{\n\t\"logger_error\": %q\n}", err)
 		} else {
-			b = []byte(fmt.Sprintf(`{"logger_error":"%v"}`, err))
+			s = fmt.Sprintf("{\"logger_error\":%q}", err)
 		}
+
+		b = []byte(s)
 	}
 
-	l.a.LoggerOutput.Write(append(b, '\n'))
+	l.a.LoggerOutput.Write(b)
+	l.a.LoggerOutput.Write([]byte{'\n'})
 }
 
 // LoggerLevel is the level of the logger.
