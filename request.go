@@ -508,7 +508,7 @@ func (rpv *RequestParamValue) String() string {
 		if s, ok := rpv.i.(string); ok {
 			rpv.s = &s
 		} else {
-			s := fmt.Sprintf("%v", rpv.i)
+			s := fmt.Sprint(rpv.i)
 			rpv.s = &s
 		}
 	}

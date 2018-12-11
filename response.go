@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -242,7 +241,7 @@ func (r *Response) WriteHTML(h string) error {
 		f = func(n *html.Node) {
 			if n.Type == html.ElementNode {
 				avoid, target := false, ""
-				switch n.Data {
+				switch strings.ToLower(n.Data) {
 				case "link":
 					relChecked := false
 				LinkLoop:
@@ -319,10 +318,9 @@ func (r *Response) WriteFile(filename string) error {
 	} else if fi, err := os.Stat(filename); err != nil {
 		return err
 	} else if fi.IsDir() {
-		hru := r.req.HTTPRequest().URL
-		if p := hru.EscapedPath(); !hasLastSlash(p) {
+		if p, q := splitPathQuery(r.req.Path); !hasLastSlash(p) {
 			p = path.Base(p) + "/"
-			if q := hru.RawQuery; q != "" {
+			if q != "" {
 				p += "?" + q
 			}
 
@@ -546,6 +544,9 @@ func (r *Response) ProxyPass(target string) error {
 		return err
 	}
 
+	u.Scheme = strings.ToLower(u.Scheme)
+	u.Host = strings.ToLower(u.Host)
+
 	switch u.Scheme {
 	case "http", "https", "ws", "wss", "grpc", "grpcs":
 	default:
@@ -582,9 +583,9 @@ func (r *Response) ProxyPass(target string) error {
 	oreqh.Del("Upgrade")
 	oreqh.Del("Connection")
 	oreqh.Del("Sec-WebSocket-Key")
-	oreqh.Del("Sec-WebSocket-Version")
 	oreqh.Del("Sec-WebSocket-Extensions")
 	oreqh.Del("Sec-WebSocket-Accept")
+	oreqh.Del("Sec-WebSocket-Version")
 
 	dc, res, err := websocket.DefaultDialer.Dial(u.String(), oreqh)
 	if err != nil {
@@ -888,7 +889,7 @@ func replicateWebSocketConn(dst, src *websocket.Conn, errChan chan error) {
 				e.Code == websocket.CloseNoStatusReceived {
 				m = websocket.FormatCloseMessage(
 					websocket.CloseNormalClosure,
-					fmt.Sprintf("%v", err),
+					err.Error(),
 				)
 			} else if ok &&
 				e.Code != websocket.CloseAbnormalClosure &&

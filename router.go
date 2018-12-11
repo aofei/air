@@ -3,7 +3,6 @@ package air
 import (
 	"strings"
 	"sync"
-	"unsafe"
 )
 
 // router is a registry of all registered routes.
@@ -153,14 +152,13 @@ func (r *router) insert(
 	}
 
 	var (
-		s = path // Search
-
+		s  = path   // Search
 		cn = r.tree // Current node
 		nn *node    // Next node
 		sl int      // Search length
 		pl int      // Prefix length
 		ll int      // LCP length
-		ml int      // Max length of sl and pl
+		ml int      // Minimum length of sl and pl
 	)
 
 	for {
@@ -267,18 +265,17 @@ func (r *router) insert(
 // route returns a handler registered for the req.
 func (r *router) route(req *Request) Handler {
 	var (
-		s = neatPath(req.HTTPRequest().URL.EscapedPath()) // Search
-
-		cn = r.tree // Current node
-		nn *node    // Next node
-		nk nodeKind // Next kind
-		sn *node    // Saved node
-		ss string   // Saved search
-		sl int      // Search length
-		pl int      // Prefix length
-		ll int      // LCP length
-		ml int      // Max length of sl and pl
-		si int      // Start index
+		s, _ = splitPathQuery(req.Path) // Search
+		cn   = r.tree                   // Current node
+		nn   *node                      // Next node
+		nk   nodeKind                   // Next kind
+		sn   *node                      // Saved node
+		ss   string                     // Saved search
+		sl   int                        // Search length
+		pl   int                        // Prefix length
+		ll   int                        // LCP length
+		ml   int                        // Minimum length of sl and pl
+		i    int                        // Index
 	)
 
 	pvs := r.paramValuesPool.Get().([]string)[:0] // Param values
@@ -290,15 +287,19 @@ func (r *router) route(req *Request) Handler {
 			break
 		}
 
+		for i, sl = 1, len(s); i < sl && s[i] == '/'; i++ {
+		}
+
+		s = s[i-1:]
+
 		pl = 0
 		ll = 0
 
 		if cn.label != ':' {
-			sl = len(s)
 			pl = len(cn.prefix)
 
 			ml = pl
-			if sl < ml {
+			if sl = len(s); sl < ml {
 				ml = sl
 			}
 
@@ -348,11 +349,11 @@ func (r *router) route(req *Request) Handler {
 
 			cn = nn
 
-			for si = 0; si < len(s) && s[si] != '/'; si++ {
+			for i, sl = 0, len(s); i < sl && s[i] != '/'; i++ {
 			}
 
-			pvs = append(pvs, unescape(s[:si]))
-			s = s[si:]
+			pvs = append(pvs, unescape(s[:i]))
+			s = s[i:]
 
 			continue
 		}
@@ -516,28 +517,17 @@ func pathWithoutParamNames(p string) string {
 	return p
 }
 
-// neatPath returns a neat path from the p.
-func neatPath(p string) string {
-	if p == "" {
-		return "/"
+// splitPathQuery splits the p of the form "path?query" into path and query.
+func splitPathQuery(p string) (path, query string) {
+	i, l := 0, len(p)
+	for ; i < l && p[i] != '?'; i++ {
 	}
 
-	b := make([]byte, 0, len(p))
-	for i, l := 0, len(p); i < l; {
-		if p[i] == '/' {
-			i++
-			if i == l {
-				b = append(b, '/')
-			}
-		} else {
-			b = append(b, '/')
-			for ; i < l && p[i] != '/'; i++ {
-				b = append(b, p[i])
-			}
-		}
+	if i < l {
+		return p[:i], p[i+1:]
 	}
 
-	return *(*string)(unsafe.Pointer(&b))
+	return p, ""
 }
 
 // unescape return a normal string unescaped from the s.

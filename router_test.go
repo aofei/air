@@ -262,7 +262,7 @@ func TestRouterRouteAny(t *testing.T) {
 	assert.NoError(t, r.route(req)(req, res))
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
-	assert.Equal(t, "foobar/", req.Param("*").Value().String())
+	assert.Equal(t, "foobar//", req.Param("*").Value().String())
 	assert.Equal(t, http.StatusOK, res.Status)
 	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
 
@@ -286,7 +286,7 @@ func TestRouterRouteAny(t *testing.T) {
 	assert.NoError(t, r.route(req)(req, res))
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
-	assert.Equal(t, "foo/bar/", req.Param("*").Value().String())
+	assert.Equal(t, "foo/bar//", req.Param("*").Value().String())
 	assert.Equal(t, http.StatusOK, res.Status)
 	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
 
@@ -318,7 +318,7 @@ func TestRouterRouteAny(t *testing.T) {
 	assert.NoError(t, r.route(req)(req, res))
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
-	assert.Equal(t, "/", req.Param("*").Value().String())
+	assert.Equal(t, "//", req.Param("*").Value().String())
 	assert.Equal(t, http.StatusOK, res.Status)
 	assert.Equal(t, "Matched [GET /foobar*]", rec.Body.String())
 
@@ -583,10 +583,18 @@ func TestPathWithoutParamNames(t *testing.T) {
 	assert.Equal(t, "/foo/:", pathWithoutParamNames("/foo/:bar"))
 }
 
-func TestNeatPath(t *testing.T) {
-	assert.Equal(t, "/", neatPath(""))
-	assert.Equal(t, "/", neatPath("//"))
-	assert.Equal(t, "/foo/bar/foobar/", neatPath("/foo//bar/foobar//"))
+func TestSplitPathQuery(t *testing.T) {
+	p, q := splitPathQuery("/foobar")
+	assert.Equal(t, "/foobar", p)
+	assert.Empty(t, q)
+
+	p, q = splitPathQuery("/foobar?")
+	assert.Equal(t, "/foobar", p)
+	assert.Empty(t, q)
+
+	p, q = splitPathQuery("/foobar?foo=bar")
+	assert.Equal(t, "/foobar", p)
+	assert.Equal(t, "foo=bar", q)
 }
 
 func TestUnescape(t *testing.T) {
