@@ -193,9 +193,11 @@ then visit `http://localhost:8080`.
 
 ## Documentation
 
-* [English](https://github.com/aofei/air/wiki/Documentation)
-* [简体中文](https://github.com/aofei/air/wiki/文档)
-* [GoDoc](https://godoc.org/github.com/aofei/air)
+Does all the web frameworks need to have a complicated (or a lovely but lengthy)
+website to guide people how to use them? Well, Air has only one
+[GoDoc](https://godoc.org/github.com/aofei/air) with useful comments. In fact,
+Air is so succinct that you don't need to understand how to use it through a
+large document.
 
 ## Gases
 
