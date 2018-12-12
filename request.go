@@ -1,6 +1,7 @@
 package air
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -70,8 +71,12 @@ type Request struct {
 	// the given number of bytes may be read from the `Body`.
 	ContentLength int64
 
-	// Values is the custom values that associated with the current request.
-	Values map[string]interface{}
+	// Context is the context that associated with the current request.
+	//
+	// It is canceled when the client's connection closes, the current
+	// request is canceled (with HTTP/2), or when the current
+	// request-response cycle is finished.
+	Context context.Context
 
 	hr              *http.Request
 	res             *Response
@@ -96,6 +101,10 @@ func (r *Request) HTTPRequest() *http.Request {
 	r.hr.Header = r.Header
 	r.hr.Body = r.Body.(io.ReadCloser)
 	r.hr.ContentLength = r.ContentLength
+	if r.hr.Context() != r.Context {
+		r.hr = r.hr.WithContext(r.Context)
+	}
+
 	return r.hr
 }
 
@@ -115,6 +124,7 @@ func (r *Request) SetHTTPRequest(hr *http.Request) {
 	r.Header = hr.Header
 	r.Body = hr.Body
 	r.ContentLength = hr.ContentLength
+	r.Context = hr.Context()
 	r.hr = hr
 }
 

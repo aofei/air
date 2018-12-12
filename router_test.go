@@ -608,8 +608,7 @@ func fakeRRCycle(
 	body io.Reader,
 ) (*Request, *Response, *httptest.ResponseRecorder) {
 	req := &Request{
-		Air:    a,
-		Values: map[string]interface{}{},
+		Air: a,
 
 		parseParamsOnce: &sync.Once{},
 	}
