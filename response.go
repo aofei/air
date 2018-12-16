@@ -51,9 +51,9 @@ type Response struct {
 	//
 	// See RFC 7231, section 7.
 	//
-	// It is basically the same for HTTP/1.x and HTTP/2. The only difference
-	// is that HTTP/2 requires header names to be lowercase. See RFC 7540,
-	// section 8.1.2.
+	// It is basically the same for both of HTTP/1.x and HTTP/2. The only
+	// difference is that HTTP/2 requires header names to be lowercase. See
+	// RFC 7540, section 8.1.2.
 	Header http.Header
 
 	// Body is the message body of the current response. It can be used to

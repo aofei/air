@@ -484,7 +484,7 @@ func (n *node) childByKind(k nodeKind) *node {
 // nodeKind is a kind of the `node`.
 type nodeKind uint8
 
-// the node kinds.
+// The node kinds.
 const (
 	nodeKindStatic nodeKind = iota
 	nodeKindParam

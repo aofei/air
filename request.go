@@ -58,9 +58,9 @@ type Request struct {
 	//
 	// See RFC 7231, section 5.
 	//
-	// It is basically the same for HTTP/1.x and HTTP/2. The only difference
-	// is that HTTP/2 requires header names to be lowercase. See RFC 7540,
-	// section 8.1.2.
+	// It is basically the same for both of HTTP/1.x and HTTP/2. The only
+	// difference is that HTTP/2 requires header names to be lowercase. See
+	// RFC 7540, section 8.1.2.
 	Header http.Header
 
 	// Body is the message body of the current request.
@@ -302,10 +302,7 @@ type RequestParam struct {
 
 	// Values is the values of the current request param.
 	//
-	// It represents a route path param value, a request query value,
-	// a request form value, a request multipart form value or a request
-	// multipart form file value. The route param value always has the
-	// highest weight.
+	// The route param value always has the highest weight.
 	Values []*RequestParamValue
 }
 
@@ -320,6 +317,10 @@ func (rp *RequestParam) Value() *RequestParamValue {
 }
 
 // RequestParamValue is an HTTP request param value.
+//
+// It may represent a route path param value, a request query value, a request
+// form value, a request multipart form value or a request multipart form file
+// value.
 type RequestParamValue struct {
 	i    interface{}
 	b    *bool
