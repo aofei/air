@@ -75,10 +75,12 @@ type Response struct {
 	// has been gzipped.
 	Gzipped bool
 
-	req           *Request
-	hrw           http.ResponseWriter
-	ohrw          http.ResponseWriter
-	deferredFuncs []func()
+	req               *Request
+	hrw               http.ResponseWriter
+	ohrw              http.ResponseWriter
+	servingContent    bool
+	serveContentError error
+	deferredFuncs     []func()
 }
 
 // HTTPResponseWriter returns the underlying `http.ResponseWriter` of the r.
@@ -112,13 +114,11 @@ func (r *Response) SetCookie(c *http.Cookie) {
 // Write responds to the client with the content.
 func (r *Response) Write(content io.ReadSeeker) error {
 	if r.Written {
-		if r.req.Method == http.MethodHead {
-			return nil
+		if r.req.Method != http.MethodHead {
+			io.Copy(r.hrw, content)
 		}
 
-		_, err := io.Copy(r.hrw, content)
-
-		return err
+		return nil
 	}
 
 	if r.Header.Get("Content-Type") == "" {
@@ -150,12 +150,25 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		}
 	}
 
-	lm := time.Time{}
-	if lmh := r.Header.Get("Last-Modified"); lmh != "" {
-		lm, _ = http.ParseTime(lmh)
+	if r.Status < http.StatusBadRequest {
+		lm := time.Time{}
+		if lmh := r.Header.Get("Last-Modified"); lmh != "" {
+			lm, _ = http.ParseTime(lmh)
+		}
+
+		r.servingContent = true
+		http.ServeContent(r.hrw, r.req.HTTPRequest(), "", lm, content)
+		r.servingContent = false
+
+		return r.serveContentError
 	}
 
-	http.ServeContent(r.hrw, r.req.HTTPRequest(), "", lm, content)
+	r.Header.Del("ETag")
+	r.Header.Del("Last-Modified")
+
+	if r.req.Method != http.MethodHead {
+		io.Copy(r.hrw, content)
+	}
 
 	return nil
 }
@@ -686,6 +699,11 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 		rw.WriteHeader(rw.r.Status)
 	}
 
+	if rw.r.servingContent && rw.r.Status >= http.StatusBadRequest {
+		rw.r.serveContentError = errors.New(string(b))
+		return 0, nil
+	}
+
 	var (
 		n   int
 		err error
@@ -715,11 +733,19 @@ func (rw *responseWriter) WriteHeader(status int) {
 		return
 	}
 
-	if status == http.StatusOK && status != rw.r.Status {
-		status = rw.r.Status
-	}
-
 	h := rw.w.Header()
+	if rw.r.servingContent {
+		if status >= http.StatusBadRequest {
+			rw.r.Status = status
+			h.Del("Content-Type")
+			h.Del("X-Content-Type-Options")
+			return
+		}
+
+		if status == http.StatusOK {
+			status = rw.r.Status
+		}
+	}
 
 	mt, _, _ := mime.ParseMediaType(h.Get("Content-Type"))
 	if rw.r.Air.GzipEnabled &&

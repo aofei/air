@@ -119,12 +119,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 	)
 
 	if mt == "" {
-		l := len(b)
-		if l > 512 {
-			l = 512
-		}
-
-		mt = mimesniffer.Sniff(b[:l])
+		mt = mimesniffer.Sniff(b)
 	}
 
 	pmt, _, err := mime.ParseMediaType(mt)

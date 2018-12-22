@@ -118,7 +118,7 @@ A: Far from enough. But it's already working.
 		* `application/x-www-form-urlencoded`
 		* `multipart/form-data`
 * Minifier
-	* Minify HTTP response on the fly
+	* Minifies HTTP response on the fly
 	* Supported MIME types:
 		* `text/html`
 		* `text/css`
