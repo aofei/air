@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/aofei/mimesniffer"
 	"github.com/cespare/xxhash"
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
@@ -111,12 +112,25 @@ func (r *Response) SetCookie(c *http.Cookie) {
 // Write responds to the client with the content.
 func (r *Response) Write(content io.ReadSeeker) error {
 	if r.Written {
-		var err error
-		if r.req.Method != http.MethodHead {
-			_, err = io.Copy(r.hrw, content)
+		if r.req.Method == http.MethodHead {
+			return nil
 		}
 
+		_, err := io.Copy(r.hrw, content)
+
 		return err
+	}
+
+	if r.Header.Get("Content-Type") == "" {
+		b := [512]byte{}
+		n, err := io.ReadFull(content, b[:])
+		if err != nil {
+			return err
+		} else if _, err := content.Seek(0, io.SeekStart); err != nil {
+			return err
+		}
+
+		r.Header.Set("Content-Type", mimesniffer.Sniff(b[:n]))
 	}
 
 	if !r.Minified && r.Air.MinifierEnabled {
@@ -136,7 +150,11 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		}
 	}
 
-	lm, _ := http.ParseTime(r.Header.Get("Last-Modified"))
+	lm := time.Time{}
+	if lmh := r.Header.Get("Last-Modified"); lmh != "" {
+		lm, _ = http.ParseTime(lmh)
+	}
+
 	http.ServeContent(r.hrw, r.req.HTTPRequest(), "", lm, content)
 
 	return nil
@@ -390,11 +408,7 @@ func (r *Response) WriteFile(filename string) error {
 			ct = mime.TypeByExtension(filepath.Ext(filename))
 		}
 
-		if ct != "" {
-			r.Header.Set("Content-Type", ct)
-		} else {
-			r.Header.Del("Content-Type") // Make it sniffable
-		}
+		r.Header.Set("Content-Type", ct)
 	}
 
 	if r.Header.Get("ETag") == "" {
