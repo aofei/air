@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/fastcache"
+	"github.com/aofei/mimesniffer"
 	"github.com/cespare/xxhash"
 	"github.com/fsnotify/fsnotify"
 )
@@ -117,37 +118,43 @@ func (c *coffer) asset(name string) (*asset, error) {
 		gb       []byte
 	)
 
-	if mt != "" {
-		mt, _, err := mime.ParseMediaType(mt)
-		if err != nil {
+	if mt == "" {
+		l := len(b)
+		if l > 512 {
+			l = 512
+		}
+
+		mt = mimesniffer.Sniff(b[:l])
+	}
+
+	pmt, _, err := mime.ParseMediaType(mt)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.a.MinifierEnabled &&
+		stringSliceContains(c.a.MinifierMIMETypes, pmt) {
+		if b, err = c.a.minifier.minify(pmt, b); err != nil {
 			return nil, err
 		}
 
-		if c.a.MinifierEnabled &&
-			stringSliceContains(c.a.MinifierMIMETypes, mt) {
-			if b, err = c.a.minifier.minify(mt, b); err != nil {
-				return nil, err
-			}
+		minified = true
+	}
 
-			minified = true
+	if c.a.GzipEnabled && stringSliceContains(c.a.GzipMIMETypes, pmt) {
+		buf := bytes.Buffer{}
+		if gw, err := gzip.NewWriterLevel(
+			&buf,
+			c.a.GzipCompressionLevel,
+		); err != nil {
+			return nil, err
+		} else if _, err = gw.Write(b); err != nil {
+			return nil, err
+		} else if err = gw.Close(); err != nil {
+			return nil, err
 		}
 
-		if c.a.GzipEnabled &&
-			stringSliceContains(c.a.GzipMIMETypes, mt) {
-			buf := bytes.Buffer{}
-			if gw, err := gzip.NewWriterLevel(
-				&buf,
-				c.a.GzipCompressionLevel,
-			); err != nil {
-				return nil, err
-			} else if _, err = gw.Write(b); err != nil {
-				return nil, err
-			} else if err = gw.Close(); err != nil {
-				return nil, err
-			}
-
-			gb = buf.Bytes()
-		}
+		gb = buf.Bytes()
 	}
 
 	if err := c.watcher.Add(name); err != nil {
