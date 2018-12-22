@@ -166,6 +166,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 	r.Header.Del("ETag")
 	r.Header.Del("Last-Modified")
 
+	r.hrw.WriteHeader(r.Status)
 	if r.req.Method != http.MethodHead {
 		io.Copy(r.hrw, content)
 	}
