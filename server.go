@@ -198,17 +198,12 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h := func(req *Request, res *Response) error {
 		rh := s.a.router.route(req)
 		h := func(req *Request, res *Response) error {
-			defer func() {
-				if l := len(res.deferredFuncs); l > 0 {
-					for i := l - 1; i >= 0; i-- {
-						res.deferredFuncs[i]()
-					}
-				}
-			}()
-
 			if err := rh(req, res); err != nil {
 				return err
 			} else if !res.Written {
+				res.Status = http.StatusNoContent
+				r.Header.Del("Content-Type")
+				r.Header.Del("Content-Length")
 				return res.Write(nil)
 			}
 
@@ -232,5 +227,13 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	if err := h(req, res); err != nil {
 		s.a.ErrorHandler(err, req, res)
+	}
+
+	// Execute deferred functions.
+
+	if l := len(res.deferredFuncs); l > 0 {
+		for i := l - 1; i >= 0; i-- {
+			res.deferredFuncs[i]()
+		}
 	}
 }

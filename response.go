@@ -19,6 +19,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -168,11 +169,23 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		return r.serveContentError
 	}
 
+	if r.Header.Get("Content-Encoding") == "" {
+		cl, err := content.Seek(0, io.SeekEnd)
+		if err != nil {
+			return err
+		} else if _, err := content.Seek(0, io.SeekStart); err != nil {
+			return err
+		}
+
+		r.Header.Set("Content-Length", strconv.FormatInt(cl, 10))
+	}
+
 	r.Header.Del("ETag")
 	r.Header.Del("Last-Modified")
 
-	r.hrw.WriteHeader(r.Status)
-	if r.req.Method != http.MethodHead {
+	if r.req.Method == http.MethodHead {
+		r.hrw.WriteHeader(r.Status)
+	} else {
 		io.Copy(r.hrw, content)
 	}
 
