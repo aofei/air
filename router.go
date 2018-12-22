@@ -276,10 +276,8 @@ func (r *router) route(req *Request) Handler {
 		ll   int                        // LCP length
 		ml   int                        // Minimum length of sl and pl
 		i    int                        // Index
+		pvs  []string                   // Param values
 	)
-
-	pvs := r.paramValuesPool.Get().([]string)[:0] // Param values
-	defer r.paramValuesPool.Put(pvs)
 
 	// Search order: static > param > any.
 	for {
@@ -352,6 +350,11 @@ func (r *router) route(req *Request) Handler {
 			for i, sl = 0, len(s); i < sl && s[i] != '/'; i++ {
 			}
 
+			if pvs == nil {
+				pvs = r.paramValuesPool.Get().([]string)
+				defer r.paramValuesPool.Put(pvs[:0])
+			}
+
 			pvs = append(pvs, s[:i])
 			s = s[i:]
 
@@ -361,6 +364,11 @@ func (r *router) route(req *Request) Handler {
 		// Any node.
 	Any:
 		if cn = cn.childByKind(nodeKindAny); cn != nil {
+			if pvs == nil {
+				pvs = r.paramValuesPool.Get().([]string)
+				defer r.paramValuesPool.Put(pvs[:0])
+			}
+
 			if len(pvs) < len(cn.paramNames) {
 				pvs = append(pvs, s)
 			} else {

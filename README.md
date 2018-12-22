@@ -105,23 +105,27 @@ A: Far from enough. But it's already working.
 		* WebSocket
 		* gRPC
 * Binder
-	* `application/json`
-	* `application/xml`
-	* `application/msgpack`
-	* `application/x-msgpack`
-	* `application/protobuf`
-	* `application/x-protobuf`
-	* `application/toml`
-	* `application/x-toml`
-	* `application/x-www-form-urlencoded`
-	* `multipart/form-data`
+	* Binds HTTP request body into the provided struct
+	* Supported MIME types:
+		* `application/json`
+		* `application/xml`
+		* `application/msgpack`
+		* `application/x-msgpack`
+		* `application/protobuf`
+		* `application/x-protobuf`
+		* `application/toml`
+		* `application/x-toml`
+		* `application/x-www-form-urlencoded`
+		* `multipart/form-data`
 * Minifier
-	* `text/html`
-	* `text/css`
-	* `application/javascript`
-	* `application/json`
-	* `application/xml`
-	* `image/svg+xml`
+	* Minify HTTP response on the fly
+	* Supported MIME types:
+		* `text/html`
+		* `text/css`
+		* `application/javascript`
+		* `application/json`
+		* `application/xml`
+		* `image/svg+xml`
 * Gzip
 	* Compresses HTTP response by using the gzip
 	* Default MIME types:
@@ -137,17 +141,8 @@ A: Far from enough. But it's already working.
 	* Hot update support
 * Coffer
 	* Accesses binary asset files by using the runtime memory
-	* Significantly improves the performance of the `air.Response#File()`
-	* Asset file minimization:
-		* `.html`
-		* `.css`
-		* `.js`
-		* `.json`
-		* `.xml`
-		* `.svg`
-		* `.jpg`
-		* `.jpeg`
-		* `.png`
+	* Significantly improves the performance of the `air.Response#WriteFile()`
+	* Asset file minimization support
 	* Hot update support
 * I18n
 	* Adapt to the request's favorite conventions
