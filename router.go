@@ -352,7 +352,7 @@ func (r *router) route(req *Request) Handler {
 			for i, sl = 0, len(s); i < sl && s[i] != '/'; i++ {
 			}
 
-			pvs = append(pvs, unescape(s[:i]))
+			pvs = append(pvs, s[:i])
 			s = s[i:]
 
 			continue
@@ -362,9 +362,9 @@ func (r *router) route(req *Request) Handler {
 	Any:
 		if cn = cn.childByKind(nodeKindAny); cn != nil {
 			if len(pvs) < len(cn.paramNames) {
-				pvs = append(pvs, unescape(s))
+				pvs = append(pvs, s)
 			} else {
-				pvs[len(cn.paramNames)-1] = unescape(s)
+				pvs[len(cn.paramNames)-1] = s
 			}
 
 			break
@@ -388,53 +388,56 @@ func (r *router) route(req *Request) Handler {
 		return r.a.NotFoundHandler
 	}
 
-	if handler := cn.handlers[req.Method]; handler != nil {
-		if len(pvs) == 0 {
-			return handler
+	h := cn.handlers[req.Method]
+	if h == nil {
+		if len(cn.handlers) != 0 {
+			return r.a.MethodNotAllowedHandler
 		}
 
-		if len(req.params) == 0 {
-			req.params = make([]*RequestParam, 0, len(pvs))
-			for i, pv := range pvs {
-				req.params = append(req.params, &RequestParam{
-					Name: cn.paramNames[i],
-					Values: []*RequestParamValue{
-						{
-							i: pv,
-						},
-					},
-				})
-			}
-		} else {
-			req.growParams(len(pvs))
-			for i, pv := range pvs {
-				pn := cn.paramNames[i]
-				rpv := &RequestParamValue{
-					i: pv,
-				}
-				if p := req.Param(pn); p != nil {
-					p.Values = append(
-						[]*RequestParamValue{rpv},
-						p.Values...,
-					)
-				} else {
-					p := &RequestParam{
-						Name: pn,
-						Values: []*RequestParamValue{
-							rpv,
-						},
-					}
-					req.params = append(req.params, p)
-				}
-			}
-		}
-
-		return handler
-	} else if len(cn.handlers) != 0 {
-		return r.a.MethodNotAllowedHandler
+		return r.a.NotFoundHandler
 	}
 
-	return r.a.NotFoundHandler
+	if len(pvs) == 0 {
+		return h
+	}
+
+	// NOTE: Slow zone.
+
+	if len(req.params) == 0 {
+		req.params = make([]*RequestParam, 0, len(pvs))
+		for i, pv := range pvs {
+			req.params = append(req.params, &RequestParam{
+				Name: cn.paramNames[i],
+				Values: []*RequestParamValue{
+					{
+						i: unescape(pv),
+					},
+				},
+			})
+		}
+
+		return h
+	}
+
+	req.growParams(len(pvs))
+	for i, pv := range pvs {
+		pn := cn.paramNames[i]
+		pvs := []*RequestParamValue{
+			{
+				i: unescape(pv),
+			},
+		}
+		if p := req.Param(pn); p != nil {
+			p.Values = append(pvs, p.Values...)
+		} else {
+			req.params = append(req.params, &RequestParam{
+				Name:   pn,
+				Values: pvs,
+			})
+		}
+	}
+
+	return h
 }
 
 // node is the node of the radix tree.

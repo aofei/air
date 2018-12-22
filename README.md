@@ -86,9 +86,11 @@ A: Far from enough. But it's already working.
 	* Graceful shutdown support
 * Router
 	* Based on the Radix Tree
+	* Zero dynamic memory allocation
+	* Blazing fast
 	* Has a good inspection mechanism
 	* Group routes support
-* Gas (also called middleware)
+* Gas (aka middleware)
 	* Router level:
 		* Before router
 		* After router
