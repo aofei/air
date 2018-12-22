@@ -147,6 +147,11 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 			content = bytes.NewReader(b)
 			r.Minified = true
+			defer func() {
+				if !r.Written {
+					r.Minified = false
+				}
+			}()
 		}
 	}
 
