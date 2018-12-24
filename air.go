@@ -46,7 +46,7 @@ type Air struct {
 	//
 	// It only works when the `DebugMode` is false.
 	//
-	// The default value is the `LoggerLevelDebug`.
+	// The default value is the `LoggerLevelInfo`.
 	//
 	// It is called "logger_lowest_level" when it is used as a configuration
 	// item.
@@ -379,6 +379,7 @@ var Default = New()
 func New() *Air {
 	a := &Air{
 		AppName:                 "air",
+		LoggerLowestLevel:       LoggerLevelInfo,
 		LoggerOutput:            os.Stdout,
 		Address:                 ":8080",
 		MaxHeaderBytes:          1 << 20,
@@ -682,7 +683,7 @@ func (a *Air) Serve() error {
 			a.LoggerLowestLevel = LoggerLevelFatal
 		case LoggerLevelPanic.String():
 			a.LoggerLowestLevel = LoggerLevelPanic
-		case LoggerLevelOff.String():
+		default:
 			a.LoggerLowestLevel = LoggerLevelOff
 		}
 	}

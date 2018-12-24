@@ -22,6 +22,8 @@ func TestLoggerLog(t *testing.T) {
 	buf := bytes.Buffer{}
 	a.LoggerOutput = &buf
 
+	a.LoggerLowestLevel = LoggerLevelDebug
+
 	buf.Reset()
 	l.log(LoggerLevelDebug, "")
 	assert.NotEmpty(t, buf.String())
@@ -52,5 +54,5 @@ func TestLoggerLevelString(t *testing.T) {
 	assert.Equal(t, "fatal", LoggerLevelFatal.String())
 	assert.Equal(t, "panic", LoggerLevelPanic.String())
 	assert.Equal(t, "off", LoggerLevelOff.String())
-	assert.Empty(t, LoggerLevel(255).String())
+	assert.Equal(t, "off", LoggerLevel(255).String())
 }
