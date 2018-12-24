@@ -114,6 +114,10 @@ func (r *Response) SetCookie(c *http.Cookie) {
 
 // Write responds to the client with the content.
 func (r *Response) Write(content io.ReadSeeker) error {
+	if content == nil { // Content must never be nil
+		content = bytes.NewReader(nil)
+	}
+
 	if r.Written {
 		if r.req.Method != http.MethodHead {
 			io.Copy(r.hrw, content)
@@ -125,7 +129,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 	if r.Header.Get("Content-Type") == "" {
 		b := [512]byte{}
 		n, err := io.ReadFull(content, b[:])
-		if err != nil {
+		if err != nil && err != io.EOF {
 			return err
 		} else if _, err := content.Seek(0, io.SeekStart); err != nil {
 			return err
