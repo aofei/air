@@ -22,13 +22,13 @@ func TestLoggerLog(t *testing.T) {
 	buf := bytes.Buffer{}
 	a.LoggerOutput = &buf
 
-	a.LoggerLowestLevel = LoggerLevelDebug
+	a.LoggerLevel = LoggerLevelDebug
 
 	buf.Reset()
 	l.log(LoggerLevelDebug, "")
 	assert.NotEmpty(t, buf.String())
 
-	a.LoggerLowestLevel = LoggerLevelInfo
+	a.LoggerLevel = LoggerLevelInfo
 
 	buf.Reset()
 	l.log(LoggerLevelDebug, "")

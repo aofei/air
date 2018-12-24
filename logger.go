@@ -24,7 +24,7 @@ func newLogger(a *Air) *logger {
 
 // log logs the m at the ll with the optional es.
 func (l *logger) log(ll LoggerLevel, m string, es ...map[string]interface{}) {
-	if !l.a.DebugMode && ll < l.a.LoggerLowestLevel {
+	if !l.a.DebugMode && ll < l.a.LoggerLevel {
 		return
 	}
 

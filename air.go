@@ -42,15 +42,14 @@ type Air struct {
 	// It is called "debug_mode" when it is used as a configuration item.
 	DebugMode bool
 
-	// LoggerLowestLevel is the lowest level of the logger.
+	// LoggerLevel is the level of the logger.
 	//
 	// It only works when the `DebugMode` is false.
 	//
 	// The default value is the `LoggerLevelInfo`.
 	//
-	// It is called "logger_lowest_level" when it is used as a configuration
-	// item.
-	LoggerLowestLevel LoggerLevel
+	// It is called "logger_level" when it is used as a configuration item.
+	LoggerLevel LoggerLevel
 
 	// LoggerOutput is the output destination of the logger.
 	//
@@ -379,7 +378,7 @@ var Default = New()
 func New() *Air {
 	a := &Air{
 		AppName:                 "air",
-		LoggerLowestLevel:       LoggerLevelInfo,
+		LoggerLevel:             LoggerLevelInfo,
 		LoggerOutput:            os.Stdout,
 		Address:                 ":8080",
 		MaxHeaderBytes:          1 << 20,
@@ -664,7 +663,7 @@ func (a *Air) Serve() error {
 		}
 	}
 
-	if p, ok := m["logger_lowest_level"]; ok {
+	if p, ok := m["logger_level"]; ok {
 		lll := ""
 		if err := md.PrimitiveDecode(p, &lll); err != nil {
 			return err
@@ -672,19 +671,19 @@ func (a *Air) Serve() error {
 
 		switch lll {
 		case LoggerLevelDebug.String():
-			a.LoggerLowestLevel = LoggerLevelDebug
+			a.LoggerLevel = LoggerLevelDebug
 		case LoggerLevelInfo.String():
-			a.LoggerLowestLevel = LoggerLevelInfo
+			a.LoggerLevel = LoggerLevelInfo
 		case LoggerLevelWarn.String():
-			a.LoggerLowestLevel = LoggerLevelWarn
+			a.LoggerLevel = LoggerLevelWarn
 		case LoggerLevelError.String():
-			a.LoggerLowestLevel = LoggerLevelError
+			a.LoggerLevel = LoggerLevelError
 		case LoggerLevelFatal.String():
-			a.LoggerLowestLevel = LoggerLevelFatal
+			a.LoggerLevel = LoggerLevelFatal
 		case LoggerLevelPanic.String():
-			a.LoggerLowestLevel = LoggerLevelPanic
+			a.LoggerLevel = LoggerLevelPanic
 		default:
-			a.LoggerLowestLevel = LoggerLevelOff
+			a.LoggerLevel = LoggerLevelOff
 		}
 	}
 
