@@ -133,7 +133,7 @@ type Air struct {
 
 	// ACMEEnabled indicates whether the ACME is enabled.
 	//
-	// It only works when the `DebugMode` is false and both the
+	// It only works when the `DebugMode` is false and both of the
 	// `TLSCertFile` and the `TLSKeyFile` are empty.
 	//
 	// The default value is false.

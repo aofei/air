@@ -196,6 +196,10 @@ func (r *Request) parseParams() {
 
 FormLoop:
 	for n, vs := range r.hr.Form {
+		if len(vs) == 0 {
+			continue
+		}
+
 		pvs := make([]*RequestParamValue, 0, len(vs))
 		for _, v := range vs {
 			pvs = append(pvs, &RequestParamValue{
@@ -221,6 +225,10 @@ FormLoop:
 
 	MultipartFormValueLoop:
 		for n, vs := range mf.Value {
+			if len(vs) == 0 {
+				continue
+			}
+
 			pvs := make([]*RequestParamValue, 0, len(vs))
 			for _, v := range vs {
 				pvs = append(pvs, &RequestParamValue{
@@ -243,6 +251,10 @@ FormLoop:
 
 	MultipartFormFileLoop:
 		for n, vs := range mf.File {
+			if len(vs) == 0 {
+				continue
+			}
+
 			pvs := make([]*RequestParamValue, 0, len(vs))
 			for _, v := range vs {
 				pvs = append(pvs, &RequestParamValue{

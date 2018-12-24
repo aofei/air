@@ -200,17 +200,12 @@ func (r *Response) WriteString(s string) error {
 
 // WriteJSON responds to the client with the "application/json" content v.
 func (r *Response) WriteJSON(v interface{}) error {
-	var (
-		b   []byte
-		err error
-	)
-
+	indent := ""
 	if r.Air.DebugMode {
-		b, err = json.MarshalIndent(v, "", "\t")
-	} else {
-		b, err = json.Marshal(v)
+		indent = "\t"
 	}
 
+	b, err := json.MarshalIndent(v, "", indent)
 	if err != nil {
 		return err
 	}
@@ -222,17 +217,12 @@ func (r *Response) WriteJSON(v interface{}) error {
 
 // WriteXML responds to the client with the "application/xml" content v.
 func (r *Response) WriteXML(v interface{}) error {
-	var (
-		b   []byte
-		err error
-	)
-
+	indent := ""
 	if r.Air.DebugMode {
-		b, err = xml.MarshalIndent(v, "", "\t")
-	} else {
-		b, err = xml.Marshal(v)
+		indent = "\t"
 	}
 
+	b, err := xml.MarshalIndent(v, "", indent)
 	if err != nil {
 		return err
 	}
@@ -723,17 +713,12 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 		return 0, nil
 	}
 
-	var (
-		n   int
-		err error
-	)
-
+	w := io.Writer(rw.w)
 	if rw.gw != nil {
-		n, err = rw.gw.Write(b)
-	} else {
-		n, err = rw.w.Write(b)
+		w = rw.gw
 	}
 
+	n, err := w.Write(b)
 	if err != nil {
 		return 0, err
 	}

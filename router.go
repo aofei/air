@@ -430,17 +430,24 @@ func (r *router) route(req *Request) Handler {
 	req.growParams(len(pvs))
 	for i, pv := range pvs {
 		pn := cn.paramNames[i]
-		pvs := []*RequestParamValue{
-			{
-				i: unescape(pv),
-			},
-		}
 		if p := req.Param(pn); p != nil {
-			p.Values = append(pvs, p.Values...)
+			pvs := make([]*RequestParamValue, 0, len(p.Values)+1)
+			pvs = append(pvs, &RequestParamValue{
+				i: unescape(pv),
+			})
+			for _, pv := range p.Values {
+				pvs = append(pvs, pv)
+			}
+
+			p.Values = pvs
 		} else {
 			req.params = append(req.params, &RequestParam{
-				Name:   pn,
-				Values: pvs,
+				Name: pn,
+				Values: []*RequestParamValue{
+					{
+						i: unescape(pv),
+					},
+				},
 			})
 		}
 	}
