@@ -198,9 +198,9 @@ large document.
 
 ## Gases
 
-As we all know that the air is a mixture of gases. So the same is that this
-framework adopts the gas as its composition. Everyone can create new gas and use
-it within this framework simply.
+As we all know that the air of Earth is a mixture of gases. So the same is that
+this framework adopts the gas as its composition. Everyone can create new gas
+and use it within this framework simply.
 
 A gas is a function chained in the HTTP request-response cycle with access to
 the `air.Request` and the `air.Response` which it uses to perform a specific

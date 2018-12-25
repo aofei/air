@@ -204,12 +204,17 @@ func (r *Response) WriteString(s string) error {
 
 // WriteJSON responds to the client with the "application/json" content v.
 func (r *Response) WriteJSON(v interface{}) error {
-	indent := ""
+	var (
+		b   []byte
+		err error
+	)
+
 	if r.Air.DebugMode {
-		indent = "\t"
+		b, err = json.MarshalIndent(v, "", "\t")
+	} else {
+		b, err = json.Marshal(v)
 	}
 
-	b, err := json.MarshalIndent(v, "", indent)
 	if err != nil {
 		return err
 	}
@@ -221,12 +226,17 @@ func (r *Response) WriteJSON(v interface{}) error {
 
 // WriteXML responds to the client with the "application/xml" content v.
 func (r *Response) WriteXML(v interface{}) error {
-	indent := ""
+	var (
+		b   []byte
+		err error
+	)
+
 	if r.Air.DebugMode {
-		indent = "\t"
+		b, err = xml.MarshalIndent(v, "", "\t")
+	} else {
+		b, err = xml.Marshal(v)
 	}
 
-	b, err := xml.MarshalIndent(v, "", indent)
 	if err != nil {
 		return err
 	}

@@ -48,12 +48,17 @@ func (l *logger) log(ll LoggerLevel, m string, es ...map[string]interface{}) {
 		}
 	}
 
-	indent := ""
+	var (
+		b   []byte
+		err error
+	)
+
 	if l.a.DebugMode {
-		indent = "\t"
+		b, err = json.MarshalIndent(fs, "", "\t")
+	} else {
+		b, err = json.Marshal(fs)
 	}
 
-	b, err := json.MarshalIndent(fs, "", indent)
 	if err != nil {
 		s := ""
 		if l.a.DebugMode {
