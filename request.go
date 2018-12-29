@@ -200,11 +200,11 @@ FormLoop:
 			continue
 		}
 
-		pvs := make([]*RequestParamValue, 0, len(vs))
-		for _, v := range vs {
-			pvs = append(pvs, &RequestParamValue{
+		pvs := make([]*RequestParamValue, len(vs))
+		for i, v := range vs {
+			pvs[i] = &RequestParamValue{
 				i: v,
-			})
+			}
 		}
 
 		for _, p := range r.params {
@@ -229,11 +229,11 @@ FormLoop:
 				continue
 			}
 
-			pvs := make([]*RequestParamValue, 0, len(vs))
-			for _, v := range vs {
-				pvs = append(pvs, &RequestParamValue{
+			pvs := make([]*RequestParamValue, len(vs))
+			for i, v := range vs {
+				pvs[i] = &RequestParamValue{
 					i: v,
-				})
+				}
 			}
 
 			for _, p := range r.params {
@@ -255,11 +255,11 @@ FormLoop:
 				continue
 			}
 
-			pvs := make([]*RequestParamValue, 0, len(vs))
-			for _, v := range vs {
-				pvs = append(pvs, &RequestParamValue{
+			pvs := make([]*RequestParamValue, len(vs))
+			for i, v := range vs {
+				pvs[i] = &RequestParamValue{
 					i: v,
-				})
+				}
 			}
 
 			for _, p := range r.params {

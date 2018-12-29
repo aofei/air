@@ -25,7 +25,7 @@ func newRouter(a *Air) *router {
 	}
 	r.paramValuesPool = &sync.Pool{
 		New: func() interface{} {
-			return make([]string, 0, r.maxParams)
+			return make([]string, r.maxParams)
 		},
 	}
 
@@ -276,6 +276,7 @@ func (r *router) route(req *Request) Handler {
 		ll   int                        // LCP length
 		ml   int                        // Minimum length of sl and pl
 		i    int                        // Index
+		pi   = -1                       // Param index
 		pvs  []string                   // Param values
 	)
 
@@ -352,10 +353,12 @@ func (r *router) route(req *Request) Handler {
 
 			if pvs == nil {
 				pvs = r.paramValuesPool.Get().([]string)
-				defer r.paramValuesPool.Put(pvs[:0])
+				defer r.paramValuesPool.Put(pvs)
 			}
 
-			pvs = append(pvs, s[:i])
+			pi++
+			pvs[pi] = s[:i]
+
 			s = s[i:]
 
 			continue
@@ -366,14 +369,14 @@ func (r *router) route(req *Request) Handler {
 		if cn = cn.childByKind(nodeKindAny); cn != nil {
 			if pvs == nil {
 				pvs = r.paramValuesPool.Get().([]string)
-				defer r.paramValuesPool.Put(pvs[:0])
+				defer r.paramValuesPool.Put(pvs)
 			}
 
-			if len(pvs) < len(cn.paramNames) {
-				pvs = append(pvs, s)
-			} else {
-				pvs[len(cn.paramNames)-1] = s
+			if pi < len(cn.paramNames)-1 {
+				pi++
 			}
+
+			pvs[pi] = s
 
 			break
 		}
@@ -405,49 +408,43 @@ func (r *router) route(req *Request) Handler {
 		return r.a.NotFoundHandler
 	}
 
-	if len(pvs) == 0 {
+	if pi == -1 {
 		return h
 	}
 
 	// NOTE: Slow zone.
 
 	if len(req.params) == 0 {
-		req.params = make([]*RequestParam, 0, len(pvs))
-		for i, pv := range pvs {
-			req.params = append(req.params, &RequestParam{
+		req.params = make([]*RequestParam, pi+1)
+		for i, pv := range pvs[:pi+1] {
+			req.params[i] = &RequestParam{
 				Name: cn.paramNames[i],
 				Values: []*RequestParamValue{
 					{
 						i: unescape(pv),
 					},
 				},
-			})
+			}
 		}
 
 		return h
 	}
 
-	req.growParams(len(pvs))
-	for i, pv := range pvs {
+	req.growParams(pi + 1)
+	for i, pv := range pvs[:pi+1] {
 		pn := cn.paramNames[i]
+		rpv := &RequestParamValue{
+			i: unescape(pv),
+		}
 		if p := req.Param(pn); p != nil {
-			pvs := make([]*RequestParamValue, 0, len(p.Values)+1)
-			pvs = append(pvs, &RequestParamValue{
-				i: unescape(pv),
-			})
-			for _, pv := range p.Values {
-				pvs = append(pvs, pv)
-			}
-
+			pvs := make([]*RequestParamValue, len(p.Values)+1)
+			pvs[0] = rpv
+			copy(pvs[1:], p.Values)
 			p.Values = pvs
 		} else {
 			req.params = append(req.params, &RequestParam{
-				Name: pn,
-				Values: []*RequestParamValue{
-					{
-						i: unescape(pv),
-					},
-				},
+				Name:   pn,
+				Values: []*RequestParamValue{rpv},
 			})
 		}
 	}
