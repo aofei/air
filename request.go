@@ -78,11 +78,14 @@ type Request struct {
 	// request-response cycle is finished.
 	Context context.Context
 
-	hr              *http.Request
-	res             *Response
-	params          []*RequestParam
-	parseParamsOnce *sync.Once
-	localizedString func(string) string
+	hr                   *http.Request
+	res                  *Response
+	params               []*RequestParam
+	routeParamNames      []string
+	routeParamValues     []string
+	parseRouteParamsOnce *sync.Once
+	parseOtherParamsOnce *sync.Once
+	localizedString      func(string) string
 }
 
 // HTTPRequest returns the underlying `http.Request` of the r.
@@ -169,7 +172,11 @@ func (r *Request) Cookies() []*http.Cookie {
 // Param returns the matched `RequestParam` for the name. It returns nil if not
 // found.
 func (r *Request) Param(name string) *RequestParam {
-	r.parseParamsOnce.Do(r.parseParams)
+	if r.routeParamNames != nil {
+		r.parseRouteParamsOnce.Do(r.parseRouteParams)
+	}
+
+	r.parseOtherParamsOnce.Do(r.parseOtherParams)
 
 	for _, p := range r.params {
 		if p.Name == name {
@@ -182,12 +189,59 @@ func (r *Request) Param(name string) *RequestParam {
 
 // Params returns all the `RequestParam` in the r.
 func (r *Request) Params() []*RequestParam {
-	r.parseParamsOnce.Do(r.parseParams)
+	if r.routeParamNames != nil {
+		r.parseRouteParamsOnce.Do(r.parseRouteParams)
+	}
+
+	r.parseOtherParamsOnce.Do(r.parseOtherParams)
+
 	return r.params
 }
 
-// parseParams parses the params sent with the r into the `r.params`.
-func (r *Request) parseParams() {
+// parseRouteParams parses the route params sent with the r into the `r.params`.
+func (r *Request) parseRouteParams() {
+	r.growParams(len(r.routeParamNames))
+
+RouteParamLoop:
+	for i, pn := range r.routeParamNames {
+		pv, err := url.PathUnescape(r.routeParamValues[i])
+		if err != nil {
+			continue
+		}
+
+		for _, p := range r.params {
+			if p.Name != pn {
+				continue
+			}
+
+			pvs := make([]*RequestParamValue, len(p.Values)+1)
+			pvs[0] = &RequestParamValue{
+				i: pv,
+			}
+
+			copy(pvs[1:], p.Values)
+			p.Values = pvs
+
+			continue RouteParamLoop
+		}
+
+		r.params = append(r.params, &RequestParam{
+			Name: pn,
+			Values: []*RequestParamValue{
+				{
+					i: pv,
+				},
+			},
+		})
+	}
+
+	r.Air.router.routeParamValuesPool.Put(r.routeParamValues)
+	r.routeParamNames = nil
+	r.routeParamValues = nil
+}
+
+// parseOtherParams parses the other params sent with the r into the `r.params`.
+func (r *Request) parseOtherParams() {
 	if r.hr.Form == nil || r.hr.MultipartForm == nil {
 		r.hr.ParseMultipartForm(32 << 20)
 	}
@@ -330,9 +384,8 @@ func (rp *RequestParam) Value() *RequestParamValue {
 
 // RequestParamValue is an HTTP request param value.
 //
-// It may represent a route path param value, a request query value, a request
-// form value, a request multipart form value or a request multipart form file
-// value.
+// It may represent a route param value, a request query value, a request form
+// value, a request multipart form value or a request multipart form file value.
 type RequestParamValue struct {
 	i    interface{}
 	b    *bool

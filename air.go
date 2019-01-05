@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -358,17 +359,18 @@ type Air struct {
 	// The default value is "".
 	ConfigFile string
 
-	logger                 *logger
-	errorLogger            *log.Logger
-	server                 *server
-	router                 *router
-	binder                 *binder
-	minifier               *minifier
-	renderer               *renderer
-	coffer                 *coffer
-	i18n                   *i18n
-	reverseProxyTransport  *http.Transport
-	reverseProxyBufferPool *reverseProxyBufferPool
+	logger                       *logger
+	errorLogger                  *log.Logger
+	server                       *server
+	router                       *router
+	binder                       *binder
+	minifier                     *minifier
+	renderer                     *renderer
+	coffer                       *coffer
+	i18n                         *i18n
+	contentTypeSnifferBufferPool *sync.Pool
+	reverseProxyTransport        *http.Transport
+	reverseProxyBufferPool       *reverseProxyBufferPool
 }
 
 // Default is the default instance of the `Air`.
@@ -440,6 +442,12 @@ func New() *Air {
 	a.renderer = newRenderer(a)
 	a.coffer = newCoffer(a)
 	a.i18n = newI18n(a)
+	a.contentTypeSnifferBufferPool = &sync.Pool{
+		New: func() interface{} {
+			return make([]byte, 512)
+		},
+	}
+
 	a.reverseProxyTransport = newReverseProxyTransport()
 	a.reverseProxyBufferPool = newReverseProxyBufferPool()
 
@@ -582,7 +590,7 @@ func (a *Air) BATCH(methods []string, path string, h Handler, gases ...Gas) {
 // STATIC registers a new route with the path prefix to serve the static files
 // from the root with the optional route-level gases.
 func (a *Air) STATIC(prefix, root string, gases ...Gas) {
-	if hasLastSlash(prefix) {
+	if strings.HasSuffix(prefix, "/") {
 		prefix += "*"
 	} else {
 		prefix += "/*"

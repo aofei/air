@@ -7,11 +7,13 @@ import (
 
 // router is a registry of all registered routes.
 type router struct {
-	a               *Air
-	tree            *node
-	routes          map[string]bool
-	maxParams       int
-	paramValuesPool *sync.Pool
+	sync.Mutex
+
+	a                    *Air
+	tree                 *node
+	registeredRoutes     map[string]bool
+	maxRouteParams       int
+	routeParamValuesPool *sync.Pool
 }
 
 // newRouter returns a new instance of the `router` with the a.
@@ -21,11 +23,11 @@ func newRouter(a *Air) *router {
 		tree: &node{
 			handlers: map[string]Handler{},
 		},
-		routes: map[string]bool{},
+		registeredRoutes: map[string]bool{},
 	}
-	r.paramValuesPool = &sync.Pool{
+	r.routeParamValuesPool = &sync.Pool{
 		New: func() interface{} {
-			return make([]string, r.maxParams)
+			return make([]string, r.maxRouteParams)
 		},
 	}
 
@@ -35,42 +37,59 @@ func newRouter(a *Air) *router {
 // register registers a new route for the method and the path with the matching
 // h in the r with the optional route-level gases.
 func (r *router) register(method, path string, h Handler, gases ...Gas) {
-	msg := ""
+	r.Lock()
+	defer r.Unlock()
+
 	if path == "" {
-		msg = "air: route path cannot be empty"
+		panic("air: route path cannot be empty")
 	} else if path[0] != '/' {
-		msg = "air: route path must start with /"
+		panic("air: route path must start with /")
 	} else if strings.Contains(path, "//") {
-		msg = "air: route path cannot have //"
+		panic("air: route path cannot have //")
 	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
 		for _, p := range ps {
 			if strings.Count(p, ":") > 1 {
-				msg = "air: adjacent params in route path " +
-					"must be separated by /"
+				panic("air: adjacent param names in route " +
+					"path must be separated by /")
 				break
 			}
 		}
 	} else if strings.Contains(path, "*") {
 		if strings.Count(path, "*") > 1 {
-			msg = "air: only one * is allowed in route path"
+			panic("air: only one * is allowed in route path")
 		} else if path[len(path)-1] != '*' {
-			msg = "air: * can only appear at end of route path"
+			panic("air: * can only appear at end of route path")
 		} else if strings.Contains(
 			path[strings.LastIndex(path, "/"):],
 			":",
 		) {
-			msg = "air: adjacent param and * in route path must " +
-				"be separated by /"
+			panic("air: adjacent param name and * in route path " +
+				"must be separated by /")
 		}
-	} else if rn := method + pathWithoutParamNames(path); r.routes[rn] {
-		msg = "air: route already exists"
-	} else {
-		r.routes[rn] = true
 	}
 
-	if msg != "" {
-		panic(msg)
+	routeName := method + path
+	for i, l := len(method), len(routeName); i < l; i++ {
+		if routeName[i] == ':' {
+			j := i + 1
+
+			for ; i < l && routeName[i] != '/'; i++ {
+			}
+
+			routeName = routeName[:j] + routeName[i:]
+			i, l = j, len(routeName)
+
+			if i == l {
+				break
+			}
+		}
+	}
+
+	if r.registeredRoutes[routeName] {
+		panic("air: route already exists")
+	} else {
+		r.registeredRoutes[routeName] = true
 	}
 
 	paramNames := []string{}
@@ -147,8 +166,8 @@ func (r *router) insert(
 	nk nodeKind,
 	paramNames []string,
 ) {
-	if l := len(paramNames); l > r.maxParams {
-		r.maxParams = l
+	if l := len(paramNames); l > r.maxRouteParams {
+		r.maxRouteParams = l
 	}
 
 	var (
@@ -176,48 +195,45 @@ func (r *router) insert(
 
 		if ll == 0 { // At root node
 			cn.label = s[0]
-			cn.prefix = s
 			cn.kind = nk
+			cn.prefix = s
+			cn.paramNames = paramNames
 			if h != nil {
 				cn.handlers[method] = h
 			}
-
-			cn.paramNames = paramNames
 		} else if ll < pl { // Split node
 			nn = &node{
-				kind:       cn.kind,
 				label:      cn.prefix[ll],
+				kind:       cn.kind,
 				prefix:     cn.prefix[ll:],
-				handlers:   cn.handlers,
 				parent:     cn,
 				children:   cn.children,
 				paramNames: cn.paramNames,
+				handlers:   cn.handlers,
 			}
 
 			// Reset parent node.
-			cn.kind = nodeKindStatic
 			cn.label = cn.prefix[0]
+			cn.kind = nodeKindStatic
 			cn.prefix = cn.prefix[:ll]
-			cn.children = nil
-			cn.handlers = map[string]Handler{}
+			cn.children = []*node{nn}
 			cn.paramNames = nil
-			cn.children = append(cn.children, nn)
+			cn.handlers = map[string]Handler{}
 
 			if ll == sl { // At parent node
 				cn.kind = nk
+				cn.paramNames = paramNames
 				if h != nil {
 					cn.handlers[method] = h
 				}
-
-				cn.paramNames = paramNames
 			} else { // Create child node
 				nn = &node{
-					kind:       nk,
 					label:      s[ll],
+					kind:       nk,
 					prefix:     s[ll:],
-					handlers:   map[string]Handler{},
 					parent:     cn,
 					paramNames: paramNames,
+					handlers:   map[string]Handler{},
 				}
 				if h != nil {
 					nn.handlers[method] = h
@@ -236,8 +252,8 @@ func (r *router) insert(
 
 			// Create child node.
 			nn = &node{
-				kind:       nk,
 				label:      s[0],
+				kind:       nk,
 				prefix:     s,
 				handlers:   map[string]Handler{},
 				parent:     cn,
@@ -249,12 +265,12 @@ func (r *router) insert(
 
 			cn.children = append(cn.children, nn)
 		} else { // Node already exists
-			if h != nil {
-				cn.handlers[method] = h
-			}
-
 			if len(cn.paramNames) == 0 {
 				cn.paramNames = paramNames
+			}
+
+			if h != nil {
+				cn.handlers[method] = h
 			}
 		}
 
@@ -276,8 +292,7 @@ func (r *router) route(req *Request) Handler {
 		ll   int                        // LCP length
 		ml   int                        // Minimum length of sl and pl
 		i    int                        // Index
-		pi   = -1                       // Param index
-		pvs  []string                   // Param values
+		pi   int                        // Param index
 	)
 
 	// Search order: static > param > any.
@@ -325,7 +340,7 @@ func (r *router) route(req *Request) Handler {
 		// Static node.
 		if nn = cn.child(s[0], nodeKindStatic); nn != nil {
 			// Save next.
-			if hasLastSlash(cn.prefix) {
+			if l := len(cn.prefix); l > 0 && cn.prefix[l-1] == '/' {
 				nk = nodeKindParam
 				sn = cn
 				ss = s
@@ -340,7 +355,7 @@ func (r *router) route(req *Request) Handler {
 	Param:
 		if nn = cn.childByKind(nodeKindParam); nn != nil {
 			// Save next.
-			if hasLastSlash(cn.prefix) {
+			if l := len(cn.prefix); l > 0 && cn.prefix[l-1] == '/' {
 				nk = nodeKindAny
 				sn = cn
 				ss = s
@@ -351,13 +366,13 @@ func (r *router) route(req *Request) Handler {
 			for i, sl = 0, len(s); i < sl && s[i] != '/'; i++ {
 			}
 
-			if pvs == nil {
-				pvs = r.paramValuesPool.Get().([]string)
-				defer r.paramValuesPool.Put(pvs)
+			if req.routeParamValues == nil {
+				req.routeParamValues = r.routeParamValuesPool.
+					Get().([]string)
 			}
 
+			req.routeParamValues[pi] = s[:i]
 			pi++
-			pvs[pi] = s[:i]
 
 			s = s[i:]
 
@@ -367,16 +382,12 @@ func (r *router) route(req *Request) Handler {
 		// Any node.
 	Any:
 		if cn = cn.childByKind(nodeKindAny); cn != nil {
-			if pvs == nil {
-				pvs = r.paramValuesPool.Get().([]string)
-				defer r.paramValuesPool.Put(pvs)
+			if req.routeParamValues == nil {
+				req.routeParamValues = r.routeParamValuesPool.
+					Get().([]string)
 			}
 
-			if pi < len(cn.paramNames)-1 {
-				pi++
-			}
-
-			pvs[pi] = s
+			req.routeParamValues[len(cn.paramNames)-1] = s
 
 			break
 		}
@@ -399,68 +410,25 @@ func (r *router) route(req *Request) Handler {
 		return r.a.NotFoundHandler
 	}
 
-	h := cn.handlers[req.Method]
-	if h == nil {
-		if len(cn.handlers) != 0 {
-			return r.a.MethodNotAllowedHandler
-		}
-
-		return r.a.NotFoundHandler
-	}
-
-	if pi == -1 {
+	if h := cn.handlers[req.Method]; h != nil {
+		req.routeParamNames = cn.paramNames
 		return h
+	} else if len(cn.handlers) != 0 {
+		return r.a.MethodNotAllowedHandler
 	}
 
-	// NOTE: Slow zone.
-
-	if len(req.params) == 0 {
-		req.params = make([]*RequestParam, pi+1)
-		for i, pv := range pvs[:pi+1] {
-			req.params[i] = &RequestParam{
-				Name: cn.paramNames[i],
-				Values: []*RequestParamValue{
-					{
-						i: unescape(pv),
-					},
-				},
-			}
-		}
-
-		return h
-	}
-
-	req.growParams(pi + 1)
-	for i, pv := range pvs[:pi+1] {
-		pn := cn.paramNames[i]
-		rpv := &RequestParamValue{
-			i: unescape(pv),
-		}
-		if p := req.Param(pn); p != nil {
-			pvs := make([]*RequestParamValue, len(p.Values)+1)
-			pvs[0] = rpv
-			copy(pvs[1:], p.Values)
-			p.Values = pvs
-		} else {
-			req.params = append(req.params, &RequestParam{
-				Name:   pn,
-				Values: []*RequestParamValue{rpv},
-			})
-		}
-	}
-
-	return h
+	return r.a.NotFoundHandler
 }
 
 // node is the node of the radix tree.
 type node struct {
-	kind       nodeKind
 	label      byte
+	kind       nodeKind
 	prefix     string
-	handlers   map[string]Handler
 	parent     *node
 	children   []*node
 	paramNames []string
+	handlers   map[string]Handler
 }
 
 // child returns a child `node` of the n by the label and the kind.
@@ -506,32 +474,6 @@ const (
 	nodeKindAny
 )
 
-// hasLastSlash reports whether the s has the last '/'.
-func hasLastSlash(s string) bool {
-	return len(s) > 0 && s[len(s)-1] == '/'
-}
-
-// pathWithoutParamNames returns a path from the p without the param names.
-func pathWithoutParamNames(p string) string {
-	for i, l := 0, len(p); i < l; i++ {
-		if p[i] == ':' {
-			j := i + 1
-
-			for ; i < l && p[i] != '/'; i++ {
-			}
-
-			p = p[:j] + p[i:]
-			i, l = j, len(p)
-
-			if i == l {
-				break
-			}
-		}
-	}
-
-	return p
-}
-
 // splitPathQuery splits the p of the form "path?query" into path and query.
 func splitPathQuery(p string) (path, query string) {
 	i, l := 0, len(p)
@@ -543,75 +485,4 @@ func splitPathQuery(p string) (path, query string) {
 	}
 
 	return p, ""
-}
-
-// unescape return a normal string unescaped from the s.
-func unescape(s string) string {
-	// Count the %, check that they are well-formed.
-	n := 0
-	for i := 0; i < len(s); i++ {
-		if s[i] == '%' {
-			n++
-			if i+2 >= len(s) || !ishex(s[i+1]) || !ishex(s[i+2]) {
-				s = s[i:]
-
-				if len(s) > 3 {
-					s = s[:3]
-				}
-
-				return ""
-			}
-			i += 2
-		}
-	}
-
-	if n == 0 {
-		return s
-	}
-
-	t := make([]byte, len(s)-2*n)
-	for i, j := 0, 0; i < len(s); i++ {
-		switch s[i] {
-		case '%':
-			t[j] = unhex(s[i+1])<<4 | unhex(s[i+2])
-			j++
-			i += 2
-		case '+':
-			t[j] = ' '
-			j++
-		default:
-			t[j] = s[i]
-			j++
-		}
-	}
-
-	return string(t)
-}
-
-// ishex reports whether the c is hex.
-func ishex(c byte) bool {
-	switch {
-	case '0' <= c && c <= '9':
-		return true
-	case 'a' <= c && c <= 'f':
-		return true
-	case 'A' <= c && c <= 'F':
-		return true
-	}
-
-	return false
-}
-
-// unhex returns the normal byte from the hex char c.
-func unhex(c byte) byte {
-	switch {
-	case '0' <= c && c <= '9':
-		return c - '0'
-	case 'a' <= c && c <= 'f':
-		return c - 'a' + 10
-	case 'A' <= c && c <= 'F':
-		return c - 'A' + 10
-	}
-
-	return 0
 }

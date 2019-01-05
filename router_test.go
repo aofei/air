@@ -18,7 +18,8 @@ func TestNewRouter(t *testing.T) {
 	assert.NotNil(t, r.a)
 	assert.NotNil(t, r.tree)
 	assert.NotNil(t, r.tree.handlers)
-	assert.NotNil(t, r.routes)
+	assert.NotNil(t, r.registeredRoutes)
+	assert.NotNil(t, r.routeParamValuesPool)
 }
 
 func TestRouterRegister(t *testing.T) {
@@ -57,7 +58,8 @@ func TestRouterRegister(t *testing.T) {
 
 	assert.PanicsWithValue(
 		t,
-		"air: adjacent params in route path must be separated by /",
+		"air: adjacent param names in route path must be separated by "+
+			"/",
 		func() {
 			r.register(m, "/:foo:bar", h)
 		},
@@ -81,8 +83,8 @@ func TestRouterRegister(t *testing.T) {
 
 	assert.PanicsWithValue(
 		t,
-		"air: adjacent param and * in route path must be separated by "+
-			"/",
+		"air: adjacent param name and * in route path must be "+
+			"separated by /",
 		func() {
 			r.register(m, "/:foobar*", h)
 		},
@@ -574,15 +576,6 @@ func TestNodeChild(t *testing.T) {
 	assert.Nil(t, n.childByKind(nodeKindParam))
 }
 
-func TestHasLastSlash(t *testing.T) {
-	assert.True(t, hasLastSlash("/"))
-	assert.False(t, hasLastSlash("/foobar"))
-}
-
-func TestPathWithoutParamNames(t *testing.T) {
-	assert.Equal(t, "/foo/:", pathWithoutParamNames("/foo/:bar"))
-}
-
 func TestSplitPathQuery(t *testing.T) {
 	p, q := splitPathQuery("/foobar")
 	assert.Equal(t, "/foobar", p)
@@ -597,10 +590,6 @@ func TestSplitPathQuery(t *testing.T) {
 	assert.Equal(t, "foo=bar", q)
 }
 
-func TestUnescape(t *testing.T) {
-	assert.Equal(t, "Hello, 世界", unescape("Hello%2C+%E4%B8%96%E7%95%8C"))
-}
-
 func fakeRRCycle(
 	a *Air,
 	method string,
@@ -610,7 +599,8 @@ func fakeRRCycle(
 	req := &Request{
 		Air: a,
 
-		parseParamsOnce: &sync.Once{},
+		parseRouteParamsOnce: &sync.Once{},
+		parseOtherParamsOnce: &sync.Once{},
 	}
 	req.SetHTTPRequest(httptest.NewRequest(method, target, body))
 

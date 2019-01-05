@@ -127,8 +127,10 @@ func (r *Response) Write(content io.ReadSeeker) error {
 	}
 
 	if r.Header.Get("Content-Type") == "" {
-		b := [512]byte{}
-		n, err := io.ReadFull(content, b[:])
+		b := r.Air.contentTypeSnifferBufferPool.Get().([]byte)
+		defer r.Air.contentTypeSnifferBufferPool.Put(b)
+
+		n, err := io.ReadFull(content, b)
 		if err != nil && err != io.EOF {
 			return err
 		} else if _, err := content.Seek(0, io.SeekStart); err != nil {
@@ -372,7 +374,8 @@ func (r *Response) WriteFile(filename string) error {
 	} else if fi, err := os.Stat(filename); err != nil {
 		return err
 	} else if fi.IsDir() {
-		if p, q := splitPathQuery(r.req.Path); !hasLastSlash(p) {
+		p, q := splitPathQuery(r.req.Path)
+		if !strings.HasSuffix(p, "/") {
 			p = path.Base(p) + "/"
 			if q != "" {
 				p += "?" + q

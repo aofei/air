@@ -173,7 +173,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	req := &Request{
 		Air: s.a,
 
-		parseParamsOnce: &sync.Once{},
+		parseRouteParamsOnce: &sync.Once{},
+		parseOtherParamsOnce: &sync.Once{},
 	}
 	req.SetHTTPRequest(r)
 
@@ -235,5 +236,11 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		for i := l - 1; i >= 0; i-- {
 			res.deferredFuncs[i]()
 		}
+	}
+
+	// Put route param values back to the pool.
+
+	if req.routeParamValues != nil {
+		s.a.router.routeParamValuesPool.Put(req.routeParamValues)
 	}
 }
