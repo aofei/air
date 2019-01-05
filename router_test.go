@@ -16,8 +16,8 @@ func TestNewRouter(t *testing.T) {
 
 	assert.NotNil(t, r)
 	assert.NotNil(t, r.a)
-	assert.NotNil(t, r.tree)
-	assert.NotNil(t, r.tree.handlers)
+	assert.NotNil(t, r.routeTree)
+	assert.NotNil(t, r.routeTree.handlers)
 	assert.NotNil(t, r.registeredRoutes)
 	assert.NotNil(t, r.routeParamValuesPool)
 }
@@ -559,21 +559,21 @@ func TestRouterRouteMix(t *testing.T) {
 	assert.Equal(t, "Matched [GET /:foo/:bar/*]", rec.Body.String())
 }
 
-func TestNodeChild(t *testing.T) {
-	n := &node{}
-	n.children = append(n.children, &node{
+func TestRouteNodeChild(t *testing.T) {
+	n := &routeNode{}
+	n.children = append(n.children, &routeNode{
 		label: 'a',
-		kind:  nodeKindStatic,
+		nType: routeNodeTypeStatic,
 	})
 
-	assert.NotNil(t, n.child('a', nodeKindStatic))
-	assert.Nil(t, n.child('b', nodeKindParam))
+	assert.NotNil(t, n.child('a', routeNodeTypeStatic))
+	assert.Nil(t, n.child('b', routeNodeTypeParam))
 
 	assert.NotNil(t, n.childByLabel('a'))
 	assert.Nil(t, n.childByLabel('b'))
 
-	assert.NotNil(t, n.childByKind(nodeKindStatic))
-	assert.Nil(t, n.childByKind(nodeKindParam))
+	assert.NotNil(t, n.childByType(routeNodeTypeStatic))
+	assert.Nil(t, n.childByType(routeNodeTypeParam))
 }
 
 func TestSplitPathQuery(t *testing.T) {

@@ -10,7 +10,7 @@ type router struct {
 	sync.Mutex
 
 	a                    *Air
-	tree                 *node
+	routeTree            *routeNode
 	registeredRoutes     map[string]bool
 	maxRouteParams       int
 	routeParamValuesPool *sync.Pool
@@ -20,7 +20,7 @@ type router struct {
 func newRouter(a *Air) *router {
 	r := &router{
 		a: a,
-		tree: &node{
+		routeTree: &routeNode{
 			handlers: map[string]Handler{},
 		},
 		registeredRoutes: map[string]bool{},
@@ -52,7 +52,6 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 			if strings.Count(p, ":") > 1 {
 				panic("air: adjacent param names in route " +
 					"path must be separated by /")
-				break
 			}
 		}
 	} else if strings.Contains(path, "*") {
@@ -106,7 +105,13 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 		if path[i] == ':' {
 			j := i + 1
 
-			r.insert(method, path[:i], nil, nodeKindStatic, nil)
+			r.insert(
+				method,
+				path[:i],
+				nil,
+				routeNodeTypeStatic,
+				nil,
+			)
 
 			for ; i < l && path[i] != '/'; i++ {
 			}
@@ -128,7 +133,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 					method,
 					path,
 					nh,
-					nodeKindParam,
+					routeNodeTypeParam,
 					paramNames,
 				)
 				return
@@ -138,32 +143,38 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 				method,
 				path[:i],
 				nil,
-				nodeKindParam,
+				routeNodeTypeParam,
 				paramNames,
 			)
 		} else if path[i] == '*' {
-			r.insert(method, path[:i], nil, nodeKindStatic, nil)
+			r.insert(
+				method,
+				path[:i],
+				nil,
+				routeNodeTypeStatic,
+				nil,
+			)
 			paramNames = append(paramNames, "*")
 			r.insert(
 				method,
 				path[:i+1],
 				nh,
-				nodeKindAny,
+				routeNodeTypeAny,
 				paramNames,
 			)
 			return
 		}
 	}
 
-	r.insert(method, path, nh, nodeKindStatic, paramNames)
+	r.insert(method, path, nh, routeNodeTypeStatic, paramNames)
 }
 
-// insert inserts a new route into the `tree` of the r.
+// insert inserts a new route into the `r.routeTree`.
 func (r *router) insert(
 	method string,
 	path string,
 	h Handler,
-	nk nodeKind,
+	nt routeNodeType,
 	paramNames []string,
 ) {
 	if l := len(paramNames); l > r.maxRouteParams {
@@ -171,13 +182,13 @@ func (r *router) insert(
 	}
 
 	var (
-		s  = path   // Search
-		cn = r.tree // Current node
-		nn *node    // Next node
-		sl int      // Search length
-		pl int      // Prefix length
-		ll int      // LCP length
-		ml int      // Minimum length of sl and pl
+		s  = path        // Search
+		cn = r.routeTree // Current node
+		nn *routeNode    // Next node
+		sl int           // Search length
+		pl int           // Prefix length
+		ll int           // LCP length
+		ml int           // Minimum length of sl and pl
 	)
 
 	for {
@@ -195,16 +206,16 @@ func (r *router) insert(
 
 		if ll == 0 { // At root node
 			cn.label = s[0]
-			cn.kind = nk
+			cn.nType = nt
 			cn.prefix = s
 			cn.paramNames = paramNames
 			if h != nil {
 				cn.handlers[method] = h
 			}
 		} else if ll < pl { // Split node
-			nn = &node{
+			nn = &routeNode{
 				label:      cn.prefix[ll],
-				kind:       cn.kind,
+				nType:      cn.nType,
 				prefix:     cn.prefix[ll:],
 				parent:     cn,
 				children:   cn.children,
@@ -214,22 +225,22 @@ func (r *router) insert(
 
 			// Reset parent node.
 			cn.label = cn.prefix[0]
-			cn.kind = nodeKindStatic
+			cn.nType = routeNodeTypeStatic
 			cn.prefix = cn.prefix[:ll]
-			cn.children = []*node{nn}
+			cn.children = []*routeNode{nn}
 			cn.paramNames = nil
 			cn.handlers = map[string]Handler{}
 
 			if ll == sl { // At parent node
-				cn.kind = nk
+				cn.nType = nt
 				cn.paramNames = paramNames
 				if h != nil {
 					cn.handlers[method] = h
 				}
 			} else { // Create child node
-				nn = &node{
+				nn = &routeNode{
 					label:      s[ll],
-					kind:       nk,
+					nType:      nt,
 					prefix:     s[ll:],
 					parent:     cn,
 					paramNames: paramNames,
@@ -251,9 +262,9 @@ func (r *router) insert(
 			}
 
 			// Create child node.
-			nn = &node{
+			nn = &routeNode{
 				label:      s[0],
-				kind:       nk,
+				nType:      nt,
 				prefix:     s,
 				handlers:   map[string]Handler{},
 				parent:     cn,
@@ -282,10 +293,10 @@ func (r *router) insert(
 func (r *router) route(req *Request) Handler {
 	var (
 		s, _ = splitPathQuery(req.Path) // Search
-		cn   = r.tree                   // Current node
-		nn   *node                      // Next node
-		nk   nodeKind                   // Next kind
-		sn   *node                      // Saved node
+		cn   = r.routeTree              // Current node
+		nn   *routeNode                 // Next node
+		nnt  routeNodeType              // Next node type
+		sn   *routeNode                 // Saved node
 		ss   string                     // Saved search
 		sl   int                        // Search length
 		pl   int                        // Prefix length
@@ -295,7 +306,7 @@ func (r *router) route(req *Request) Handler {
 		pi   int                        // Param index
 	)
 
-	// Search order: static > param > any.
+	// Search order: static route > param route > any route.
 	for {
 		if s == "" {
 			break
@@ -327,9 +338,11 @@ func (r *router) route(req *Request) Handler {
 
 		if s = s[ll:]; s == "" {
 			if len(cn.handlers) == 0 {
-				if cn.childByKind(nodeKindParam) != nil {
+				if cn.childByType(routeNodeTypeParam) != nil {
 					goto Param
-				} else if cn.childByKind(nodeKindAny) != nil {
+				}
+
+				if cn.childByType(routeNodeTypeAny) != nil {
 					goto Any
 				}
 			}
@@ -338,10 +351,10 @@ func (r *router) route(req *Request) Handler {
 		}
 
 		// Static node.
-		if nn = cn.child(s[0], nodeKindStatic); nn != nil {
+		if nn = cn.child(s[0], routeNodeTypeStatic); nn != nil {
 			// Save next.
 			if l := len(cn.prefix); l > 0 && cn.prefix[l-1] == '/' {
-				nk = nodeKindParam
+				nnt = routeNodeTypeParam
 				sn = cn
 				ss = s
 			}
@@ -353,10 +366,10 @@ func (r *router) route(req *Request) Handler {
 
 		// Param node.
 	Param:
-		if nn = cn.childByKind(nodeKindParam); nn != nil {
+		if nn = cn.childByType(routeNodeTypeParam); nn != nil {
 			// Save next.
 			if l := len(cn.prefix); l > 0 && cn.prefix[l-1] == '/' {
-				nk = nodeKindAny
+				nnt = routeNodeTypeAny
 				sn = cn
 				ss = s
 			}
@@ -381,7 +394,7 @@ func (r *router) route(req *Request) Handler {
 
 		// Any node.
 	Any:
-		if cn = cn.childByKind(nodeKindAny); cn != nil {
+		if cn = cn.childByType(routeNodeTypeAny); cn != nil {
 			if req.routeParamValues == nil {
 				req.routeParamValues = r.routeParamValuesPool.
 					Get().([]string)
@@ -399,10 +412,10 @@ func (r *router) route(req *Request) Handler {
 			sn = nil
 			s = ss
 
-			switch nk {
-			case nodeKindParam:
+			switch nnt {
+			case routeNodeTypeParam:
 				goto Param
-			case nodeKindAny:
+			case routeNodeTypeAny:
 				goto Any
 			}
 		}
@@ -420,21 +433,21 @@ func (r *router) route(req *Request) Handler {
 	return r.a.NotFoundHandler
 }
 
-// node is the node of the radix tree.
-type node struct {
+// routeNode is the node of the route radix tree.
+type routeNode struct {
 	label      byte
-	kind       nodeKind
+	nType      routeNodeType
 	prefix     string
-	parent     *node
-	children   []*node
+	parent     *routeNode
+	children   []*routeNode
 	paramNames []string
 	handlers   map[string]Handler
 }
 
-// child returns a child `node` of the n by the label and the kind.
-func (n *node) child(label byte, kind nodeKind) *node {
-	for _, c := range n.children {
-		if c.label == label && c.kind == kind {
+// child returns a child node of the rn by the l and the t.
+func (rn *routeNode) child(l byte, t routeNodeType) *routeNode {
+	for _, c := range rn.children {
+		if c.label == l && c.nType == t {
 			return c
 		}
 	}
@@ -442,9 +455,9 @@ func (n *node) child(label byte, kind nodeKind) *node {
 	return nil
 }
 
-// childByLabel returns a child `node` of the n by the l.
-func (n *node) childByLabel(l byte) *node {
-	for _, c := range n.children {
+// childByLabel returns a child node of the rn by the l.
+func (rn *routeNode) childByLabel(l byte) *routeNode {
+	for _, c := range rn.children {
 		if c.label == l {
 			return c
 		}
@@ -453,10 +466,10 @@ func (n *node) childByLabel(l byte) *node {
 	return nil
 }
 
-// childByKind returns a child `node` of the n by the k.
-func (n *node) childByKind(k nodeKind) *node {
-	for _, c := range n.children {
-		if c.kind == k {
+// childByType returns a child node of the rn by the t.
+func (rn *routeNode) childByType(t routeNodeType) *routeNode {
+	for _, c := range rn.children {
+		if c.nType == t {
 			return c
 		}
 	}
@@ -464,14 +477,14 @@ func (n *node) childByKind(k nodeKind) *node {
 	return nil
 }
 
-// nodeKind is a kind of the `node`.
-type nodeKind uint8
+// routeNodeType is the type of the `routeNode`.
+type routeNodeType uint8
 
-// The node kinds.
+// The route node types.
 const (
-	nodeKindStatic nodeKind = iota
-	nodeKindParam
-	nodeKindAny
+	routeNodeTypeStatic routeNodeType = iota
+	routeNodeTypeParam
+	routeNodeTypeAny
 )
 
 // splitPathQuery splits the p of the form "path?query" into path and query.
