@@ -93,8 +93,8 @@ func (r *Response) HTTPResponseWriter() http.ResponseWriter {
 	return r.hrw
 }
 
-// SetHTTPResponseWriter sets the hrw to the r's underlying
-// `http.ResponseWriter`.
+// SetHTTPResponseWriter sets the hrw to the underlying `http.ResponseWriter` of
+// the r.
 //
 // ATTENTION: You should never call this method unless you know what you are
 // doing.

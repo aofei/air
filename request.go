@@ -111,7 +111,7 @@ func (r *Request) HTTPRequest() *http.Request {
 	return r.hr
 }
 
-// SetHTTPRequest sets the r to the r's underlying `http.Request`.
+// SetHTTPRequest sets the hr to the underlying `http.Request` of the r.
 //
 // ATTENTION: You should never call this method unless you know what you are
 // doing.
@@ -331,8 +331,8 @@ FormLoop:
 	}
 }
 
-// growParams grows `r.params`'s capacity, if necessary, to guarantee space for
-// another n.
+// growParams grows the capacity of the `r.params`, if necessary, to guarantee
+// space for another n.
 func (r *Request) growParams(n int) {
 	if cap(r.params)-len(r.params) < n {
 		ps := make([]*RequestParam, len(r.params), cap(r.params)+n)
@@ -399,7 +399,7 @@ type RequestParamValue struct {
 	f    *multipart.FileHeader
 }
 
-// Bool returns a `bool` from the rpv's underlying value.
+// Bool returns a `bool` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Bool() (bool, error) {
 	if rpv.b == nil {
 		b, err := strconv.ParseBool(rpv.String())
@@ -413,7 +413,7 @@ func (rpv *RequestParamValue) Bool() (bool, error) {
 	return *rpv.b, nil
 }
 
-// Int returns an `int` from the rpv's underlying value.
+// Int returns an `int` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Int() (int, error) {
 	if rpv.i64 == nil {
 		i64, err := strconv.ParseInt(rpv.String(), 10, 0)
@@ -427,7 +427,7 @@ func (rpv *RequestParamValue) Int() (int, error) {
 	return int(*rpv.i64), nil
 }
 
-// Int8 returns an `int8` from the rpv's underlying value.
+// Int8 returns an `int8` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Int8() (int8, error) {
 	if rpv.i64 == nil {
 		i64, err := strconv.ParseInt(rpv.String(), 10, 8)
@@ -441,7 +441,7 @@ func (rpv *RequestParamValue) Int8() (int8, error) {
 	return int8(*rpv.i64), nil
 }
 
-// Int16 returns an `int16` from the rpv's underlying value.
+// Int16 returns an `int16` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Int16() (int16, error) {
 	if rpv.i64 == nil {
 		i64, err := strconv.ParseInt(rpv.String(), 10, 16)
@@ -455,7 +455,7 @@ func (rpv *RequestParamValue) Int16() (int16, error) {
 	return int16(*rpv.i64), nil
 }
 
-// Int32 returns an `int32` from the rpv's underlying value.
+// Int32 returns an `int32` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Int32() (int32, error) {
 	if rpv.i64 == nil {
 		i64, err := strconv.ParseInt(rpv.String(), 10, 32)
@@ -469,7 +469,7 @@ func (rpv *RequestParamValue) Int32() (int32, error) {
 	return int32(*rpv.i64), nil
 }
 
-// Int64 returns an `int64` from the rpv's underlying value.
+// Int64 returns an `int64` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Int64() (int64, error) {
 	if rpv.i64 == nil {
 		i64, err := strconv.ParseInt(rpv.String(), 10, 64)
@@ -483,7 +483,7 @@ func (rpv *RequestParamValue) Int64() (int64, error) {
 	return *rpv.i64, nil
 }
 
-// Uint returns an `uint` from the rpv's underlying value.
+// Uint returns an `uint` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Uint() (uint, error) {
 	if rpv.ui64 == nil {
 		ui64, err := strconv.ParseUint(rpv.String(), 10, 0)
@@ -497,7 +497,7 @@ func (rpv *RequestParamValue) Uint() (uint, error) {
 	return uint(*rpv.ui64), nil
 }
 
-// Uint8 returns an `uint8` from the rpv's underlying value.
+// Uint8 returns an `uint8` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Uint8() (uint8, error) {
 	if rpv.ui64 == nil {
 		ui64, err := strconv.ParseUint(rpv.String(), 10, 8)
@@ -511,7 +511,7 @@ func (rpv *RequestParamValue) Uint8() (uint8, error) {
 	return uint8(*rpv.ui64), nil
 }
 
-// Uint16 returns an `uint16` from the rpv's underlying value.
+// Uint16 returns an `uint16` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Uint16() (uint16, error) {
 	if rpv.ui64 == nil {
 		ui64, err := strconv.ParseUint(rpv.String(), 10, 16)
@@ -525,7 +525,7 @@ func (rpv *RequestParamValue) Uint16() (uint16, error) {
 	return uint16(*rpv.ui64), nil
 }
 
-// Uint32 returns an `uint32` from the rpv's underlying value.
+// Uint32 returns an `uint32` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Uint32() (uint32, error) {
 	if rpv.ui64 == nil {
 		ui64, err := strconv.ParseUint(rpv.String(), 10, 32)
@@ -539,7 +539,7 @@ func (rpv *RequestParamValue) Uint32() (uint32, error) {
 	return uint32(*rpv.ui64), nil
 }
 
-// Uint64 returns an `uint64` from the rpv's underlying value.
+// Uint64 returns an `uint64` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Uint64() (uint64, error) {
 	if rpv.ui64 == nil {
 		ui64, err := strconv.ParseUint(rpv.String(), 10, 64)
@@ -553,7 +553,7 @@ func (rpv *RequestParamValue) Uint64() (uint64, error) {
 	return *rpv.ui64, nil
 }
 
-// Float32 returns a `float32` from the rpv's underlying value.
+// Float32 returns a `float32` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Float32() (float32, error) {
 	if rpv.f64 == nil {
 		f64, err := strconv.ParseFloat(rpv.String(), 32)
@@ -567,7 +567,7 @@ func (rpv *RequestParamValue) Float32() (float32, error) {
 	return float32(*rpv.f64), nil
 }
 
-// Float64 returns a `float64` from the rpv's underlying value.
+// Float64 returns a `float64` from the underlying value of the rpv.
 func (rpv *RequestParamValue) Float64() (float64, error) {
 	if rpv.f64 == nil {
 		f64, err := strconv.ParseFloat(rpv.String(), 64)
@@ -581,7 +581,7 @@ func (rpv *RequestParamValue) Float64() (float64, error) {
 	return *rpv.f64, nil
 }
 
-// String returns a `string` from the rpv's underlying value.
+// String returns a `string` from the underlying value of the rpv.
 func (rpv *RequestParamValue) String() string {
 	if rpv.s == nil {
 		if s, ok := rpv.i.(string); ok {
@@ -595,7 +595,7 @@ func (rpv *RequestParamValue) String() string {
 	return *rpv.s
 }
 
-// File returns a `multipart.FileHeader` from the rpv's underlying value.
+// File returns a `multipart.FileHeader` from the underlying value of the rpv.
 func (rpv *RequestParamValue) File() (*multipart.FileHeader, error) {
 	if rpv.f == nil {
 		fh, ok := rpv.i.(*multipart.FileHeader)

@@ -167,8 +167,8 @@ type Air struct {
 	// configuration item.
 	WebSocketHandshakeTimeout time.Duration
 
-	// WebSocketSubprotocols is the server's supported WebSocket
-	// subprotocols.
+	// WebSocketSubprotocols is the supported WebSocket subprotocols of the
+	// server.
 	//
 	// The default value is nil.
 	//

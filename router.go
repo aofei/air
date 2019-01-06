@@ -217,13 +217,12 @@ func (r *router) insert(
 				label:      cn.prefix[ll],
 				nType:      cn.nType,
 				prefix:     cn.prefix[ll:],
-				parent:     cn,
 				children:   cn.children,
 				paramNames: cn.paramNames,
 				handlers:   cn.handlers,
 			}
 
-			// Reset parent node.
+			// Reset current node.
 			cn.label = cn.prefix[0]
 			cn.nType = routeNodeTypeStatic
 			cn.prefix = cn.prefix[:ll]
@@ -231,7 +230,7 @@ func (r *router) insert(
 			cn.paramNames = nil
 			cn.handlers = map[string]Handler{}
 
-			if ll == sl { // At parent node
+			if ll == sl { // At current node
 				cn.nType = nt
 				cn.paramNames = paramNames
 				if h != nil {
@@ -242,7 +241,6 @@ func (r *router) insert(
 					label:      s[ll],
 					nType:      nt,
 					prefix:     s[ll:],
-					parent:     cn,
 					paramNames: paramNames,
 					handlers:   map[string]Handler{},
 				}
@@ -254,7 +252,6 @@ func (r *router) insert(
 			}
 		} else if ll < sl {
 			s = s[ll:]
-
 			if nn = cn.childByLabel(s[0]); nn != nil {
 				// Go deeper.
 				cn = nn
@@ -267,7 +264,6 @@ func (r *router) insert(
 				nType:      nt,
 				prefix:     s,
 				handlers:   map[string]Handler{},
-				parent:     cn,
 				paramNames: paramNames,
 			}
 			if h != nil {
@@ -438,7 +434,6 @@ type routeNode struct {
 	label      byte
 	nType      routeNodeType
 	prefix     string
-	parent     *routeNode
 	children   []*routeNode
 	paramNames []string
 	handlers   map[string]Handler
