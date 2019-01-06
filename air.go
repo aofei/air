@@ -587,6 +587,21 @@ func (a *Air) BATCH(methods []string, path string, h Handler, gases ...Gas) {
 	}
 }
 
+// FILE registers a new route with the path to serve a static file with the
+// filename and the optional route-level gases.
+func (a *Air) FILE(path, filename string, gases ...Gas) {
+	h := func(req *Request, res *Response) error {
+		err := res.WriteFile(filename)
+		if os.IsNotExist(err) {
+			return a.NotFoundHandler(req, res)
+		}
+
+		return err
+	}
+
+	a.BATCH([]string{http.MethodGet, http.MethodHead}, path, h, gases...)
+}
+
 // STATIC registers a new route with the path prefix to serve the static files
 // from the root with the optional route-level gases.
 func (a *Air) STATIC(prefix, root string, gases ...Gas) {
@@ -601,10 +616,16 @@ func (a *Air) STATIC(prefix, root string, gases ...Gas) {
 	}
 
 	h := func(req *Request, res *Response) error {
-		err := res.WriteFile(filepath.Join(
-			root,
-			req.Param("*").Value().String(),
-		))
+		p := req.Param("*")
+		if p == nil {
+			return a.NotFoundHandler(req, res)
+		}
+
+		path := p.Value().String()
+		path = filepath.FromSlash("/" + path)
+		path = filepath.Clean(path)
+
+		err := res.WriteFile(filepath.Join(root, path))
 		if os.IsNotExist(err) {
 			return a.NotFoundHandler(req, res)
 		}
@@ -613,21 +634,6 @@ func (a *Air) STATIC(prefix, root string, gases ...Gas) {
 	}
 
 	a.BATCH([]string{http.MethodGet, http.MethodHead}, prefix, h, gases...)
-}
-
-// FILE registers a new route with the path to serve a static file with the
-// filename and the optional route-level gases.
-func (a *Air) FILE(path, filename string, gases ...Gas) {
-	h := func(req *Request, res *Response) error {
-		err := res.WriteFile(filename)
-		if os.IsNotExist(err) {
-			return a.NotFoundHandler(req, res)
-		}
-
-		return err
-	}
-
-	a.BATCH([]string{http.MethodGet, http.MethodHead}, path, h, gases...)
 }
 
 // Group returns a new instance of the `Group` with the prefix and the optional

@@ -1,6 +1,7 @@
 package air
 
 import (
+	"net/url"
 	"strings"
 	"sync"
 )
@@ -67,6 +68,10 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 				"must be separated by /")
 		}
 	}
+
+	path = url.PathEscape(path)
+	path = strings.Replace(path, "%2F", "/", -1)
+	path = strings.Replace(path, "%2A", "*", -1)
 
 	routeName := method + path
 	for i, l := len(method), len(routeName); i < l; i++ {

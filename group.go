@@ -64,14 +64,14 @@ func (g *Group) BATCH(methods []string, path string, h Handler, gases ...Gas) {
 	g.Air.BATCH(methods, g.Prefix+path, h, append(g.Gases, gases...)...)
 }
 
-// STATIC implements the `Air#STATIC()`.
-func (g *Group) STATIC(prefix, root string, gases ...Gas) {
-	g.Air.STATIC(g.Prefix+prefix, root, append(g.Gases, gases...)...)
-}
-
 // FILE implements the `Air#FILE()`.
 func (g *Group) FILE(path, file string, gases ...Gas) {
 	g.Air.FILE(g.Prefix+path, file, append(g.Gases, gases...)...)
+}
+
+// STATIC implements the `Air#STATIC()`.
+func (g *Group) STATIC(prefix, root string, gases ...Gas) {
+	g.Air.STATIC(g.Prefix+prefix, root, append(g.Gases, gases...)...)
 }
 
 // Group implements the `Air#Group()`.
