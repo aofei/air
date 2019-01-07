@@ -52,8 +52,8 @@ func TestGroup(t *testing.T) {
 		return res.WriteString("Matched [* /foo/bar2]")
 	})
 
-	g.FILE("/bar3", "foobar")
-	g.STATIC("/bar4", "foobar")
+	g.FILE("/bar3", "/foo.bar")
+	g.FILES("/bar4", "/foobar")
 	g.Group("/bar5")
 
 	req := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)

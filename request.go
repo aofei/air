@@ -368,10 +368,9 @@ type RequestParam struct {
 
 	// Values is the values of the current request param.
 	//
-	// The route param value always has the highest weight.
-	//
-	// Weight order: route param value > request query value > request form
-	// value > request multipart form value > request multipart form file.
+	// Access order: route param value (always at the first) > request query
+	// value(s) > request form value(s) > request multipart form value(s) >
+	// request multipart form file(s).
 	Values []*RequestParamValue
 }
 

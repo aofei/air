@@ -587,8 +587,8 @@ func (a *Air) BATCH(methods []string, path string, h Handler, gases ...Gas) {
 	}
 }
 
-// FILE registers a new route with the path to serve a static file with the
-// filename and the optional route-level gases.
+// FILE registers a new GET route and a new HEAD route with the path to serve a
+// static file with the filename and the optional route-level gases.
 func (a *Air) FILE(path, filename string, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
 		err := res.WriteFile(filename)
@@ -602,9 +602,9 @@ func (a *Air) FILE(path, filename string, gases ...Gas) {
 	a.BATCH([]string{http.MethodGet, http.MethodHead}, path, h, gases...)
 }
 
-// STATIC registers a new route with the path prefix to serve the static files
-// from the root with the optional route-level gases.
-func (a *Air) STATIC(prefix, root string, gases ...Gas) {
+// FILES registers a new GET route and a new HEAD route with the path prefix to
+// serve the static files from the root with the optional route-level gases.
+func (a *Air) FILES(prefix, root string, gases ...Gas) {
 	if strings.HasSuffix(prefix, "/") {
 		prefix += "*"
 	} else {
@@ -636,8 +636,8 @@ func (a *Air) STATIC(prefix, root string, gases ...Gas) {
 	a.BATCH([]string{http.MethodGet, http.MethodHead}, prefix, h, gases...)
 }
 
-// Group returns a new instance of the `Group` with the prefix and the optional
-// group-level gases.
+// Group returns a new instance of the `Group` with the path prefix and the
+// optional group-level gases.
 func (a *Air) Group(prefix string, gases ...Gas) *Group {
 	return &Group{
 		Air:    a,

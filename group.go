@@ -69,9 +69,9 @@ func (g *Group) FILE(path, file string, gases ...Gas) {
 	g.Air.FILE(g.Prefix+path, file, append(g.Gases, gases...)...)
 }
 
-// STATIC implements the `Air#STATIC()`.
-func (g *Group) STATIC(prefix, root string, gases ...Gas) {
-	g.Air.STATIC(g.Prefix+prefix, root, append(g.Gases, gases...)...)
+// FILES implements the `Air#FILES()`.
+func (g *Group) FILES(prefix, root string, gases ...Gas) {
+	g.Air.FILES(g.Prefix+prefix, root, append(g.Gases, gases...)...)
 }
 
 // Group implements the `Air#Group()`.
