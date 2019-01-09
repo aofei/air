@@ -44,15 +44,17 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 
 	if path == "" {
 		panic("air: route path cannot be empty")
-	} else if path[0] != '/' {
-		panic("air: route path must start with /")
+	} else if h == nil {
+		panic("air: route handler cannot be nil")
 	}
 
 	path = ppath.Clean(path)
 	path = url.PathEscape(path)
 	path = strings.Replace(path, "%2F", "/", -1)
 	path = strings.Replace(path, "%2A", "*", -1)
-	if strings.Count(path, ":") > 1 {
+	if path[0] != '/' {
+		panic("air: route path must start with /")
+	} else if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
 		for _, p := range ps {
 			if strings.Count(p, ":") > 1 {
@@ -97,8 +99,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 		r.registeredRoutes[routeName] = true
 	}
 
-	paramNames := []string{}
-	nh := func(req *Request, res *Response) error {
+	rh := func(req *Request, res *Response) error {
 		h := h
 		for i := len(gases) - 1; i >= 0; i-- {
 			h = gases[i](h)
@@ -107,6 +108,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 		return h(req, res)
 	}
 
+	paramNames := []string{}
 	for i, l := 0, len(path); i < l; i++ {
 		if path[i] == ':' {
 			j := i + 1
@@ -138,7 +140,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 				r.insert(
 					method,
 					path,
-					nh,
+					rh,
 					routeNodeTypeParam,
 					paramNames,
 				)
@@ -164,7 +166,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 			r.insert(
 				method,
 				path[:i+1],
-				nh,
+				rh,
 				routeNodeTypeAny,
 				paramNames,
 			)
@@ -172,7 +174,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 		}
 	}
 
-	r.insert(method, path, nh, routeNodeTypeStatic, paramNames)
+	r.insert(method, path, rh, routeNodeTypeStatic, paramNames)
 }
 
 // insert inserts a new route into the `r.routeTree`.

@@ -42,6 +42,14 @@ func TestRouterRegister(t *testing.T) {
 
 	assert.PanicsWithValue(
 		t,
+		"air: route handler cannot be nil",
+		func() {
+			r.register(m, "/foobar", nil)
+		},
+	)
+
+	assert.PanicsWithValue(
+		t,
 		"air: route path must start with /",
 		func() {
 			r.register(m, "foobar", h)
