@@ -32,12 +32,15 @@ type WebSocket struct {
 	// messages of the current WebSocket.
 	ErrorHandler func(err error)
 
+	// Closed indicates whether the current WebSocket has been closed.
+	Closed bool
+
 	conn     *websocket.Conn
 	listened bool
-	closed   bool
 }
 
-// Listen listens for the messages sent from the remote peer of the ws.
+// Listen listens for the messages sent from the remote peer of the ws. After
+// one call to it, subsequent calls have no effect.
 func (ws *WebSocket) Listen() {
 	if ws.listened {
 		return
@@ -46,7 +49,7 @@ func (ws *WebSocket) Listen() {
 	ws.listened = true
 
 	for {
-		if ws.closed {
+		if ws.Closed {
 			break
 		}
 
@@ -120,6 +123,6 @@ func (ws *WebSocket) WritePong(appData string) error {
 
 // Close closes the ws without sending or waiting for a close message.
 func (ws *WebSocket) Close() error {
-	ws.closed = true
+	ws.Closed = true
 	return ws.conn.Close()
 }

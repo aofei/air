@@ -522,7 +522,7 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 	}
 
 	conn.SetCloseHandler(func(status int, reason string) error {
-		ws.closed = true
+		ws.Closed = true
 
 		if ws.ConnectionCloseHandler != nil {
 			return ws.ConnectionCloseHandler(status, reason)
