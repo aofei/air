@@ -2,6 +2,7 @@ package air
 
 import (
 	"net/url"
+	ppath "path"
 	"strings"
 	"sync"
 )
@@ -45,9 +46,13 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 		panic("air: route path cannot be empty")
 	} else if path[0] != '/' {
 		panic("air: route path must start with /")
-	} else if strings.Contains(path, "//") {
-		panic("air: route path cannot have //")
-	} else if strings.Count(path, ":") > 1 {
+	}
+
+	path = ppath.Clean(path)
+	path = url.PathEscape(path)
+	path = strings.Replace(path, "%2F", "/", -1)
+	path = strings.Replace(path, "%2A", "*", -1)
+	if strings.Count(path, ":") > 1 {
 		ps := strings.Split(path, "/")
 		for _, p := range ps {
 			if strings.Count(p, ":") > 1 {
@@ -68,10 +73,6 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 				"must be separated by /")
 		}
 	}
-
-	path = url.PathEscape(path)
-	path = strings.Replace(path, "%2F", "/", -1)
-	path = strings.Replace(path, "%2A", "*", -1)
 
 	routeName := method + path
 	for i, l := len(method), len(routeName); i < l; i++ {

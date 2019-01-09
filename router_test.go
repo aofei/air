@@ -50,14 +50,6 @@ func TestRouterRegister(t *testing.T) {
 
 	assert.PanicsWithValue(
 		t,
-		"air: route path cannot have //",
-		func() {
-			r.register(m, "//foobar", h)
-		},
-	)
-
-	assert.PanicsWithValue(
-		t,
 		"air: adjacent param names in route path must be separated by "+
 			"/",
 		func() {
