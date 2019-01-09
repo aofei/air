@@ -62,7 +62,9 @@ type Response struct {
 	// write a streaming response.
 	Body io.Writer
 
-	// ContentLength records the length of the bytes that has been written.
+	// ContentLength records the length of the associated content. The value
+	// -1 indicates that the length is unknown. Values >= 0 indicate that
+	// the given number of bytes has been written to the `Body`.
 	ContentLength int64
 
 	// Written indicates whether the current response has been written.
@@ -809,6 +811,7 @@ func (rw *responseWriter) WriteHeader(status int) {
 	rw.w.WriteHeader(status)
 
 	rw.r.Status = status
+	rw.r.ContentLength = 0
 	rw.r.Written = true
 }
 

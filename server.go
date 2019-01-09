@@ -181,8 +181,9 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Make response.
 
 	res := &Response{
-		Air:    s.a,
-		Status: http.StatusOK,
+		Air:           s.a,
+		Status:        http.StatusOK,
+		ContentLength: -1,
 
 		req:  req,
 		ohrw: rw,
