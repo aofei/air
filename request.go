@@ -54,7 +54,7 @@ type Request struct {
 	// section 8.1.2.3.
 	Path string
 
-	// Header is the header key-value pair map of the current request.
+	// Header is the header name-value pair map of the current request.
 	//
 	// See RFC 7231, section 5.
 	//
@@ -334,11 +334,13 @@ FormLoop:
 // growParams grows the capacity of the `r.params`, if necessary, to guarantee
 // space for another n.
 func (r *Request) growParams(n int) {
-	if cap(r.params)-len(r.params) < n {
-		ps := make([]*RequestParam, len(r.params), cap(r.params)+n)
-		copy(ps, r.params)
-		r.params = ps
+	if cap(r.params)-len(r.params) >= n {
+		return
 	}
+
+	ps := make([]*RequestParam, len(r.params), cap(r.params)+n)
+	copy(ps, r.params)
+	r.params = ps
 }
 
 // Bind binds the r into the v.

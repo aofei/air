@@ -195,7 +195,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	req.res = res
 
-	// Chain gases.
+	// Chain gases stack.
 
 	h := func(req *Request, res *Response) error {
 		rh := s.a.router.route(req)
@@ -203,9 +203,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			err := rh(req, res)
 			if res.Written {
 				return err
-			}
-
-			if err == nil {
+			} else if err == nil {
 				res.Status = http.StatusNoContent
 				r.Header.Del("Content-Type")
 				r.Header.Del("Content-Length")
@@ -224,7 +222,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return h(req, res)
 	}
 
-	// Chain pregases.
+	// Chain pregases stack.
 
 	for i := len(s.a.Pregases) - 1; i >= 0; i-- {
 		h = s.a.Pregases[i](h)
@@ -238,10 +236,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// Execute deferred functions.
 
-	if l := len(res.deferredFuncs); l > 0 {
-		for i := l - 1; i >= 0; i-- {
-			res.deferredFuncs[i]()
-		}
+	for i := len(res.deferredFuncs) - 1; i >= 0; i-- {
+		res.deferredFuncs[i]()
 	}
 
 	// Put route param values back to the pool.

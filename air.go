@@ -192,12 +192,12 @@ type Air struct {
 	// The default value is the `DefaultErrorHandler`.
 	ErrorHandler func(error, *Request, *Response)
 
-	// Pregases is the `Gas` chain that performs before routing.
+	// Pregases is the `Gas` chain stack that performs before routing.
 	//
 	// The default value is nil.
 	Pregases []Gas
 
-	// Gases is the `Gas` chain that performs after routing.
+	// Gases is the `Gas` chain stack that performs after routing.
 	//
 	// The default value is nil.
 	Gases []Gas

@@ -44,12 +44,12 @@ type Response struct {
 	//
 	// See RFC 7231, section 6.
 	//
-	// For HTTP/1.x, it will be put in response-line.
+	// For HTTP/1.x, it will be put in the response-line.
 	//
 	// For HTTP/2, it will be the ":status" pseudo-header.
 	Status int
 
-	// Header is the header key-value pair map of the current response.
+	// Header is the header name-value pair map of the current response.
 	//
 	// See RFC 7231, section 7.
 	//

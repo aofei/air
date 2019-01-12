@@ -26,6 +26,7 @@ func newI18n(a *Air) *i18n {
 	i := &i18n{
 		a:       a,
 		locales: map[string]map[string]string{},
+		matcher: language.NewMatcher(nil),
 		once:    &sync.Once{},
 	}
 
