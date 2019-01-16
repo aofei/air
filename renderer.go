@@ -18,48 +18,124 @@ type renderer struct {
 	a        *Air
 	template *template.Template
 	watcher  *fsnotify.Watcher
-	once     *sync.Once
+	loadOnce *sync.Once
 }
 
 // newRenderer returns a new instance of the `renderer` with the a.
 func newRenderer(a *Air) *renderer {
-	r := &renderer{
-		a:    a,
-		once: &sync.Once{},
+	return &renderer{
+		a:        a,
+		template: template.New("template"),
+		loadOnce: &sync.Once{},
 	}
+}
 
-	var err error
-	if r.watcher, err = fsnotify.NewWatcher(); err != nil {
-		panic(fmt.Errorf(
-			"air: failed to build renderer watcher: %v",
-			err,
-		))
-	}
+// load loads the stuff of the r up.
+func (r *renderer) load() {
+	if r.watcher == nil {
+		var err error
+		if r.watcher, err = fsnotify.NewWatcher(); err != nil {
+			r.a.ERROR(
+				"air: failed to build renderer watcher",
+				map[string]interface{}{
+					"error": err.Error(),
+				},
+			)
 
-	go func() {
-		for {
-			select {
-			case e := <-r.watcher.Events:
-				a.DEBUG(
-					"air: template file event occurs",
-					map[string]interface{}{
-						"file":  e.Name,
-						"event": e.Op.String(),
-					},
-				)
-				r.once = &sync.Once{}
-			case err := <-r.watcher.Errors:
-				a.ERROR(
-					"air: renderer watcher error",
-					map[string]interface{}{
-						"error": err.Error(),
-					},
-				)
-			}
+			return
 		}
-	}()
 
-	return r
+		go func() {
+			for {
+				select {
+				case e := <-r.watcher.Events:
+					r.a.DEBUG(
+						"air: template file event "+
+							"occurs",
+						map[string]interface{}{
+							"file":  e.Name,
+							"event": e.Op.String(),
+						},
+					)
+
+					r.loadOnce = &sync.Once{}
+				case err := <-r.watcher.Errors:
+					r.a.ERROR(
+						"air: renderer watcher error",
+						map[string]interface{}{
+							"error": err.Error(),
+						},
+					)
+				}
+			}
+		}()
+	}
+
+	tr, err := filepath.Abs(r.a.TemplateRoot)
+	if err != nil {
+		r.a.ERROR(
+			"air: failed to get absolute representation of "+
+				"template root",
+			map[string]interface{}{
+				"error": err.Error(),
+			},
+		)
+
+		return
+	}
+
+	t := template.
+		New("template").
+		Delims(r.a.TemplateLeftDelim, r.a.TemplateRightDelim).
+		Funcs(template.FuncMap{
+			"locstr": func(key string) string {
+				return key
+			},
+		}).
+		Funcs(r.a.TemplateFuncMap)
+	if err := filepath.Walk(
+		tr,
+		func(p string, fi os.FileInfo, err error) error {
+			if fi == nil || !fi.IsDir() {
+				return err
+			}
+
+			for _, e := range r.a.TemplateExts {
+				fns, err := filepath.Glob(
+					filepath.Join(p, "*"+e),
+				)
+				if err != nil {
+					return err
+				}
+
+				for _, fn := range fns {
+					b, err := ioutil.ReadFile(fn)
+					if err != nil {
+						return err
+					}
+
+					if _, err := t.New(filepath.ToSlash(
+						fn[len(tr)+1:],
+					)).Parse(string(b)); err != nil {
+						return err
+					}
+				}
+			}
+
+			return r.watcher.Add(p)
+		},
+	); err != nil {
+		r.a.ERROR(
+			"air: failed to walk template files",
+			map[string]interface{}{
+				"error": err.Error(),
+			},
+		)
+
+		return
+	}
+
+	r.template = t
 }
 
 // render renders the v into the w for the HTML template name.
@@ -69,71 +145,7 @@ func (r *renderer) render(
 	v interface{},
 	locstr func(string) string,
 ) error {
-	r.once.Do(func() {
-		tr, err := filepath.Abs(r.a.TemplateRoot)
-		if err != nil {
-			r.a.ERROR(
-				"air: failed to get absolute representation "+
-					"of template root",
-				map[string]interface{}{
-					"error": err.Error(),
-				},
-			)
-
-			return
-		}
-
-		r.template = template.
-			New("template").
-			Delims(r.a.TemplateLeftDelim, r.a.TemplateRightDelim).
-			Funcs(template.FuncMap{
-				"locstr": func(key string) string {
-					return key
-				},
-			}).
-			Funcs(r.a.TemplateFuncMap)
-		if err := filepath.Walk(
-			tr,
-			func(p string, fi os.FileInfo, err error) error {
-				if fi == nil || !fi.IsDir() {
-					return err
-				}
-
-				for _, e := range r.a.TemplateExts {
-					fns, err := filepath.Glob(
-						filepath.Join(p, "*"+e),
-					)
-					if err != nil {
-						return err
-					}
-
-					for _, fn := range fns {
-						b, err := ioutil.ReadFile(fn)
-						if err != nil {
-							return err
-						}
-
-						if _, err := r.template.New(
-							filepath.ToSlash(
-								fn[len(tr)+1:],
-							),
-						).Parse(string(b)); err != nil {
-							return err
-						}
-					}
-				}
-
-				return r.watcher.Add(p)
-			},
-		); err != nil {
-			r.a.ERROR(
-				"air: failed to walk template files",
-				map[string]interface{}{
-					"error": err.Error(),
-				},
-			)
-		}
-	})
+	r.loadOnce.Do(r.load)
 
 	t := r.template.Lookup(name)
 	if t == nil {
@@ -146,9 +158,9 @@ func (r *renderer) render(
 			return err
 		}
 
-		return t.Funcs(template.FuncMap{
+		t = t.Funcs(template.FuncMap{
 			"locstr": locstr,
-		}).Execute(w, v)
+		})
 	}
 
 	return t.Execute(w, v)

@@ -13,57 +13,27 @@ import (
 
 // i18n is a locale manager that adapts to the request's favorite conventions.
 type i18n struct {
-	a                *Air
-	locales          map[string]map[string]string
-	matcher          language.Matcher
-	watcher          *fsnotify.Watcher
-	parseLocalesOnce *sync.Once
+	a        *Air
+	locales  map[string]map[string]string
+	matcher  language.Matcher
+	watcher  *fsnotify.Watcher
+	loadOnce *sync.Once
 }
 
 // newI18n returns a new instance of the `i18n` with the a.
 func newI18n(a *Air) *i18n {
 	return &i18n{
-		a:                a,
-		locales:          map[string]map[string]string{},
-		matcher:          language.NewMatcher(nil),
-		parseLocalesOnce: &sync.Once{},
+		a:        a,
+		locales:  map[string]map[string]string{},
+		matcher:  language.NewMatcher(nil),
+		loadOnce: &sync.Once{},
 	}
 }
 
-// localize localizes the r.
-func (i *i18n) localize(r *Request) {
-	i.parseLocalesOnce.Do(i.parseLocales)
-
-	t, _ := language.MatchStrings(i.matcher, r.Header["Accept-Language"]...)
-	l := i.locales[t.String()]
-
-	r.localizedString = func(key string) string {
-		if v, ok := l[key]; ok {
-			return v
-		} else if v, ok := i.locales[i.a.LocaleBase][key]; ok {
-			return v
-		}
-
-		return key
-	}
-}
-
-// parseLocales parses the locale files inside the `l.a.LocaleRoot`.
-func (i *i18n) parseLocales() {
-	lr, err := filepath.Abs(i.a.LocaleRoot)
-	if err != nil {
-		i.a.ERROR(
-			"air: failed to get absolute representation of locale "+
-				"root",
-			map[string]interface{}{
-				"error": err.Error(),
-			},
-		)
-
-		return
-	}
-
+// load loads the stuff of the i up.
+func (i *i18n) load() {
 	if i.watcher == nil {
+		var err error
 		if i.watcher, err = fsnotify.NewWatcher(); err != nil {
 			i.a.ERROR(
 				"air: failed to build i18n watcher",
@@ -79,10 +49,6 @@ func (i *i18n) parseLocales() {
 			for {
 				select {
 				case e := <-i.watcher.Events:
-					if !i.a.I18nEnabled {
-						break
-					}
-
 					i.a.DEBUG(
 						"air: locale file event occurs",
 						map[string]interface{}{
@@ -91,12 +57,8 @@ func (i *i18n) parseLocales() {
 						},
 					)
 
-					i.parseLocalesOnce = &sync.Once{}
+					i.loadOnce = &sync.Once{}
 				case err := <-i.watcher.Errors:
-					if !i.a.I18nEnabled {
-						break
-					}
-
 					i.a.ERROR(
 						"air: i18n watcher error",
 						map[string]interface{}{
@@ -106,15 +68,30 @@ func (i *i18n) parseLocales() {
 				}
 			}
 		}()
+	}
 
-		if err := i.watcher.Add(lr); err != nil {
-			i.a.ERROR(
-				"air: failed to watch locale files",
-				map[string]interface{}{
-					"error": err.Error(),
-				},
-			)
-		}
+	lr, err := filepath.Abs(i.a.LocaleRoot)
+	if err != nil {
+		i.a.ERROR(
+			"air: failed to get absolute representation of locale "+
+				"root",
+			map[string]interface{}{
+				"error": err.Error(),
+			},
+		)
+
+		return
+	}
+
+	if err := i.watcher.Add(lr); err != nil {
+		i.a.ERROR(
+			"air: failed to watch locale files",
+			map[string]interface{}{
+				"error": err.Error(),
+			},
+		)
+
+		return
 	}
 
 	lfns, err := filepath.Glob(filepath.Join(lr, "*.toml"))
@@ -179,4 +156,22 @@ func (i *i18n) parseLocales() {
 
 	i.locales = ls
 	i.matcher = language.NewMatcher(ts)
+}
+
+// localize localizes the r.
+func (i *i18n) localize(r *Request) {
+	i.loadOnce.Do(i.load)
+
+	t, _ := language.MatchStrings(i.matcher, r.Header["Accept-Language"]...)
+	l := i.locales[t.String()]
+
+	r.localizedString = func(key string) string {
+		if v, ok := l[key]; ok {
+			return v
+		} else if v, ok := i.locales[i.a.LocaleBase][key]; ok {
+			return v
+		}
+
+		return key
+	}
 }
