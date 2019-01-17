@@ -21,11 +21,12 @@ import (
 // coffer is a binary asset file manager that uses runtime memory to reduce disk
 // I/O pressure.
 type coffer struct {
-	a        *Air
-	loadOnce *sync.Once
-	watcher  *fsnotify.Watcher
-	assets   *sync.Map
-	cache    *fastcache.Cache
+	a         *Air
+	loadOnce  *sync.Once
+	loadError error
+	watcher   *fsnotify.Watcher
+	assets    *sync.Map
+	cache     *fastcache.Cache
 }
 
 // newCoffer returns a new instance of the `coffer` with the a.
@@ -33,16 +34,21 @@ func newCoffer(a *Air) *coffer {
 	return &coffer{
 		a:        a,
 		loadOnce: &sync.Once{},
-		assets:   &sync.Map{},
 	}
 }
 
 // load loads the stuff of the c up.
-func (c *coffer) load() error {
+func (c *coffer) load() {
+	defer func() {
+		if c.loadError != nil {
+			c.loadOnce = &sync.Once{}
+		}
+	}()
+
 	if c.watcher == nil {
-		var err error
-		if c.watcher, err = fsnotify.NewWatcher(); err != nil {
-			return err
+		c.watcher, c.loadError = fsnotify.NewWatcher()
+		if c.loadError != nil {
+			return
 		}
 
 		go func() {
@@ -80,19 +86,14 @@ func (c *coffer) load() error {
 		}()
 	}
 
+	c.assets = &sync.Map{}
 	c.cache = fastcache.New(c.a.CofferMaxMemoryBytes)
-
-	return nil
 }
 
 // asset returns an `asset` from the c for the name.
 func (c *coffer) asset(name string) (*asset, error) {
-	var err error
-	c.loadOnce.Do(func() {
-		err = c.load()
-	})
-	if err != nil {
-		return nil, err
+	if c.loadOnce.Do(c.load); c.loadError != nil {
+		return nil, c.loadError
 	} else if ai, ok := c.assets.Load(name); ok {
 		return ai.(*asset), nil
 	} else if ar, err := filepath.Abs(c.a.AssetRoot); err != nil {

@@ -15,10 +15,11 @@ import (
 
 // renderer is a renderer for rendering HTML templates.
 type renderer struct {
-	a        *Air
-	loadOnce *sync.Once
-	watcher  *fsnotify.Watcher
-	template *template.Template
+	a         *Air
+	loadOnce  *sync.Once
+	loadError error
+	watcher   *fsnotify.Watcher
+	template  *template.Template
 }
 
 // newRenderer returns a new instance of the `renderer` with the a.
@@ -26,16 +27,21 @@ func newRenderer(a *Air) *renderer {
 	return &renderer{
 		a:        a,
 		loadOnce: &sync.Once{},
-		template: template.New("template"),
 	}
 }
 
 // load loads the stuff of the r up.
-func (r *renderer) load() error {
+func (r *renderer) load() {
+	defer func() {
+		if r.loadError != nil {
+			r.loadOnce = &sync.Once{}
+		}
+	}()
+
 	if r.watcher == nil {
-		var err error
-		if r.watcher, err = fsnotify.NewWatcher(); err != nil {
-			return err
+		r.watcher, r.loadError = fsnotify.NewWatcher()
+		if r.loadError != nil {
+			return
 		}
 
 		go func() {
@@ -64,9 +70,10 @@ func (r *renderer) load() error {
 		}()
 	}
 
-	tr, err := filepath.Abs(r.a.TemplateRoot)
-	if err != nil {
-		return err
+	var tr string
+	tr, r.loadError = filepath.Abs(r.a.TemplateRoot)
+	if r.loadError != nil {
+		return
 	}
 
 	t := template.
@@ -78,7 +85,7 @@ func (r *renderer) load() error {
 			},
 		}).
 		Funcs(r.a.TemplateFuncMap)
-	if err := filepath.Walk(
+	if r.loadError = filepath.Walk(
 		tr,
 		func(p string, fi os.FileInfo, err error) error {
 			if fi == nil || !fi.IsDir() {
@@ -109,13 +116,9 @@ func (r *renderer) load() error {
 
 			return r.watcher.Add(p)
 		},
-	); err != nil {
-		return err
+	); r.loadError == nil {
+		r.template = t
 	}
-
-	r.template = t
-
-	return nil
 }
 
 // render renders the v into the w for the HTML template name.
@@ -125,13 +128,8 @@ func (r *renderer) render(
 	v interface{},
 	locstr func(string) string,
 ) error {
-	var err error
-	r.loadOnce.Do(func() {
-		err = r.load()
-	})
-	if err != nil {
-		r.loadOnce = &sync.Once{}
-		return err
+	if r.loadOnce.Do(r.load); r.loadError != nil {
+		return r.loadError
 	}
 
 	t := r.template.Lookup(name)
