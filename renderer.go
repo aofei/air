@@ -16,33 +16,26 @@ import (
 // renderer is a renderer for rendering HTML templates.
 type renderer struct {
 	a        *Air
-	template *template.Template
-	watcher  *fsnotify.Watcher
 	loadOnce *sync.Once
+	watcher  *fsnotify.Watcher
+	template *template.Template
 }
 
 // newRenderer returns a new instance of the `renderer` with the a.
 func newRenderer(a *Air) *renderer {
 	return &renderer{
 		a:        a,
-		template: template.New("template"),
 		loadOnce: &sync.Once{},
+		template: template.New("template"),
 	}
 }
 
 // load loads the stuff of the r up.
-func (r *renderer) load() {
+func (r *renderer) load() error {
 	if r.watcher == nil {
 		var err error
 		if r.watcher, err = fsnotify.NewWatcher(); err != nil {
-			r.a.ERROR(
-				"air: failed to build renderer watcher",
-				map[string]interface{}{
-					"error": err.Error(),
-				},
-			)
-
-			return
+			return err
 		}
 
 		go func() {
@@ -73,15 +66,7 @@ func (r *renderer) load() {
 
 	tr, err := filepath.Abs(r.a.TemplateRoot)
 	if err != nil {
-		r.a.ERROR(
-			"air: failed to get absolute representation of "+
-				"template root",
-			map[string]interface{}{
-				"error": err.Error(),
-			},
-		)
-
-		return
+		return err
 	}
 
 	t := template.
@@ -125,17 +110,12 @@ func (r *renderer) load() {
 			return r.watcher.Add(p)
 		},
 	); err != nil {
-		r.a.ERROR(
-			"air: failed to walk template files",
-			map[string]interface{}{
-				"error": err.Error(),
-			},
-		)
-
-		return
+		return err
 	}
 
 	r.template = t
+
+	return nil
 }
 
 // render renders the v into the w for the HTML template name.
@@ -145,7 +125,14 @@ func (r *renderer) render(
 	v interface{},
 	locstr func(string) string,
 ) error {
-	r.loadOnce.Do(r.load)
+	var err error
+	r.loadOnce.Do(func() {
+		err = r.load()
+	})
+	if err != nil {
+		r.loadOnce = &sync.Once{}
+		return err
+	}
 
 	t := r.template.Lookup(name)
 	if t == nil {

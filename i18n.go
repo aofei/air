@@ -14,35 +14,28 @@ import (
 // i18n is a locale manager that adapts to the request's favorite conventions.
 type i18n struct {
 	a        *Air
+	loadOnce *sync.Once
+	watcher  *fsnotify.Watcher
 	locales  map[string]map[string]string
 	matcher  language.Matcher
-	watcher  *fsnotify.Watcher
-	loadOnce *sync.Once
 }
 
 // newI18n returns a new instance of the `i18n` with the a.
 func newI18n(a *Air) *i18n {
 	return &i18n{
 		a:        a,
+		loadOnce: &sync.Once{},
 		locales:  map[string]map[string]string{},
 		matcher:  language.NewMatcher(nil),
-		loadOnce: &sync.Once{},
 	}
 }
 
 // load loads the stuff of the i up.
-func (i *i18n) load() {
+func (i *i18n) load() error {
 	if i.watcher == nil {
 		var err error
 		if i.watcher, err = fsnotify.NewWatcher(); err != nil {
-			i.a.ERROR(
-				"air: failed to build i18n watcher",
-				map[string]interface{}{
-					"error": err.Error(),
-				},
-			)
-
-			return
+			return err
 		}
 
 		go func() {
@@ -72,38 +65,16 @@ func (i *i18n) load() {
 
 	lr, err := filepath.Abs(i.a.LocaleRoot)
 	if err != nil {
-		i.a.ERROR(
-			"air: failed to get absolute representation of locale "+
-				"root",
-			map[string]interface{}{
-				"error": err.Error(),
-			},
-		)
-
-		return
+		return err
 	}
 
 	if err := i.watcher.Add(lr); err != nil {
-		i.a.ERROR(
-			"air: failed to watch locale files",
-			map[string]interface{}{
-				"error": err.Error(),
-			},
-		)
-
-		return
+		return err
 	}
 
 	lfns, err := filepath.Glob(filepath.Join(lr, "*.toml"))
 	if err != nil {
-		i.a.ERROR(
-			"air: failed to get locale files",
-			map[string]interface{}{
-				"error": err.Error(),
-			},
-		)
-
-		return
+		return err
 	}
 
 	ls := make(map[string]map[string]string, len(lfns))
@@ -111,26 +82,12 @@ func (i *i18n) load() {
 	for _, lfn := range lfns {
 		b, err := ioutil.ReadFile(lfn)
 		if err != nil {
-			i.a.ERROR(
-				"air: failed to read locale file",
-				map[string]interface{}{
-					"error": err.Error(),
-				},
-			)
-
-			return
+			return err
 		}
 
 		l := map[string]string{}
 		if err := toml.Unmarshal(b, &l); err != nil {
-			i.a.ERROR(
-				"air: failed to unmarshal locale file",
-				map[string]interface{}{
-					"error": err.Error(),
-				},
-			)
-
-			return
+			return err
 		}
 
 		t, err := language.Parse(strings.Replace(
@@ -140,14 +97,7 @@ func (i *i18n) load() {
 			1,
 		))
 		if err != nil {
-			i.a.ERROR(
-				"air: failed to parse locale",
-				map[string]interface{}{
-					"error": err.Error(),
-				},
-			)
-
-			return
+			return err
 		}
 
 		ls[t.String()] = l
@@ -156,11 +106,23 @@ func (i *i18n) load() {
 
 	i.locales = ls
 	i.matcher = language.NewMatcher(ts)
+
+	return nil
 }
 
 // localize localizes the r.
 func (i *i18n) localize(r *Request) {
-	i.loadOnce.Do(i.load)
+	var err error
+	i.loadOnce.Do(func() {
+		err = i.load()
+	})
+	if err != nil {
+		i.a.ERROR("air: failed to load i18n", map[string]interface{}{
+			"error": err.Error(),
+		})
+
+		i.loadOnce = &sync.Once{}
+	}
 
 	t, _ := language.MatchStrings(i.matcher, r.Header["Accept-Language"]...)
 	l := i.locales[t.String()]

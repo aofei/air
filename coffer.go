@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/binary"
-	"fmt"
 	"io/ioutil"
 	"mime"
 	"os"
@@ -22,54 +21,55 @@ import (
 // coffer is a binary asset file manager that uses runtime memory to reduce disk
 // I/O pressure.
 type coffer struct {
-	a       *Air
-	once    *sync.Once
-	assets  *sync.Map
-	cache   *fastcache.Cache
-	watcher *fsnotify.Watcher
+	a        *Air
+	loadOnce *sync.Once
+	watcher  *fsnotify.Watcher
+	assets   *sync.Map
+	cache    *fastcache.Cache
 }
 
 // newCoffer returns a new instance of the `coffer` with the a.
 func newCoffer(a *Air) *coffer {
-	c := &coffer{
-		a:      a,
-		once:   &sync.Once{},
-		assets: &sync.Map{},
+	return &coffer{
+		a:        a,
+		loadOnce: &sync.Once{},
+		assets:   &sync.Map{},
 	}
+}
 
-	var err error
-	if c.watcher, err = fsnotify.NewWatcher(); err != nil {
-		panic(fmt.Errorf(
-			"air: failed to build coffer watcher: %v",
-			err,
-		))
-	}
+// load loads the stuff of the c up.
+func (c *coffer) load() error {
+	if c.watcher == nil {
+		var err error
+		if c.watcher, err = fsnotify.NewWatcher(); err != nil {
+			return err
+		}
 
-	go func() {
-		for {
-			select {
-			case e := <-c.watcher.Events:
-				if a.CofferEnabled {
-					a.DEBUG(
+		go func() {
+			for {
+				select {
+				case e := <-c.watcher.Events:
+					c.a.DEBUG(
 						"air: asset file event occurs",
 						map[string]interface{}{
 							"file":  e.Name,
 							"event": e.Op.String(),
 						},
 					)
-				}
 
-				if ai, ok := c.assets.Load(e.Name); ok {
+					ai, ok := c.assets.Load(e.Name)
+					if !ok {
+						break
+					}
+
 					a := ai.(*asset)
 					c.assets.Delete(a.name)
 					c.cache.Del(a.digest)
 					if a.gzippedDigest != nil {
 						c.cache.Del(a.gzippedDigest)
 					}
-				}
-			case err := <-c.watcher.Errors:
-				if a.CofferEnabled {
-					a.ERROR(
+				case err := <-c.watcher.Errors:
+					c.a.ERROR(
 						"air: coffer watcher error",
 						map[string]interface{}{
 							"error": err.Error(),
@@ -77,19 +77,23 @@ func newCoffer(a *Air) *coffer {
 					)
 				}
 			}
-		}
-	}()
+		}()
+	}
 
-	return c
+	c.cache = fastcache.New(c.a.CofferMaxMemoryBytes)
+
+	return nil
 }
 
 // asset returns an `asset` from the c for the name.
 func (c *coffer) asset(name string) (*asset, error) {
-	c.once.Do(func() {
-		c.cache = fastcache.New(c.a.CofferMaxMemoryBytes)
+	var err error
+	c.loadOnce.Do(func() {
+		err = c.load()
 	})
-
-	if ai, ok := c.assets.Load(name); ok {
+	if err != nil {
+		return nil, err
+	} else if ai, ok := c.assets.Load(name); ok {
 		return ai.(*asset), nil
 	} else if ar, err := filepath.Abs(c.a.AssetRoot); err != nil {
 		return nil, err
