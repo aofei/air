@@ -137,18 +137,18 @@ func (r *renderer) render(
 		return fmt.Errorf("html/template: %q is undefined", name)
 	}
 
-	if r.a.I18nEnabled {
-		t, err := t.Clone()
-		if err != nil {
-			return err
-		}
-
-		t = t.Funcs(template.FuncMap{
-			"locstr": locstr,
-		})
+	if !r.a.I18nEnabled {
+		return t.Execute(w, v)
 	}
 
-	return t.Execute(w, v)
+	t, err := t.Clone()
+	if err != nil {
+		return err
+	}
+
+	return t.Funcs(template.FuncMap{
+		"locstr": locstr,
+	}).Execute(w, v)
 }
 
 // strlen returns the number of characters in the s.
