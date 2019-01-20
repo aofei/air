@@ -899,14 +899,14 @@ func (gt *grpcTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // reverseProxyBufferPool is a buffer pool for the reverse proxy.
 type reverseProxyBufferPool struct {
-	pool sync.Pool
+	pool *sync.Pool
 }
 
 // newReverseProxyBufferPool returns a new instance of the
 // `reverseProxyBufferPool`.
 func newReverseProxyBufferPool() *reverseProxyBufferPool {
 	return &reverseProxyBufferPool{
-		pool: sync.Pool{
+		pool: &sync.Pool{
 			New: func() interface{} {
 				return make([]byte, 32<<20)
 			},
