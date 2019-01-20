@@ -17,8 +17,10 @@ import (
 
 // server is an HTTP server.
 type server struct {
-	a      *Air
-	server *http.Server
+	a             *Air
+	server        *http.Server
+	requestsPool  *sync.Pool
+	responsesPool *sync.Pool
 }
 
 // newServer returns a new instance of the `server` with the a.
@@ -26,6 +28,16 @@ func newServer(a *Air) *server {
 	return &server{
 		a:      a,
 		server: &http.Server{},
+		requestsPool: &sync.Pool{
+			New: func() interface{} {
+				return &Request{}
+			},
+		},
+		responsesPool: &sync.Pool{
+			New: func() interface{} {
+				return &Response{}
+			},
+		},
 	}
 }
 
@@ -168,32 +180,40 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Make request.
+	// Get request and response from the pool.
 
-	req := &Request{
-		Air: s.a,
+	req := s.requestsPool.Get().(*Request)
+	res := s.responsesPool.Get().(*Response)
 
-		parseRouteParamsOnce: &sync.Once{},
-		parseOtherParamsOnce: &sync.Once{},
-	}
+	// Reset request.
+
+	req.Air = s.a
 	req.SetHTTPRequest(r)
+	req.res = res
+	req.params = req.params[:0]
+	req.routeParamNames = nil
+	req.routeParamValues = nil
+	req.parseRouteParamsOnce = &sync.Once{}
+	req.parseOtherParamsOnce = &sync.Once{}
+	req.localizedString = nil
 
-	// Make response.
+	// Reset response.
 
-	res := &Response{
-		Air:           s.a,
-		Status:        http.StatusOK,
-		ContentLength: -1,
-
-		req:  req,
-		ohrw: rw,
-	}
+	res.Air = s.a
 	res.SetHTTPResponseWriter(&responseWriter{
 		r: res,
 		w: rw,
 	})
-
-	req.res = res
+	res.Status = http.StatusOK
+	res.ContentLength = -1
+	res.Written = false
+	res.Minified = false
+	res.Gzipped = false
+	res.req = req
+	res.ohrw = rw
+	res.servingContent = false
+	res.serveContentError = nil
+	res.deferredFuncs = res.deferredFuncs[:0]
 
 	// Chain gases stack.
 
@@ -245,4 +265,9 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if req.routeParamValues != nil {
 		s.a.router.routeParamValuesPool.Put(req.routeParamValues)
 	}
+
+	// Put request and response back to the pool.
+
+	s.requestsPool.Put(req)
+	s.responsesPool.Put(res)
 }
