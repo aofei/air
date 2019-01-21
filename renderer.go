@@ -47,23 +47,12 @@ func (r *renderer) load() {
 		go func() {
 			for {
 				select {
-				case e := <-r.watcher.Events:
-					r.a.DEBUG(
-						"air: template file event "+
-							"occurs",
-						map[string]interface{}{
-							"file":  e.Name,
-							"event": e.Op.String(),
-						},
-					)
-
+				case <-r.watcher.Events:
 					r.loadOnce = &sync.Once{}
 				case err := <-r.watcher.Errors:
-					r.a.ERROR(
-						"air: renderer watcher error",
-						map[string]interface{}{
-							"error": err.Error(),
-						},
+					r.a.errorLogger.Printf(
+						"renderer watcher error: %v",
+						err,
 					)
 				}
 			}

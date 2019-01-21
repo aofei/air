@@ -55,14 +55,6 @@ func (c *coffer) load() {
 			for {
 				select {
 				case e := <-c.watcher.Events:
-					c.a.DEBUG(
-						"air: asset file event occurs",
-						map[string]interface{}{
-							"file":  e.Name,
-							"event": e.Op.String(),
-						},
-					)
-
 					ai, ok := c.assets.Load(e.Name)
 					if !ok {
 						break
@@ -75,11 +67,9 @@ func (c *coffer) load() {
 						c.cache.Del(a.gzippedDigest)
 					}
 				case err := <-c.watcher.Errors:
-					c.a.ERROR(
-						"air: coffer watcher error",
-						map[string]interface{}{
-							"error": err.Error(),
-						},
+					c.a.errorLogger.Printf(
+						"coffer watcher error: %v",
+						err,
 					)
 				}
 			}

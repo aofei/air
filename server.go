@@ -17,10 +17,10 @@ import (
 
 // server is an HTTP server.
 type server struct {
-	a             *Air
-	server        *http.Server
-	requestsPool  *sync.Pool
-	responsesPool *sync.Pool
+	a            *Air
+	server       *http.Server
+	requestPool  *sync.Pool
+	responsePool *sync.Pool
 }
 
 // newServer returns a new instance of the `server` with the a.
@@ -28,12 +28,12 @@ func newServer(a *Air) *server {
 	return &server{
 		a:      a,
 		server: &http.Server{},
-		requestsPool: &sync.Pool{
+		requestPool: &sync.Pool{
 			New: func() interface{} {
 				return &Request{}
 			},
 		},
-		responsesPool: &sync.Pool{
+		responsePool: &sync.Pool{
 			New: func() interface{} {
 				return &Response{}
 			},
@@ -60,7 +60,7 @@ func (s *server) serve() error {
 	s.server.ErrorLog = s.a.errorLogger
 
 	if s.a.DebugMode {
-		s.a.DEBUG("air: serving in debug mode")
+		fmt.Println("air: serving in debug mode")
 	}
 
 	host := s.server.Addr
@@ -116,8 +116,8 @@ func (s *server) serve() error {
 			}
 
 			return fmt.Errorf(
-				"acme/autocert: host %q not "+
-					"configured in HostWhitelist",
+				"acme/autocert: host %q not configured in "+
+					"HostWhitelist",
 				h,
 			)
 		},
@@ -182,8 +182,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// Get request and response from the pool.
 
-	req := s.requestsPool.Get().(*Request)
-	res := s.responsesPool.Get().(*Response)
+	req := s.requestPool.Get().(*Request)
+	res := s.responsePool.Get().(*Response)
 
 	// Reset request.
 
@@ -268,6 +268,6 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// Put request and response back to the pool.
 
-	s.requestsPool.Put(req)
-	s.responsesPool.Put(res)
+	s.requestPool.Put(req)
+	s.responsePool.Put(res)
 }

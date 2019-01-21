@@ -3,7 +3,6 @@ package air
 import (
 	"compress/gzip"
 	"errors"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/BurntSushi/toml"
 )
@@ -42,20 +42,6 @@ type Air struct {
 	//
 	// It is called "debug_mode" when it is used as a configuration item.
 	DebugMode bool
-
-	// LoggerLevel is the level of the logger.
-	//
-	// It only works when the `DebugMode` is false.
-	//
-	// The default value is the `LoggerLevelInfo`.
-	//
-	// It is called "logger_level" when it is used as a configuration item.
-	LoggerLevel LoggerLevel
-
-	// LoggerOutput is the output destination of the logger.
-	//
-	// The default value is the `os.Stdout`.
-	LoggerOutput io.Writer
 
 	// Address is the TCP address that the server listens on.
 	//
@@ -187,10 +173,18 @@ type Air struct {
 	// The default value is the `DefaultMethodNotAllowedHandler`.
 	MethodNotAllowedHandler func(*Request, *Response) error
 
-	// ErrorHandler is the centralized error handler for the server.
+	// ErrorHandler is the centralized error handler of the server.
 	//
 	// The default value is the `DefaultErrorHandler`.
 	ErrorHandler func(error, *Request, *Response)
+
+	// ErrorLogger is the `log.Logger` that logs errors that occur in the
+	// server.
+	//
+	// If nil, logging is done via the log package's standard logger.
+	//
+	// The default value is nil.
+	ErrorLogger *log.Logger
 
 	// Pregases is the `Gas` chain stack that performs before routing.
 	//
@@ -359,7 +353,6 @@ type Air struct {
 	// The default value is "".
 	ConfigFile string
 
-	logger                       *logger
 	errorLogger                  *log.Logger
 	server                       *server
 	router                       *router
@@ -380,8 +373,6 @@ var Default = New()
 func New() *Air {
 	a := &Air{
 		AppName:                 "air",
-		LoggerLevel:             LoggerLevelInfo,
-		LoggerOutput:            os.Stdout,
 		Address:                 ":8080",
 		MaxHeaderBytes:          1 << 20,
 		ACMECertRoot:            "acme-certs",
@@ -433,7 +424,6 @@ func New() *Air {
 		LocaleBase: "en-US",
 	}
 
-	a.logger = newLogger(a)
 	a.errorLogger = log.New(newErrorLogWriter(a), "air: ", 0)
 	a.server = newServer(a)
 	a.router = newRouter(a)
@@ -452,40 +442,6 @@ func New() *Air {
 	a.reverseProxyBufferPool = newReverseProxyBufferPool()
 
 	return a
-}
-
-// DEBUG logs the msg at the `LoggerLevelDebug` with the optional extras.
-func (a *Air) DEBUG(msg string, extras ...map[string]interface{}) {
-	a.logger.log(LoggerLevelDebug, msg, extras...)
-}
-
-// INFO logs the msg at the `LoggerLevelInfo` with the optional extras.
-func (a *Air) INFO(msg string, extras ...map[string]interface{}) {
-	a.logger.log(LoggerLevelInfo, msg, extras...)
-}
-
-// WARN logs the msg at the `LoggerLevelWarn` with the optional extras.
-func (a *Air) WARN(msg string, extras ...map[string]interface{}) {
-	a.logger.log(LoggerLevelWarn, msg, extras...)
-}
-
-// ERROR logs the msg at the `LoggerLevelError` with the optional extras.
-func (a *Air) ERROR(msg string, extras ...map[string]interface{}) {
-	a.logger.log(LoggerLevelError, msg, extras...)
-}
-
-// FATAL logs the msg at the `LoggerLevelFatal` with the optional extras
-// followed by a call to `os.Exit(1)`.
-func (a *Air) FATAL(msg string, extras ...map[string]interface{}) {
-	a.logger.log(LoggerLevelFatal, msg, extras...)
-	os.Exit(1)
-}
-
-// PANIC logs the msg at the `LoggerLevelPanic` with the optional extras
-// followed by a call to `panic()`.
-func (a *Air) PANIC(msg string, extras ...map[string]interface{}) {
-	a.logger.log(LoggerLevelPanic, msg, extras...)
-	panic(msg)
 }
 
 // GET registers a new GET route for the path with the matching h in the router
@@ -674,30 +630,6 @@ func (a *Air) Serve() error {
 	if p, ok := m["debug_mode"]; ok {
 		if err := md.PrimitiveDecode(p, &a.DebugMode); err != nil {
 			return err
-		}
-	}
-
-	if p, ok := m["logger_level"]; ok {
-		lll := ""
-		if err := md.PrimitiveDecode(p, &lll); err != nil {
-			return err
-		}
-
-		switch lll {
-		case LoggerLevelDebug.String():
-			a.LoggerLevel = LoggerLevelDebug
-		case LoggerLevelInfo.String():
-			a.LoggerLevel = LoggerLevelInfo
-		case LoggerLevelWarn.String():
-			a.LoggerLevel = LoggerLevelWarn
-		case LoggerLevelError.String():
-			a.LoggerLevel = LoggerLevelError
-		case LoggerLevelFatal.String():
-			a.LoggerLevel = LoggerLevelFatal
-		case LoggerLevelPanic.String():
-			a.LoggerLevel = LoggerLevelPanic
-		default:
-			a.LoggerLevel = LoggerLevelOff
 		}
 	}
 
@@ -988,8 +920,12 @@ func newErrorLogWriter(a *Air) *errorLogWriter {
 
 // Write implements the `io.Writer`.
 func (elw *errorLogWriter) Write(b []byte) (int, error) {
-	elw.a.ERROR(strings.TrimSuffix(string(b), "\n"))
-	return len(b), nil
+	s := *(*string)(unsafe.Pointer(&b))
+	if elw.a.ErrorLogger != nil {
+		return len(s), elw.a.ErrorLogger.Output(2, s)
+	}
+
+	return len(s), log.Output(2, s)
 }
 
 // stringSliceContains reports whether the ss contains the s.

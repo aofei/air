@@ -62,23 +62,6 @@ A: Far from enough. But it's already working.
 	* As less as possible
 	* As simple as possible
 	* As expressive as possible
-* Method
-	* `GET` (cache-friendly)
-	* `HEAD` (cache-friendly)
-	* `POST`
-	* `PUT`
-	* `PATCH`
-	* `DELETE`
-	* `CONNECT`
-	* `OPTIONS`
-	* `TRACE`
-* Logger
-	* `DEBUG`
-	* `INFO`
-	* `WARN`
-	* `ERROR`
-	* `FATAL`
-	* `PANIC`
 * Server
 	* HTTP/2 support
 	* SSL/TLS support
@@ -100,7 +83,7 @@ A: Far from enough. But it's already working.
 	* Full-duplex communication
 * Reverse proxy
 	* Retrieves resources on behalf of a client from another server
-	* Protocols:
+	* Supported protocols:
 		* HTTP(S)
 		* WebSocket
 		* gRPC

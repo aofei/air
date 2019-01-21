@@ -46,22 +46,12 @@ func (i *i18n) load() {
 		go func() {
 			for {
 				select {
-				case e := <-i.watcher.Events:
-					i.a.DEBUG(
-						"air: locale file event occurs",
-						map[string]interface{}{
-							"file":  e.Name,
-							"event": e.Op.String(),
-						},
-					)
-
+				case <-i.watcher.Events:
 					i.loadOnce = &sync.Once{}
 				case err := <-i.watcher.Errors:
-					i.a.ERROR(
-						"air: i18n watcher error",
-						map[string]interface{}{
-							"error": err.Error(),
-						},
+					i.a.errorLogger.Printf(
+						"i18n watcher error: %v",
+						err,
 					)
 				}
 			}
@@ -115,9 +105,7 @@ func (i *i18n) load() {
 // localize localizes the r.
 func (i *i18n) localize(r *Request) {
 	if i.loadOnce.Do(i.load); i.loadError != nil {
-		i.a.ERROR("air: failed to load i18n", map[string]interface{}{
-			"error": i.loadError.Error(),
-		})
+		i.a.errorLogger.Printf("failed to load i18n: %v", i.loadError)
 
 		r.localizedString = func(key string) string {
 			return key
