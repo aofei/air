@@ -15,7 +15,6 @@ type router struct {
 	routeTree            *routeNode
 	registeredRoutes     map[string]bool
 	maxRouteParams       int
-	routePalPool         *sync.Pool
 	routeParamValuesPool *sync.Pool
 }
 
@@ -27,11 +26,6 @@ func newRouter(a *Air) *router {
 			handlers: map[string]Handler{},
 		},
 		registeredRoutes: map[string]bool{},
-		routePalPool: &sync.Pool{
-			New: func() interface{} {
-				return &routePal{}
-			},
-		},
 	}
 	r.routeParamValuesPool = &sync.Pool{
 		New: func() interface{} {
@@ -301,55 +295,58 @@ func (r *router) insert(
 
 // route returns a handler registered for the req.
 func (r *router) route(req *Request) Handler {
-	p := r.routePalPool.Get().(*routePal)
-	p.s, _ = splitPathQuery(req.Path)
-	p.cn = r.routeTree
-	p.nnt = routeNodeTypeStatic
-	p.sn = nil
-	p.ss = ""
-	p.pi = 0
+	var (
+		s, _ = splitPathQuery(req.Path) // Search
+		cn   = r.routeTree              // Current node
+		nn   *routeNode                 // Next node
+		nnt  routeNodeType              // Next node type
+		sn   *routeNode                 // Saved node
+		ss   string                     // Saved search
+		sl   int                        // Search length
+		pl   int                        // Prefix length
+		ll   int                        // LCP length
+		ml   int                        // Minimum length of sl and pl
+		i    int                        // Index
+		pi   int                        // Param index
+	)
 
 	// Search order: static route > param route > any route.
 	for {
-		if p.s == "" {
+		if s == "" {
 			break
 		}
 
-		p.i = 1
-		p.sl = len(p.s)
-		for p.i < p.sl && p.s[p.i] == '/' {
-			p.i++
+		for i, sl = 1, len(s); i < sl && s[i] == '/'; i++ {
 		}
 
-		p.s = p.s[p.i-1:]
+		s = s[i-1:]
 
-		p.pl = 0
-		p.ll = 0
+		pl = 0
+		ll = 0
 
-		if p.cn.label != ':' {
-			p.pl = len(p.cn.prefix)
+		if cn.label != ':' {
+			pl = len(cn.prefix)
 
-			p.ml = p.pl
-			if p.sl = len(p.s); p.sl < p.ml {
-				p.ml = p.sl
+			ml = pl
+			if sl = len(s); sl < ml {
+				ml = sl
 			}
 
-			for p.ll < p.ml && p.s[p.ll] == p.cn.prefix[p.ll] {
-				p.ll++
+			for ; ll < ml && s[ll] == cn.prefix[ll]; ll++ {
 			}
 		}
 
-		if p.ll != p.pl {
+		if ll != pl {
 			goto Struggle
 		}
 
-		if p.s = p.s[p.ll:]; p.s == "" {
-			if len(p.cn.handlers) == 0 {
-				if p.cn.childByType(routeNodeTypeParam) != nil {
+		if s = s[ll:]; s == "" {
+			if len(cn.handlers) == 0 {
+				if cn.childByType(routeNodeTypeParam) != nil {
 					goto Param
 				}
 
-				if p.cn.childByType(routeNodeTypeAny) != nil {
+				if cn.childByType(routeNodeTypeAny) != nil {
 					goto Any
 				}
 			}
@@ -358,37 +355,32 @@ func (r *router) route(req *Request) Handler {
 		}
 
 		// Static node.
-		if p.nn = p.cn.child(p.s[0], routeNodeTypeStatic); p.nn != nil {
+		if nn = cn.child(s[0], routeNodeTypeStatic); nn != nil {
 			// Save next.
-			if p.pl = len(p.cn.prefix); p.pl > 0 &&
-				p.cn.prefix[p.pl-1] == '/' {
-				p.nnt = routeNodeTypeParam
-				p.sn = p.cn
-				p.ss = p.s
+			if l := len(cn.prefix); l > 0 && cn.prefix[l-1] == '/' {
+				nnt = routeNodeTypeParam
+				sn = cn
+				ss = s
 			}
 
-			p.cn = p.nn
+			cn = nn
 
 			continue
 		}
 
 		// Param node.
 	Param:
-		if p.nn = p.cn.childByType(routeNodeTypeParam); p.nn != nil {
+		if nn = cn.childByType(routeNodeTypeParam); nn != nil {
 			// Save next.
-			if p.pl = len(p.cn.prefix); p.pl > 0 &&
-				p.cn.prefix[p.pl-1] == '/' {
-				p.nnt = routeNodeTypeAny
-				p.sn = p.cn
-				p.ss = p.s
+			if l := len(cn.prefix); l > 0 && cn.prefix[l-1] == '/' {
+				nnt = routeNodeTypeAny
+				sn = cn
+				ss = s
 			}
 
-			p.cn = p.nn
+			cn = nn
 
-			p.i = 0
-			p.sl = len(p.s)
-			for p.i < p.sl && p.s[p.i] != '/' {
-				p.i++
+			for i, sl = 0, len(s); i < sl && s[i] != '/'; i++ {
 			}
 
 			if req.routeParamValues == nil {
@@ -396,35 +388,35 @@ func (r *router) route(req *Request) Handler {
 					Get().([]string)
 			}
 
-			req.routeParamValues[p.pi] = p.s[:p.i]
-			p.pi++
+			req.routeParamValues[pi] = s[:i]
+			pi++
 
-			p.s = p.s[p.i:]
+			s = s[i:]
 
 			continue
 		}
 
 		// Any node.
 	Any:
-		if p.cn = p.cn.childByType(routeNodeTypeAny); p.cn != nil {
+		if cn = cn.childByType(routeNodeTypeAny); cn != nil {
 			if req.routeParamValues == nil {
 				req.routeParamValues = r.routeParamValuesPool.
 					Get().([]string)
 			}
 
-			req.routeParamValues[len(p.cn.paramNames)-1] = p.s
+			req.routeParamValues[len(cn.paramNames)-1] = s
 
 			break
 		}
 
 		// Struggle for the former node.
 	Struggle:
-		if p.sn != nil {
-			p.cn = p.sn
-			p.sn = nil
-			p.s = p.ss
+		if sn != nil {
+			cn = sn
+			sn = nil
+			s = ss
 
-			switch p.nnt {
+			switch nnt {
 			case routeNodeTypeParam:
 				goto Param
 			case routeNodeTypeAny:
@@ -432,23 +424,17 @@ func (r *router) route(req *Request) Handler {
 			}
 		}
 
-		r.routePalPool.Put(p)
-
 		return r.a.NotFoundHandler
 	}
 
-	h := p.cn.handlers[req.Method]
-	if h != nil {
-		req.routeParamNames = p.cn.paramNames
-	} else if len(p.cn.handlers) != 0 {
-		h = r.a.MethodNotAllowedHandler
-	} else {
-		h = r.a.NotFoundHandler
+	if h := cn.handlers[req.Method]; h != nil {
+		req.routeParamNames = cn.paramNames
+		return h
+	} else if len(cn.handlers) != 0 {
+		return r.a.MethodNotAllowedHandler
 	}
 
-	r.routePalPool.Put(p)
-
-	return h
+	return r.a.NotFoundHandler
 }
 
 // routeNode is the node of the route radix tree.
@@ -503,22 +489,6 @@ const (
 	routeNodeTypeParam
 	routeNodeTypeAny
 )
-
-// routePal is the pal struct of the `router#route()`.
-type routePal struct {
-	s   string        // Search
-	cn  *routeNode    // Current node
-	nn  *routeNode    // Next node
-	nnt routeNodeType // Next node type
-	sn  *routeNode    // Saved node
-	ss  string        // Saved search
-	sl  int           // Search length
-	pl  int           // Prefix length
-	ll  int           // LCP length
-	ml  int           // Minimum length of sl and pl
-	i   int           // Index
-	pi  int           // Param index
-}
 
 // splitPathQuery splits the p of the form "path?query" into path and query.
 func splitPathQuery(p string) (path, query string) {
