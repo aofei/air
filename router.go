@@ -357,7 +357,8 @@ func (r *router) route(req *Request) Handler {
 		// Static node.
 		if nn = cn.child(s[0], routeNodeTypeStatic); nn != nil {
 			// Save next.
-			if l := len(cn.prefix); l > 0 && cn.prefix[l-1] == '/' {
+			if pl = len(cn.prefix); pl > 0 &&
+				cn.prefix[pl-1] == '/' {
 				nnt = routeNodeTypeParam
 				sn = cn
 				ss = s
@@ -372,7 +373,8 @@ func (r *router) route(req *Request) Handler {
 	Param:
 		if nn = cn.childByType(routeNodeTypeParam); nn != nil {
 			// Save next.
-			if l := len(cn.prefix); l > 0 && cn.prefix[l-1] == '/' {
+			if pl = len(cn.prefix); pl > 0 &&
+				cn.prefix[pl-1] == '/' {
 				nnt = routeNodeTypeAny
 				sn = cn
 				ss = s
@@ -427,14 +429,16 @@ func (r *router) route(req *Request) Handler {
 		return r.a.NotFoundHandler
 	}
 
-	if h := cn.handlers[req.Method]; h != nil {
+	h := cn.handlers[req.Method]
+	if h != nil {
 		req.routeParamNames = cn.paramNames
-		return h
 	} else if len(cn.handlers) != 0 {
-		return r.a.MethodNotAllowedHandler
+		h = r.a.MethodNotAllowedHandler
+	} else {
+		h = r.a.NotFoundHandler
 	}
 
-	return r.a.NotFoundHandler
+	return h
 }
 
 // routeNode is the node of the route radix tree.

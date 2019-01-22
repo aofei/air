@@ -126,6 +126,17 @@ A: Far from enough. But it's already working.
 	* Accesses binary asset files by using the runtime memory
 	* Significantly improves the performance of the `air.Response#WriteFile()`
 	* Asset file minimization support
+	* Default asset file extensions:
+		* `.html`
+		* `.css`
+		* `.js`
+		* `.json`
+		* `.xml`
+		* `.svg`
+		* `.jpg`
+		* `.jpeg`
+		* `.png`
+		* `.gif`
 	* Hot update support
 * I18n
 	* Adapt to the request's favorite conventions
