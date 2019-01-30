@@ -12,6 +12,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/golang/protobuf/proto"
 	"github.com/vmihailenco/msgpack"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // binder is a binder that binds request based on the MIME types.
@@ -53,6 +54,8 @@ func (b *binder) bind(v interface{}, r *Request) error {
 		}
 	case "application/toml", "application/x-toml":
 		_, err = toml.DecodeReader(r.Body, v)
+	case "application/yaml", "application/x-yaml":
+		err = yaml.NewDecoder(r.Body).Decode(v)
 	case "application/x-www-form-urlencoded", "multipart/form-data":
 		err = b.bindParams(v, r.Params())
 	default:
