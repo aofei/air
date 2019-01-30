@@ -32,6 +32,7 @@ import (
 	"github.com/vmihailenco/msgpack"
 	"golang.org/x/net/html"
 	"golang.org/x/net/http2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Response is an HTTP response.
@@ -283,6 +284,18 @@ func (r *Response) WriteTOML(v interface{}) error {
 	}
 
 	r.Header.Set("Content-Type", "application/toml; charset=utf-8")
+
+	return r.Write(bytes.NewReader(buf.Bytes()))
+}
+
+// WriteYAML responds to the client with the "application/yaml" content v.
+func (r *Response) WriteYAML(v interface{}) error {
+	buf := bytes.Buffer{}
+	if err := yaml.NewEncoder(&buf).Encode(v); err != nil {
+		return err
+	}
+
+	r.Header.Set("Content-Type", "application/yaml; charset=utf-8")
 
 	return r.Write(bytes.NewReader(buf.Bytes()))
 }
