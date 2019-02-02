@@ -43,15 +43,16 @@ func newServer(a *Air) *server {
 
 // serve starts the s.
 func (s *server) serve() error {
-	h2cs := &http2.Server{}
-	if s.a.IdleTimeout != 0 {
-		h2cs.IdleTimeout = s.a.IdleTimeout
-	} else {
-		h2cs.IdleTimeout = s.a.ReadTimeout
+	host, port, err := net.SplitHostPort(s.server.Addr)
+	if err != nil {
+		return err
 	}
 
-	s.server.Addr = s.a.Address
-	s.server.Handler = h2c.NewHandler(s, h2cs)
+	host = strings.ToLower(host)
+	port = strings.ToLower(port)
+
+	s.server.Addr = host + ":" + port
+	s.server.Handler = s
 	s.server.ReadTimeout = s.a.ReadTimeout
 	s.server.ReadHeaderTimeout = s.a.ReadHeaderTimeout
 	s.server.WriteTimeout = s.a.WriteTimeout
@@ -59,76 +60,132 @@ func (s *server) serve() error {
 	s.server.MaxHeaderBytes = s.a.MaxHeaderBytes
 	s.server.ErrorLog = s.a.errorLogger
 
+	idleTimeout := s.a.IdleTimeout
+	if idleTimeout == 0 {
+		idleTimeout = s.a.ReadTimeout
+	}
+
+	h2ch := h2c.NewHandler(s, &http2.Server{
+		IdleTimeout: idleTimeout,
+	})
+
+	var hs *http.Server
+	if s.a.HTTPSEnforced && port != "80" && port != "https" {
+		hs = &http.Server{}
+		*hs = *s.server
+		hs.Addr = host + ":80"
+		hs.Handler = http.HandlerFunc(func(
+			rw http.ResponseWriter,
+			r *http.Request,
+		) {
+			if strings.LastIndexByte(r.Host, ':') > -1 {
+				h, _, _ := net.SplitHostPort(r.Host)
+				if h != "" {
+					r.Host = h
+				}
+			}
+
+			if net.ParseIP(r.Host) == nil {
+				if port != "443" && port != "https" {
+					r.Host += ":443"
+				}
+
+				http.Redirect(
+					rw,
+					r,
+					"https://"+r.Host+r.RequestURI,
+					http.StatusMovedPermanently,
+				)
+			} else {
+				h2ch.ServeHTTP(rw, r)
+			}
+		})
+		defer hs.Close() // Close anyway, even if it doesn't start
+	}
+
 	if s.a.DebugMode {
 		fmt.Println("air: serving in debug mode")
 	}
 
-	host := s.server.Addr
-	if strings.Contains(host, ":") {
-		var err error
-		if host, _, err = net.SplitHostPort(host); err != nil {
+	if s.a.TLSCertFile != "" && s.a.TLSKeyFile != "" {
+		c, err := tls.LoadX509KeyPair(s.a.TLSCertFile, s.a.TLSKeyFile)
+		if err != nil {
 			return err
 		}
-	}
 
-	h2hss := &http.Server{
-		Addr: host + ":http",
-		Handler: http.HandlerFunc(func(
+		s.server.TLSConfig = &tls.Config{
+			GetCertificate: func(
+				chi *tls.ClientHelloInfo,
+			) (*tls.Certificate, error) {
+				if s.allowedHost(chi.ServerName) {
+					return &c, nil
+				}
+
+				return nil, chi.Conn.Close()
+			},
+		}
+	} else if s.a.DebugMode || !s.a.ACMEEnabled {
+		s.server.Handler = http.HandlerFunc(func(
 			rw http.ResponseWriter,
 			r *http.Request,
 		) {
-			host, _, err := net.SplitHostPort(r.Host)
-			if err != nil {
-				host = r.Host
+			if s.allowedHost(r.Host) {
+				h2ch.ServeHTTP(rw, r)
+			} else if h, ok := rw.(http.Hijacker); ok {
+				if c, _, _ := h.Hijack(); c != nil {
+					c.Close()
+				}
 			}
+		})
 
-			http.Redirect(
-				rw,
-				r,
-				"https://"+host+r.RequestURI,
-				http.StatusMovedPermanently,
-			)
-		}),
-	}
-	defer h2hss.Close() // Close anyway, even if it doesn't start
-
-	if s.a.TLSCertFile != "" && s.a.TLSKeyFile != "" {
-		s.server.TLSConfig = &tls.Config{}
-		if s.a.HTTPSEnforced {
-			go h2hss.ListenAndServe()
+		return s.server.ListenAndServe()
+	} else {
+		acm := &autocert.Manager{
+			Prompt: autocert.AcceptTOS,
+			Cache:  autocert.DirCache(s.a.ACMECertRoot),
+			Email:  s.a.MaintainerEmail,
 		}
 
-		return s.server.ListenAndServeTLS(
-			s.a.TLSCertFile,
-			s.a.TLSKeyFile,
-		)
-	} else if s.a.DebugMode || !s.a.ACMEEnabled {
-		return s.server.ListenAndServe()
-	}
+		if hs != nil {
+			hs.Handler = acm.HTTPHandler(hs.Handler)
+		} else {
+			hs = &http.Server{}
+			*hs = *s.server
+			hs.Addr = host + ":80"
+			hs.Handler = acm.HTTPHandler(h2ch)
+		}
 
-	acm := autocert.Manager{
-		Prompt: autocert.AcceptTOS,
-		Cache:  autocert.DirCache(s.a.ACMECertRoot),
-		HostPolicy: func(_ context.Context, h string) error {
-			if len(s.a.HostWhitelist) == 0 ||
-				stringSliceContainsCIly(s.a.HostWhitelist, h) {
-				return nil
+		s.server.Addr = host + ":443"
+		s.server.TLSConfig = acm.TLSConfig()
+		s.server.TLSConfig.GetCertificate = func(
+			chi *tls.ClientHelloInfo,
+		) (*tls.Certificate, error) {
+			if s.allowedHost(chi.ServerName) {
+				chi.ServerName = strings.ToLower(chi.ServerName)
+				return acm.GetCertificate(chi)
 			}
 
-			return fmt.Errorf(
-				"acme/autocert: host %q not configured in "+
-					"HostWhitelist",
-				h,
-			)
-		},
-		Email: s.a.MaintainerEmail,
+			return nil, chi.Conn.Close()
+		}
 	}
 
-	s.server.Addr = host + ":https"
-	s.server.TLSConfig = acm.TLSConfig()
+	if hs != nil {
+		ohsh := hs.Handler
+		hs.Handler = http.HandlerFunc(func(
+			rw http.ResponseWriter,
+			r *http.Request,
+		) {
+			if s.allowedHost(r.Host) {
+				ohsh.ServeHTTP(rw, r)
+			} else if h, ok := rw.(http.Hijacker); ok {
+				if c, _, _ := h.Hijack(); c != nil {
+					c.Close()
+				}
+			}
+		})
 
-	h2hss.Handler = acm.HTTPHandler(h2hss.Handler)
-	go h2hss.ListenAndServe()
+		go hs.ListenAndServe()
+	}
 
 	return s.server.ListenAndServeTLS("", "")
 }
@@ -152,34 +209,23 @@ func (s *server) shutdown(timeout time.Duration) error {
 	return s.server.Shutdown(c)
 }
 
-// ServeHTTP implements the `http.Handler`.
-func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	// Check host.
+// allowedHost reports whether the host is allowed.
+func (s *server) allowedHost(host string) bool {
+	if len(s.a.HostWhitelist) == 0 {
+		return true
+	}
 
-	if !s.a.DebugMode && len(s.a.HostWhitelist) > 0 {
-		host, _, err := net.SplitHostPort(r.Host)
-		if err != nil {
-			host = r.Host
-		}
-
-		// See RFC 3986, section 3.2.2.
-		if !stringSliceContainsCIly(s.a.HostWhitelist, host) {
-			scheme := "http"
-			if r.TLS != nil {
-				scheme = "https"
-			}
-
-			http.Redirect(
-				rw,
-				r,
-				scheme+"://"+s.a.HostWhitelist[0]+r.RequestURI,
-				http.StatusMovedPermanently,
-			)
-
-			return
+	if strings.LastIndexByte(host, ':') > -1 {
+		if h, _, _ := net.SplitHostPort(host); h != "" {
+			host = h
 		}
 	}
 
+	return stringSliceContainsCIly(s.a.HostWhitelist, host)
+}
+
+// ServeHTTP implements the `http.Handler`.
+func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Get request and response from the pool.
 
 	req := s.requestPool.Get().(*Request)

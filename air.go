@@ -112,6 +112,9 @@ type Air struct {
 
 	// HTTPSEnforced indicates whether the HTTPS is enforced.
 	//
+	// It only works when the port of the `Address` is neither "80" nor
+	// "http".
+	//
 	// The default value is false.
 	HTTPSEnforced bool `mapstructure:"https_enforced"`
 
