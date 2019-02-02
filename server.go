@@ -43,7 +43,7 @@ func newServer(a *Air) *server {
 
 // serve starts the s.
 func (s *server) serve() error {
-	host, port, err := net.SplitHostPort(s.server.Addr)
+	host, port, err := net.SplitHostPort(s.a.Address)
 	if err != nil {
 		return err
 	}
