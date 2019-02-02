@@ -629,6 +629,13 @@ func (r *Response) ProxyPass(target string) error {
 		rp.Transport = r.Air.reverseProxyTransport
 		rp.ErrorLog = r.Air.errorLogger
 		rp.BufferPool = r.Air.reverseProxyBufferPool
+		rp.ModifyResponse = func(res *http.Response) error {
+			for n := range r.Header {
+				res.Header.Del(n)
+			}
+
+			return nil
+		}
 
 		switch u.Scheme {
 		case "http", "https":
@@ -665,7 +672,19 @@ func (r *Response) ProxyPass(target string) error {
 	}
 	defer dc.Close()
 
+	res.Header.Del("Upgrade")
+	res.Header.Del("Connection")
+	res.Header.Del("Sec-WebSocket-Extensions")
+	res.Header.Del("Sec-WebSocket-Accept")
+	for n := range r.Header {
+		res.Header.Del(n)
+	}
+
 	r.Status = http.StatusSwitchingProtocols
+	for n, vs := range res.Header {
+		r.Header[n] = append(r.Header[n], vs...)
+	}
+
 	r.Written = true
 
 	wsu := &websocket.Upgrader{
@@ -686,15 +705,6 @@ func (r *Response) ProxyPass(target string) error {
 	if len(r.Air.WebSocketSubprotocols) > 0 {
 		wsu.Subprotocols = r.Air.WebSocketSubprotocols
 	}
-
-	for n, vs := range res.Header {
-		r.Header[n] = append(r.Header[n], vs...)
-	}
-
-	r.Header.Del("Upgrade")
-	r.Header.Del("Connection")
-	r.Header.Del("Sec-WebSocket-Extensions")
-	r.Header.Del("Sec-WebSocket-Accept")
 
 	uc, err := wsu.Upgrade(r.ohrw, r.req.HTTPRequest(), r.Header)
 	if err != nil {
