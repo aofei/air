@@ -257,18 +257,6 @@ func (r *Response) WriteXML(v interface{}) error {
 	return r.Write(strings.NewReader(xml.Header + string(b)))
 }
 
-// WriteMsgpack responds to the client with the "application/msgpack" content v.
-func (r *Response) WriteMsgpack(v interface{}) error {
-	b, err := msgpack.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	r.Header.Set("Content-Type", "application/msgpack")
-
-	return r.Write(bytes.NewReader(b))
-}
-
 // WriteProtobuf responds to the client with the "application/protobuf" content
 // v.
 func (r *Response) WriteProtobuf(v interface{}) error {
@@ -278,6 +266,18 @@ func (r *Response) WriteProtobuf(v interface{}) error {
 	}
 
 	r.Header.Set("Content-Type", "application/protobuf")
+
+	return r.Write(bytes.NewReader(b))
+}
+
+// WriteMsgpack responds to the client with the "application/msgpack" content v.
+func (r *Response) WriteMsgpack(v interface{}) error {
+	b, err := msgpack.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	r.Header.Set("Content-Type", "application/msgpack")
 
 	return r.Write(bytes.NewReader(b))
 }

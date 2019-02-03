@@ -60,6 +60,7 @@ A: Far from enough. But it's already working.
 
 * API
 	* As less as possible
+	* As clean as possible
 	* As simple as possible
 	* As expressive as possible
 * Server
@@ -93,13 +94,9 @@ A: Far from enough. But it's already working.
 		* `application/json`
 		* `application/xml`
 		* `application/msgpack`
-		* `application/x-msgpack`
 		* `application/protobuf`
-		* `application/x-protobuf`
 		* `application/toml`
-		* `application/x-toml`
 		* `application/yaml`
-		* `application/x-yaml`
 		* `application/x-www-form-urlencoded`
 		* `multipart/form-data`
 * Minifier

@@ -45,16 +45,16 @@ func (b *binder) bind(v interface{}, r *Request) error {
 		err = json.NewDecoder(r.Body).Decode(v)
 	case "application/xml":
 		err = xml.NewDecoder(r.Body).Decode(v)
-	case "application/msgpack", "application/x-msgpack":
+	case "application/msgpack":
 		err = msgpack.NewDecoder(r.Body).Decode(v)
-	case "application/protobuf", "application/x-protobuf":
+	case "application/protobuf":
 		var b []byte
 		if b, err = ioutil.ReadAll(r.Body); err == nil {
 			err = proto.Unmarshal(b, v.(proto.Message))
 		}
-	case "application/toml", "application/x-toml":
+	case "application/toml":
 		_, err = toml.DecodeReader(r.Body, v)
-	case "application/yaml", "application/x-yaml":
+	case "application/yaml":
 		err = yaml.NewDecoder(r.Body).Decode(v)
 	case "application/x-www-form-urlencoded", "multipart/form-data":
 		err = b.bindParams(v, r.Params())

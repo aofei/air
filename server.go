@@ -166,22 +166,27 @@ func (s *server) serve() error {
 	}
 
 	if hh != nil {
-		hs := &http.Server{}
-		*hs = *s.server
-		hs.Addr = host + ":80"
-		hs.Handler = http.HandlerFunc(func(
-			rw http.ResponseWriter,
-			r *http.Request,
-		) {
-			if s.allowedHost(r.Host) {
-				hh.ServeHTTP(rw, r)
-			} else if h, ok := rw.(http.Hijacker); ok {
-				if c, _, _ := h.Hijack(); c != nil {
-					c.Close()
+		hs := &http.Server{
+			Addr: host + ":80",
+			Handler: http.HandlerFunc(func(
+				rw http.ResponseWriter,
+				r *http.Request,
+			) {
+				if s.allowedHost(r.Host) {
+					hh.ServeHTTP(rw, r)
+				} else if h, ok := rw.(http.Hijacker); ok {
+					if c, _, _ := h.Hijack(); c != nil {
+						c.Close()
+					}
 				}
-			}
-		})
-		hs.TLSConfig = nil
+			}),
+			ReadTimeout:       s.a.ReadTimeout,
+			ReadHeaderTimeout: s.a.ReadHeaderTimeout,
+			WriteTimeout:      s.a.WriteTimeout,
+			IdleTimeout:       s.a.IdleTimeout,
+			MaxHeaderBytes:    s.a.MaxHeaderBytes,
+			ErrorLog:          s.a.errorLogger,
+		}
 
 		go hs.ListenAndServe()
 		defer hs.Close()
