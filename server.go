@@ -69,38 +69,32 @@ func (s *server) serve() error {
 		IdleTimeout: idleTimeout,
 	})
 
-	var hs *http.Server
+	var hh http.Handler
 	if s.a.HTTPSEnforced && port != "80" && port != "https" {
-		hs = &http.Server{}
-		*hs = *s.server
-		hs.Addr = host + ":80"
-		hs.Handler = http.HandlerFunc(func(
+		hh = http.HandlerFunc(func(
 			rw http.ResponseWriter,
 			r *http.Request,
 		) {
-			if strings.LastIndexByte(r.Host, ':') > -1 {
-				h, _, _ := net.SplitHostPort(r.Host)
-				if h != "" {
-					r.Host = h
-				}
+			host := r.Host
+			if h, _, _ := net.SplitHostPort(host); h != "" {
+				host = h
 			}
 
-			if net.ParseIP(r.Host) == nil {
+			if net.ParseIP(host) == nil {
 				if port != "443" && port != "https" {
-					r.Host += ":443"
+					host += ":" + port
 				}
 
 				http.Redirect(
 					rw,
 					r,
-					"https://"+r.Host+r.RequestURI,
+					"https://"+host+r.RequestURI,
 					http.StatusMovedPermanently,
 				)
 			} else {
 				h2ch.ServeHTTP(rw, r)
 			}
 		})
-		defer hs.Close() // Close anyway, even if it doesn't start
 	}
 
 	if s.a.DebugMode {
@@ -137,8 +131,6 @@ func (s *server) serve() error {
 				}
 			}
 		})
-
-		return s.server.ListenAndServe()
 	} else {
 		acm := &autocert.Manager{
 			Prompt: autocert.AcceptTOS,
@@ -146,13 +138,10 @@ func (s *server) serve() error {
 			Email:  s.a.MaintainerEmail,
 		}
 
-		if hs != nil {
-			hs.Handler = acm.HTTPHandler(hs.Handler)
+		if hh != nil {
+			hh = acm.HTTPHandler(hh)
 		} else {
-			hs = &http.Server{}
-			*hs = *s.server
-			hs.Addr = host + ":80"
-			hs.Handler = acm.HTTPHandler(h2ch)
+			hh = acm.HTTPHandler(h2ch)
 		}
 
 		s.server.Addr = host + ":443"
@@ -169,22 +158,30 @@ func (s *server) serve() error {
 		}
 	}
 
-	if hs != nil {
-		ohsh := hs.Handler
+	if s.server.TLSConfig == nil {
+		return s.server.ListenAndServe()
+	}
+
+	if hh != nil {
+		hs := &http.Server{}
+		*hs = *s.server
+		hs.Addr = host + ":80"
 		hs.Handler = http.HandlerFunc(func(
 			rw http.ResponseWriter,
 			r *http.Request,
 		) {
 			if s.allowedHost(r.Host) {
-				ohsh.ServeHTTP(rw, r)
+				hh.ServeHTTP(rw, r)
 			} else if h, ok := rw.(http.Hijacker); ok {
 				if c, _, _ := h.Hijack(); c != nil {
 					c.Close()
 				}
 			}
 		})
+		hs.TLSConfig = nil
 
 		go hs.ListenAndServe()
+		defer hs.Close()
 	}
 
 	return s.server.ListenAndServeTLS("", "")
@@ -215,10 +212,8 @@ func (s *server) allowedHost(host string) bool {
 		return true
 	}
 
-	if strings.LastIndexByte(host, ':') > -1 {
-		if h, _, _ := net.SplitHostPort(host); h != "" {
-			host = h
-		}
+	if h, _, _ := net.SplitHostPort(host); h != "" {
+		host = h
 	}
 
 	return stringSliceContainsCIly(s.a.HostWhitelist, host)

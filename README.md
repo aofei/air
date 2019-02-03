@@ -63,7 +63,7 @@ A: Far from enough. But it's already working.
 	* As simple as possible
 	* As expressive as possible
 * Server
-	* HTTP/2 support
+	* HTTP/2 (including h2c) support
 	* SSL/TLS support
 	* ACME support
 	* Graceful shutdown support
