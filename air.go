@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -18,7 +19,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/mitchellh/mapstructure"
-	ini "gopkg.in/ini.v1"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -196,7 +196,7 @@ type Air struct {
 	//
 	// The default value is ["text/plain", "text/html", "text/css",
 	// "application/javascript", "application/json", "application/xml",
-	// "image/svg+xml"].
+	// "application/toml", "application/yaml", "image/svg+xml"].
 	GzipMIMETypes []string `mapstructure:"gzip_mime_types"`
 
 	// TemplateRoot is the root of the HTML templates. All the HTML
@@ -252,7 +252,7 @@ type Air struct {
 	// the coffer.
 	//
 	// The default value is [".html", ".css", ".js", ".json", ".xml",
-	// ".svg", ".jpg", ".jpeg", ".png", ".gif"].
+	// ".toml", ".yaml", ".yml", ".svg", ".jpg", ".jpeg", ".png", ".gif"].
 	AssetExts []string `mapstructure:"asset_exts"`
 
 	// I18nEnabled indicates whether the i18n is enabled.
@@ -328,6 +328,8 @@ func New() *Air {
 			"application/javascript",
 			"application/json",
 			"application/xml",
+			"application/toml",
+			"application/yaml",
 			"image/svg+xml",
 		},
 		TemplateRoot:       "templates",
@@ -347,6 +349,9 @@ func New() *Air {
 			".js",
 			".json",
 			".xml",
+			".toml",
+			".yaml",
+			".yml",
 			".svg",
 			".jpg",
 			".jpeg",
@@ -357,7 +362,7 @@ func New() *Air {
 		LocaleBase: "en-US",
 	}
 
-	a.errorLogger = log.New(newErrorLogWriter(a), "air: ", 0)
+	a.errorLogger = log.New(newErrorLogWriter(a), "", 0)
 	a.server = newServer(a)
 	a.router = newRouter(a)
 	a.binder = newBinder(a)
@@ -544,7 +549,7 @@ func (a *Air) Serve() error {
 		}
 
 		m := map[string]interface{}{}
-		switch strings.ToLower(filepath.Ext(a.ConfigFile)) {
+		switch e := strings.ToLower(filepath.Ext(a.ConfigFile)); e {
 		case ".json":
 			err = json.Unmarshal(b, &m)
 		case ".xml":
@@ -553,13 +558,12 @@ func (a *Air) Serve() error {
 			err = toml.Unmarshal(b, &m)
 		case ".yaml", ".yml":
 			err = yaml.Unmarshal(b, &m)
-		case ".ini", ".cfg", ".conf", ".txt":
-			var cfg *ini.File
-			if cfg, err = ini.Load(b); err != nil {
-				return err
-			}
-
-			err = cfg.MapTo(&m)
+		default:
+			err = fmt.Errorf(
+				"air: unsupported configuration file "+
+					"extension %q",
+				e,
+			)
 		}
 
 		if err != nil {
@@ -655,6 +659,10 @@ func newErrorLogWriter(a *Air) *errorLogWriter {
 // Write implements the `io.Writer`.
 func (elw *errorLogWriter) Write(b []byte) (int, error) {
 	s := *(*string)(unsafe.Pointer(&b))
+	if !strings.HasPrefix(s, "air: ") {
+		s = "air: " + s
+	}
+
 	if elw.a.ErrorLogger != nil {
 		return len(s), elw.a.ErrorLogger.Output(2, s)
 	}

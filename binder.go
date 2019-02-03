@@ -32,7 +32,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	if r.Method == http.MethodGet {
 		return b.bindParams(v, r.Params())
 	} else if r.Body == nil {
-		return errors.New("request body cannot be empty")
+		return errors.New("air: request body cannot be empty")
 	}
 
 	mt, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
@@ -45,13 +45,13 @@ func (b *binder) bind(v interface{}, r *Request) error {
 		err = json.NewDecoder(r.Body).Decode(v)
 	case "application/xml":
 		err = xml.NewDecoder(r.Body).Decode(v)
-	case "application/msgpack":
-		err = msgpack.NewDecoder(r.Body).Decode(v)
 	case "application/protobuf":
 		var b []byte
 		if b, err = ioutil.ReadAll(r.Body); err == nil {
 			err = proto.Unmarshal(b, v.(proto.Message))
 		}
+	case "application/msgpack":
+		err = msgpack.NewDecoder(r.Body).Decode(v)
 	case "application/toml":
 		_, err = toml.DecodeReader(r.Body, v)
 	case "application/yaml":
@@ -74,7 +74,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 func (b *binder) bindParams(v interface{}, params []*RequestParam) error {
 	t := reflect.TypeOf(v).Elem()
 	if t.Kind() != reflect.Struct {
-		return errors.New("binding element must be a struct")
+		return errors.New("air: binding element must be a struct")
 	}
 
 	val := reflect.ValueOf(v).Elem()
@@ -132,7 +132,7 @@ func (b *binder) bindParams(v interface{}, params []*RequestParam) error {
 		case reflect.String:
 			vf.SetString(pv.String())
 		default:
-			return errors.New("unknown type")
+			return errors.New("air: unknown binding type")
 		}
 	}
 

@@ -68,7 +68,7 @@ func (c *coffer) load() {
 					}
 				case err := <-c.watcher.Errors:
 					c.a.errorLogger.Printf(
-						"coffer watcher error: %v",
+						"air: coffer watcher error: %v",
 						err,
 					)
 				}

@@ -51,7 +51,8 @@ func (r *renderer) load() {
 					r.loadOnce = &sync.Once{}
 				case err := <-r.watcher.Errors:
 					r.a.errorLogger.Printf(
-						"renderer watcher error: %v",
+						"air: renderer watcher error: "+
+							"%v",
 						err,
 					)
 				}

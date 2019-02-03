@@ -93,8 +93,8 @@ A: Far from enough. But it's already working.
 	* Supported MIME types:
 		* `application/json`
 		* `application/xml`
-		* `application/msgpack`
 		* `application/protobuf`
+		* `application/msgpack`
 		* `application/toml`
 		* `application/yaml`
 		* `application/x-www-form-urlencoded`
@@ -117,6 +117,8 @@ A: Far from enough. But it's already working.
 		* `application/javascript`
 		* `application/json`
 		* `application/xml`
+		* `application/toml`
+		* `application/yaml`
 		* `image/svg+xml`
 * Renderer
 	* Rich template functions
@@ -131,6 +133,9 @@ A: Far from enough. But it's already working.
 		* `.js`
 		* `.json`
 		* `.xml`
+		* `.toml`
+		* `.yaml`
+		* `.yml`
 		* `.svg`
 		* `.jpg`
 		* `.jpeg`

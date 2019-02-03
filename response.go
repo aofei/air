@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -627,7 +628,10 @@ func (r *Response) ProxyPass(target string) error {
 	switch u.Scheme {
 	case "http", "https", "ws", "wss", "grpc", "grpcs":
 	default:
-		return errors.New("unsupported reverse proxy scheme")
+		return fmt.Errorf(
+			"air: unsupported reverse proxy scheme %q",
+			u.Scheme,
+		)
 	}
 
 	if u.Scheme != "ws" && u.Scheme != "wss" {
