@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -54,7 +55,11 @@ type Request struct {
 	// section 8.1.2.3.
 	Path string
 
-	// Header is the header name-value pair map of the current request.
+	// Header is the header map of the current request.
+	//
+	// The values of the "Trailer" header are the names of the trailers
+	// which will come later. In this case, those names of the header map
+	// will be set after reading from the `Body` returns the `io.EOF`.
 	//
 	// See RFC 7231, section 5.
 	//
@@ -67,8 +72,9 @@ type Request struct {
 	Body io.Reader
 
 	// ContentLength records the length of the associated content. The value
-	// -1 indicates that the length is unknown. Values >= 0 indicate that
-	// the given number of bytes may be read from the `Body`.
+	// -1 indicates that the length is unknown (it will be set after reading
+	// from the `Body` returns the `io.EOF`). Values >= 0 indicate that the
+	// given number of bytes may be read from the `Body`.
 	ContentLength int64
 
 	// Context is the context that associated with the current request.
@@ -102,7 +108,12 @@ func (r *Request) HTTPRequest() *http.Request {
 
 	r.hr.RequestURI = r.Path
 	r.hr.Header = r.Header
-	r.hr.Body = r.Body.(io.ReadCloser)
+	if b, ok := r.Body.(io.ReadCloser); ok {
+		r.hr.Body = b
+	} else {
+		r.hr.Body = ioutil.NopCloser(r.Body)
+	}
+
 	r.hr.ContentLength = r.ContentLength
 	if r.hr.Context() != r.Context {
 		r.hr = r.hr.WithContext(r.Context)
@@ -125,6 +136,15 @@ func (r *Request) SetHTTPRequest(hr *http.Request) {
 	r.Authority = hr.Host
 	r.Path = hr.RequestURI
 	r.Header = hr.Header
+	if len(hr.Trailer) > 0 && r.Header.Get("Trailer") == "" {
+		tns := make([]string, 0, len(hr.Trailer))
+		for n := range hr.Trailer {
+			tns = append(tns, n)
+		}
+
+		r.Header.Set("Trailer", strings.Join(tns, ", "))
+	}
+
 	r.Body = hr.Body
 	r.ContentLength = hr.ContentLength
 	r.Context = hr.Context()
@@ -608,4 +628,36 @@ func (rpv *RequestParamValue) File() (*multipart.FileHeader, error) {
 	}
 
 	return rpv.f, nil
+}
+
+// requestBody used to tie the `Request#Body` and the `http.Request#Body`
+// together.
+type requestBody struct {
+	r  *Request
+	hr *http.Request
+	cl int64
+}
+
+// Read implements the `io.Reader#Read()`.
+func (rb *requestBody) Read(b []byte) (int, error) {
+	n, err := rb.hr.Body.Read(b)
+	if err == nil {
+		rb.cl += int64(n)
+	} else if err == io.EOF {
+		tns := strings.Split(rb.r.Header.Get("Trailer"), ", ")
+		for _, tn := range tns {
+			rb.r.Header[tn] = rb.hr.Trailer[tn]
+		}
+
+		if rb.r.ContentLength != rb.cl {
+			rb.r.ContentLength = rb.cl
+		}
+	}
+
+	return n, err
+}
+
+// Close implements the `io.Closer#Close()`.
+func (rb *requestBody) Close() error {
+	return nil
 }

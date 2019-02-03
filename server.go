@@ -118,20 +118,7 @@ func (s *server) serve() error {
 				return nil, chi.Conn.Close()
 			},
 		}
-	} else if s.a.DebugMode || !s.a.ACMEEnabled {
-		s.server.Handler = http.HandlerFunc(func(
-			rw http.ResponseWriter,
-			r *http.Request,
-		) {
-			if s.allowedHost(r.Host) {
-				h2ch.ServeHTTP(rw, r)
-			} else if h, ok := rw.(http.Hijacker); ok {
-				if c, _, _ := h.Hijack(); c != nil {
-					c.Close()
-				}
-			}
-		})
-	} else {
+	} else if !s.a.DebugMode && s.a.ACMEEnabled {
 		acm := &autocert.Manager{
 			Prompt: autocert.AcceptTOS,
 			Cache:  autocert.DirCache(s.a.ACMECertRoot),
@@ -161,9 +148,20 @@ func (s *server) serve() error {
 				chi.ServerName,
 			)
 		}
-	}
+	} else {
+		s.server.Handler = http.HandlerFunc(func(
+			rw http.ResponseWriter,
+			r *http.Request,
+		) {
+			if s.allowedHost(r.Host) {
+				h2ch.ServeHTTP(rw, r)
+			} else if h, ok := rw.(http.Hijacker); ok {
+				if c, _, _ := h.Hijack(); c != nil {
+					c.Close()
+				}
+			}
+		})
 
-	if s.server.TLSConfig == nil {
 		return s.server.ListenAndServe()
 	}
 
@@ -231,7 +229,14 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	req := s.requestPool.Get().(*Request)
 	res := s.responsePool.Get().(*Response)
 
-	// Reset request.
+	// Tie the request body and the standard request body together.
+
+	r.Body = &requestBody{
+		r:  req,
+		hr: r,
+	}
+
+	// Reset the request.
 
 	req.Air = s.a
 	req.SetHTTPRequest(r)
@@ -243,7 +248,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	req.parseOtherParamsOnce = &sync.Once{}
 	req.localizedString = nil
 
-	// Reset response.
+	// Reset the response.
 
 	res.Air = s.a
 	res.SetHTTPResponseWriter(&responseWriter{
@@ -261,7 +266,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	res.serveContentError = nil
 	res.deferredFuncs = res.deferredFuncs[:0]
 
-	// Chain gases stack.
+	// Chain the gases stack.
 
 	h := func(req *Request, res *Response) error {
 		rh := s.a.router.route(req)
@@ -288,31 +293,31 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return h(req, res)
 	}
 
-	// Chain pregases stack.
+	// Chain the pregases stack.
 
 	for i := len(s.a.Pregases) - 1; i >= 0; i-- {
 		h = s.a.Pregases[i](h)
 	}
 
-	// Execute chain.
+	// Execute the chain.
 
 	if err := h(req, res); err != nil {
 		s.a.ErrorHandler(err, req, res)
 	}
 
-	// Execute deferred functions.
+	// Execute the deferred functions.
 
 	for i := len(res.deferredFuncs) - 1; i >= 0; i-- {
 		res.deferredFuncs[i]()
 	}
 
-	// Put route param values back to the pool.
+	// Put the route param values back to the pool.
 
 	if req.routeParamValues != nil {
 		s.a.router.routeParamValuesPool.Put(req.routeParamValues)
 	}
 
-	// Put request and response back to the pool.
+	// Put the request and response back to the pool.
 
 	s.requestPool.Put(req)
 	s.responsePool.Put(res)

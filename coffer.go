@@ -123,7 +123,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 	}
 
 	if c.a.MinifierEnabled &&
-		stringSliceContains(c.a.MinifierMIMETypes, pmt) {
+		stringSliceContainsCIly(c.a.MinifierMIMETypes, pmt) {
 		if b, err = c.a.minifier.minify(pmt, b); err != nil {
 			return nil, err
 		}
@@ -131,7 +131,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 		minified = true
 	}
 
-	if c.a.GzipEnabled && stringSliceContains(c.a.GzipMIMETypes, pmt) {
+	if c.a.GzipEnabled && stringSliceContainsCIly(c.a.GzipMIMETypes, pmt) {
 		buf := bytes.Buffer{}
 		if gw, err := gzip.NewWriterLevel(
 			&buf,

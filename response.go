@@ -31,6 +31,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack"
 	"golang.org/x/net/html"
+	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/http2"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -50,7 +51,11 @@ type Response struct {
 	// For HTTP/2, it will be the ":status" pseudo-header.
 	Status int
 
-	// Header is the header name-value pair map of the current response.
+	// Header is the header map of the current response.
+	//
+	// By setting the "Trailer" header to the names of the trailers which
+	// will come later. In this case, those names of the header map are
+	// treated as if they were trailers.
 	//
 	// See RFC 7231, section 7.
 	//
@@ -64,8 +69,9 @@ type Response struct {
 	Body io.Writer
 
 	// ContentLength records the length of the associated content. The value
-	// -1 indicates that the length is unknown. Values >= 0 indicate that
-	// the given number of bytes has been written to the `Body`.
+	// -1 indicates that the length is unknown (it will continue to increase
+	// as the data written to the `Body` increases). Values >= 0 indicate
+	// that the given number of bytes has been written to the `Body`.
 	ContentLength int64
 
 	// Written indicates whether the current response has been written.
@@ -145,7 +151,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 	if !r.Minified && r.Air.MinifierEnabled {
 		mt, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
-		if stringSliceContains(r.Air.MinifierMIMETypes, mt) {
+		if stringSliceContainsCIly(r.Air.MinifierMIMETypes, mt) {
 			b, err := ioutil.ReadAll(content)
 			if err != nil {
 				return err
@@ -423,8 +429,8 @@ func (r *Response) WriteFile(filename string) error {
 			var ac []byte
 			if r.Air.GzipEnabled &&
 				a.gzippedDigest != nil &&
-				strings.Contains(
-					r.req.Header.Get("Accept-Encoding"),
+				httpguts.HeaderValuesContainsToken(
+					r.req.Header["Accept-Encoding"],
 					"gzip",
 				) {
 				ac = a.content(true)
@@ -660,6 +666,9 @@ func (r *Response) ProxyPass(target string) error {
 
 	oreqh.Del("Upgrade")
 	oreqh.Del("Connection")
+	oreqh.Del("Keep-Alive")
+	oreqh.Del("TE")
+	oreqh.Del("Trailer")
 	oreqh.Del("Sec-WebSocket-Key")
 	oreqh.Del("Sec-WebSocket-Extensions")
 	oreqh.Del("Sec-WebSocket-Accept")
@@ -674,6 +683,9 @@ func (r *Response) ProxyPass(target string) error {
 
 	res.Header.Del("Upgrade")
 	res.Header.Del("Connection")
+	res.Header.Del("Keep-Alive")
+	res.Header.Del("Transfer-Encoding")
+	res.Header.Del("Trailer")
 	res.Header.Del("Sec-WebSocket-Extensions")
 	res.Header.Del("Sec-WebSocket-Accept")
 	for n := range r.Header {
@@ -798,13 +810,16 @@ func (rw *responseWriter) WriteHeader(status int) {
 
 	mt, _, _ := mime.ParseMediaType(h.Get("Content-Type"))
 	if rw.r.Air.GzipEnabled &&
-		stringSliceContains(rw.r.Air.GzipMIMETypes, mt) {
-		if !strings.Contains(h.Get("Vary"), "Accept-Encoding") {
+		stringSliceContainsCIly(rw.r.Air.GzipMIMETypes, mt) {
+		if !httpguts.HeaderValuesContainsToken(
+			h["Vary"],
+			"Accept-Encoding",
+		) {
 			h.Add("Vary", "Accept-Encoding")
 		}
 
-		if !rw.r.Gzipped && strings.Contains(
-			rw.r.req.Header.Get("Accept-Encoding"),
+		if !rw.r.Gzipped && httpguts.HeaderValuesContainsToken(
+			rw.r.req.Header["Accept-Encoding"],
 			"gzip",
 		) {
 			if rw.gw, _ = gzip.NewWriterLevel(
@@ -834,7 +849,10 @@ func (rw *responseWriter) WriteHeader(status int) {
 	rw.w.WriteHeader(status)
 
 	rw.r.Status = status
-	rw.r.ContentLength = 0
+	if rw.r.ContentLength < 0 {
+		rw.r.ContentLength = 0
+	}
+
 	rw.r.Written = true
 }
 
