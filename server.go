@@ -152,9 +152,14 @@ func (s *server) serve() error {
 			if s.allowedHost(chi.ServerName) {
 				chi.ServerName = strings.ToLower(chi.ServerName)
 				return acm.GetCertificate(chi)
+			} else if net.ParseIP(chi.ServerName) == nil {
+				return nil, chi.Conn.Close()
 			}
 
-			return nil, chi.Conn.Close()
+			return nil, fmt.Errorf(
+				"acme/autocert: unable to authorize %q",
+				chi.ServerName,
+			)
 		}
 	}
 

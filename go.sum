@@ -2,8 +2,8 @@ github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
-github.com/VictoriaMetrics/fastcache v1.4.0 h1:c/1Ex58qZQeo0u8vupA/WcdAJZ2t6o9AnzgmeqzrlbE=
-github.com/VictoriaMetrics/fastcache v1.4.0/go.mod h1:CH4+tdFBMyTCU9HV/ifYqJvn7ECWfK1E7ES6eWt6F2o=
+github.com/VictoriaMetrics/fastcache v1.4.1 h1:zVOXEX67pgIbv1QY2werlOp1JglHByBfBcopnPTGtxY=
+github.com/VictoriaMetrics/fastcache v1.4.1/go.mod h1:CH4+tdFBMyTCU9HV/ifYqJvn7ECWfK1E7ES6eWt6F2o=
 github.com/allegro/bigcache v1.1.0 h1:MLuIKTjdxDc+qsG2rhjsYjsHQC5LUGjIWzutg7M+W68=
 github.com/allegro/bigcache v1.1.0/go.mod h1:Cb/ax3seSYIx7SuZdm2G2xzfwmv3TPSk2ucNfQESPXM=
 github.com/aofei/mimesniffer v1.1.0 h1:2VQ4YcuC8Cnyh+FjJZQJLx6TRzCHdEal9JzMVgNssJ4=

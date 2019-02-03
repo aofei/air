@@ -2,7 +2,7 @@ module github.com/aofei/air
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/VictoriaMetrics/fastcache v1.4.0
+	github.com/VictoriaMetrics/fastcache v1.4.1
 	github.com/aofei/mimesniffer v1.1.0
 	github.com/cespare/xxhash v1.1.0
 	github.com/fsnotify/fsnotify v1.4.7
