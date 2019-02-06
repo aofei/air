@@ -216,7 +216,7 @@ func (s *server) shutdown(timeout time.Duration) error {
 
 // allowedHost reports whether the host is allowed.
 func (s *server) allowedHost(host string) bool {
-	if len(s.a.HostWhitelist) == 0 {
+	if s.a.DebugMode || len(s.a.HostWhitelist) == 0 {
 		return true
 	}
 
