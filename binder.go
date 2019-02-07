@@ -110,24 +110,40 @@ func (b *binder) bindParams(v interface{}, params []*RequestParam) error {
 
 		switch tf.Type.Kind() {
 		case reflect.Bool:
-			b, _ := pv.Bool()
+			b, err := pv.Bool()
+			if err != nil {
+				return err
+			}
+
 			vf.SetBool(b)
 		case reflect.Int,
 			reflect.Int8,
 			reflect.Int16,
 			reflect.Int32,
 			reflect.Int64:
-			i64, _ := pv.Int64()
+			i64, err := pv.Int64()
+			if err != nil {
+				return err
+			}
+
 			vf.SetInt(i64)
 		case reflect.Uint,
 			reflect.Uint8,
 			reflect.Uint16,
 			reflect.Uint32,
 			reflect.Uint64:
-			ui64, _ := pv.Uint64()
+			ui64, err := pv.Uint64()
+			if err != nil {
+				return err
+			}
+
 			vf.SetUint(ui64)
 		case reflect.Float32, reflect.Float64:
-			f64, _ := pv.Float64()
+			f64, err := pv.Float64()
+			if err != nil {
+				return err
+			}
+
 			vf.SetFloat(f64)
 		case reflect.String:
 			vf.SetString(pv.String())
