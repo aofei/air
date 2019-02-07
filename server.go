@@ -148,7 +148,7 @@ func (s *server) serve() error {
 			}
 
 			return nil, fmt.Errorf(
-				"acme/autocert: unable to authorize %q",
+				"air: unable to authorize %q",
 				chi.ServerName,
 			)
 		}

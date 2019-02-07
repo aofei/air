@@ -111,9 +111,7 @@ func (i *i18n) localize(r *Request) {
 			i.loadError,
 		)
 
-		r.localizedString = func(key string) string {
-			return key
-		}
+		r.localizedString = locstr
 
 		return
 	}

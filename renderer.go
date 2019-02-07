@@ -73,9 +73,10 @@ func (r *renderer) load() {
 			r.a.RendererTemplateRightDelim,
 		).
 		Funcs(template.FuncMap{
-			"locstr": func(key string) string {
-				return key
-			},
+			"strlen":  strlen,
+			"substr":  substr,
+			"timefmt": timefmt,
+			"locstr":  locstr,
 		}).
 		Funcs(r.a.RendererTemplateFuncMap)
 	if r.loadError = filepath.Walk(
@@ -119,7 +120,7 @@ func (r *renderer) render(
 
 	t := r.template.Lookup(name)
 	if t == nil {
-		return fmt.Errorf("html/template: %q is undefined", name)
+		return fmt.Errorf("air: html template %q is undefined", name)
 	}
 
 	if !r.a.I18nEnabled {
@@ -151,4 +152,9 @@ func substr(s string, i, j int) string {
 // timefmt returns a textual representation of the t formatted for the layout.
 func timefmt(t time.Time, layout string) string {
 	return t.Format(layout)
+}
+
+// locstr returns the key without any changes.
+func locstr(key string) string {
+	return key
 }
