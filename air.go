@@ -22,268 +22,356 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// Air is the top-level struct of this framework.
+// Air is the top-level struct of this framework. Please keep in mind that the
+// new instances should only be created by calling the `New()`. If you only need
+// one instance, then it is recommended to use the `Default`, which will help
+// you simplify the scope management.
 type Air struct {
-	// AppName is the name of the current web application.
+	// AppName is the name of the current web application. It is recommended
+	// to set this field and try to ensure that the value of this field is
+	// unique (used to distinguish between different web applications).
 	//
-	// The default value is "air".
+	// Default value: "air"
 	AppName string `mapstructure:"app_name"`
 
 	// MaintainerEmail is the e-mail address of the one who is responsible
-	// for maintaining the current web application.
+	// for maintaining the current web application. It is recommended to set
+	// this field if the ACME is enabled (used by CAs, such as Let's
+	// Encrypt, to notify about problems with issued certificates).
 	//
-	// The default value is "".
+	// Default value: ""
 	MaintainerEmail string `mapstructure:"maintainer_email"`
 
 	// DebugMode indicates whether the current web application is in debug
-	// mode.
+	// mode. Please keep in mind that this field is quite bossy and should
+	// never be used in non-debug mode.
 	//
 	// ATTENTION: Some features will be affected in debug mode.
 	//
-	// The default value is false.
+	// Default value: false
 	DebugMode bool `mapstructure:"debug_mode"`
 
-	// Address is the TCP address that the server listens on.
+	// Address is the TCP address that the server of the current web
+	// application listens on. This field is never empty and must contain
+	// a port part.
 	//
-	// The default value is ":8080".
+	// Default value: ":8080"
 	Address string `mapstructure:"address"`
 
-	// HostWhitelist is the hosts allowed by the server.
+	// HostWhitelist is the hosts allowed by the server of the current web
+	// application. It is highly recommended to set this field when in
+	// non-debug mode. If the length of this field is not zero, then all
+	// connections that are not connected to the hosts in this field will be
+	// rejected.
 	//
 	// It only works when the `DebugMode` is false.
 	//
-	// The default value is nil.
+	// Default value: nil
 	HostWhitelist []string `mapstructure:"host_whitelist"`
 
-	// ReadTimeout is the maximum duration the server reads the request.
+	// ReadTimeout is the maximum duration the server of the current web
+	// application reads a request, including the body part. It does not let
+	// the handlers make per-request decisions on each request body's
+	// acceptable deadline or upload rate.
 	//
-	// The default value is 0.
+	// Default value: 0
 	ReadTimeout time.Duration `mapstructure:"read_timeout"`
 
-	// ReadHeaderTimeout is the amount of time allowed the server reads the
-	// request headers.
+	// ReadHeaderTimeout is the amount of time allowed the server of the
+	// current web application reads the headers of a request. The
+	// connection's read deadline is reset after reading the headers and the
+	// handler can decide what is considered too slow for the body.
 	//
-	// The default value is 0.
+	// Default value: 0
 	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
 
-	// WriteTimeout is the maximum duration the server writes an response.
+	// WriteTimeout is the maximum duration the server of the current web
+	// application writes a response. It is reset whenever a new request's
+	// header is read. Like `ReadTimeout`, it does not let handlers make
+	// decisions on a per-request basis.
 	//
-	// The default value is 0.
+	// Default value: 0
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
 
-	// IdleTimeout is the maximum amount of time the server waits for the
-	// next request. If it is zero, the value of `ReadTimeout` is used. If
-	// both are zero, the value `ReadHeaderTimeout` is used.
+	// IdleTimeout is the maximum amount of time the server of the current
+	// web application waits for the next request. If it is zero, the value
+	// of `ReadTimeout` is used. If both are zero, the value of
+	// `ReadHeaderTimeout` is used.
 	//
-	// The default value is 0.
+	// Default value: 0
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 
-	// MaxHeaderBytes is the maximum number of bytes the server will read
-	// parsing the request header's names and values, including the request
-	// line.
+	// MaxHeaderBytes is the maximum number of bytes the server of the
+	// current web application will read parsing the request header's names
+	// and values, including the request line.
 	//
-	// The default value is 1048576.
+	// Default value: 1048576
 	MaxHeaderBytes int `mapstructure:"max_header_bytes"`
 
 	// TLSCertFile is the path to the TLS certificate file used when
-	// starting the server.
+	// starting the server of the current web application. If the
+	// certificate is signed by a certificate authority, the TLS certificate
+	// file should be the concatenation of the certificate, any
+	// intermediates, and the CA's certificate.
 	//
-	// The default value is "".
+	// ATTENTION: This field must be set at the same time as the
+	// `TLSKeyFile` to make the server of the current web application to
+	// handle requests on incoming TLS connections.
+	//
+	// Default value: ""
 	TLSCertFile string `mapstructure:"tls_cert_file"`
 
 	// TLSKeyFile is the path to the TLS key file used when starting the
-	// server.
+	// server of the current web application. The TLS key file must match
+	// the TLS certificate targeted by the `TLSCertFile`.
 	//
-	// The default value is "".
+	// ATTENTION: This field must be set at the same time as the
+	// `TLSCertFile` to make the server of the current web application to
+	// handle requests on incoming TLS connections.
+	//
+	// Default value: ""
 	TLSKeyFile string `mapstructure:"tls_key_file"`
 
-	// ACMEEnabled indicates whether the ACME is enabled.
+	// ACMEEnabled indicates whether the ACME feature of the current web
+	// application is enabled. This feature gives the server of the current
+	// web application the ability to automatically retrieve new TLS
+	// certificates from the ACME CA.
 	//
 	// It only works when the `DebugMode` is false and both of the
 	// `TLSCertFile` and the `TLSKeyFile` are empty.
 	//
-	// The default value is false.
+	// Default value: false
 	ACMEEnabled bool `mapstructure:"acme_enabled"`
 
-	// ACMECertRoot is the root of the ACME certificates.
+	// ACMECertRoot is the root of the certificates of the current web
+	// application. It is recommended to set this field to a persistent
+	// place. By the way, different web applications can share the same
+	// place (if they are all built using this framework).
 	//
-	// The default value is "acme-certs".
+	// Default value: "acme-certs"
 	ACMECertRoot string `mapstructure:"acme_cert_root"`
 
-	// HTTPSEnforced indicates whether the HTTPS is enforced.
+	// HTTPSEnforced indicates whether the current web application is
+	// forcibly accessible only via the HTTPS scheme (HTTP requests will
+	// automatically redirect to HTTPS).
 	//
 	// It only works when the port of the `Address` is neither "80" nor
-	// "http".
+	// "http" and the server of the current web application can handle
+	// requests on incoming TLS connections.
 	//
-	// The default value is false.
+	// Default value: false
 	HTTPSEnforced bool `mapstructure:"https_enforced"`
 
-	// WebSocketHandshakeTimeout is the maximum amount of time the server
-	// waits for the WebSocket handshake to complete.
+	// WebSocketHandshakeTimeout is the maximum amount of time the server of
+	// the current web application waits for a WebSocket handshake to
+	// complete.
 	//
-	// The default value is 0.
+	// Default value: 0
 	WebSocketHandshakeTimeout time.Duration `mapstructure:"websocket_handshake_timeout"`
 
 	// WebSocketSubprotocols is the supported WebSocket subprotocols of the
-	// server.
+	// server of the current web application. If the length of this field is
+	// not zero, then the `Response#WebSocket()` negotiates a subprotocol by
+	// selecting the first match in this field with a protocol requested by
+	// the client. If there is no match, then no protocol is negotiated (the
+	// "Sec-Websocket-Protocol" header is not included in the handshake
+	// response).
 	//
-	// The default value is nil.
+	// Default value: nil
 	WebSocketSubprotocols []string `mapstructure:"websocket_subprotocols"`
 
-	// NotFoundHandler is a `Handler` that returns not found error.
+	// NotFoundHandler is the `Handler` of the current web application that
+	// returns not found error. This field is never nil because the router
+	// of the current web application will use it as the default `Handler`
+	// when no matching routes are found.
 	//
-	// The default value is the `DefaultNotFoundHandler`.
+	// Default value: `DefaultNotFoundHandler`
 	NotFoundHandler func(*Request, *Response) error `mapstructure:"-"`
 
-	// MethodNotAllowedHandler is a `Handler` that returns method not
-	// allowed error.
+	// MethodNotAllowedHandler is the `Handler` of the current web
+	// application that returns method not allowed error. This field is
+	// never nil because the router of the current web application will use
+	// it as the default `Handler` when it finds a matching route but its
+	// method is not registered.
 	//
-	// The default value is the `DefaultMethodNotAllowedHandler`.
+	// Default value: `DefaultMethodNotAllowedHandler`
 	MethodNotAllowedHandler func(*Request, *Response) error `mapstructure:"-"`
 
-	// ErrorHandler is the centralized error handler of the server.
+	// ErrorHandler is the centralized error handler of the server of the
+	// current web application. This field is never nil because it is used
+	// in every request-response cycle that has an error.
 	//
-	// The default value is the `DefaultErrorHandler`.
+	// Default value: `DefaultErrorHandler`
 	ErrorHandler func(error, *Request, *Response) `mapstructure:"-"`
 
 	// ErrorLogger is the `log.Logger` that logs errors that occur in the
-	// server.
+	// server of the current web application. If nil, logging is done via
+	// the log package's standard logger.
 	//
-	// If nil, logging is done via the log package's standard logger.
-	//
-	// The default value is nil.
+	// Default value: nil
 	ErrorLogger *log.Logger `mapstructure:"-"`
 
-	// Pregases is the `Gas` chain stack that performs before routing.
+	// Pregases is the `Gas` chain stack of the current web application
+	// that performs before routing.
 	//
-	// The default value is nil.
+	// Default value: nil
 	Pregases []Gas `mapstructure:"-"`
 
-	// Gases is the `Gas` chain stack that performs after routing.
+	// Gases is the `Gas` chain stack of the current web application that
+	// performs after routing.
 	//
-	// The default value is nil.
+	// Default value: nil
 	Gases []Gas `mapstructure:"-"`
 
-	// AutoPushEnabled indicates whether the auto push is enabled.
+	// AutoPushEnabled indicates whether the HTTP/2 server push automatic
+	// mechanism feature of the current web application is enabled. This
+	// feature gives the `Response#WriteHTML()` the ability to automatically
+	// analyze the response content and use the `Response#Push()` to push
+	// the appropriate resources to the client.
 	//
-	// The default value is false.
+	// It only works when the protocol version of the request is HTTP/2.
+	//
+	// Default value: false
 	AutoPushEnabled bool `mapstructure:"auto_push_enabled"`
 
-	// MinifierEnabled indicates whether the minifier is enabled.
+	// MinifierEnabled indicates whether the minifier feature of the current
+	// web application is enabled. This feature gives the `Response#Write()`
+	// the ability to minify the matching response content based on the
+	// "Content-Type" header.
 	//
-	// The default value is false.
+	// Default value: false
 	MinifierEnabled bool `mapstructure:"minifier_enabled"`
 
-	// MinifierMIMETypes is the MIME types that will be minified.
-	// Unsupported MIME types will be silently ignored.
+	// MinifierMIMETypes is the MIME types of the minifier feature of the
+	// current web application that will be minified. Unsupported MIME types
+	// will be silently ignored.
 	//
-	// The default value is ["text/html", "text/css",
-	// "application/javascript", "application/json", "application/xml",
-	// "image/svg+xml"].
+	// Default value: ["text/html", "text/css", "application/javascript",
+	// "application/json", "application/xml", "image/svg+xml"]
 	MinifierMIMETypes []string `mapstructure:"minifier_mime_types"`
 
-	// GzipEnabled indicates whether the gzip is enabled.
+	// GzipEnabled indicates whether the gzip feature of the current web
+	// application is enabled. This feature gives the `Response` the ability
+	// to gzip the matching response content based on the "Content-Type"
+	// header.
 	//
-	// The default value is false.
+	// Default value: false
 	GzipEnabled bool `mapstructure:"gzip_enabled"`
 
-	// GzipCompressionLevel is the compression level of the gzip.
+	// GzipCompressionLevel is the compression level of the gzip feature of
+	// the current web application.
 	//
-	// The default value is `gzip.DefaultCompression`.
+	// Default value: `gzip.DefaultCompression`
 	GzipCompressionLevel int `mapstructure:"gzip_compression_level"`
 
-	// GzipMIMETypes is the MIME types that will be gzipped.
+	// GzipMIMETypes is the MIME types of the gzip feature of the current
+	// web application that will be gzipped.
 	//
-	// The default value is ["text/plain", "text/html", "text/css",
+	// Default value: ["text/plain", "text/html", "text/css",
 	// "application/javascript", "application/json", "application/xml",
-	// "application/toml", "application/yaml", "image/svg+xml"].
+	// "application/toml", "application/yaml", "image/svg+xml"]
 	GzipMIMETypes []string `mapstructure:"gzip_mime_types"`
 
-	// TemplateRoot is the root of the HTML templates. All the HTML
-	// templates inside it will be recursively parsed into the renderer.
+	// TemplateRoot is the root of the HTML templates of the renderer
+	// feature of the current web application. All the HTML template files
+	// inside it will be recursively parsed into the renderer.
 	//
-	// The default value is "templates".
+	// Default value: "templates"
 	TemplateRoot string `mapstructure:"template_root"`
 
-	// TemplateExts is the filename extensions of the HTML templates used to
-	// distinguish the HTML template files in the `TemplateRoot` when
-	// parsing them into the renderer.
+	// TemplateExts is the filename extensions of the HTML templates of the
+	// renderer feature of the current web application used to distinguish
+	// the HTML template files in the `TemplateRoot` when parsing them into
+	// the renderer.
 	//
-	// The default value is [".html"].
+	// Default value: [".html"]
 	TemplateExts []string `mapstructure:"template_exts"`
 
-	// TemplateLeftDelim is the left side of the HTML template delimiter the
-	// renderer renders the HTML templates.
+	// TemplateLeftDelim is the left side of the HTML template delimiter of
+	// the renderer feature of the current web application.
 	//
-	// The default value is "{{".
+	// default value: "{{"
 	TemplateLeftDelim string `mapstructure:"template_left_delim"`
 
 	// TemplateRightDelim is the right side of the HTML template delimiter
-	// the renderer renders the HTML templates.
+	// of the renderer feature of the current web application.
 	//
-	// The default value is "}}".
+	// Default value: "}}"
 	TemplateRightDelim string `mapstructure:"template_right_delim"`
 
-	// TemplateFuncMap is the HTML template function map the renderer
-	// renders the HTML templates.
+	// TemplateFuncMap is the HTML template function map of the renderer
+	// feature of the current web application.
 	//
-	// The default value contains strlen, substr and timefmt.
+	// Default value: {"strlen": strlen, "substr": substr, "timefmt":
+	// timefmt}
 	TemplateFuncMap template.FuncMap `mapstructure:"-"`
 
-	// CofferEnabled indicates whether the coffer is enabled.
+	// CofferEnabled indicates whether the coffer feature of the current web
+	// application is enabled. This feature gives the `Response#WriteFile()`
+	// the ability to use the runtime memory to reduce disk I/O pressure.
 	//
-	// The default value is false.
+	// Default value: false
 	CofferEnabled bool `mapstructure:"coffer_enabled"`
 
 	// CofferMaxMemoryBytes is the maximum number of bytes of the runtime
-	// memory the coffer will use.
+	// memory the coffer feature of the current web application will use.
 	//
-	// The default value is 33554432.
+	// Default value: 33554432
 	CofferMaxMemoryBytes int `mapstructure:"coffer_max_memory_bytes"`
 
-	// AssetRoot is the root of the asset files. All the asset files inside
-	// it will be recursively parsed into the coffer.
+	// AssetRoot is the root of the asset files of the coffer feature of the
+	// current web application. All the asset files inside it will be
+	// recursively parsed into the coffer.
 	//
-	// The default value is "assets".
+	// Default value: "assets"
 	AssetRoot string `mapstructure:"asset_root"`
 
 	// AssetExts is the filename extensions of the asset files used to
 	// distinguish the asset files in the `AssetRoot` when loading them into
 	// the coffer.
 	//
-	// The default value is [".html", ".css", ".js", ".json", ".xml",
-	// ".toml", ".yaml", ".yml", ".svg", ".jpg", ".jpeg", ".png", ".gif"].
+	// Default value: [".html", ".css", ".js", ".json", ".xml", ".toml",
+	// ".yaml", ".yml", ".svg", ".jpg", ".jpeg", ".png", ".gif"]
 	AssetExts []string `mapstructure:"asset_exts"`
 
-	// I18nEnabled indicates whether the i18n is enabled.
+	// I18nEnabled indicates whether the i18n feature of the current web
+	// application is enabled. This feature gives the
+	// `Request#LocalizedString()` and the `Response#Render()` the ability
+	// to adapt to the request's favorite conventions.
 	//
-	// The default value is false.
+	// Default value: false
 	I18nEnabled bool `mapstructure:"i18n_enabled"`
 
-	// LocaleRoot is the root of the locale files. All the locale files
-	// inside it will be parsed into the i18n.
+	// LocaleRoot is the root of the locale files of the i18n feature of the
+	// current web application. All the locale files inside it will be
+	// parsed into the i18n.
 	//
-	// The default value is "locales".
+	// Default value: "locales"
 	LocaleRoot string `mapstructure:"locale_root"`
 
-	// LocaleBase is the base of the locale files. It will be used when a
-	// locale file cannot be found.
+	// LocaleBase is the base of the locale files of the i18n feature of the
+	// current web application. It will be used when a locale file cannot be
+	// found.
 	//
-	// The default value is "en-US".
+	// Default value: "en-US"
 	LocaleBase string `mapstructure:"locale_base"`
 
 	// ConfigFile is the path to the configuration file that will be parsed
-	// into the matching fields before starting the server.
+	// into the matching fields of the current web application before
+	// starting the server.
 	//
-	// ".json" -> The configuration file is JSON-based.
+	// The ".json" extension represents the configuration file is
+	// JSON-based.
 	//
-	// ".xml" -> The configuration file is XML-based.
+	// The ".xml" extension represents the configuration file is XML-based.
 	//
-	// ".toml" -> The configuration file is TOML-based.
+	// The ".toml" extension represents the configuration file is
+	// TOML-based.
 	//
-	// ".yaml|.yml" -> The configuration file is YAML-based.
+	// The ".yaml" and the ".yml" extensions represents the configuration
+	// file is YAML-based.
 	//
-	// The default value is "".
+	// Default value: ""
 	ConfigFile string `mapstructure:"-"`
 
 	errorLogger                  *log.Logger

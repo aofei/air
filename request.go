@@ -638,7 +638,7 @@ type requestBody struct {
 	cl int64
 }
 
-// Read implements the `io.Reader#Read()`.
+// Read implements the `io.Reader`.
 func (rb *requestBody) Read(b []byte) (int, error) {
 	n, err := rb.hr.Body.Read(b)
 	if err == nil {
@@ -657,7 +657,7 @@ func (rb *requestBody) Read(b []byte) (int, error) {
 	return n, err
 }
 
-// Close implements the `io.Closer#Close()`.
+// Close implements the `io.Closer`.
 func (rb *requestBody) Close() error {
 	return nil
 }

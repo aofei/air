@@ -122,7 +122,7 @@ func (r *Response) SetCookie(c *http.Cookie) {
 	}
 }
 
-// Write responds to the client with the content.
+// Write writes the content to the client.
 func (r *Response) Write(content io.ReadSeeker) error {
 	if content == nil { // Content must never be nil
 		content = bytes.NewReader(nil)
@@ -208,13 +208,13 @@ func (r *Response) Write(content io.ReadSeeker) error {
 	return nil
 }
 
-// WriteString responds to the client with the "text/plain" content s.
+// WriteString writes the s as a "text/plain" content to the client.
 func (r *Response) WriteString(s string) error {
 	r.Header.Set("Content-Type", "text/plain; charset=utf-8")
 	return r.Write(strings.NewReader(s))
 }
 
-// WriteJSON responds to the client with the "application/json" content v.
+// WriteJSON writes the v as an "application/json" content to the client.
 func (r *Response) WriteJSON(v interface{}) error {
 	var (
 		b   []byte
@@ -236,7 +236,7 @@ func (r *Response) WriteJSON(v interface{}) error {
 	return r.Write(bytes.NewReader(b))
 }
 
-// WriteXML responds to the client with the "application/xml" content v.
+// WriteXML writes the v as an "application/xml" content to the client.
 func (r *Response) WriteXML(v interface{}) error {
 	var (
 		b   []byte
@@ -258,8 +258,8 @@ func (r *Response) WriteXML(v interface{}) error {
 	return r.Write(strings.NewReader(xml.Header + string(b)))
 }
 
-// WriteProtobuf responds to the client with the "application/protobuf" content
-// v.
+// WriteProtobuf writes the v as an "application/protobuf" content to the
+// client.
 func (r *Response) WriteProtobuf(v interface{}) error {
 	b, err := proto.Marshal(v.(proto.Message))
 	if err != nil {
@@ -271,7 +271,7 @@ func (r *Response) WriteProtobuf(v interface{}) error {
 	return r.Write(bytes.NewReader(b))
 }
 
-// WriteMsgpack responds to the client with the "application/msgpack" content v.
+// WriteMsgpack writes the v as an "application/msgpack" content to the client.
 func (r *Response) WriteMsgpack(v interface{}) error {
 	b, err := msgpack.Marshal(v)
 	if err != nil {
@@ -283,7 +283,7 @@ func (r *Response) WriteMsgpack(v interface{}) error {
 	return r.Write(bytes.NewReader(b))
 }
 
-// WriteTOML responds to the client with the "application/toml" content v.
+// WriteTOML writes the v as an "application/toml" content to the client.
 func (r *Response) WriteTOML(v interface{}) error {
 	buf := bytes.Buffer{}
 	if err := toml.NewEncoder(&buf).Encode(v); err != nil {
@@ -295,7 +295,7 @@ func (r *Response) WriteTOML(v interface{}) error {
 	return r.Write(bytes.NewReader(buf.Bytes()))
 }
 
-// WriteYAML responds to the client with the "application/yaml" content v.
+// WriteYAML writes the v as an "application/yaml" content to the client.
 func (r *Response) WriteYAML(v interface{}) error {
 	buf := bytes.Buffer{}
 	if err := yaml.NewEncoder(&buf).Encode(v); err != nil {
@@ -307,7 +307,7 @@ func (r *Response) WriteYAML(v interface{}) error {
 	return r.Write(bytes.NewReader(buf.Bytes()))
 }
 
-// WriteHTML responds to the client with the "text/html" content h.
+// WriteHTML writes the h as a "text/html" content to the client.
 func (r *Response) WriteHTML(h string) error {
 	if r.Air.AutoPushEnabled && r.req.HTTPRequest().ProtoMajor == 2 {
 		tree, err := html.Parse(strings.NewReader(h))
@@ -371,9 +371,9 @@ func (r *Response) WriteHTML(h string) error {
 	return r.Write(strings.NewReader(h))
 }
 
-// Render renders one or more HTML templates with the m and responds to the
-// client with the "text/html" content. The results rendered by the former can
-// be inherited by accessing the `m["InheritedHTML"]`.
+// Render renders one or more HTML templates with the m and writes the results
+// as a "text/html" content to the client. The results rendered by the former
+// can be inherited by accessing the `m["InheritedHTML"]`.
 func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	buf := bytes.Buffer{}
 	for _, t := range templates {
@@ -391,7 +391,7 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	return r.WriteHTML(buf.String())
 }
 
-// WriteFile responds to the client with a file content with the filename.
+// WriteFile writes the filename as a file content to the client.
 func (r *Response) WriteFile(filename string) error {
 	filename, err := filepath.Abs(filename)
 	if err != nil {
@@ -498,7 +498,7 @@ func (r *Response) WriteFile(filename string) error {
 	return r.Write(c)
 }
 
-// Redirect responds to the client with a redirection to the url.
+// Redirect writes the url as a redirection to the client.
 func (r *Response) Redirect(url string) error {
 	if r.Status < http.StatusMultipleChoices ||
 		r.Status >= http.StatusBadRequest {
@@ -590,7 +590,7 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 }
 
 // Push initiates an HTTP/2 server push. This constructs a synthetic request
-// using the target and the pos, serializes that request into a PUSH_PROMISE
+// using the target and the pos, serializes that request into a "PUSH_PROMISE"
 // frame, then dispatches that request using the server's request handler. If
 // pos is nil, default options are used.
 //
@@ -610,8 +610,8 @@ func (r *Response) Push(target string, pos *http.PushOptions) error {
 	return p.Push(target, pos)
 }
 
-// ProxyPass passes the request to the target and responds to the client by
-// using the reverse proxy technique.
+// ProxyPass passes the request to the target and writes the response from the
+// target to the client by using the reverse proxy technique.
 //
 // The target must be based on the HTTP protocol (such as HTTP(S), WebSocket and
 // gRPC). So, the scheme of the target must be "http", "https", "ws", "wss",
@@ -901,7 +901,7 @@ func newReverseProxyTransport() *http.Transport {
 	return rpt
 }
 
-// grpcTransport is a transport with gRPC support.
+// grpcTransport is a transport with the gRPC support.
 type grpcTransport struct {
 	*http2.Transport
 
