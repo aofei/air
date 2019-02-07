@@ -86,14 +86,14 @@ func (c *coffer) asset(name string) (*asset, error) {
 		return nil, c.loadError
 	} else if ai, ok := c.assets.Load(name); ok {
 		return ai.(*asset), nil
-	} else if ar, err := filepath.Abs(c.a.AssetRoot); err != nil {
+	} else if ar, err := filepath.Abs(c.a.CofferAssetRoot); err != nil {
 		return nil, err
 	} else if !strings.HasPrefix(name, ar) {
 		return nil, nil
 	}
 
 	ext := filepath.Ext(name)
-	if !stringSliceContainsCIly(c.a.AssetExts, ext) {
+	if !stringSliceContainsCIly(c.a.CofferAssetExts, ext) {
 		return nil, nil
 	}
 

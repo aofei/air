@@ -180,6 +180,18 @@ type Air struct {
 	// Default value: nil
 	WebSocketSubprotocols []string `mapstructure:"websocket_subprotocols"`
 
+	// Pregases is the `Gas` chain stack of the current web application
+	// that performs before routing.
+	//
+	// Default value: nil
+	Pregases []Gas `mapstructure:"-"`
+
+	// Gases is the `Gas` chain stack of the current web application that
+	// performs after routing.
+	//
+	// Default value: nil
+	Gases []Gas `mapstructure:"-"`
+
 	// NotFoundHandler is the `Handler` of the current web application that
 	// returns not found error. This field is never nil because the router
 	// of the current web application will use it as the default `Handler`
@@ -210,18 +222,6 @@ type Air struct {
 	//
 	// Default value: nil
 	ErrorLogger *log.Logger `mapstructure:"-"`
-
-	// Pregases is the `Gas` chain stack of the current web application
-	// that performs before routing.
-	//
-	// Default value: nil
-	Pregases []Gas `mapstructure:"-"`
-
-	// Gases is the `Gas` chain stack of the current web application that
-	// performs after routing.
-	//
-	// Default value: nil
-	Gases []Gas `mapstructure:"-"`
 
 	// AutoPushEnabled indicates whether the HTTP/2 server push automatic
 	// mechanism feature of the current web application is enabled. This
@@ -258,12 +258,6 @@ type Air struct {
 	// Default value: false
 	GzipEnabled bool `mapstructure:"gzip_enabled"`
 
-	// GzipCompressionLevel is the compression level of the gzip feature of
-	// the current web application.
-	//
-	// Default value: `gzip.DefaultCompression`
-	GzipCompressionLevel int `mapstructure:"gzip_compression_level"`
-
 	// GzipMIMETypes is the MIME types of the gzip feature of the current
 	// web application that will be gzipped.
 	//
@@ -272,39 +266,46 @@ type Air struct {
 	// "application/toml", "application/yaml", "image/svg+xml"]
 	GzipMIMETypes []string `mapstructure:"gzip_mime_types"`
 
-	// TemplateRoot is the root of the HTML templates of the renderer
-	// feature of the current web application. All the HTML template files
-	// inside it will be recursively parsed into the renderer.
+	// GzipCompressionLevel is the compression level of the gzip feature of
+	// the current web application.
+	//
+	// Default value: `gzip.DefaultCompression`
+	GzipCompressionLevel int `mapstructure:"gzip_compression_level"`
+
+	// RendererTemplateRoot is the root of the HTML templates of the
+	// renderer feature of the current web application. All the HTML
+	// template files inside it will be recursively parsed into the
+	// renderer.
 	//
 	// Default value: "templates"
-	TemplateRoot string `mapstructure:"template_root"`
+	RendererTemplateRoot string `mapstructure:"renderer_template_root"`
 
-	// TemplateExts is the filename extensions of the HTML templates of the
-	// renderer feature of the current web application used to distinguish
-	// the HTML template files in the `TemplateRoot` when parsing them into
-	// the renderer.
+	// RendererTemplateExts is the filename extensions of the HTML templates
+	// of the renderer feature of the current web application used to
+	// distinguish the HTML template files in the `RendererTemplateRoot`
+	// when parsing them into the renderer.
 	//
 	// Default value: [".html"]
-	TemplateExts []string `mapstructure:"template_exts"`
+	RendererTemplateExts []string `mapstructure:"renderer_template_exts"`
 
-	// TemplateLeftDelim is the left side of the HTML template delimiter of
-	// the renderer feature of the current web application.
+	// RendererTemplateLeftDelim is the left side of the HTML template
+	// delimiter of the renderer feature of the current web application.
 	//
 	// default value: "{{"
-	TemplateLeftDelim string `mapstructure:"template_left_delim"`
+	RendererTemplateLeftDelim string `mapstructure:"renderer_template_left_delim"`
 
-	// TemplateRightDelim is the right side of the HTML template delimiter
-	// of the renderer feature of the current web application.
+	// RendererTemplateRightDelim is the right side of the HTML template
+	// delimiter of the renderer feature of the current web application.
 	//
 	// Default value: "}}"
-	TemplateRightDelim string `mapstructure:"template_right_delim"`
+	RendererTemplateRightDelim string `mapstructure:"renderer_template_right_delim"`
 
-	// TemplateFuncMap is the HTML template function map of the renderer
-	// feature of the current web application.
+	// RendererTemplateFuncMap is the HTML template function map of the
+	// renderer feature of the current web application.
 	//
 	// Default value: {"strlen": strlen, "substr": substr, "timefmt":
 	// timefmt}
-	TemplateFuncMap template.FuncMap `mapstructure:"-"`
+	RendererTemplateFuncMap template.FuncMap `mapstructure:"-"`
 
 	// CofferEnabled indicates whether the coffer feature of the current web
 	// application is enabled. This feature gives the `Response#WriteFile()`
@@ -319,20 +320,20 @@ type Air struct {
 	// Default value: 33554432
 	CofferMaxMemoryBytes int `mapstructure:"coffer_max_memory_bytes"`
 
-	// AssetRoot is the root of the asset files of the coffer feature of the
-	// current web application. All the asset files inside it will be
+	// CofferAssetRoot is the root of the asset files of the coffer feature
+	// of the current web application. All the asset files inside it will be
 	// recursively parsed into the coffer.
 	//
 	// Default value: "assets"
-	AssetRoot string `mapstructure:"asset_root"`
+	CofferAssetRoot string `mapstructure:"coffer_asset_root"`
 
-	// AssetExts is the filename extensions of the asset files used to
+	// CofferAssetExts is the filename extensions of the asset files used to
 	// distinguish the asset files in the `AssetRoot` when loading them into
 	// the coffer.
 	//
 	// Default value: [".html", ".css", ".js", ".json", ".xml", ".toml",
 	// ".yaml", ".yml", ".svg", ".jpg", ".jpeg", ".png", ".gif"]
-	AssetExts []string `mapstructure:"asset_exts"`
+	CofferAssetExts []string `mapstructure:"coffer_asset_exts"`
 
 	// I18nEnabled indicates whether the i18n feature of the current web
 	// application is enabled. This feature gives the
@@ -342,19 +343,19 @@ type Air struct {
 	// Default value: false
 	I18nEnabled bool `mapstructure:"i18n_enabled"`
 
-	// LocaleRoot is the root of the locale files of the i18n feature of the
-	// current web application. All the locale files inside it will be
+	// I18nLocaleRoot is the root of the locale files of the i18n feature of
+	// the current web application. All the locale files inside it will be
 	// parsed into the i18n.
 	//
 	// Default value: "locales"
-	LocaleRoot string `mapstructure:"locale_root"`
+	I18nLocaleRoot string `mapstructure:"i18n_locale_root"`
 
-	// LocaleBase is the base of the locale files of the i18n feature of the
-	// current web application. It will be used when a locale file cannot be
-	// found.
+	// I18nLocaleBase is the base of the locale files of the i18n feature of
+	// the current web application. It will be used when a locale file
+	// cannot be found.
 	//
 	// Default value: "en-US"
-	LocaleBase string `mapstructure:"locale_base"`
+	I18nLocaleBase string `mapstructure:"i18n_locale_base"`
 
 	// ConfigFile is the path to the configuration file that will be parsed
 	// into the matching fields of the current web application before
@@ -420,18 +421,18 @@ func New() *Air {
 			"application/yaml",
 			"image/svg+xml",
 		},
-		TemplateRoot:       "templates",
-		TemplateExts:       []string{".html"},
-		TemplateLeftDelim:  "{{",
-		TemplateRightDelim: "}}",
-		TemplateFuncMap: template.FuncMap{
+		RendererTemplateRoot:       "templates",
+		RendererTemplateExts:       []string{".html"},
+		RendererTemplateLeftDelim:  "{{",
+		RendererTemplateRightDelim: "}}",
+		RendererTemplateFuncMap: template.FuncMap{
 			"strlen":  strlen,
 			"substr":  substr,
 			"timefmt": timefmt,
 		},
 		CofferMaxMemoryBytes: 32 << 20,
-		AssetRoot:            "assets",
-		AssetExts: []string{
+		CofferAssetRoot:      "assets",
+		CofferAssetExts: []string{
 			".html",
 			".css",
 			".js",
@@ -446,8 +447,8 @@ func New() *Air {
 			".png",
 			".gif",
 		},
-		LocaleRoot: "locales",
-		LocaleBase: "en-US",
+		I18nLocaleRoot: "locales",
+		I18nLocaleBase: "en-US",
 	}
 
 	a.errorLogger = log.New(newErrorLogWriter(a), "", 0)

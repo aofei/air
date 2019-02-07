@@ -59,7 +59,8 @@ func (i *i18n) load() {
 	}
 
 	var lr string
-	if lr, i.loadError = filepath.Abs(i.a.LocaleRoot); i.loadError != nil {
+	lr, i.loadError = filepath.Abs(i.a.I18nLocaleRoot)
+	if i.loadError != nil {
 		return
 	} else if i.loadError = i.watcher.Add(lr); i.loadError != nil {
 		return
@@ -123,7 +124,7 @@ func (i *i18n) localize(r *Request) {
 	r.localizedString = func(key string) string {
 		if v, ok := l[key]; ok {
 			return v
-		} else if v, ok := i.locales[i.a.LocaleBase][key]; ok {
+		} else if v, ok := i.locales[i.a.I18nLocaleBase][key]; ok {
 			return v
 		}
 

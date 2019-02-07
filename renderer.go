@@ -61,47 +61,42 @@ func (r *renderer) load() {
 	}
 
 	var tr string
-	tr, r.loadError = filepath.Abs(r.a.TemplateRoot)
+	tr, r.loadError = filepath.Abs(r.a.RendererTemplateRoot)
 	if r.loadError != nil {
 		return
 	}
 
 	t := template.
 		New("template").
-		Delims(r.a.TemplateLeftDelim, r.a.TemplateRightDelim).
+		Delims(
+			r.a.RendererTemplateLeftDelim,
+			r.a.RendererTemplateRightDelim,
+		).
 		Funcs(template.FuncMap{
 			"locstr": func(key string) string {
 				return key
 			},
 		}).
-		Funcs(r.a.TemplateFuncMap)
+		Funcs(r.a.RendererTemplateFuncMap)
 	if r.loadError = filepath.Walk(
 		tr,
 		func(p string, fi os.FileInfo, err error) error {
-			if fi == nil || !fi.IsDir() {
+			if fi == nil || fi.IsDir() || !stringSliceContainsCIly(
+				r.a.RendererTemplateExts,
+				filepath.Ext(p),
+			) {
 				return err
 			}
 
-			for _, e := range r.a.TemplateExts {
-				fns, err := filepath.Glob(
-					filepath.Join(p, "*"+e),
-				)
-				if err != nil {
-					return err
-				}
+			b, err := ioutil.ReadFile(p)
+			if err != nil {
+				return err
+			}
 
-				for _, fn := range fns {
-					b, err := ioutil.ReadFile(fn)
-					if err != nil {
-						return err
-					}
-
-					if _, err := t.New(filepath.ToSlash(
-						fn[len(tr)+1:],
-					)).Parse(string(b)); err != nil {
-						return err
-					}
-				}
+			if _, err := t.New(filepath.ToSlash(
+				p[len(tr)+1:],
+			)).Parse(string(b)); err != nil {
+				return err
 			}
 
 			return r.watcher.Add(p)
