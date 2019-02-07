@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -122,7 +123,10 @@ func (s *server) serve() error {
 		acm := &autocert.Manager{
 			Prompt: autocert.AcceptTOS,
 			Cache:  autocert.DirCache(s.a.ACMECertRoot),
-			Email:  s.a.MaintainerEmail,
+			Client: &acme.Client{
+				DirectoryURL: s.a.ACMEDirectoryURL,
+			},
+			Email: s.a.MaintainerEmail,
 		}
 
 		if hh != nil {

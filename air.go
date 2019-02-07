@@ -143,10 +143,18 @@ type Air struct {
 	// Default value: false
 	ACMEEnabled bool `mapstructure:"acme_enabled"`
 
-	// ACMECertRoot is the root of the certificates of the current web
-	// application. It is recommended to set this field to a persistent
-	// place. By the way, different web applications can share the same
-	// place (if they are all built using this framework).
+	// ACMEDirectoryURL is the CA directory URL of the ACME feature of the
+	// current web application. This CA directory must be trusted because
+	// the ACME will automatically accept the Terms of Service (TOS)
+	// prompted in it.
+	//
+	// Default value: "https://acme-v01.api.letsencrypt.org/directory"
+	ACMEDirectoryURL string `mapstructure:"acme_directory_url"`
+
+	// ACMECertRoot is the root of the certificates of the ACME feature of
+	// the current web application. It is recommended to set this field to a
+	// persistent place. By the way, different web applications can share
+	// the same place (if they are all built using this framework).
 	//
 	// Default value: "acme-certs"
 	ACMECertRoot string `mapstructure:"acme_cert_root"`
