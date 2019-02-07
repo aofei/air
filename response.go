@@ -843,13 +843,6 @@ func (rw *responseWriter) WriteHeader(status int) {
 		h.Del("Content-Length")
 	}
 
-	if !rw.r.Air.DebugMode &&
-		rw.r.Air.HTTPSEnforced &&
-		rw.r.Air.server.server.TLSConfig != nil &&
-		h.Get("Strict-Transport-Security") == "" {
-		h.Set("Strict-Transport-Security", "max-age=31536000")
-	}
-
 	rw.w.WriteHeader(status)
 
 	rw.r.Status = status
