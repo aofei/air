@@ -161,12 +161,12 @@ func (c *coffer) asset(name string) (*asset, error) {
 	}
 
 	binary.BigEndian.PutUint64(a.digest, xxhash.Sum64(b))
-	c.cache.Set(a.digest, b)
+	c.cache.SetBig(a.digest, b)
 
 	if gb != nil {
 		a.gzippedDigest = make([]byte, 8)
 		binary.BigEndian.PutUint64(a.gzippedDigest, xxhash.Sum64(gb))
-		c.cache.Set(a.gzippedDigest, gb)
+		c.cache.SetBig(a.gzippedDigest, gb)
 	}
 
 	c.assets.Store(name, a)
@@ -189,9 +189,9 @@ type asset struct {
 func (a *asset) content(gzipped bool) []byte {
 	var c []byte
 	if gzipped {
-		c = a.coffer.cache.Get(nil, a.gzippedDigest)
+		c = a.coffer.cache.GetBig(nil, a.gzippedDigest)
 	} else {
-		c = a.coffer.cache.Get(nil, a.digest)
+		c = a.coffer.cache.GetBig(nil, a.digest)
 	}
 
 	if len(c) == 0 {
