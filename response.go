@@ -38,6 +38,9 @@ import (
 )
 
 // Response is an HTTP response.
+//
+// The `Response` not only represents HTTP/1.x responses, but also represents
+// HTTP/2 responses, and always acts as HTTP/2 responses.
 type Response struct {
 	// Air is where the current response belong.
 	Air *Air
@@ -50,6 +53,8 @@ type Response struct {
 	// For HTTP/1.x, it will be put in the response-line.
 	//
 	// For HTTP/2, it will be the ":status" pseudo-header.
+	//
+	// Example: 200
 	Status int
 
 	// Header is the header map of the current response.
@@ -60,9 +65,13 @@ type Response struct {
 	//
 	// See RFC 7231, section 7.
 	//
-	// It is basically the same for both of HTTP/1.x and HTTP/2. The only
-	// difference is that HTTP/2 requires header names to be lowercase. See
-	// RFC 7540, section 8.1.2.
+	// The `Header` is basically the same for both of HTTP/1.x and HTTP/2.
+	// The only difference is that HTTP/2 requires header names to be
+	// lowercase (for aesthetic reasons, this framework decided to follow
+	// this rule implicitly, so please use the header name in the HTTP/1.x
+	// way). See RFC 7540, section 8.1.2.
+	//
+	// Example: {"Foo": ["bar"]}
 	Header http.Header
 
 	// Body is the message body of the current response. It can be used to
@@ -97,8 +106,8 @@ type Response struct {
 // HTTPResponseWriter returns the underlying `http.ResponseWriter` of the r.
 //
 // ATTENTION: You should never call this method unless you know what you are
-// doing. And, be sure to call the `r#SetHTTPResponseWriter()` when you have
-// modified it.
+// doing. And, be sure to call the `SetHTTPResponseWriter()` of the r when you
+// have modified it.
 func (r *Response) HTTPResponseWriter() http.ResponseWriter {
 	return r.hrw
 }
@@ -114,8 +123,8 @@ func (r *Response) SetHTTPResponseWriter(hrw http.ResponseWriter) {
 	r.hrw = hrw
 }
 
-// SetCookie sets the c to the `r#Header`. Invalid cookies will be silently
-// dropped.
+// SetCookie sets the c to the `Header` of the r. Invalid cookies will be
+// silently dropped.
 func (r *Response) SetCookie(c *http.Cookie) {
 	if v := c.String(); v != "" {
 		r.Header.Add("Set-Cookie", v)
@@ -123,6 +132,12 @@ func (r *Response) SetCookie(c *http.Cookie) {
 }
 
 // Write writes the content to the client.
+//
+// The main benefit of the `Write()` over the `io.Copy()` with the `Body` of the
+// r is that it handles range requests properly, sets the "Content-Type" header,
+// and handles the "If-Match" header, the "If-Unmodified-Since" header, the
+// "If-None-Match", the "If-Modified-Since", and the "If-Range" header of the
+// request.
 func (r *Response) Write(content io.ReadSeeker) error {
 	if content == nil { // Content must never be nil
 		content = bytes.NewReader(nil)
@@ -214,7 +229,8 @@ func (r *Response) WriteString(s string) error {
 	return r.Write(strings.NewReader(s))
 }
 
-// WriteJSON writes the v as an "application/json" content to the client.
+// WriteJSON writes an "application/json" content encoded from the v to the
+// client.
 func (r *Response) WriteJSON(v interface{}) error {
 	var (
 		b   []byte
@@ -236,7 +252,8 @@ func (r *Response) WriteJSON(v interface{}) error {
 	return r.Write(bytes.NewReader(b))
 }
 
-// WriteXML writes the v as an "application/xml" content to the client.
+// WriteXML writes an "application/xml" content encoded from the v to the
+// client.
 func (r *Response) WriteXML(v interface{}) error {
 	var (
 		b   []byte
@@ -258,8 +275,8 @@ func (r *Response) WriteXML(v interface{}) error {
 	return r.Write(strings.NewReader(xml.Header + string(b)))
 }
 
-// WriteProtobuf writes the v as an "application/protobuf" content to the
-// client.
+// WriteProtobuf writes an "application/protobuf" content encoded from the v to
+// the client.
 func (r *Response) WriteProtobuf(v interface{}) error {
 	b, err := proto.Marshal(v.(proto.Message))
 	if err != nil {
@@ -271,7 +288,8 @@ func (r *Response) WriteProtobuf(v interface{}) error {
 	return r.Write(bytes.NewReader(b))
 }
 
-// WriteMsgpack writes the v as an "application/msgpack" content to the client.
+// WriteMsgpack writes an "application/msgpack" content encoded from the v to
+// the client.
 func (r *Response) WriteMsgpack(v interface{}) error {
 	b, err := msgpack.Marshal(v)
 	if err != nil {
@@ -283,7 +301,8 @@ func (r *Response) WriteMsgpack(v interface{}) error {
 	return r.Write(bytes.NewReader(b))
 }
 
-// WriteTOML writes the v as an "application/toml" content to the client.
+// WriteTOML writes an "application/toml" content encoded from the v to the
+// client.
 func (r *Response) WriteTOML(v interface{}) error {
 	buf := bytes.Buffer{}
 	if err := toml.NewEncoder(&buf).Encode(v); err != nil {
@@ -295,7 +314,8 @@ func (r *Response) WriteTOML(v interface{}) error {
 	return r.Write(bytes.NewReader(buf.Bytes()))
 }
 
-// WriteYAML writes the v as an "application/yaml" content to the client.
+// WriteYAML writes an "application/yaml" content encoded from the v to the
+// client.
 func (r *Response) WriteYAML(v interface{}) error {
 	buf := bytes.Buffer{}
 	if err := yaml.NewEncoder(&buf).Encode(v); err != nil {
@@ -391,7 +411,7 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	return r.WriteHTML(buf.String())
 }
 
-// WriteFile writes the filename as a file content to the client.
+// WriteFile writes a file content targeted by the filename to the client.
 func (r *Response) WriteFile(filename string) error {
 	filename, err := filepath.Abs(filename)
 	if err != nil {
@@ -498,7 +518,9 @@ func (r *Response) WriteFile(filename string) error {
 	return r.Write(c)
 }
 
-// Redirect writes the url as a redirection to the client.
+// Redirect writes the url as a redirection to the client. Note that the
+// `Status` of the r will be the `http.StatusFound` if it is not a redirection
+// status.
 func (r *Response) Redirect(url string) error {
 	if r.Status < http.StatusMultipleChoices ||
 		r.Status >= http.StatusBadRequest {
@@ -510,7 +532,8 @@ func (r *Response) Redirect(url string) error {
 	return nil
 }
 
-// WebSocket switches the connection to the WebSocket protocol.
+// WebSocket switches the connection of the r to the WebSocket protocol. See RFC
+// 6455.
 func (r *Response) WebSocket() (*WebSocket, error) {
 	r.Status = http.StatusSwitchingProtocols
 	r.Written = true

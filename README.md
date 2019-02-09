@@ -8,8 +8,8 @@
 An ideally refined web framework for Go. You can use it to build a web
 application as natural as breathing.
 
-High-performance? Fastest? Almost all the web frameworks are using these words
-to tell people that they are the best. Maybe they are, maybe not. Air does not
+High-performance? Fastest? Almost all web frameworks are using these words to
+tell people that they are the best. Maybe they are, maybe not. Air does not
 intend to follow the crowd. It can only guarantee you one thing: **it can serve
 properly.**
 
@@ -188,7 +188,7 @@ then visit `http://localhost:8080`.
 
 ## Documentation
 
-Does all the web frameworks need to have a complicated (or a lovely but lengthy)
+Does all web frameworks need to have a complicated (or a lovely but lengthy)
 website to guide people how to use them? Well, Air has only one
 [GoDoc](https://godoc.org/github.com/aofei/air) with useful comments. In fact,
 Air is so succinct that you don't need to understand how to use it through a

@@ -14,6 +14,9 @@ import (
 )
 
 // Request is an HTTP request.
+//
+// The `Request` not only represents HTTP/1.x requests, but also represents
+// HTTP/2 requests, and always acts as HTTP/2 requests.
 type Request struct {
 	// Air is where the current request belong.
 	Air *Air
@@ -25,6 +28,8 @@ type Request struct {
 	// For HTTP/1.x, it is from the request-line.
 	//
 	// For HTTP/2, it is from the ":method" pseudo-header.
+	//
+	// Example: "GET"
 	Method string
 
 	// Scheme is the scheme of the current request, it is "http" or "https".
@@ -34,6 +39,8 @@ type Request struct {
 	// For HTTP/1.x, it is from the request-line.
 	//
 	// For HTTP/2, it is from the ":scheme" pseudo-header.
+	//
+	// Example: "http"
 	Scheme string
 
 	// Authority is the authority of the current request. It may be of the
@@ -44,15 +51,20 @@ type Request struct {
 	// For HTTP/1.x, it is from the "Host" header.
 	//
 	// For HTTP/2, it is from the ":authority" pseudo-header.
+	//
+	// Example: "localhost:8080"
 	Authority string
 
-	// Path is the path of the current request.
+	// Path is the path of the current request. Note that it contains the
+	// query part (anyway, the HTTP/2 specification says so).
 	//
 	// For HTTP/1.x, it represents the request-target of the request-line.
 	// See RFC 7230, section 3.1.1.
 	//
 	// For HTTP/2, it represents the ":path" pseudo-header. See RFC 7540,
 	// section 8.1.2.3.
+	//
+	// Example: "/foo/bar?foo=bar"
 	Path string
 
 	// Header is the header map of the current request.
@@ -63,9 +75,13 @@ type Request struct {
 	//
 	// See RFC 7231, section 5.
 	//
-	// It is basically the same for both of HTTP/1.x and HTTP/2. The only
-	// difference is that HTTP/2 requires header names to be lowercase. See
-	// RFC 7540, section 8.1.2.
+	// The `Header` is basically the same for both of HTTP/1.x and HTTP/2.
+	// The only difference is that HTTP/2 requires header names to be
+	// lowercase (for aesthetic reasons, this framework decided to follow
+	// this rule implicitly, so please use the header name in the HTTP/1.x
+	// way). See RFC 7540, section 8.1.2.
+	//
+	// Example: {"Foo": ["bar"]}
 	Header http.Header
 
 	// Body is the message body of the current request.
@@ -79,8 +95,8 @@ type Request struct {
 
 	// Context is the context that associated with the current request.
 	//
-	// It is canceled when the client's connection closes, the current
-	// request is canceled (with HTTP/2), or when the current
+	// The `Context` is canceled when the client's connection closes, the
+	// current request is canceled (with HTTP/2), or when the current
 	// request-response cycle is finished.
 	Context context.Context
 
@@ -97,8 +113,8 @@ type Request struct {
 // HTTPRequest returns the underlying `http.Request` of the r.
 //
 // ATTENTION: You should never call this method unless you know what you are
-// doing. And, be sure to call the `r#SetHTTPRequest()` when you have modified
-// it.
+// doing. And, be sure to call the `SetHTTPRequest()` of the r when you have
+// modified it.
 func (r *Request) HTTPRequest() *http.Request {
 	r.hr.Method = r.Method
 	r.hr.Host = r.Authority
@@ -157,6 +173,10 @@ func (r *Request) RemoteAddress() string {
 }
 
 // ClientAddress returns the original network address that sent the r.
+//
+// Usually, the original network address is the same as the last network address
+// that sent the r. But, the "Forwarded" header and the "X-Forwarded-For" header
+// will be considered, which may affect the return value.
 func (r *Request) ClientAddress() string {
 	ca := r.RemoteAddress()
 	if f := r.Header.Get("Forwarded"); f != "" { // See RFC 7239
@@ -184,7 +204,7 @@ func (r *Request) Cookie(name string) *http.Cookie {
 	return c
 }
 
-// Cookies returns all the `http.Cookie` in the r.
+// Cookies returns all `http.Cookie` in the r.
 func (r *Request) Cookies() []*http.Cookie {
 	return r.hr.Cookies()
 }
@@ -207,7 +227,7 @@ func (r *Request) Param(name string) *RequestParam {
 	return nil
 }
 
-// Params returns all the `RequestParam` in the r.
+// Params returns all `RequestParam` in the r.
 func (r *Request) Params() []*RequestParam {
 	if r.routeParamNames != nil {
 		r.parseRouteParamsOnce.Do(r.parseRouteParams)
@@ -363,14 +383,24 @@ func (r *Request) growParams(n int) {
 	r.params = ps
 }
 
-// Bind binds the r into the v.
+// Bind binds the r into the v based on the "Content-Type" header.
+//
+// Supported MIME types:
+//   * application/json
+//   * application/xml
+//   * application/protobuf
+//   * application/msgpack
+//   * application/toml
+//   * application/yaml
+//   * application/x-www-form-urlencoded
+//   * multipart/form-data
 func (r *Request) Bind(v interface{}) error {
 	return r.Air.binder.bind(v, r)
 }
 
-// LocalizedString returns localized string for the key.
-//
-// It only works if the `I18nEnabled` is true.
+// LocalizedString returns localized string for the key based on the
+// "Accept-Language" header. It returns the key without any changes if the
+// `I18nEnabled` of the `Air` of the r is false or something goes wrong.
 func (r *Request) LocalizedString(key string) string {
 	if !r.Air.I18nEnabled {
 		return key
@@ -384,6 +414,9 @@ func (r *Request) LocalizedString(key string) string {
 }
 
 // RequestParam is an HTTP request param.
+//
+// The param may come from the route params, the request query, the request
+// form, the request multipart form.
 type RequestParam struct {
 	// Name is the name of the current request param.
 	Name string
@@ -602,7 +635,8 @@ func (rpv *RequestParamValue) Float64() (float64, error) {
 	return *rpv.f64, nil
 }
 
-// String returns a `string` from the underlying value of the rpv.
+// String returns a `string` from the underlying value of the rpv. It returns ""
+// if the rpv is not text-based.
 func (rpv *RequestParamValue) String() string {
 	if rpv.s == nil {
 		if s, ok := rpv.i.(string); ok {

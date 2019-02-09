@@ -7,10 +7,16 @@ type Group struct {
 	// Air is where the current group belong.
 	Air *Air
 
-	// Prefix is the prefix of all the route paths of the current group.
+	// Prefix is the prefix of all route paths of the current group.
+	//
+	// All paths of routes registered by the current group will share the
+	// same prefix.
 	Prefix string
 
 	// Gases is the group-level gases of the current group.
+	//
+	// All gases of routes registered by the current group will share the
+	// same group-level gases at the bottom of the stack.
 	Gases []Gas
 }
 

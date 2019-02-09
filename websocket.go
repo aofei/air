@@ -7,6 +7,9 @@ import (
 )
 
 // WebSocket is a WebSocket peer.
+//
+// It is highly recommended not to modify the handlers of the `WebSocket` after
+// calling the `WebSocket#Listen()`, which will cause unpredictable problems.
 type WebSocket struct {
 	// TextHandler is the handler that handles the incoming text messages of
 	// the current WebSocket.
@@ -92,18 +95,18 @@ func (ws *WebSocket) Listen() {
 	}
 }
 
-// WriteText writes the text to the remote peer of the ws.
+// WriteText writes the text as a text message to the remote peer of the ws.
 func (ws *WebSocket) WriteText(text string) error {
 	return ws.conn.WriteMessage(websocket.TextMessage, []byte(text))
 }
 
-// WriteBinary writes the b to the remote peer of the ws.
+// WriteBinary writes the b as a binary message to the remote peer of the ws.
 func (ws *WebSocket) WriteBinary(b []byte) error {
 	return ws.conn.WriteMessage(websocket.BinaryMessage, b)
 }
 
-// WriteConnectionClose writes a connection close to the remote peer of the ws
-// with the status and the reason.
+// WriteConnectionClose writes a connection close message to the remote peer of
+// the ws with the status and the reason.
 func (ws *WebSocket) WriteConnectionClose(status int, reason string) error {
 	return ws.conn.WriteMessage(
 		websocket.CloseMessage,
@@ -111,12 +114,14 @@ func (ws *WebSocket) WriteConnectionClose(status int, reason string) error {
 	)
 }
 
-// WritePing writes a ping to the remote peer of the ws with the appData.
+// WritePing writes a ping message to the remote peer of the ws with the
+// appData.
 func (ws *WebSocket) WritePing(appData string) error {
 	return ws.conn.WriteMessage(websocket.PingMessage, []byte(appData))
 }
 
-// WritePong writes a pong to the remote peer of the ws with the appData.
+// WritePong writes a pong message to the remote peer of the ws with the
+// appData.
 func (ws *WebSocket) WritePong(appData string) error {
 	return ws.conn.WriteMessage(websocket.PongMessage, []byte(appData))
 }
