@@ -59,9 +59,9 @@ type Response struct {
 
 	// Header is the header map of the current response.
 	//
-	// By setting the "Trailer" header to the names of the trailers which
-	// will come later. In this case, those names of the header map are
-	// treated as if they were trailers.
+	// By setting the Trailer header to the names of the trailers which will
+	// come later. In this case, those names of the header map are treated
+	// as if they were trailers.
 	//
 	// See RFC 7231, section 7.
 	//
@@ -134,13 +134,17 @@ func (r *Response) SetCookie(c *http.Cookie) {
 // Write writes the content to the client.
 //
 // The main benefit of the `Write()` over the `io.Copy()` with the `Body` of the
-// r is that it handles range requests properly, sets the "Content-Type" header,
-// and handles the "If-Match" header, the "If-Unmodified-Since" header, the
-// "If-None-Match", the "If-Modified-Since", and the "If-Range" header of the
-// request.
+// r is that it handles range requests properly, sets the Content-Type header,
+// and handles the If-Match header, the If-Unmodified-Since header, the
+// If-None-Match header, the If-Modified-Since header and the If-Range header of
+// the requests.
 func (r *Response) Write(content io.ReadSeeker) error {
-	if content == nil { // Content must never be nil
-		content = bytes.NewReader(nil)
+	if content == nil { // No content, no benefit
+		if !r.Written {
+			r.hrw.WriteHeader(r.Status)
+		}
+
+		return nil
 	}
 
 	if r.Written {
@@ -835,8 +839,8 @@ func (rw *responseWriter) WriteHeader(status int) {
 		}
 	}
 
-	mt, _, _ := mime.ParseMediaType(h.Get("Content-Type"))
-	if rw.r.Air.GzipEnabled &&
+	if mt, _, _ := mime.ParseMediaType(h.Get("Content-Type")); mt != "" &&
+		rw.r.Air.GzipEnabled &&
 		stringSliceContainsCIly(rw.r.Air.GzipMIMETypes, mt) {
 		if !httpguts.HeaderValuesContainsToken(
 			h["Vary"],

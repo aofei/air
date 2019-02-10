@@ -208,7 +208,7 @@ type Air struct {
 	// `Response#WebSocket()` negotiates a subprotocol by selecting the
 	// first match in the list with a protocol requested by the client. If
 	// there is no match, then no protocol is negotiated (the
-	// "Sec-Websocket-Protocol" header is not included in the handshake
+	// Sec-Websocket-Protocol header is not included in the handshake
 	// response).
 	//
 	// Default value: nil
@@ -286,7 +286,7 @@ type Air struct {
 	//
 	// The `MinifierEnabled` gives the `Response#Write()` the ability to
 	// minify the matching response content on the fly based on the
-	// "Content-Type" header.
+	// Content-Type header.
 	//
 	// Default value: false
 	MinifierEnabled bool `mapstructure:"minifier_enabled"`
@@ -304,7 +304,7 @@ type Air struct {
 	// application is enabled.
 	//
 	// The `GzipEnabled` gives the `Response` the ability to gzip the
-	// matching response content on the fly based on the "Content-Type"
+	// matching response content on the fly based on the Content-Type
 	// header.
 	//
 	// Default value: false
@@ -397,7 +397,7 @@ type Air struct {
 	//
 	// The `I18nEnabled` gives the `Request#LocalizedString()` and the
 	// `Response#Render()` the ability to adapt to the request's favorite
-	// conventions based on the "Accept-Language" header.
+	// conventions based on the Accept-Language header.
 	//
 	// Default value: false
 	I18nEnabled bool `mapstructure:"i18n_enabled"`

@@ -48,7 +48,7 @@ type Request struct {
 	//
 	// See RFC 3986, Section 3.2.
 	//
-	// For HTTP/1.x, it is from the "Host" header.
+	// For HTTP/1.x, it is from the Host header.
 	//
 	// For HTTP/2, it is from the ":authority" pseudo-header.
 	//
@@ -69,9 +69,9 @@ type Request struct {
 
 	// Header is the header map of the current request.
 	//
-	// The values of the "Trailer" header are the names of the trailers
-	// which will come later. In this case, those names of the header map
-	// will be set after reading from the `Body` returns the `io.EOF`.
+	// The values of the Trailer header are the names of the trailers which
+	// will come later. In this case, those names of the header map will be
+	// set after reading from the `Body` returns the `io.EOF`.
 	//
 	// See RFC 7231, section 5.
 	//
@@ -175,7 +175,7 @@ func (r *Request) RemoteAddress() string {
 // ClientAddress returns the original network address that sent the r.
 //
 // Usually, the original network address is the same as the last network address
-// that sent the r. But, the "Forwarded" header and the "X-Forwarded-For" header
+// that sent the r. But, the Forwarded header and the X-Forwarded-For header
 // will be considered, which may affect the return value.
 func (r *Request) ClientAddress() string {
 	ca := r.RemoteAddress()
@@ -383,7 +383,7 @@ func (r *Request) growParams(n int) {
 	r.params = ps
 }
 
-// Bind binds the r into the v based on the "Content-Type" header.
+// Bind binds the r into the v based on the Content-Type header.
 //
 // Supported MIME types:
 //   * application/json
@@ -399,7 +399,7 @@ func (r *Request) Bind(v interface{}) error {
 }
 
 // LocalizedString returns localized string for the key based on the
-// "Accept-Language" header. It returns the key without any changes if the
+// Accept-Language header. It returns the key without any changes if the
 // `I18nEnabled` of the `Air` of the r is false or something goes wrong.
 func (r *Request) LocalizedString(key string) string {
 	if !r.Air.I18nEnabled {
