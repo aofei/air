@@ -811,7 +811,11 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 		return 0, err
 	}
 
-	rw.r.ContentLength += int64(n)
+	if rw.r.ContentLength > 0 {
+		rw.r.ContentLength += int64(n)
+	} else {
+		rw.r.ContentLength = int64(n)
+	}
 
 	return n, nil
 }
@@ -873,10 +877,6 @@ func (rw *responseWriter) WriteHeader(status int) {
 	rw.w.WriteHeader(status)
 
 	rw.r.Status = status
-	if rw.r.ContentLength < 0 {
-		rw.r.ContentLength = 0
-	}
-
 	rw.r.Written = true
 }
 

@@ -493,16 +493,3 @@ const (
 	routeNodeTypeParam
 	routeNodeTypeAny
 )
-
-// splitPathQuery splits the p of the form "path?query" into path and query.
-func splitPathQuery(p string) (path, query string) {
-	i, l := 0, len(p)
-	for ; i < l && p[i] != '?'; i++ {
-	}
-
-	if i < l {
-		return p[:i], p[i+1:]
-	}
-
-	return p, ""
-}

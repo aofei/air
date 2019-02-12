@@ -119,7 +119,15 @@ func (r *Request) HTTPRequest() *http.Request {
 	r.hr.Method = r.Method
 	r.hr.Host = r.Authority
 	if r.hr.RequestURI != r.Path {
-		r.hr.URL, _ = url.ParseRequestURI(r.Path)
+		p, q := splitPathQuery(r.Path)
+		if p != r.hr.URL.Path {
+			r.hr.URL.Path = p
+			r.hr.URL.RawPath = ""
+		}
+
+		r.hr.URL.ForceQuery = strings.HasSuffix(r.Path, "?") &&
+			strings.Count(r.Path, "?") == 1
+		r.hr.URL.RawQuery = q
 	}
 
 	r.hr.RequestURI = r.Path
