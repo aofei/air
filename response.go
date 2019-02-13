@@ -457,14 +457,12 @@ func (r *Response) WriteFile(filename string) error {
 			r.Minified = a.minified
 
 			var ac []byte
-			if r.Air.GzipEnabled &&
-				a.gzippedDigest != nil &&
+			if r.Air.GzipEnabled && a.gzippedDigest != nil &&
 				httpguts.HeaderValuesContainsToken(
 					r.req.Header["Accept-Encoding"],
 					"gzip",
 				) {
-				ac = a.content(true)
-				if ac != nil {
+				if ac = a.content(true); ac != nil {
 					r.Gzipped = true
 				}
 			} else {
@@ -672,6 +670,13 @@ func (r *Response) ProxyPass(target string) error {
 		rp.ErrorLog = log.New(newReverseProxyErrorLogWriter(r), "", 0)
 		rp.BufferPool = r.Air.reverseProxyBufferPool
 		rp.ModifyResponse = func(res *http.Response) error {
+			if httpguts.HeaderValuesContainsToken(
+				res.Header["Content-Encoding"],
+				"gzip",
+			) {
+				r.Gzipped = true
+			}
+
 			for n := range r.Header {
 				res.Header.Del(n)
 			}
@@ -850,7 +855,13 @@ func (rw *responseWriter) WriteHeader(status int) {
 	}
 
 	if rw.r.Gzipped {
-		h.Set("Content-Encoding", "gzip")
+		if !httpguts.HeaderValuesContainsToken(
+			h["Content-Encoding"],
+			"gzip",
+		) {
+			h.Add("Content-Encoding", "gzip")
+		}
+
 		h.Del("Content-Length")
 	}
 
