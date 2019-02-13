@@ -661,7 +661,7 @@ func (r *Response) ProxyPass(target string) error {
 	case "http", "https", "ws", "wss", "grpc", "grpcs":
 	default:
 		return fmt.Errorf(
-			"air: unsupported reverse proxy scheme %q",
+			"air: unsupported reverse proxy scheme: %s",
 			u.Scheme,
 		)
 	}
@@ -795,42 +795,6 @@ func (rw *responseWriter) Header() http.Header {
 	return rw.w.Header()
 }
 
-// Write implements the `http.ResponseWriter`.
-func (rw *responseWriter) Write(b []byte) (int, error) {
-	if !rw.r.Written {
-		rw.WriteHeader(rw.r.Status)
-	}
-
-	if rw.r.Status >= http.StatusBadRequest {
-		if rw.r.servingContent {
-			rw.r.serveContentError = errors.New(string(b))
-			return 0, nil
-		}
-
-		if rw.r.reverseProxying && rw.r.reverseProxyError != nil {
-			return 0, nil
-		}
-	}
-
-	w := io.Writer(rw.w)
-	if rw.gw != nil {
-		w = rw.gw
-	}
-
-	n, err := w.Write(b)
-	if err != nil {
-		return 0, err
-	}
-
-	if rw.r.ContentLength > 0 {
-		rw.r.ContentLength += int64(n)
-	} else {
-		rw.r.ContentLength = int64(n)
-	}
-
-	return n, nil
-}
-
 // WriteHeader implements the `http.ResponseWriter`.
 func (rw *responseWriter) WriteHeader(status int) {
 	rw.Lock()
@@ -896,13 +860,49 @@ func (rw *responseWriter) WriteHeader(status int) {
 	rw.r.Written = true
 }
 
+// Write implements the `http.ResponseWriter`.
+func (rw *responseWriter) Write(b []byte) (int, error) {
+	if !rw.r.Written {
+		rw.WriteHeader(rw.r.Status)
+	}
+
+	if rw.r.Status >= http.StatusBadRequest {
+		if rw.r.servingContent {
+			rw.r.serveContentError = errors.New(string(b))
+			return 0, nil
+		}
+
+		if rw.r.reverseProxying && rw.r.reverseProxyError != nil {
+			return 0, nil
+		}
+	}
+
+	w := io.Writer(rw.w)
+	if rw.gw != nil {
+		w = rw.gw
+	}
+
+	n, err := w.Write(b)
+	if err != nil {
+		return 0, err
+	}
+
+	if rw.r.ContentLength > 0 {
+		rw.r.ContentLength += int64(n)
+	} else {
+		rw.r.ContentLength = int64(n)
+	}
+
+	return n, nil
+}
+
 // Flush implements the `http.Flusher`.
 func (rw *responseWriter) Flush() {
 	if rw.gw != nil {
 		rw.gw.Flush()
-	} else {
-		rw.w.(http.Flusher).Flush()
 	}
+
+	rw.w.(http.Flusher).Flush()
 }
 
 // Push implements the `http.Pusher`.

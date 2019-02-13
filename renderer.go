@@ -120,7 +120,7 @@ func (r *renderer) render(
 
 	t := r.template.Lookup(name)
 	if t == nil {
-		return fmt.Errorf("air: html template %q is undefined", name)
+		return fmt.Errorf("air: undefined html template: %s", name)
 	}
 
 	if !r.a.I18nEnabled {

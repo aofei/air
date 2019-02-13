@@ -374,8 +374,8 @@ type Air struct {
 	// Default value: 33554432
 	CofferMaxMemoryBytes int `mapstructure:"coffer_max_memory_bytes"`
 
-	// CofferAssetRoot is the root of the asset files of the coffer feature
-	// of the current web application.
+	// CofferAssetRoot is the root of the assets of the coffer feature of
+	// the current web application.
 	//
 	// All asset files inside the root will be recursively parsed into the
 	// coffer.
@@ -383,10 +383,10 @@ type Air struct {
 	// Default value: "assets"
 	CofferAssetRoot string `mapstructure:"coffer_asset_root"`
 
-	// CofferAssetExts is the list of filename extensions of the asset files
-	// of the coffer feature of the current web application used to
-	// distinguish the asset files in the `CofferAssetRoot` when loading
-	// them into the coffer.
+	// CofferAssetExts is the list of filename extensions of the assets of
+	// the coffer feature of the current web application used to distinguish
+	// the asset files in the `CofferAssetRoot` when loading them into the
+	// coffer.
 	//
 	// Default value: [".html", ".css", ".js", ".json", ".xml", ".toml",
 	// ".yaml", ".yml", ".svg", ".jpg", ".jpeg", ".png", ".gif"]
@@ -402,17 +402,18 @@ type Air struct {
 	// Default value: false
 	I18nEnabled bool `mapstructure:"i18n_enabled"`
 
-	// I18nLocaleRoot is the root of the locale files of the i18n feature of
-	// the current web application.
+	// I18nLocaleRoot is the root of the locales of the i18n feature of the
+	// current web application.
 	//
 	// All TOML-based locale files (".toml" is the extension) inside the
-	// root will be parsed into the i18n.
+	// root will be parsed into the i18n and their names (without extension)
+	// will be used as locales.
 	//
 	// Default value: "locales"
 	I18nLocaleRoot string `mapstructure:"i18n_locale_root"`
 
-	// I18nLocaleBase is the base of the locale files of the i18n feature of
-	// the current web application used when a locale file cannot be found.
+	// I18nLocaleBase is the base of the locales of the i18n feature of the
+	// current web application used when a locale cannot be found.
 	//
 	// Default value: "en-US"
 	I18nLocaleBase string `mapstructure:"i18n_locale_base"`
@@ -712,7 +713,7 @@ func (a *Air) Serve() error {
 		default:
 			err = fmt.Errorf(
 				"air: unsupported configuration file "+
-					"extension %q",
+					"extension: %s",
 				e,
 			)
 		}

@@ -112,11 +112,11 @@ func (s *server) serve() error {
 			GetCertificate: func(
 				chi *tls.ClientHelloInfo,
 			) (*tls.Certificate, error) {
-				if s.allowedHost(chi.ServerName) {
-					return &c, nil
+				if !s.allowedHost(chi.ServerName) {
+					return nil, chi.Conn.Close()
 				}
 
-				return nil, chi.Conn.Close()
+				return &c, nil
 			},
 		}
 	} else if !s.a.DebugMode && s.a.ACMEEnabled {
@@ -140,17 +140,18 @@ func (s *server) serve() error {
 		s.server.TLSConfig.GetCertificate = func(
 			chi *tls.ClientHelloInfo,
 		) (*tls.Certificate, error) {
-			if s.allowedHost(chi.ServerName) {
-				chi.ServerName = strings.ToLower(chi.ServerName)
-				return acm.GetCertificate(chi)
-			} else if net.ParseIP(chi.ServerName) == nil {
+			if !s.allowedHost(chi.ServerName) {
 				return nil, chi.Conn.Close()
+			} else if net.ParseIP(chi.ServerName) != nil {
+				return nil, fmt.Errorf(
+					"air: unchallengeable host: %s",
+					chi.ServerName,
+				)
 			}
 
-			return nil, fmt.Errorf(
-				"air: unable to authorize %q",
-				chi.ServerName,
-			)
+			chi.ServerName = strings.ToLower(chi.ServerName)
+
+			return acm.GetCertificate(chi)
 		}
 	} else {
 		s.server.Handler = http.HandlerFunc(func(
