@@ -790,9 +790,10 @@ func (r *Response) Defer(f func()) {
 type responseWriter struct {
 	sync.Mutex
 
-	r  *Response
-	w  http.ResponseWriter
-	gw *gzip.Writer
+	r    *Response
+	w    http.ResponseWriter
+	gw   *gzip.Writer
+	gwcl int64
 }
 
 // Header implements the `http.ResponseWriter`.
@@ -842,13 +843,13 @@ func (rw *responseWriter) WriteHeader(status int) {
 			rw.r.req.Header["Accept-Encoding"],
 			"gzip",
 		) {
-			if rw.gw, _ = gzip.NewWriterLevel(
-				rw.w,
-				rw.r.Air.GzipCompressionLevel,
-			); rw.gw != nil {
+			rw.gw, _ = rw.r.Air.gzipWriterPool.Get().(*gzip.Writer)
+			if rw.gw != nil {
+				rw.gw.Reset(rw.w)
 				rw.r.Gzipped = true
 				rw.r.Defer(func() {
 					rw.gw.Close()
+					rw.r.Air.gzipWriterPool.Put(rw.gw)
 				})
 			}
 		}
@@ -896,6 +897,14 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	n, err := w.Write(b)
 	if err != nil {
 		return 0, err
+	}
+
+	if rw.gw != nil {
+		rw.gwcl += int64(n)
+		if rw.gwcl > 2<<10 {
+			rw.gwcl = 0
+			rw.gw.Flush()
+		}
 	}
 
 	if rw.r.ContentLength > 0 {

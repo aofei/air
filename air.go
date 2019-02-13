@@ -443,6 +443,7 @@ type Air struct {
 	coffer                       *coffer
 	i18n                         *i18n
 	contentTypeSnifferBufferPool *sync.Pool
+	gzipWriterPool               *sync.Pool
 	reverseProxyTransport        *http.Transport
 	reverseProxyBufferPool       *reverseProxyBufferPool
 }
@@ -523,6 +524,13 @@ func New() *Air {
 	a.contentTypeSnifferBufferPool = &sync.Pool{
 		New: func() interface{} {
 			return make([]byte, 512)
+		},
+	}
+
+	a.gzipWriterPool = &sync.Pool{
+		New: func() interface{} {
+			w, _ := gzip.NewWriterLevel(nil, a.GzipCompressionLevel)
+			return w
 		},
 	}
 
