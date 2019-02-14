@@ -310,6 +310,15 @@ type Air struct {
 	// Default value: false
 	GzipEnabled bool `mapstructure:"gzip_enabled"`
 
+	// GzipMinContentLength is the minimum content length of the gzip
+	// featrue of the current web application used to limit at least how
+	// much response content can be gzipped.
+	//
+	// The content length is determined only from the Content-Length header.
+	//
+	// Default value: 1024
+	GzipMinContentLength int64 `mapstructure:"gzip_min_content_length"`
+
 	// GzipMIMETypes is the list of MIME types of the gzip feature of the
 	// current web application that will trigger the gzip.
 	//
@@ -464,6 +473,7 @@ func New() *Air {
 		AppName:                 "air",
 		Address:                 ":8080",
 		MaxHeaderBytes:          1 << 20,
+		ACMEDirectoryURL:        "https://acme-v01.api.letsencrypt.org/directory",
 		ACMECertRoot:            "acme-certs",
 		NotFoundHandler:         DefaultNotFoundHandler,
 		MethodNotAllowedHandler: DefaultMethodNotAllowedHandler,
@@ -476,7 +486,7 @@ func New() *Air {
 			"application/xml",
 			"image/svg+xml",
 		},
-		GzipCompressionLevel: gzip.DefaultCompression,
+		GzipMinContentLength: 1 << 10,
 		GzipMIMETypes: []string{
 			"text/plain",
 			"text/html",
@@ -488,6 +498,7 @@ func New() *Air {
 			"application/yaml",
 			"image/svg+xml",
 		},
+		GzipCompressionLevel:       gzip.DefaultCompression,
 		RendererTemplateRoot:       "templates",
 		RendererTemplateExts:       []string{".html"},
 		RendererTemplateLeftDelim:  "{{",

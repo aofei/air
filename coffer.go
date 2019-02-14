@@ -131,7 +131,8 @@ func (c *coffer) asset(name string) (*asset, error) {
 		minified = true
 	}
 
-	if c.a.GzipEnabled && stringSliceContainsCIly(c.a.GzipMIMETypes, pmt) {
+	if c.a.GzipEnabled && int64(len(b)) >= c.a.GzipMinContentLength &&
+		stringSliceContainsCIly(c.a.GzipMIMETypes, pmt) {
 		buf := bytes.Buffer{}
 		if gw, err := gzip.NewWriterLevel(
 			&buf,

@@ -829,8 +829,10 @@ func (rw *responseWriter) WriteHeader(status int) {
 		}
 	}
 
-	if mt, _, _ := mime.ParseMediaType(h.Get("Content-Type")); mt != "" &&
-		rw.r.Air.GzipEnabled &&
+	mt, _, _ := mime.ParseMediaType(h.Get("Content-Type"))
+	cl, _ := strconv.ParseInt(h.Get("Content-Length"), 10, 64)
+	if mt != "" && rw.r.Air.GzipEnabled &&
+		cl >= rw.r.Air.GzipMinContentLength &&
 		stringSliceContainsCIly(rw.r.Air.GzipMIMETypes, mt) {
 		if !httpguts.HeaderValuesContainsToken(
 			h["Vary"],
