@@ -355,10 +355,10 @@ func (r *Response) WriteHTML(h string) error {
 					for _, a := range n.Attr {
 						switch strings.ToLower(a.Key) {
 						case "rel":
-							if v := strings.ToLower(
+							switch strings.ToLower(
 								a.Val,
-							); v == "preload" ||
-								v == "icon" {
+							) {
+							case "preload", "icon":
 								avoid = true
 								break LinkLoop
 							}

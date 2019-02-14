@@ -29,9 +29,12 @@ func newBinder(a *Air) *binder {
 
 // bind binds the r into the v.
 func (b *binder) bind(v interface{}, r *Request) error {
-	if r.Method == http.MethodGet {
-		return b.bindParams(v, r.Params())
-	} else if r.Body == nil {
+	if r.ContentLength == 0 {
+		switch r.Method {
+		case http.MethodGet, http.MethodHead, http.MethodDelete:
+			return b.bindParams(v, r.Params())
+		}
+
 		return errors.New("air: request body cannot be empty")
 	}
 
@@ -60,14 +63,10 @@ func (b *binder) bind(v interface{}, r *Request) error {
 		err = b.bindParams(v, r.Params())
 	default:
 		r.res.Status = http.StatusUnsupportedMediaType
-		return errors.New(http.StatusText(r.res.Status))
+		err = errors.New(http.StatusText(r.res.Status))
 	}
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // bindParams binds the params into the v.
