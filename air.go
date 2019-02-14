@@ -333,6 +333,18 @@ type Air struct {
 	// Default value: `gzip.DefaultCompression`
 	GzipCompressionLevel int `mapstructure:"gzip_compression_level"`
 
+	// GzipFlushThreshold is the flush threshold of the gzip feature of the
+	// current web application.
+	//
+	// Once the pending compressed data in the gzip writer reach the flush
+	// threshold, they will be flushed into the underlying writer of the
+	// gzip writer immediately.
+	//
+	// The `GzipFlushThreshold` only works when it is greater than zero.
+	//
+	// Default value: 8192
+	GzipFlushThreshold int `mapstructure:"gzip_flush_threshold"`
+
 	// RendererTemplateRoot is the root of the HTML templates of the
 	// renderer feature of the current web application.
 	//
@@ -499,6 +511,7 @@ func New() *Air {
 			"image/svg+xml",
 		},
 		GzipCompressionLevel:       gzip.DefaultCompression,
+		GzipFlushThreshold:         8 << 10,
 		RendererTemplateRoot:       "templates",
 		RendererTemplateExts:       []string{".html"},
 		RendererTemplateLeftDelim:  "{{",

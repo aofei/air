@@ -790,10 +790,10 @@ func (r *Response) Defer(f func()) {
 type responseWriter struct {
 	sync.Mutex
 
-	r    *Response
-	w    http.ResponseWriter
-	gw   *gzip.Writer
-	gwcl int64
+	r   *Response
+	w   http.ResponseWriter
+	gw  *gzip.Writer
+	gwn int
 }
 
 // Header implements the `http.ResponseWriter`.
@@ -901,10 +901,10 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 		return 0, err
 	}
 
-	if rw.gw != nil {
-		rw.gwcl += int64(n)
-		if rw.gwcl > 2<<10 {
-			rw.gwcl = 0
+	if rw.gw != nil && rw.r.Air.GzipFlushThreshold > 0 {
+		rw.gwn += n
+		if rw.gwn >= rw.r.Air.GzipFlushThreshold {
+			rw.gwn = 0
 			rw.gw.Flush()
 		}
 	}
