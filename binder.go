@@ -8,6 +8,7 @@ import (
 	"mime"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/golang/protobuf/proto"
@@ -69,8 +70,8 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	return err
 }
 
-// bindParams binds the params into the v.
-func (b *binder) bindParams(v interface{}, params []*RequestParam) error {
+// bindParams binds the ps into the v.
+func (b *binder) bindParams(v interface{}, ps []*RequestParam) error {
 	t := reflect.TypeOf(v).Elem()
 	if t.Kind() != reflect.Struct {
 		return errors.New("air: binding element must be a struct")
@@ -83,23 +84,30 @@ func (b *binder) bindParams(v interface{}, params []*RequestParam) error {
 			continue
 		}
 
-		vfk := vf.Kind()
-		if vfk == reflect.Struct {
-			err := b.bindParams(vf.Addr().Interface(), params)
-			if err != nil {
-				return err
+		tf := t.Field(i)
+		pn := tf.Tag.Get("param")
+		if pn == "" {
+			if vf.Kind() == reflect.Struct {
+				err := b.bindParams(vf.Addr().Interface(), ps)
+				if err != nil {
+					return err
+				}
+
+				continue
 			}
 
-			continue
+			pn = tf.Name
 		}
 
-		tf := t.Field(i)
+		lpn := strings.ToLower(pn)
 
 		var pv *RequestParamValue
-		for _, p := range params {
-			if p.Name == tf.Name {
+		for _, p := range ps {
+			if p.Name == pn {
 				pv = p.Value()
 				break
+			} else if p.Name == lpn && pv == nil {
+				pv = p.Value()
 			}
 		}
 
