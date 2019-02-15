@@ -3,7 +3,7 @@ module github.com/aofei/air
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/OneOfOne/xxhash v1.2.4 // indirect
-	github.com/VictoriaMetrics/fastcache v1.4.3
+	github.com/VictoriaMetrics/fastcache v1.4.4
 	github.com/allegro/bigcache v1.2.0 // indirect
 	github.com/aofei/mimesniffer v1.1.0
 	github.com/cespare/xxhash v1.1.0

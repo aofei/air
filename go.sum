@@ -4,8 +4,8 @@ github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/OneOfOne/xxhash v1.2.4 h1:HZ+j9jn/+mcsaDSQRZuK00pXWdE25AQLtgm8kZct1Ew=
 github.com/OneOfOne/xxhash v1.2.4/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
-github.com/VictoriaMetrics/fastcache v1.4.3 h1:NXPv/Q5bIvlhF5oOm3YGdreXg+LA4hBCRZ9F8Z/uxAw=
-github.com/VictoriaMetrics/fastcache v1.4.3/go.mod h1:FZV1r1HyPy1UHCTJ4vuuYJ1oDYM5SRPwOj9wlxbhog4=
+github.com/VictoriaMetrics/fastcache v1.4.4 h1:KdSzgHo3rwX2im+ahOyJyxCwEvdlc+w8AIPSloThd20=
+github.com/VictoriaMetrics/fastcache v1.4.4/go.mod h1:FZV1r1HyPy1UHCTJ4vuuYJ1oDYM5SRPwOj9wlxbhog4=
 github.com/allegro/bigcache v1.1.1-0.20190116153254-84a0ff3f153c h1:JnxT952szw65TwPg7iz1iYVqEoikvX8mSkSgIhNr0Vo=
 github.com/allegro/bigcache v1.1.1-0.20190116153254-84a0ff3f153c/go.mod h1:Cb/ax3seSYIx7SuZdm2G2xzfwmv3TPSk2ucNfQESPXM=
 github.com/allegro/bigcache v1.2.0 h1:qDaE0QoF29wKBb3+pXFrJFy1ihe5OT9OiXhg1t85SxM=
