@@ -623,7 +623,7 @@ func (a *Air) TRACE(path string, h Handler, gases ...Gas) {
 //
 // The methods must either be nil (means all) or consists of one or more of the
 // "GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS" and
-// "TRACE". Invalid methods will be silently dropped.
+// "TRACE". Invalid methods will be silently ignored.
 func (a *Air) BATCH(methods []string, path string, h Handler, gases ...Gas) {
 	if methods == nil {
 		methods = []string{

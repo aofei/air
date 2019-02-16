@@ -2,6 +2,7 @@ package air
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -17,8 +18,8 @@ type i18n struct {
 	loadOnce  *sync.Once
 	loadError error
 	watcher   *fsnotify.Watcher
-	locales   map[string]map[string]string
 	matcher   language.Matcher
+	locales   map[string]map[string]string
 }
 
 // newI18n returns a new instance of the `i18n` with the a.
@@ -62,45 +63,46 @@ func (i *i18n) load() {
 	lr, i.loadError = filepath.Abs(i.a.I18nLocaleRoot)
 	if i.loadError != nil {
 		return
-	} else if i.loadError = i.watcher.Add(lr); i.loadError != nil {
+	}
+
+	var fis []os.FileInfo
+	if fis, i.loadError = ioutil.ReadDir(lr); i.loadError != nil {
 		return
 	}
 
-	var lfns []string
-	lfns, i.loadError = filepath.Glob(filepath.Join(lr, "*.toml"))
-	if i.loadError != nil {
-		return
-	}
-
-	ls := make(map[string]map[string]string, len(lfns))
-	ts := make([]language.Tag, 0, len(lfns))
-	for _, lfn := range lfns {
-		var b []byte
-		if b, i.loadError = ioutil.ReadFile(lfn); i.loadError != nil {
-			return
-		}
-
-		l := map[string]string{}
-		if i.loadError = toml.Unmarshal(b, &l); i.loadError != nil {
-			return
+	ts := make([]language.Tag, 0, len(fis))
+	ls := make(map[string]map[string]string, len(fis))
+	for _, fi := range fis {
+		if fi.IsDir() {
+			continue
 		}
 
 		var t language.Tag
-		if t, i.loadError = language.Parse(strings.Replace(
-			filepath.Base(lfn),
-			".toml",
-			"",
-			1,
+		if ext := filepath.Ext(fi.Name()); strings.ToLower(
+			ext,
+		) != ".toml" {
+			continue
+		} else if t, i.loadError = language.Parse(strings.TrimSuffix(
+			fi.Name(),
+			ext,
 		)); i.loadError != nil {
 			return
 		}
 
-		ls[t.String()] = l
+		n := filepath.Join(lr, fi.Name())
+		l := map[string]string{}
+		if _, i.loadError = toml.DecodeFile(n, &l); i.loadError != nil {
+			return
+		} else if i.loadError = i.watcher.Add(n); i.loadError != nil {
+			return
+		}
+
 		ts = append(ts, t)
+		ls[t.String()] = l
 	}
 
-	i.locales = ls
 	i.matcher = language.NewMatcher(ts)
+	i.locales = ls
 }
 
 // localize localizes the r.
