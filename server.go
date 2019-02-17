@@ -244,6 +244,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	r.Body = &requestBody{
 		r:  req,
 		hr: r,
+		rc: r.Body,
 	}
 
 	// Reset the request.

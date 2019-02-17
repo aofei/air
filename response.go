@@ -880,6 +880,9 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 		rw.WriteHeader(rw.r.Status)
 	}
 
+	rw.Lock()
+	defer rw.Unlock()
+
 	if rw.r.Status >= http.StatusBadRequest {
 		if rw.r.servingContent {
 			rw.r.serveContentError = errors.New(string(b))
@@ -897,25 +900,23 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	}
 
 	n, err := w.Write(b)
-	if err != nil {
-		return 0, err
-	}
+	if n > 0 {
+		if rw.r.ContentLength > 0 {
+			rw.r.ContentLength += int64(n)
+		} else {
+			rw.r.ContentLength = int64(n)
+		}
 
-	if rw.gw != nil && rw.r.Air.GzipFlushThreshold > 0 {
-		rw.gwn += n
-		if rw.gwn >= rw.r.Air.GzipFlushThreshold {
-			rw.gwn = 0
-			rw.gw.Flush()
+		if rw.gw != nil && rw.r.Air.GzipFlushThreshold > 0 {
+			rw.gwn += n
+			if rw.gwn >= rw.r.Air.GzipFlushThreshold {
+				rw.gwn = 0
+				rw.gw.Flush()
+			}
 		}
 	}
 
-	if rw.r.ContentLength > 0 {
-		rw.r.ContentLength += int64(n)
-	} else {
-		rw.r.ContentLength = int64(n)
-	}
-
-	return n, nil
+	return n, err
 }
 
 // Flush implements the `http.Flusher`.

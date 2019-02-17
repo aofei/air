@@ -675,28 +675,59 @@ func (rpv *RequestParamValue) File() (*multipart.FileHeader, error) {
 // requestBody used to tie the `Request#Body` and the `http.Request#Body`
 // together.
 type requestBody struct {
-	r  *Request
-	hr *http.Request
-	cl int64
+	sync.Mutex
+
+	r      *Request
+	hr     *http.Request
+	rc     io.ReadCloser
+	cl     int64
+	sawEOF bool
 }
 
 // Read implements the `io.Reader`.
-func (rb *requestBody) Read(b []byte) (int, error) {
-	n, err := rb.hr.Body.Read(b)
-	if err == nil {
-		rb.cl += int64(n)
-	} else if err == io.EOF {
+func (rb *requestBody) Read(b []byte) (n int, err error) {
+	rb.Lock()
+	defer rb.Unlock()
+
+	if rb.sawEOF {
+		err = io.EOF
+		return
+	}
+
+	if rb.r.ContentLength < 0 {
+		n, err = rb.rc.Read(b)
+	} else if rl := rb.r.ContentLength - rb.cl; rl > 0 {
+		if int64(len(b)) > rl {
+			b = b[:rl]
+		}
+
+		n, err = rb.rc.Read(b)
+	}
+
+	rb.cl += int64(n)
+	if err == nil && rb.r.ContentLength >= 0 &&
+		rb.r.ContentLength-rb.cl <= 0 {
+		if err = rb.rc.Close(); err != nil {
+			return
+		}
+
+		err = io.EOF
+	}
+
+	if err == io.EOF {
+		rb.sawEOF = true
+
 		tns := strings.Split(rb.r.Header.Get("Trailer"), ", ")
 		for _, tn := range tns {
 			rb.r.Header[tn] = rb.hr.Trailer[tn]
 		}
 
-		if rb.r.ContentLength != rb.cl {
+		if rb.r.ContentLength < 0 {
 			rb.r.ContentLength = rb.cl
 		}
 	}
 
-	return n, err
+	return
 }
 
 // Close implements the `io.Closer`.
