@@ -330,9 +330,9 @@ func TestBindYAML(t *testing.T) {
 		a,
 		http.MethodPost,
 		"/foobar",
-		strings.NewReader("foo=\"bar\"\nbar=\"foo\""),
+		strings.NewReader("foo: \"bar\"\nbar: \"foo\""),
 	)
-	req.Header.Set("Content-Type", "application/toml; charset=utf-8")
+	req.Header.Set("Content-Type", "application/yaml; charset=utf-8")
 
 	f := foobar{}
 	assert.NoError(t, b.bind(&f, req))
