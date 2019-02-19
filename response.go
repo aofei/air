@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"crypto/tls"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -795,10 +796,11 @@ func (r *Response) Defer(f func()) {
 type responseWriter struct {
 	sync.Mutex
 
-	r   *Response
-	w   http.ResponseWriter
-	gw  *gzip.Writer
-	gwn int
+	r     *Response
+	w     http.ResponseWriter
+	gw    *gzip.Writer
+	gwn   int
+	b64wc io.WriteCloser
 }
 
 // Header implements the `http.ResponseWriter`.
@@ -815,7 +817,6 @@ func (rw *responseWriter) WriteHeader(status int) {
 		return
 	}
 
-	h := rw.w.Header()
 	if status == http.StatusOK {
 		if rw.r.servingContent || rw.r.reverseProxying {
 			status = rw.r.Status
@@ -823,8 +824,8 @@ func (rw *responseWriter) WriteHeader(status int) {
 	} else if status >= http.StatusBadRequest {
 		if rw.r.servingContent {
 			rw.r.Status = status
-			h.Del("Content-Type")
-			h.Del("X-Content-Type-Options")
+			rw.r.Header.Del("Content-Type")
+			rw.r.Header.Del("X-Content-Type-Options")
 			return
 		}
 
@@ -834,16 +835,16 @@ func (rw *responseWriter) WriteHeader(status int) {
 		}
 	}
 
-	mt, _, _ := mime.ParseMediaType(h.Get("Content-Type"))
-	cl, _ := strconv.ParseInt(h.Get("Content-Length"), 10, 64)
+	mt, _, _ := mime.ParseMediaType(rw.r.Header.Get("Content-Type"))
+	cl, _ := strconv.ParseInt(rw.r.Header.Get("Content-Length"), 10, 64)
 	if mt != "" && rw.r.Air.GzipEnabled &&
 		cl >= rw.r.Air.GzipMinContentLength &&
 		stringSliceContainsCIly(rw.r.Air.GzipMIMETypes, mt) {
 		if !httpguts.HeaderValuesContainsToken(
-			h["Vary"],
+			rw.r.Header["Vary"],
 			"Accept-Encoding",
 		) {
-			h.Add("Vary", "Accept-Encoding")
+			rw.r.Header.Add("Vary", "Accept-Encoding")
 		}
 
 		if !rw.r.Gzipped && httpguts.HeaderValuesContainsToken(
@@ -864,13 +865,77 @@ func (rw *responseWriter) WriteHeader(status int) {
 
 	if rw.r.Gzipped {
 		if !httpguts.HeaderValuesContainsToken(
-			h["Content-Encoding"],
+			rw.r.Header["Content-Encoding"],
 			"gzip",
 		) {
-			h.Add("Content-Encoding", "gzip")
+			rw.r.Header.Add("Content-Encoding", "gzip")
 		}
 
-		h.Del("Content-Length")
+		rw.r.Header.Del("Content-Length")
+	}
+
+	if reqct := rw.r.req.Header.Get("Content-Type"); rw.r.reverseProxying &&
+		strings.HasPrefix(reqct, "application/grpc-web") {
+		reqmt := "application/grpc-web-text"
+		if strings.HasSuffix(reqct, reqmt) {
+			w := io.Writer(rw.w)
+			if rw.gw != nil {
+				w = rw.gw
+			}
+
+			rw.b64wc = base64.NewEncoder(base64.StdEncoding, w)
+		} else {
+			reqmt = "application/grpc-web"
+		}
+
+		rw.r.Header.Set("Content-Type", strings.Replace(
+			rw.r.Header.Get("Content-Type"),
+			"application/grpc",
+			reqmt,
+			1,
+		))
+
+		tns := strings.Split(rw.r.Header.Get("Trailer"), ", ")
+		rw.r.Header.Del("Trailer")
+
+		hns := make([]string, 0, len(rw.r.Header))
+		for n := range rw.r.Header {
+			hns = append(hns, n)
+		}
+
+		rw.r.Header.Set(
+			"Access-Control-Expose-Headers",
+			strings.Join(hns, ", "),
+		)
+
+		rw.r.Defer(func() {
+			ts := make(http.Header, len(tns))
+			for _, tn := range tns {
+				ltn := strings.ToLower(tn)
+				ts[ltn] = append(ts[ltn], rw.r.Header[tn]...)
+				rw.r.Header.Del(tn)
+			}
+
+			for n, vs := range rw.r.Header {
+				if strings.HasPrefix(n, http.TrailerPrefix) {
+					ltn := strings.ToLower(
+						n[len(http.TrailerPrefix):],
+					)
+					ts[ltn] = append(ts[ltn], vs...)
+					rw.r.Header.Del(n)
+				}
+			}
+
+			tb := bytes.Buffer{}
+			ts.Write(&tb)
+
+			th := []byte{1 << 7, 0, 0, 0, 0}
+			binary.BigEndian.PutUint32(th[1:5], uint32(tb.Len()))
+
+			rw.Write(th)
+			rw.Write(tb.Bytes())
+			rw.Flush()
+		})
 	}
 
 	rw.w.WriteHeader(status)
@@ -900,7 +965,9 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	}
 
 	w := io.Writer(rw.w)
-	if rw.gw != nil {
+	if rw.b64wc != nil {
+		w = rw.b64wc
+	} else if rw.gw != nil {
 		w = rw.gw
 	}
 
@@ -912,7 +979,7 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 			rw.r.ContentLength = int64(n)
 		}
 
-		if rw.gw != nil && rw.r.Air.GzipFlushThreshold > 0 {
+		if w == rw.gw && rw.r.Air.GzipFlushThreshold > 0 {
 			rw.gwn += n
 			if rw.gwn >= rw.r.Air.GzipFlushThreshold {
 				rw.gwn = 0
@@ -926,6 +993,17 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 
 // Flush implements the `http.Flusher`.
 func (rw *responseWriter) Flush() {
+	if rw.b64wc != nil {
+		rw.b64wc.Close()
+
+		w := io.Writer(rw.w)
+		if rw.gw != nil {
+			w = rw.gw
+		}
+
+		rw.b64wc = base64.NewEncoder(base64.StdEncoding, w)
+	}
+
 	if rw.gw != nil {
 		rw.gw.Flush()
 	}
@@ -953,6 +1031,7 @@ func newReverseProxyTransport() *http.Transport {
 			KeepAlive: 30 * time.Second,
 			DualStack: true,
 		}).DialContext,
+		DisableCompression:    true,
 		MaxIdleConnsPerHost:   200,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
@@ -1001,6 +1080,24 @@ func (gt *grpcTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		req.URL.Scheme = "https"
 	} else {
 		req.URL.Scheme = "http"
+	}
+
+	ct := req.Header.Get("Content-Type")
+	if strings.HasPrefix(ct, "application/grpc-web") {
+		mt := "application/grpc-web-text"
+		if strings.HasSuffix(ct, mt) {
+			req.Body = ioutil.NopCloser(base64.NewDecoder(
+				base64.StdEncoding,
+				req.Body,
+			))
+		} else {
+			mt = "application/grpc-web"
+		}
+
+		req.Header.Set(
+			"Content-Type",
+			strings.Replace(ct, mt, "application/grpc", 1),
+		)
 	}
 
 	return gt.Transport.RoundTrip(req)

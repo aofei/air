@@ -87,7 +87,7 @@ A: Far from enough. But it's already working.
 	* Supported protocols:
 		* HTTP(S)
 		* WebSocket
-		* gRPC
+		* gRPC (including gRPC-Web)
 * Binder
 	* Binds HTTP request body into the provided struct
 	* Supported MIME types:

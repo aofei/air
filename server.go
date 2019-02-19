@@ -275,6 +275,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	res.ohrw = rw
 	res.servingContent = false
 	res.serveContentError = nil
+	res.reverseProxying = false
+	res.reverseProxyError = nil
 	res.deferredFuncs = res.deferredFuncs[:0]
 
 	// Chain the gases stack.
