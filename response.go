@@ -406,11 +406,16 @@ func (r *Response) WriteHTML(h string) error {
 func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	buf := bytes.Buffer{}
 	for _, t := range templates {
-		if m != nil {
+		if buf.Len() > 0 {
+			if m == nil {
+				m = make(map[string]interface{}, 1)
+			}
+
 			m["InheritedHTML"] = template.HTML(buf.String())
 		}
 
 		buf.Reset()
+
 		err := r.Air.renderer.render(&buf, t, m, r.req.LocalizedString)
 		if err != nil {
 			return err
