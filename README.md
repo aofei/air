@@ -50,7 +50,7 @@ quo, you will be fine.
 **Q: What about the fantastic
 [Gorilla web toolkit](https://github.com/gorilla)?**
 
-A: Just call the `air.WrapHTTPMiddleware()`.
+A: Just call the `air.WrapHTTPHandler` and the `air.WrapHTTPMiddleware`.
 
 **Q: Is Air good enough?**
 
@@ -125,7 +125,7 @@ A: Far from enough. But it's already working.
 	* Hot update support
 * Coffer
 	* Accesses binary asset files by using the runtime memory
-	* Significantly improves the performance of the `air.Response#WriteFile()`
+	* Significantly improves the performance of the `air.Response.WriteFile`
 	* Asset file minimization support
 	* Default asset file extensions:
 		* `.html`
@@ -144,7 +144,7 @@ A: Far from enough. But it's already working.
 	* Hot update support
 * I18n
 	* Adapt to the request's favorite conventions
-	* Implanted into the `air.Response#Render()`
+	* Implanted into the `air.Response.Render`
 	* Hot update support
 * Error
 	* Centralized handling
@@ -205,7 +205,7 @@ the `air.Request` and the `air.Response` which it uses to perform a specific
 action, for example, logging every request or recovering from panics.
 
 If you have got some good HTTP middleware, you can simply wrap them into gases
-by calling the `air.WrapHTTPMiddleware()`.
+by calling the `air.WrapHTTPMiddleware`.
 
 If you are looking for some useful gases, simply visit
 [here](https://github.com/air-gases).

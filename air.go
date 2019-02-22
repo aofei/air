@@ -25,9 +25,9 @@ import (
 // Air is the top-level struct of this framework.
 //
 // It is highly recommended not to modify the value of any field of the `Air`
-// after calling the `Air#Serve()`, which will cause unpredictable problems.
+// after calling the `Air.Serve`, which will cause unpredictable problems.
 //
-// The new instances of the `Air` should only be created by calling the `New()`.
+// The new instances of the `Air` should only be created by calling the `New`.
 // If you only need one instance of the `Air`, then it is recommended to use the
 // `Default`, which will help you simplify the scope management.
 type Air struct {
@@ -204,12 +204,11 @@ type Air struct {
 	// WebSocketSubprotocols is the list of supported WebSocket subprotocols
 	// of the server of the current web application.
 	//
-	// If the length of the list is not zero, then the
-	// `Response#WebSocket()` negotiates a subprotocol by selecting the
-	// first match in the list with a protocol requested by the client. If
-	// there is no match, then no protocol is negotiated (the
-	// Sec-Websocket-Protocol header is not included in the handshake
-	// response).
+	// If the length of the list is not zero, then the `Response.WebSocket`
+	// negotiates a subprotocol by selecting the first match in the list
+	// with a protocol requested by the client. If there is no match, then
+	// no protocol is negotiated (the Sec-Websocket-Protocol header is not
+	// included in the handshake response).
 	//
 	// Default value: nil
 	WebSocketSubprotocols []string `mapstructure:"websocket_subprotocols"`
@@ -271,9 +270,9 @@ type Air struct {
 	// AutoPushEnabled indicates whether the HTTP/2 server push automatic
 	// mechanism feature of the current web application is enabled.
 	//
-	// The `AutoPushEnabled` gives the `Response#WriteHTML()` the ability to
+	// The `AutoPushEnabled` gives the `Response.WriteHTML` the ability to
 	// automatically analyze the response content and use the
-	// `Response#Push()` to push the appropriate resources to the client.
+	// `Response.Push` to push the appropriate resources to the client.
 	//
 	// The `AutoPushEnabled` only works when the protocol version of the
 	// request is HTTP/2.
@@ -284,7 +283,7 @@ type Air struct {
 	// MinifierEnabled indicates whether the minifier feature of the current
 	// web application is enabled.
 	//
-	// The `MinifierEnabled` gives the `Response#Write()` the ability to
+	// The `MinifierEnabled` gives the `Response.Write` the ability to
 	// minify the matching response content on the fly based on the
 	// Content-Type header.
 	//
@@ -383,8 +382,8 @@ type Air struct {
 	// CofferEnabled indicates whether the coffer feature of the current web
 	// application is enabled.
 	//
-	// The `CofferEnabled` gives the `Response#WriteFile()` the ability to
-	// use the runtime memory to reduce the disk I/O pressure.
+	// The `CofferEnabled` gives the `Response.WriteFile` the ability to use
+	// the runtime memory to reduce the disk I/O pressure.
 	//
 	// Default value: false
 	CofferEnabled bool `mapstructure:"coffer_enabled"`
@@ -416,8 +415,8 @@ type Air struct {
 	// I18nEnabled indicates whether the i18n feature of the current web
 	// application is enabled.
 	//
-	// The `I18nEnabled` gives the `Request#LocalizedString()` and the
-	// `Response#Render()` the ability to adapt to the request's favorite
+	// The `I18nEnabled` gives the `Request.LocalizedString` and the
+	// `Response.Render` the ability to adapt to the request's favorite
 	// conventions based on the Accept-Language header.
 	//
 	// Default value: false
@@ -478,7 +477,7 @@ var Default = New()
 
 // New returns a new instance of the `Air` with default field values.
 //
-// The `New()` is the only function that creates new instances of the `Air` and
+// The `New` is the only function that creates new instances of the `Air` and
 // keeps everything working.
 func New() *Air {
 	a := &Air{
@@ -775,6 +774,15 @@ func (a *Air) Shutdown(timeout time.Duration) error {
 
 // Handler defines a function to serve requests.
 type Handler func(*Request, *Response) error
+
+// WrapHTTPHandler provides a convenient way to wrap an `http.Handler` into a
+// `Handler`.
+func WrapHTTPHandler(hh http.Handler) Handler {
+	return func(req *Request, res *Response) error {
+		hh.ServeHTTP(res.HTTPResponseWriter(), req.HTTPRequest())
+		return nil
+	}
+}
 
 // DefaultNotFoundHandler is the default `Handler` that returns not found error.
 func DefaultNotFoundHandler(req *Request, res *Response) error {

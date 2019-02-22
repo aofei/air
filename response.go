@@ -111,7 +111,7 @@ type Response struct {
 // HTTPResponseWriter returns the underlying `http.ResponseWriter` of the r.
 //
 // ATTENTION: You should never call this method unless you know what you are
-// doing. And, be sure to call the `SetHTTPResponseWriter()` of the r when you
+// doing. And, be sure to call the `SetHTTPResponseWriter` of the r when you
 // have modified it.
 func (r *Response) HTTPResponseWriter() http.ResponseWriter {
 	return r.hrw
@@ -138,9 +138,9 @@ func (r *Response) SetCookie(c *http.Cookie) {
 
 // Write writes the content to the client.
 //
-// The main benefit of the `Write()` over the `io.Copy()` with the `Body` of the
-// r is that it handles range requests properly, sets the Content-Type header,
-// and handles the If-Match header, the If-Unmodified-Since header, the
+// The main benefit of the `Write` over the `io.Copy` with the `Body` of the r
+// is that it handles range requests properly, sets the Content-Type header, and
+// handles the If-Match header, the If-Unmodified-Since header, the
 // If-None-Match header, the If-Modified-Since header and the If-Range header of
 // the requests.
 func (r *Response) Write(content io.ReadSeeker) error {

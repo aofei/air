@@ -9,7 +9,7 @@ import (
 // WebSocket is a WebSocket peer.
 //
 // It is highly recommended not to modify the handlers of the `WebSocket` after
-// calling the `WebSocket#Listen()`, which will cause unpredictable problems.
+// calling the `WebSocket.Listen`, which will cause unpredictable problems.
 type WebSocket struct {
 	// TextHandler is the handler that handles the incoming text messages of
 	// the current WebSocket.

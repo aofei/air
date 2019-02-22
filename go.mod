@@ -9,6 +9,7 @@ require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/golang/protobuf v1.2.0
+	github.com/golang/snappy v0.0.1 // indirect
 	github.com/gorilla/websocket v1.4.0
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2

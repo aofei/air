@@ -113,7 +113,7 @@ type Request struct {
 // HTTPRequest returns the underlying `http.Request` of the r.
 //
 // ATTENTION: You should never call this method unless you know what you are
-// doing. And, be sure to call the `SetHTTPRequest()` of the r when you have
+// doing. And, be sure to call the `SetHTTPRequest` of the r when you have
 // modified it.
 func (r *Request) HTTPRequest() *http.Request {
 	r.hr.Method = r.Method
@@ -672,7 +672,7 @@ func (rpv *RequestParamValue) File() (*multipart.FileHeader, error) {
 	return rpv.f, nil
 }
 
-// requestBody used to tie the `Request#Body` and the `http.Request#Body`
+// requestBody used to tie the `Request.Body` and the `http.Request.Body`
 // together.
 type requestBody struct {
 	sync.Mutex
