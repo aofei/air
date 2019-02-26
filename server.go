@@ -140,6 +140,7 @@ func (s *server) serve() error {
 		s.server.TLSConfig.GetCertificate = func(
 			chi *tls.ClientHelloInfo,
 		) (*tls.Certificate, error) {
+			chi.ServerName = strings.ToLower(chi.ServerName)
 			if !s.allowedHost(chi.ServerName) {
 				return nil, chi.Conn.Close()
 			} else if net.ParseIP(chi.ServerName) != nil {
@@ -148,8 +149,6 @@ func (s *server) serve() error {
 					chi.ServerName,
 				)
 			}
-
-			chi.ServerName = strings.ToLower(chi.ServerName)
 
 			return acm.GetCertificate(chi)
 		}
