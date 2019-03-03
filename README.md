@@ -126,7 +126,7 @@ A: Far from enough. But it's already working.
 * Coffer
 	* Accesses binary asset files by using the runtime memory
 	* Significantly improves the performance of the `air.Response.WriteFile`
-	* Asset file minimization support
+	* Asset file minimization and gzip support
 	* Default asset file extensions:
 		* `.html`
 		* `.css`

@@ -29,7 +29,7 @@ type Request struct {
 	//
 	// For HTTP/2, it is from the ":method" pseudo-header.
 	//
-	// Example: "GET"
+	// E.g.: "GET"
 	Method string
 
 	// Scheme is the scheme of the current request, it is "http" or "https".
@@ -40,7 +40,7 @@ type Request struct {
 	//
 	// For HTTP/2, it is from the ":scheme" pseudo-header.
 	//
-	// Example: "http"
+	// E.g.: "http"
 	Scheme string
 
 	// Authority is the authority of the current request. It may be of the
@@ -52,7 +52,7 @@ type Request struct {
 	//
 	// For HTTP/2, it is from the ":authority" pseudo-header.
 	//
-	// Example: "localhost:8080"
+	// E.g.: "localhost:8080"
 	Authority string
 
 	// Path is the path of the current request. Note that it contains the
@@ -64,7 +64,7 @@ type Request struct {
 	// For HTTP/2, it represents the ":path" pseudo-header. See RFC 7540,
 	// section 8.1.2.3.
 	//
-	// Example: "/foo/bar?foo=bar"
+	// E.g.: "/foo/bar?foo=bar"
 	Path string
 
 	// Header is the header map of the current request.
@@ -81,7 +81,7 @@ type Request struct {
 	// this rule implicitly, so please use the header name in the HTTP/1.x
 	// way). See RFC 7540, section 8.1.2.
 	//
-	// Example: {"Foo": ["bar"]}
+	// E.g.: {"Foo": ["bar"]}
 	Header http.Header
 
 	// Body is the message body of the current request.

@@ -1,3 +1,45 @@
+/*
+Package air implements an ideally refined web framework for Go.
+
+Router
+
+A router is basically the most important component of a web framework. In this
+framework, registering a route usually requires at least two params:
+
+	air.Default.GET(
+		"/users/:UserID/posts/:PostID/assets/*",
+		func(req *air.Request, res *air.Response) error {
+			userID, err := req.Param("UserID").Value().Int64()
+			if err != nil {
+				return err
+			}
+
+			postID, err := req.Param("PostID").Value().Int64()
+			if err != nil {
+				return err
+			}
+
+			assetPath := req.Param("*").Value().String()
+
+			return res.WriteJSON(map[string]interface{}{
+				"user_id":    userID,
+				"post_id":    postID,
+				"asset_path": assetPath,
+			})
+		},
+	)
+
+The first param is a route path that contains 6 components. Among them, "users",
+"posts" and "assets" are static components, ":UserID" and ":PostID" are param
+components, "*" is an any param component. It should be noted that all route
+params (param component(s) and any param component) will be parsed into the
+`Request` and can be accessed via the `Request.Param` and the `Request.Params`.
+The name of a `RequestParam` parsed from a param component always discards its
+leading ":", such as ":UserID" will become "UserID". The name of a
+`RequestParam` parsed from an any param component is "*".
+
+The second param is a `Handler` that serves the requests that match this route.
+*/
 package air
 
 import (
@@ -176,9 +218,8 @@ type Air struct {
 	// the current web application.
 	//
 	// It is recommended to set a persistent root since all CAs have a rate
-	// limit on issuing certificates. By the way, different web
-	// applications can share the same place (if they are all built using
-	// this framework).
+	// limit on issuing certificates. Different web applications can share
+	// the same place (if they are all built using this framework).
 	//
 	// Default value: "acme-certs"
 	ACMECertRoot string `mapstructure:"acme_cert_root"`
@@ -216,7 +257,7 @@ type Air struct {
 	// Pregases is the `Gas` chain stack of the current web application
 	// that performs before routing.
 	//
-	// By the way, the stack is always FILO.
+	// The stack is always FILO.
 	//
 	// Default value: nil
 	Pregases []Gas `mapstructure:"-"`
@@ -224,7 +265,7 @@ type Air struct {
 	// Gases is the `Gas` chain stack of the current web application that
 	// performs after routing.
 	//
-	// By the way, the stack is always FILO.
+	// The stack is always FILO.
 	//
 	// Default value: nil
 	Gases []Gas `mapstructure:"-"`
@@ -292,6 +333,14 @@ type Air struct {
 
 	// MinifierMIMETypes is the list of MIME types of the minifier feature
 	// of the current web application that will trigger the minimization.
+	//
+	// Supported MIME types:
+	//   * text/html
+	//   * text/css
+	//   * application/javascript
+	//   * application/json
+	//   * application/xml
+	//   * image/svg+xml
 	//
 	// Unsupported MIME types will be silently ignored.
 	//
@@ -565,54 +614,99 @@ func New() *Air {
 
 // GET registers a new GET route for the path with the matching h in the router
 // of the a with the optional route-level gases.
+//
+// The path may consist of static component(s), param component(s) and any param
+// component.
+//
+// The gases is always FILO.
 func (a *Air) GET(path string, h Handler, gases ...Gas) {
 	a.router.register(http.MethodGet, path, h, gases...)
 }
 
 // HEAD registers a new HEAD route for the path with the matching h in the
 // router of the a with the optional route-level gases.
+//
+// The path may consist of static component(s), param component(s) and any param
+// component.
+//
+// The way, the gases is always FILO.
 func (a *Air) HEAD(path string, h Handler, gases ...Gas) {
 	a.router.register(http.MethodHead, path, h, gases...)
 }
 
 // POST registers a new POST route for the path with the matching h in the
 // router of the a with the optional route-level gases.
+//
+// The path may consist of static component(s), param component(s) and any param
+// component.
+//
+// The gases is always FILO.
 func (a *Air) POST(path string, h Handler, gases ...Gas) {
 	a.router.register(http.MethodPost, path, h, gases...)
 }
 
 // PUT registers a new PUT route for the path with the matching h in the router
 // of the a with the optional route-level gases.
+//
+// The path may consist of static component(s), param component(s) and any param
+// component.
+//
+// The gases is always FILO.
 func (a *Air) PUT(path string, h Handler, gases ...Gas) {
 	a.router.register(http.MethodPut, path, h, gases...)
 }
 
 // PATCH registers a new PATCH route for the path with the matching h in the
 // router of the a with the optional route-level gases.
+//
+// The path may consist of static component(s), param component(s) and any param
+// component.
+//
+// The gases is always FILO.
 func (a *Air) PATCH(path string, h Handler, gases ...Gas) {
 	a.router.register(http.MethodPatch, path, h, gases...)
 }
 
 // DELETE registers a new DELETE route for the path with the matching h in the
 // router of the a with the optional route-level gases.
+//
+// The path may consist of static component(s), param component(s) and any param
+// component.
+//
+// The gases is always FILO.
 func (a *Air) DELETE(path string, h Handler, gases ...Gas) {
 	a.router.register(http.MethodDelete, path, h, gases...)
 }
 
 // CONNECT registers a new CONNECT route for the path with the matching h in the
 // router of the a with the optional route-level gases.
+//
+// The path may consist of static component(s), param component(s) and any param
+// component.
+//
+// The gases is always FILO.
 func (a *Air) CONNECT(path string, h Handler, gases ...Gas) {
 	a.router.register(http.MethodConnect, path, h, gases...)
 }
 
 // OPTIONS registers a new OPTIONS route for the path with the matching h in the
 // router of the a with the optional route-level gases.
+//
+// The path may consist of static component(s), param component(s) and any param
+// component.
+//
+// The gases is always FILO.
 func (a *Air) OPTIONS(path string, h Handler, gases ...Gas) {
 	a.router.register(http.MethodOptions, path, h, gases...)
 }
 
 // TRACE registers a new TRACE route for the path with the matching h in the
 // router of the a with the optional route-level gases.
+//
+// The path may consist of static component(s), param component(s) and any param
+// component.
+//
+// The gases is always FILO.
 func (a *Air) TRACE(path string, h Handler, gases ...Gas) {
 	a.router.register(http.MethodTrace, path, h, gases...)
 }
@@ -623,6 +717,11 @@ func (a *Air) TRACE(path string, h Handler, gases ...Gas) {
 // The methods must either be nil (means all) or consists of one or more of the
 // "GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS" and
 // "TRACE". Invalid methods will be silently ignored.
+//
+// The path may consist of static component(s), param component(s) and any param
+// component.
+//
+// The gases is always FILO.
 func (a *Air) BATCH(methods []string, path string, h Handler, gases ...Gas) {
 	if methods == nil {
 		methods = []string{
@@ -665,6 +764,11 @@ func (a *Air) BATCH(methods []string, path string, h Handler, gases ...Gas) {
 // FILE registers a new GET route and a new HEAD route with the path in the
 // router of the a to serve a static file with the filename and the optional
 // route-level gases.
+//
+// The path may consist of static component(s), param component(s) and any param
+// component.
+//
+// The gases is always FILO.
 func (a *Air) FILE(path, filename string, gases ...Gas) {
 	h := func(req *Request, res *Response) error {
 		err := res.WriteFile(filename)
@@ -681,6 +785,11 @@ func (a *Air) FILE(path, filename string, gases ...Gas) {
 // FILES registers a new GET route and a new HEAD route with the path prefix in
 // the router of the a to serve the static files from the root with the optional
 // route-level gases.
+//
+// The path prefix may consits of static component(s) and param component(s).
+// But it must not contain an any param component.
+//
+// The gases is always FILO.
 func (a *Air) FILES(prefix, root string, gases ...Gas) {
 	if strings.HasSuffix(prefix, "/") {
 		prefix += "*"
@@ -715,6 +824,11 @@ func (a *Air) FILES(prefix, root string, gases ...Gas) {
 
 // Group returns a new instance of the `Group` with the path prefix and the
 // optional group-level gases that inherited from the a.
+//
+// The path prefix may consits of static component(s) and param component(s).
+// But it must not contain an any param component.
+//
+// The gases is always FILO.
 func (a *Air) Group(prefix string, gases ...Gas) *Group {
 	return &Group{
 		Air:    a,

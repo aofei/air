@@ -57,7 +57,7 @@ type Response struct {
 	//
 	// For HTTP/2, it will be the ":status" pseudo-header.
 	//
-	// Example: 200
+	// E.g.: 200
 	Status int
 
 	// Header is the header map of the current response.
@@ -74,7 +74,7 @@ type Response struct {
 	// this rule implicitly, so please use the header name in the HTTP/1.x
 	// way). See RFC 7540, section 8.1.2.
 	//
-	// Example: {"Foo": ["bar"]}
+	// E.g.: {"Foo": ["bar"]}
 	Header http.Header
 
 	// Body is the message body of the current response. It can be used to

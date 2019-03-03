@@ -11,12 +11,17 @@ type Group struct {
 	//
 	// All paths of routes registered by the current group will share the
 	// same prefix.
+	//
+	// The path prefix may consits of static component(s) and param
+	// component(s). But it must not contain an any param component.
 	Prefix string
 
 	// Gases is the group-level gases of the current group.
 	//
 	// All gases of routes registered by the current group will share the
 	// same group-level gases at the bottom of the stack.
+	//
+	// The gases is always FILO.
 	Gases []Gas
 }
 
