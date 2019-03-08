@@ -167,7 +167,9 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		n, err := io.ReadFull(content, b)
 		if err != nil && err != io.EOF {
 			return err
-		} else if _, err := content.Seek(0, io.SeekStart); err != nil {
+		}
+
+		if _, err := content.Seek(0, io.SeekStart); err != nil {
 			return err
 		}
 
@@ -214,7 +216,9 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		cl, err := content.Seek(0, io.SeekEnd)
 		if err != nil {
 			return err
-		} else if _, err := content.Seek(0, io.SeekStart); err != nil {
+		}
+
+		if _, err := content.Seek(0, io.SeekStart); err != nil {
 			return err
 		}
 
@@ -512,6 +516,10 @@ func (r *Response) WriteFile(filename string) error {
 		if et == nil {
 			h := xxhash.New()
 			if _, err := io.Copy(h, c); err != nil {
+				return err
+			}
+
+			if _, err := c.Seek(0, io.SeekStart); err != nil {
 				return err
 			}
 
