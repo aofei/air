@@ -44,6 +44,7 @@ package air
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -879,11 +880,21 @@ func (a *Air) Close() error {
 }
 
 // Shutdown gracefully shuts down the server of the a without interrupting any
-// active connections until timeout. It waits indefinitely for connections to
-// return to idle and then shut down when the timeout is less than or equal to
-// zero.
-func (a *Air) Shutdown(timeout time.Duration) error {
-	return a.server.shutdown(timeout)
+// active connections. It works by first closing all open listeners, then
+// closing all idle connections, and then waiting indefinitely for connections
+// to return to idle and then shut down. If the ctx expires before the shutdown
+// is complete, it returns the context's error, otherwise it returns any error
+// returned from closing the underlying listener(s) of the server of the a.
+//
+// When the `Shutdown` is called, the `Serve` immediately return the
+// `http.ErrServerClosed`. Make sure the program does not exit and waits instead
+// for the `Shutdown` to return.
+//
+// The `Shutdown` does not attempt to close nor wait for hijacked connections
+// such as WebSockets. The caller should separately notify such long-lived
+// connections of shutdown and wait for them to close, if desired.
+func (a *Air) Shutdown(ctx context.Context) error {
+	return a.server.shutdown(ctx)
 }
 
 // Handler defines a function to serve requests.

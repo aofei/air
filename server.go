@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
@@ -205,17 +204,9 @@ func (s *server) close() error {
 }
 
 // shutdown gracefully shuts down the s without interrupting any active
-// connections until timeout. It waits indefinitely for connections to return to
-// idle and then shut down when the timeout is less than or equal to zero.
-func (s *server) shutdown(timeout time.Duration) error {
-	if timeout <= 0 {
-		return s.server.Shutdown(context.Background())
-	}
-
-	c, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	return s.server.Shutdown(c)
+// connections.
+func (s *server) shutdown(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
 }
 
 // allowedHost reports whether the host is allowed.
