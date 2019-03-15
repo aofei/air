@@ -30,7 +30,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/aofei/mimesniffer"
-	"github.com/cespare/xxhash"
+	"github.com/cespare/xxhash/v2"
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack"

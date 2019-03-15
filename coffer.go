@@ -14,7 +14,7 @@ import (
 
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/aofei/mimesniffer"
-	"github.com/cespare/xxhash"
+	"github.com/cespare/xxhash/v2"
 	"github.com/fsnotify/fsnotify"
 )
 
