@@ -928,6 +928,10 @@ func DefaultErrorHandler(err error, req *Request, res *Response) {
 		return
 	}
 
+	if !res.Written && res.Status < http.StatusBadRequest {
+		res.Status = http.StatusInternalServerError
+	}
+
 	m := err.Error()
 	if !req.Air.DebugMode && res.Status == http.StatusInternalServerError {
 		m = http.StatusText(res.Status)

@@ -272,23 +272,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Chain the gases stack.
 
 	h := func(req *Request, res *Response) error {
-		rh := s.a.router.route(req)
-		h := func(req *Request, res *Response) error {
-			err := rh(req, res)
-			if res.Written {
-				return err
-			} else if err == nil {
-				res.Status = http.StatusNoContent
-				r.Header.Del("Content-Type")
-				r.Header.Del("Content-Length")
-				return res.Write(nil)
-			} else if res.Status < http.StatusBadRequest {
-				res.Status = http.StatusInternalServerError
-			}
-
-			return err
-		}
-
+		h := s.a.router.route(req)
 		for i := len(s.a.Gases) - 1; i >= 0; i-- {
 			h = s.a.Gases[i](h)
 		}
