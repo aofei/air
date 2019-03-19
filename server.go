@@ -80,20 +80,16 @@ func (s *server) serve() error {
 				host = h
 			}
 
-			if net.ParseIP(host) == nil {
-				if port != "443" && port != "https" {
-					host += ":" + port
-				}
-
-				http.Redirect(
-					rw,
-					r,
-					"https://"+host+r.RequestURI,
-					http.StatusMovedPermanently,
-				)
-			} else {
-				h2ch.ServeHTTP(rw, r)
+			if port != "443" && port != "https" {
+				host += ":" + port
 			}
+
+			http.Redirect(
+				rw,
+				r,
+				"https://"+host+r.RequestURI,
+				http.StatusMovedPermanently,
+			)
 		})
 	}
 
@@ -142,11 +138,6 @@ func (s *server) serve() error {
 			chi.ServerName = strings.ToLower(chi.ServerName)
 			if !s.allowedHost(chi.ServerName) {
 				return nil, chi.Conn.Close()
-			} else if net.ParseIP(chi.ServerName) != nil {
-				return nil, fmt.Errorf(
-					"air: unchallengeable host: %s",
-					chi.ServerName,
-				)
 			}
 
 			return acm.GetCertificate(chi)
