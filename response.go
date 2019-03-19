@@ -949,6 +949,7 @@ func (rw *responseWriter) WriteHeader(status int) {
 	rw.w.WriteHeader(status)
 
 	rw.r.Status = status
+	rw.r.ContentLength = 0
 	rw.r.Written = true
 }
 
@@ -981,12 +982,7 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 
 	n, err := w.Write(b)
 	if n > 0 {
-		if rw.r.ContentLength > 0 {
-			rw.r.ContentLength += int64(n)
-		} else {
-			rw.r.ContentLength = int64(n)
-		}
-
+		rw.r.ContentLength += int64(n)
 		if w == rw.gw && rw.r.Air.GzipFlushThreshold > 0 {
 			rw.gwn += n
 			if rw.gwn >= rw.r.Air.GzipFlushThreshold {
