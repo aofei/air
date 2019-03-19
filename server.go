@@ -289,6 +289,10 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// Execute the chain.
 
 	if err := h(req, res); err != nil {
+		if !res.Written && res.Status < http.StatusBadRequest {
+			res.Status = http.StatusInternalServerError
+		}
+
 		s.a.ErrorHandler(err, req, res)
 	}
 

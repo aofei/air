@@ -36,6 +36,8 @@ func (b *binder) bind(v interface{}, r *Request) error {
 			return b.bindParams(v, r.Params())
 		}
 
+		r.res.Status = http.StatusBadRequest
+
 		return errors.New("air: request body cannot be empty")
 	}
 
