@@ -159,7 +159,7 @@ $ go get github.com/aofei/air
 
 done.
 
-> The only requirement is the [Go](https://golang.org), at least v1.9.
+> The only requirement is the [Go](https://golang.org), at least v1.11.
 
 ## Hello, 世界
 

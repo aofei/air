@@ -13,7 +13,6 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime"
 	"net"
 	"net/http"
@@ -26,7 +25,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/BurntSushi/toml"
 	"github.com/aofei/mimesniffer"
@@ -104,7 +102,6 @@ type Response struct {
 	servingContent    bool
 	serveContentError error
 	reverseProxying   bool
-	reverseProxyError error
 	deferredFuncs     []func()
 }
 
@@ -681,7 +678,14 @@ func (r *Response) ProxyPass(target string) error {
 	if u.Scheme != "ws" && u.Scheme != "wss" {
 		rp := httputil.NewSingleHostReverseProxy(u)
 		rp.Transport = r.Air.reverseProxyTransport
-		rp.ErrorLog = log.New(newReverseProxyErrorLogWriter(r), "", 0)
+		switch u.Scheme {
+		case "http", "https":
+			rp.FlushInterval = 100 * time.Millisecond
+		case "grpc", "grpcs":
+			rp.FlushInterval = time.Millisecond
+		}
+
+		rp.ErrorLog = r.Air.errorLogger
 		rp.BufferPool = r.Air.reverseProxyBufferPool
 		rp.ModifyResponse = func(res *http.Response) error {
 			if httpguts.HeaderValuesContainsToken(
@@ -698,19 +702,21 @@ func (r *Response) ProxyPass(target string) error {
 			return nil
 		}
 
-		switch u.Scheme {
-		case "http", "https":
-			rp.FlushInterval = 100 * time.Millisecond
-		case "grpc", "grpcs":
-			rp.FlushInterval = time.Millisecond
+		var reverseProxyError error
+		rp.ErrorHandler = func(
+			_ http.ResponseWriter,
+			_ *http.Request,
+			err error,
+		) {
+			r.Status = http.StatusBadGateway
+			reverseProxyError = err
 		}
 
 		r.reverseProxying = true
-		r.reverseProxyError = nil
 		rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
 		r.reverseProxying = false
 
-		return r.reverseProxyError
+		return reverseProxyError
 	}
 
 	oreqh := make(http.Header, len(r.req.Header)+1)
@@ -825,20 +831,13 @@ func (rw *responseWriter) WriteHeader(status int) {
 		return
 	}
 
-	if status == http.StatusOK {
-		if rw.r.servingContent || rw.r.reverseProxying {
+	if rw.r.servingContent {
+		if status == http.StatusOK {
 			status = rw.r.Status
-		}
-	} else if status >= http.StatusBadRequest {
-		if rw.r.servingContent {
+		} else if status >= http.StatusBadRequest {
 			rw.r.Status = status
 			rw.r.Header.Del("Content-Type")
 			rw.r.Header.Del("X-Content-Type-Options")
-			return
-		}
-
-		if rw.r.reverseProxying && rw.r.reverseProxyError != nil {
-			rw.r.Status = status
 			return
 		}
 	}
@@ -962,15 +961,9 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	rw.Lock()
 	defer rw.Unlock()
 
-	if rw.r.Status >= http.StatusBadRequest {
-		if rw.r.servingContent {
-			rw.r.serveContentError = errors.New(string(b))
-			return 0, nil
-		}
-
-		if rw.r.reverseProxying && rw.r.reverseProxyError != nil {
-			return 0, nil
-		}
+	if rw.r.servingContent && rw.r.Status >= http.StatusBadRequest {
+		rw.r.serveContentError = errors.New(string(b))
+		return 0, nil
 	}
 
 	w := io.Writer(rw.w)
@@ -1186,24 +1179,4 @@ func replicateWebSocketConn(dst, src *websocket.Conn, errChan chan error) {
 			break
 		}
 	}
-}
-
-// reverseProxyErrorLogWriter is a reverse proxy error log writer.
-type reverseProxyErrorLogWriter struct {
-	r *Response
-}
-
-// newReverseProxyErrorLogWriter returns a new instance of the
-// `reverseProxyErrorLogWriter` with the r.
-func newReverseProxyErrorLogWriter(r *Response) *reverseProxyErrorLogWriter {
-	return &reverseProxyErrorLogWriter{
-		r: r,
-	}
-}
-
-// Write implements the `io.Writer`.
-func (rpelw *reverseProxyErrorLogWriter) Write(b []byte) (int, error) {
-	s := strings.TrimSuffix(*(*string)(unsafe.Pointer(&b)), "\n")
-	rpelw.r.reverseProxyError = errors.New(s)
-	return len(s), nil
 }
