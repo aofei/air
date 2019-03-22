@@ -437,9 +437,9 @@ func (r *Response) WriteFile(filename string) error {
 	} else if fi.IsDir() {
 		p, q := splitPathQuery(r.req.Path)
 		if !strings.HasSuffix(p, "/") {
-			p = path.Base(p) + "/"
+			p = fmt.Sprint(path.Base(p), "/")
 			if q != "" {
-				p += "?" + q
+				p = fmt.Sprint(p, "?", q)
 			}
 
 			r.Status = http.StatusMovedPermanently
@@ -523,10 +523,10 @@ func (r *Response) WriteFile(filename string) error {
 			et = h.Sum(nil)
 		}
 
-		r.Header.Set(
-			"ETag",
-			"\""+base64.StdEncoding.EncodeToString(et)+"\"",
-		)
+		r.Header.Set("ETag", fmt.Sprintf(
+			"%q",
+			base64.StdEncoding.EncodeToString(et),
+		))
 	}
 
 	if r.Header.Get("Last-Modified") == "" {
@@ -879,6 +879,11 @@ func (rw *responseWriter) WriteHeader(status int) {
 		}
 
 		rw.r.Header.Del("Content-Length")
+
+		if et := rw.r.Header.Get("ETag"); et != "" &&
+			!strings.HasPrefix(et, "W/") {
+			rw.r.Header.Set("ETag", fmt.Sprint("W/", et))
+		}
 	}
 
 	if reqct := rw.r.req.Header.Get("Content-Type"); rw.r.reverseProxying &&

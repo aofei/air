@@ -809,7 +809,7 @@ func (a *Air) FILES(prefix, root string, gases ...Gas) {
 		}
 
 		path := p.Value().String()
-		path = filepath.FromSlash("/" + path)
+		path = filepath.FromSlash(fmt.Sprint("/", path))
 		path = filepath.Clean(path)
 
 		err := res.WriteFile(filepath.Join(root, path))
@@ -985,7 +985,7 @@ func newErrorLogWriter(a *Air) *errorLogWriter {
 func (elw *errorLogWriter) Write(b []byte) (int, error) {
 	s := *(*string)(unsafe.Pointer(&b))
 	if !strings.HasPrefix(s, "air: ") {
-		s = "air: " + s
+		s = fmt.Sprint("air: ", s)
 	}
 
 	if elw.a.ErrorLogger != nil {

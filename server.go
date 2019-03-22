@@ -81,7 +81,7 @@ func (s *server) serve() error {
 			}
 
 			if port != "443" && port != "https" {
-				host += ":" + port
+				host = fmt.Sprint(host, ":", port)
 			}
 
 			http.Redirect(
