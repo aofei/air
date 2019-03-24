@@ -252,9 +252,9 @@ func (r *Request) parseRouteParams() {
 
 RouteParamLoop:
 	for i, pn := range r.routeParamNames {
-		pv, err := url.PathUnescape(r.routeParamValues[i])
-		if err != nil {
-			continue
+		pv, _ := url.PathUnescape(r.routeParamValues[i])
+		if pv == "" {
+			pv = r.routeParamValues[i]
 		}
 
 		for _, p := range r.params {
@@ -439,6 +439,8 @@ type RequestParam struct {
 
 // Value returns the first value of the rp. It returns nil if the rp is nil or
 // there are no values.
+//
+// It should be noted that route params always have values.
 func (rp *RequestParam) Value() *RequestParamValue {
 	if rp == nil || len(rp.Values) == 0 {
 		return nil

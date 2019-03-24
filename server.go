@@ -75,9 +75,9 @@ func (s *server) serve() error {
 			rw http.ResponseWriter,
 			r *http.Request,
 		) {
-			host := r.Host
-			if h, _, _ := net.SplitHostPort(host); h != "" {
-				host = h
+			host, _, _ := net.SplitHostPort(r.Host)
+			if host == "" {
+				host = r.Host
 			}
 
 			if port != "443" && port != "https" {
@@ -202,15 +202,8 @@ func (s *server) shutdown(ctx context.Context) error {
 
 // allowedHost reports whether the host is allowed.
 func (s *server) allowedHost(host string) bool {
-	if s.a.DebugMode || len(s.a.HostWhitelist) == 0 {
-		return true
-	}
-
-	if h, _, _ := net.SplitHostPort(host); h != "" {
-		host = h
-	}
-
-	return stringSliceContainsCIly(s.a.HostWhitelist, host)
+	return s.a.DebugMode || len(s.a.HostWhitelist) == 0 ||
+		stringSliceContainsCIly(s.a.HostWhitelist, host)
 }
 
 // ServeHTTP implements the `http.Handler`.

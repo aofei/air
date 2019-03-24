@@ -803,12 +803,7 @@ func (a *Air) FILES(prefix, root string, gases ...Gas) {
 	}
 
 	h := func(req *Request, res *Response) error {
-		p := req.Param("*")
-		if p == nil {
-			return a.NotFoundHandler(req, res)
-		}
-
-		path := p.Value().String()
+		path := req.Param("*").Value().String()
 		path = filepath.FromSlash(fmt.Sprint("/", path))
 		path = filepath.Clean(path)
 
