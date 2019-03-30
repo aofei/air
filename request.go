@@ -290,8 +290,8 @@ RouteParamLoop:
 
 // parseOtherParams parses the other params sent with the r into the `r.params`.
 func (r *Request) parseOtherParams() {
-	if r.hr.Form == nil || r.hr.MultipartForm == nil {
-		r.hr.ParseMultipartForm(32 << 20)
+	if r.hr.Form == nil {
+		r.hr.ParseForm()
 	}
 
 	r.growParams(len(r.hr.Form))
@@ -322,60 +322,68 @@ FormLoop:
 		})
 	}
 
-	if mf := r.hr.MultipartForm; mf != nil {
-		r.growParams(len(mf.Value) + len(mf.File))
+	if r.hr.MultipartForm == nil {
+		r.hr.ParseMultipartForm(32 << 20)
+	}
 
-	MultipartFormValueLoop:
-		for n, vs := range mf.Value {
-			if len(vs) == 0 {
-				continue
-			}
+	if r.hr.MultipartForm == nil {
+		return
+	}
 
-			pvs := make([]*RequestParamValue, len(vs))
-			for i, v := range vs {
-				pvs[i] = &RequestParamValue{
-					i: v,
-				}
-			}
+	r.growParams(len(r.hr.MultipartForm.Value))
 
-			for _, p := range r.params {
-				if p.Name == n {
-					p.Values = append(p.Values, pvs...)
-					continue MultipartFormValueLoop
-				}
-			}
-
-			r.params = append(r.params, &RequestParam{
-				Name:   n,
-				Values: pvs,
-			})
+MultipartFormValueLoop:
+	for n, vs := range r.hr.MultipartForm.Value {
+		if len(vs) == 0 {
+			continue
 		}
 
-	MultipartFormFileLoop:
-		for n, vs := range mf.File {
-			if len(vs) == 0 {
-				continue
+		pvs := make([]*RequestParamValue, len(vs))
+		for i, v := range vs {
+			pvs[i] = &RequestParamValue{
+				i: v,
 			}
-
-			pvs := make([]*RequestParamValue, len(vs))
-			for i, v := range vs {
-				pvs[i] = &RequestParamValue{
-					i: v,
-				}
-			}
-
-			for _, p := range r.params {
-				if p.Name == n {
-					p.Values = append(p.Values, pvs...)
-					continue MultipartFormFileLoop
-				}
-			}
-
-			r.params = append(r.params, &RequestParam{
-				Name:   n,
-				Values: pvs,
-			})
 		}
+
+		for _, p := range r.params {
+			if p.Name == n {
+				p.Values = append(p.Values, pvs...)
+				continue MultipartFormValueLoop
+			}
+		}
+
+		r.params = append(r.params, &RequestParam{
+			Name:   n,
+			Values: pvs,
+		})
+	}
+
+	r.growParams(len(r.hr.MultipartForm.File))
+
+MultipartFormFileLoop:
+	for n, vs := range r.hr.MultipartForm.File {
+		if len(vs) == 0 {
+			continue
+		}
+
+		pvs := make([]*RequestParamValue, len(vs))
+		for i, v := range vs {
+			pvs[i] = &RequestParamValue{
+				i: v,
+			}
+		}
+
+		for _, p := range r.params {
+			if p.Name == n {
+				p.Values = append(p.Values, pvs...)
+				continue MultipartFormFileLoop
+			}
+		}
+
+		r.params = append(r.params, &RequestParam{
+			Name:   n,
+			Values: pvs,
+		})
 	}
 }
 
