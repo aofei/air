@@ -79,7 +79,7 @@ func (ws *WebSocket) Listen() {
 				err = ws.TextHandler(string(b))
 			}
 		case websocket.BinaryMessage:
-			if ws.BinaryHandler != nil {
+			if ws.BinaryHandler == nil {
 				break
 			}
 

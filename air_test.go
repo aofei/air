@@ -449,7 +449,7 @@ func TestAirServe(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		assert.NoError(t, a.Close())
+		a.Close()
 	}()
 
 	assert.Equal(t, http.ErrServerClosed, a.Serve())
@@ -471,7 +471,7 @@ func TestAirServe(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		assert.NoError(t, a.Close())
+		a.Close()
 	}()
 
 	assert.Equal(t, http.ErrServerClosed, a.Serve())
@@ -489,7 +489,7 @@ func TestAirServe(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		assert.NoError(t, a.Close())
+		a.Close()
 	}()
 
 	assert.Equal(t, http.ErrServerClosed, a.Serve())
@@ -507,7 +507,7 @@ func TestAirServe(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		assert.NoError(t, a.Close())
+		a.Close()
 	}()
 
 	assert.Equal(t, http.ErrServerClosed, a.Serve())
@@ -525,7 +525,7 @@ func TestAirServe(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		assert.NoError(t, a.Close())
+		a.Close()
 	}()
 
 	assert.Equal(t, http.ErrServerClosed, a.Serve())
@@ -542,7 +542,7 @@ func TestAirServe(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		assert.NoError(t, a.Close())
+		a.Close()
 	}()
 
 	assert.Equal(
@@ -562,7 +562,7 @@ func TestAirServe(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		assert.NoError(t, a.Close())
+		a.Close()
 	}()
 
 	assert.Error(t, a.Serve())
@@ -574,7 +574,7 @@ func TestAirClose(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		assert.NoError(t, a.Close())
+		a.Close()
 	}()
 
 	assert.Equal(t, http.ErrServerClosed, a.Serve())
@@ -586,7 +586,7 @@ func TestAirShutdown(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond)
-		assert.NoError(t, a.Shutdown(context.Background()))
+		a.Shutdown(context.Background())
 	}()
 
 	assert.Equal(t, http.ErrServerClosed, a.Serve())
