@@ -46,7 +46,6 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"html/template"
@@ -494,8 +493,6 @@ type Air struct {
 	//
 	// The ".json" extension means the configuration file is JSON-based.
 	//
-	// The ".xml" extension means the configuration file is XML-based.
-	//
 	// The ".toml" extension means the configuration file is TOML-based.
 	//
 	// The ".yaml" and the ".yml" extensions means the configuration file is
@@ -845,8 +842,6 @@ func (a *Air) Serve() error {
 		switch e := strings.ToLower(filepath.Ext(a.ConfigFile)); e {
 		case ".json":
 			err = json.Unmarshal(b, &m)
-		case ".xml":
-			err = xml.Unmarshal(b, &m)
 		case ".toml":
 			err = toml.Unmarshal(b, &m)
 		case ".yaml", ".yml":
