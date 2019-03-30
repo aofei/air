@@ -162,7 +162,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		defer r.Air.contentTypeSnifferBufferPool.Put(b)
 
 		n, err := io.ReadFull(content, b)
-		if err != nil && err != io.EOF {
+		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 			return err
 		}
 
