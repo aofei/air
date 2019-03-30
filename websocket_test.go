@@ -64,6 +64,8 @@ func TestWebSocketListen(t *testing.T) {
 	go a.Serve()
 	defer a.Close()
 
+	time.Sleep(time.Millisecond)
+
 	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
@@ -133,6 +135,8 @@ func TestWebSocketWriteText(t *testing.T) {
 	go a.Serve()
 	defer a.Close()
 
+	time.Sleep(time.Millisecond)
+
 	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
@@ -160,6 +164,8 @@ func TestWebSocketWriteBinary(t *testing.T) {
 
 	go a.Serve()
 	defer a.Close()
+
+	time.Sleep(time.Millisecond)
 
 	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080", nil)
 	assert.NoError(t, err)
@@ -191,6 +197,8 @@ func TestWebSocketWriteConnectionClose(t *testing.T) {
 
 	go a.Serve()
 	defer a.Close()
+
+	time.Sleep(time.Millisecond)
 
 	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080", nil)
 	assert.NoError(t, err)
@@ -224,6 +232,8 @@ func TestWebSocketWritePing(t *testing.T) {
 	go a.Serve()
 	defer a.Close()
 
+	time.Sleep(time.Millisecond)
+
 	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
@@ -256,6 +266,8 @@ func TestWebSocketWritePong(t *testing.T) {
 	go a.Serve()
 	defer a.Close()
 
+	time.Sleep(time.Millisecond)
+
 	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
@@ -286,6 +298,8 @@ func TestWebSocketClose(t *testing.T) {
 
 	go a.Serve()
 	defer a.Close()
+
+	time.Sleep(time.Millisecond)
 
 	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080", nil)
 	assert.NoError(t, err)
