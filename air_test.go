@@ -109,7 +109,6 @@ func TestNew(t *testing.T) {
 	assert.Empty(t, a.ConfigFile)
 
 	assert.NotNil(t, a.errorLogger)
-	assert.IsType(t, &errorLogWriter{}, a.errorLogger.Writer())
 	assert.Empty(t, a.errorLogger.Prefix())
 	assert.Zero(t, a.errorLogger.Flags())
 
