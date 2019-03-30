@@ -1,8 +1,12 @@
 package air
 
 import (
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +15,11 @@ import (
 func TestGroup(t *testing.T) {
 	a := New()
 	g := a.Group("/foo")
+
+	assert.NotNil(t, g)
+	assert.Equal(t, a, g.Air)
+	assert.Equal(t, "/foo", g.Prefix)
+	assert.Nil(t, g.Gases)
 
 	g.GET("/bar", func(req *Request, res *Response) error {
 		return res.WriteString("Matched [GET /foo/bar]")
@@ -52,9 +61,35 @@ func TestGroup(t *testing.T) {
 		return res.WriteString("Matched [* /foo/bar2]")
 	})
 
-	g.FILE("/bar3", "/foo.bar")
-	g.FILES("/bar4", "/foobar")
-	g.Group("/bar5")
+	dir, err := ioutil.TempDir("", "air.TestGroup")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, dir)
+	defer os.RemoveAll(dir)
+
+	f, err := ioutil.TempFile(dir, "")
+	assert.NoError(t, err)
+	assert.NotNil(t, f)
+
+	_, err = f.Write([]byte("Foobar"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+
+	f2, err := ioutil.TempFile(dir, "")
+	assert.NoError(t, err)
+	assert.NotNil(t, f2)
+
+	_, err = f2.Write([]byte("Foobar2"))
+	assert.NoError(t, err)
+	assert.NoError(t, f2.Close())
+
+	g.FILE("/bar3", f.Name())
+	g.FILES("/bar4", dir)
+
+	g2 := g.Group("/bar5")
+	assert.NotNil(t, g2)
+	assert.Equal(t, a, g2.Air)
+	assert.Equal(t, "/foo/bar5", g2.Prefix)
+	assert.Nil(t, g2.Gases)
 
 	req := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
 	rec := httptest.NewRecorder()
@@ -186,5 +221,37 @@ func TestGroup(t *testing.T) {
 	rec = httptest.NewRecorder()
 	a.server.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusNotFound, rec.Code)
+	assert.Empty(t, rec.Body.String())
+
+	req = httptest.NewRequest(http.MethodGet, "/foo/bar3", nil)
+	rec = httptest.NewRecorder()
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "Foobar", rec.Body.String())
+
+	req = httptest.NewRequest(http.MethodHead, "/foo/bar3", nil)
+	rec = httptest.NewRecorder()
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Empty(t, rec.Body.String())
+
+	req = httptest.NewRequest(
+		http.MethodGet,
+		path.Join("/foo/bar4", filepath.Base(f2.Name())),
+		nil,
+	)
+	rec = httptest.NewRecorder()
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "Foobar2", rec.Body.String())
+
+	req = httptest.NewRequest(
+		http.MethodHead,
+		path.Join("/foo/bar4/", filepath.Base(f2.Name())),
+		nil,
+	)
+	rec = httptest.NewRecorder()
+	a.server.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Empty(t, rec.Body.String())
 }
