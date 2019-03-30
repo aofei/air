@@ -316,10 +316,12 @@ func (r *router) route(req *Request) Handler {
 			break
 		}
 
-		for i, sl = 1, len(s); i < sl && s[i] == '/'; i++ {
-		}
+		if s[0] == '/' { // Skip continuous "/"
+			for i, sl = 1, len(s); i < sl && s[i] == '/'; i++ {
+			}
 
-		s = s[i-1:]
+			s = s[i-1:]
+		}
 
 		pl = 0
 		ll = 0

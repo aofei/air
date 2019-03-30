@@ -137,12 +137,12 @@ func TestRouterRouteStatic(t *testing.T) {
 	assert.Equal(t, "Matched [GET /]", rec.Body.String())
 
 	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
-	assert.Error(t, r.route(req)(req, res), "Not Found")
+	assert.Error(t, r.route(req)(req, res))
 	assert.Equal(t, http.StatusNotFound, res.Status)
 	assert.Empty(t, rec.Body.String())
 
 	req, res, rec = fakeRRCycle(a, http.MethodHead, "/", nil)
-	assert.Error(t, r.route(req)(req, res), "Method Not Allowed")
+	assert.Error(t, r.route(req)(req, res))
 	assert.Equal(t, http.StatusMethodNotAllowed, res.Status)
 	assert.Empty(t, rec.Body.String())
 }
@@ -184,7 +184,7 @@ func TestRouterRouteParam(t *testing.T) {
 	assert.Equal(t, "Matched [GET /:foobar]", rec.Body.String())
 
 	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar/", nil)
-	assert.Error(t, r.route(req)(req, res), "Not Found")
+	assert.Error(t, r.route(req)(req, res))
 	assert.Equal(t, http.StatusNotFound, res.Status)
 	assert.Empty(t, rec.Body.String())
 
@@ -329,13 +329,29 @@ func TestRouterRouteAny(t *testing.T) {
 		},
 	)
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar/", nil)
 	assert.NoError(t, r.route(req)(req, res))
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Empty(t, req.Param("*").Value().String())
 	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foobar*]", rec.Body.String())
+	assert.Equal(t, "Matched [GET /foobar/*]", rec.Body.String())
+
+	r.register(
+		http.MethodGet,
+		"/foobar2/*",
+		func(_ *Request, res *Response) error {
+			return res.WriteString("Matched [GET /foobar2/*]")
+		},
+	)
+
+	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar2/", nil)
+	assert.NoError(t, r.route(req)(req, res))
+	assert.NotNil(t, req.Param("*"))
+	assert.NotNil(t, req.Param("*").Value())
+	assert.Empty(t, req.Param("*").Value().String())
+	assert.Equal(t, http.StatusOK, res.Status)
+	assert.Equal(t, "Matched [GET /foobar2/*]", rec.Body.String())
 }
 
 func TestRouterRouteMix(t *testing.T) {
