@@ -52,7 +52,6 @@ func (s *server) serve() error {
 	port = strings.ToLower(port)
 
 	s.server.Addr = host + ":" + port
-	s.server.Handler = s
 	s.server.ReadTimeout = s.a.ReadTimeout
 	s.server.ReadHeaderTimeout = s.a.ReadHeaderTimeout
 	s.server.WriteTimeout = s.a.WriteTimeout
@@ -70,7 +69,7 @@ func (s *server) serve() error {
 	})
 
 	var hh http.Handler
-	if s.a.HTTPSEnforced && port != "80" && port != "https" {
+	if s.a.HTTPSEnforced && port != "80" && port != "http" {
 		hh = http.HandlerFunc(func(
 			rw http.ResponseWriter,
 			r *http.Request,
@@ -104,20 +103,22 @@ func (s *server) serve() error {
 		}
 
 		s.server.TLSConfig = &tls.Config{
-			GetCertificate: func(
-				chi *tls.ClientHelloInfo,
-			) (*tls.Certificate, error) {
-				if !s.allowedHost(chi.ServerName) {
-					return nil, chi.Conn.Close()
-				}
-
-				return &c, nil
-			},
+			Certificates: []tls.Certificate{c},
 		}
 	} else if !s.a.DebugMode && s.a.ACMEEnabled {
 		acm := &autocert.Manager{
 			Prompt: autocert.AcceptTOS,
 			Cache:  autocert.DirCache(s.a.ACMECertRoot),
+			HostPolicy: func(_ context.Context, host string) error {
+				if !s.allowedHost(host) {
+					return fmt.Errorf(
+						"air: disallowed host: %s",
+						host,
+					)
+				}
+
+				return nil
+			},
 			Client: &acme.Client{
 				DirectoryURL: s.a.ACMEDirectoryURL,
 			},
@@ -132,48 +133,15 @@ func (s *server) serve() error {
 
 		s.server.Addr = host + ":443"
 		s.server.TLSConfig = acm.TLSConfig()
-		s.server.TLSConfig.GetCertificate = func(
-			chi *tls.ClientHelloInfo,
-		) (*tls.Certificate, error) {
-			chi.ServerName = strings.ToLower(chi.ServerName)
-			if !s.allowedHost(chi.ServerName) {
-				return nil, chi.Conn.Close()
-			}
-
-			return acm.GetCertificate(chi)
-		}
 	} else {
-		s.server.Handler = http.HandlerFunc(func(
-			rw http.ResponseWriter,
-			r *http.Request,
-		) {
-			if s.allowedHost(r.Host) {
-				h2ch.ServeHTTP(rw, r)
-			} else if h, ok := rw.(http.Hijacker); ok {
-				if c, _, _ := h.Hijack(); c != nil {
-					c.Close()
-				}
-			}
-		})
-
+		s.server.Handler = s.allowedHostCheckHandler(h2ch)
 		return s.server.ListenAndServe()
 	}
 
 	if hh != nil {
 		hs := &http.Server{
-			Addr: host + ":80",
-			Handler: http.HandlerFunc(func(
-				rw http.ResponseWriter,
-				r *http.Request,
-			) {
-				if s.allowedHost(r.Host) {
-					hh.ServeHTTP(rw, r)
-				} else if h, ok := rw.(http.Hijacker); ok {
-					if c, _, _ := h.Hijack(); c != nil {
-						c.Close()
-					}
-				}
-			}),
+			Addr:              host + ":80",
+			Handler:           s.allowedHostCheckHandler(hh),
 			ReadTimeout:       s.a.ReadTimeout,
 			ReadHeaderTimeout: s.a.ReadHeaderTimeout,
 			WriteTimeout:      s.a.WriteTimeout,
@@ -185,6 +153,8 @@ func (s *server) serve() error {
 		go hs.ListenAndServe()
 		defer hs.Close()
 	}
+
+	s.server.Handler = s.allowedHostCheckHandler(nil)
 
 	return s.server.ListenAndServeTLS("", "")
 }
@@ -204,6 +174,27 @@ func (s *server) shutdown(ctx context.Context) error {
 func (s *server) allowedHost(host string) bool {
 	return s.a.DebugMode || len(s.a.HostWhitelist) == 0 ||
 		stringSliceContainsCIly(s.a.HostWhitelist, host)
+}
+
+// allowedHostCheckHandler returns an `http.Handler` that checks if the
+// request's host is allowed. If the request's host is allowed, then the h will
+// be called.
+//
+// If the h is nil, the s is used.
+func (s *server) allowedHostCheckHandler(h http.Handler) http.Handler {
+	if h == nil {
+		h = s
+	}
+
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if s.allowedHost(r.Host) {
+			h.ServeHTTP(rw, r)
+		} else if h, ok := rw.(http.Hijacker); ok {
+			if c, _, _ := h.Hijack(); c != nil {
+				c.Close()
+			}
+		}
+	})
 }
 
 // ServeHTTP implements the `http.Handler`.
