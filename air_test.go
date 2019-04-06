@@ -448,7 +448,7 @@ func TestAirServe(t *testing.T) {
 	a.Address = "localhost:8080"
 
 	go func() {
-		time.Sleep(time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		a.Close()
 	}()
 
@@ -470,7 +470,7 @@ func TestAirServe(t *testing.T) {
 	))
 
 	go func() {
-		time.Sleep(time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		a.Close()
 	}()
 
@@ -488,7 +488,7 @@ func TestAirServe(t *testing.T) {
 	))
 
 	go func() {
-		time.Sleep(time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		a.Close()
 	}()
 
@@ -506,7 +506,7 @@ func TestAirServe(t *testing.T) {
 	))
 
 	go func() {
-		time.Sleep(time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		a.Close()
 	}()
 
@@ -524,7 +524,7 @@ func TestAirServe(t *testing.T) {
 	))
 
 	go func() {
-		time.Sleep(time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		a.Close()
 	}()
 
@@ -541,7 +541,7 @@ func TestAirServe(t *testing.T) {
 	assert.NoError(t, ioutil.WriteFile(a.ConfigFile, nil, os.ModePerm))
 
 	go func() {
-		time.Sleep(time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		a.Close()
 	}()
 
@@ -561,7 +561,7 @@ func TestAirServe(t *testing.T) {
 	))
 
 	go func() {
-		time.Sleep(time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		a.Close()
 	}()
 
@@ -573,7 +573,7 @@ func TestAirClose(t *testing.T) {
 	a.Address = "localhost:8080"
 
 	go func() {
-		time.Sleep(time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		a.Close()
 	}()
 
@@ -585,7 +585,7 @@ func TestAirShutdown(t *testing.T) {
 	a.Address = "localhost:8080"
 
 	go func() {
-		time.Sleep(time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		a.Shutdown(context.Background())
 	}()
 
