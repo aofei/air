@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -57,25 +57,25 @@ func TestI18nLocalize(t *testing.T) {
 	i := a.i18n
 
 	assert.NoError(t, ioutil.WriteFile(
-		path.Join(a.I18nLocaleRoot, "en-US.toml"),
+		filepath.Join(a.I18nLocaleRoot, "en-US.toml"),
 		[]byte(`"Foobar" = "Foobar"`),
 		os.ModePerm,
 	))
 
 	assert.NoError(t, ioutil.WriteFile(
-		path.Join(a.I18nLocaleRoot, "en-GB.toml"),
+		filepath.Join(a.I18nLocaleRoot, "en-GB.toml"),
 		nil,
 		os.ModePerm,
 	))
 
 	assert.NoError(t, ioutil.WriteFile(
-		path.Join(a.I18nLocaleRoot, "de-DE.ext"),
+		filepath.Join(a.I18nLocaleRoot, "de-DE.ext"),
 		[]byte(`"Foobar" = "Fubar"`),
 		os.ModePerm,
 	))
 
 	assert.NoError(t, ioutil.WriteFile(
-		path.Join(a.I18nLocaleRoot, "zh-CN.toml"),
+		filepath.Join(a.I18nLocaleRoot, "zh-CN.toml"),
 		[]byte(`"Foobar" = "测试"`),
 		os.ModePerm,
 	))

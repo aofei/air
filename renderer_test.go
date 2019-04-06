@@ -3,7 +3,7 @@ package air
 import (
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -52,13 +52,13 @@ func TestRendererRender(t *testing.T) {
 	r := a.renderer
 
 	assert.NoError(t, ioutil.WriteFile(
-		path.Join(a.RendererTemplateRoot, "test.html"),
+		filepath.Join(a.RendererTemplateRoot, "test.html"),
 		[]byte(`<a href="/">Go Home</a>`),
 		os.ModePerm,
 	))
 
 	assert.NoError(t, ioutil.WriteFile(
-		path.Join(a.RendererTemplateRoot, "test.ext"),
+		filepath.Join(a.RendererTemplateRoot, "test.ext"),
 		[]byte(`<a href="/">Go Home Again</a>`),
 		os.ModePerm,
 	))

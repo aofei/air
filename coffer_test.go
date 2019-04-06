@@ -3,7 +3,7 @@ package air
 import (
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/VictoriaMetrics/fastcache"
@@ -48,31 +48,31 @@ func TestCofferAsset(t *testing.T) {
 
 	c := a.coffer
 
-	a1, err := c.asset(path.Join(a.CofferAssetRoot, "test.html"))
+	a1, err := c.asset(filepath.Join(a.CofferAssetRoot, "test.html"))
 	assert.Error(t, err)
 	assert.Nil(t, a1)
 
 	assert.NoError(t, ioutil.WriteFile(
-		path.Join(a.CofferAssetRoot, "test.html"),
+		filepath.Join(a.CofferAssetRoot, "test.html"),
 		[]byte(`<a href="/">Go Home</a>`),
 		os.ModePerm,
 	))
 
-	a2, err := c.asset(path.Join(a.CofferAssetRoot, "test.html"))
+	a2, err := c.asset(filepath.Join(a.CofferAssetRoot, "test.html"))
 	assert.NoError(t, err)
 	assert.NotNil(t, a2)
 
-	a3, err := c.asset(path.Join(a.CofferAssetRoot, "test.html"))
+	a3, err := c.asset(filepath.Join(a.CofferAssetRoot, "test.html"))
 	assert.NoError(t, err)
 	assert.NotNil(t, a3)
 
 	assert.NoError(t, ioutil.WriteFile(
-		path.Join(a.CofferAssetRoot, "test.html"),
+		filepath.Join(a.CofferAssetRoot, "test.html"),
 		[]byte(`<a href="/">Go Home Again</a>`),
 		os.ModePerm,
 	))
 
-	a4, err := c.asset(path.Join(a.CofferAssetRoot, "test.html"))
+	a4, err := c.asset(filepath.Join(a.CofferAssetRoot, "test.html"))
 	assert.NoError(t, err)
 	assert.NotNil(t, a4)
 
@@ -81,12 +81,12 @@ func TestCofferAsset(t *testing.T) {
 	assert.Nil(t, a5)
 
 	assert.NoError(t, ioutil.WriteFile(
-		path.Join(a.CofferAssetRoot, "test.ext"),
+		filepath.Join(a.CofferAssetRoot, "test.ext"),
 		[]byte(`<a href="/">Go Home</a>`),
 		os.ModePerm,
 	))
 
-	a6, err := c.asset(path.Join(a.CofferAssetRoot, "test.ext"))
+	a6, err := c.asset(filepath.Join(a.CofferAssetRoot, "test.ext"))
 	assert.NoError(t, err)
 	assert.Nil(t, a6)
 }
@@ -107,12 +107,12 @@ func TestAssetContent(t *testing.T) {
 	c := a.coffer
 
 	assert.NoError(t, ioutil.WriteFile(
-		path.Join(a.CofferAssetRoot, "test.html"),
+		filepath.Join(a.CofferAssetRoot, "test.html"),
 		[]byte(`<a href="/">Go Home</a>`),
 		os.ModePerm,
 	))
 
-	a1, err := c.asset(path.Join(a.CofferAssetRoot, "test.html"))
+	a1, err := c.asset(filepath.Join(a.CofferAssetRoot, "test.html"))
 	assert.NoError(t, err)
 	assert.NotNil(t, a1)
 

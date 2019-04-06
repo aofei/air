@@ -447,12 +447,10 @@ func TestAirServe(t *testing.T) {
 	a := New()
 	a.Address = "localhost:8080"
 
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		a.Close()
-	}()
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, http.ErrServerClosed, a.Serve())
+	assert.NoError(t, a.Close())
 
 	dir, err := ioutil.TempDir("", "air.TestAirServe")
 	assert.NoError(t, err)
@@ -469,13 +467,12 @@ func TestAirServe(t *testing.T) {
 		os.ModePerm,
 	))
 
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		a.Close()
-	}()
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, http.ErrServerClosed, a.Serve())
 	assert.Equal(t, "foobar", a.AppName)
+
+	assert.NoError(t, a.Close())
 
 	a = New()
 	a.Address = "localhost:8080"
@@ -487,13 +484,12 @@ func TestAirServe(t *testing.T) {
 		os.ModePerm,
 	))
 
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		a.Close()
-	}()
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, http.ErrServerClosed, a.Serve())
 	assert.Equal(t, "foobar", a.AppName)
+
+	assert.NoError(t, a.Close())
 
 	a = New()
 	a.Address = "localhost:8080"
@@ -505,13 +501,12 @@ func TestAirServe(t *testing.T) {
 		os.ModePerm,
 	))
 
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		a.Close()
-	}()
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, http.ErrServerClosed, a.Serve())
 	assert.Equal(t, "foobar", a.AppName)
+
+	assert.NoError(t, a.Close())
 
 	a = New()
 	a.Address = "localhost:8080"
@@ -523,13 +518,12 @@ func TestAirServe(t *testing.T) {
 		os.ModePerm,
 	))
 
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		a.Close()
-	}()
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, http.ErrServerClosed, a.Serve())
 	assert.Equal(t, "foobar", a.AppName)
+
+	assert.NoError(t, a.Close())
 
 	a = New()
 	a.ConfigFile = "nowhere"
@@ -539,12 +533,6 @@ func TestAirServe(t *testing.T) {
 	a.ConfigFile = filepath.Join(dir, "config.ext")
 
 	assert.NoError(t, ioutil.WriteFile(a.ConfigFile, nil, os.ModePerm))
-
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		a.Close()
-	}()
-
 	assert.Equal(
 		t,
 		"air: unsupported configuration file extension: .ext",
@@ -559,12 +547,6 @@ func TestAirServe(t *testing.T) {
 		[]byte(`{"app_name":0}`),
 		os.ModePerm,
 	))
-
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		a.Close()
-	}()
-
 	assert.Error(t, a.Serve())
 }
 
@@ -572,24 +554,20 @@ func TestAirClose(t *testing.T) {
 	a := New()
 	a.Address = "localhost:8080"
 
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		a.Close()
-	}()
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, http.ErrServerClosed, a.Serve())
+	assert.NoError(t, a.Close())
 }
 
 func TestAirShutdown(t *testing.T) {
 	a := New()
 	a.Address = "localhost:8080"
 
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		a.Shutdown(context.Background())
-	}()
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, http.ErrServerClosed, a.Serve())
+	assert.NoError(t, a.Shutdown(context.Background()))
 }
 
 func TestWrapHTTPHandler(t *testing.T) {
