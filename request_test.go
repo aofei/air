@@ -40,7 +40,7 @@ func TestRequestHTTPRequest(t *testing.T) {
 	assert.Equal(t, req.ContentLength, hr.ContentLength)
 	assert.Equal(t, req.Context, hr.Context())
 
-	req.Path = "/?foo=bar"
+	req.Path = "/foobar?foo=bar"
 	req.Body = &bytes.Buffer{}
 	req.Context = context.WithValue(req.Context, "foo", "bar")
 
@@ -191,12 +191,6 @@ func TestRequestParams(t *testing.T) {
 
 	ps := req.Params()
 	assert.Len(t, ps, 3)
-	assert.Equal(t, "Foo", ps[0].Name)
-	assert.Equal(t, "foo", ps[1].Name)
-	assert.Equal(t, "bar", ps[2].Name)
-	assert.Equal(t, "bar", ps[0].Value().String())
-	assert.Equal(t, "bar", ps[1].Value().String())
-	assert.Equal(t, "foo", ps[2].Value().String())
 }
 
 func TestRequestParseRouteParams(t *testing.T) {
@@ -807,6 +801,35 @@ func TestRequestBodyRead(t *testing.T) {
 		strings.NewReader("foobar"),
 	)
 	hr = req.HTTPRequest()
+	hr.ContentLength = 3
+
+	rb = &requestBody{
+		r:  req,
+		hr: hr,
+		rc: &eofCloser{
+			Reader: hr.Body,
+		},
+	}
+	hr.Body = rb
+	req.SetHTTPRequest(hr)
+
+	n, err = rb.Read(nil)
+	assert.NoError(t, err)
+	assert.Zero(t, n)
+
+	b = make([]byte, 3)
+	n, err = rb.Read(b)
+	assert.Equal(t, io.EOF, err)
+	assert.Equal(t, 3, n)
+	assert.Equal(t, "foo", string(b))
+
+	req, _, _ = fakeRRCycle(
+		a,
+		http.MethodGet,
+		"/",
+		strings.NewReader("foobar"),
+	)
+	hr = req.HTTPRequest()
 	hr.Trailer = http.Header{
 		"Foo": []string{},
 	}
@@ -841,4 +864,12 @@ func TestRequestBodyClose(t *testing.T) {
 	req.SetHTTPRequest(hr)
 
 	assert.NoError(t, rb.Close())
+}
+
+type eofCloser struct {
+	io.Reader
+}
+
+func (ec *eofCloser) Close() error {
+	return io.EOF
 }
