@@ -43,13 +43,10 @@ func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 	m.loadOnce.Do(m.load)
 
 	mb, err := m.minifier.Bytes(mimeType, b)
-	if err != nil {
-		if err == minify.ErrNotExist {
-			return b, nil
-		}
-
-		return nil, err
+	if err == minify.ErrNotExist {
+		mb = b
+		err = nil
 	}
 
-	return mb, nil
+	return mb, err
 }
