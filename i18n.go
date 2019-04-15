@@ -70,15 +70,8 @@ func (i *i18n) load() {
 		return
 	}
 
-	ts := make([]language.Tag, 1, len(fis)+1)
-	ts[0], i.loadError = language.Parse(i.a.I18nLocaleBase)
-	if i.loadError != nil {
-		return
-	}
-
-	ls := make(map[string]map[string]string, len(ts))
-	ls[ts[0].String()] = map[string]string{}
-
+	ts := make([]language.Tag, 0, len(fis))
+	ls := make(map[string]map[string]string, len(fis))
 	for _, fi := range fis {
 		if fi.IsDir() {
 			continue
