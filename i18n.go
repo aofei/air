@@ -71,7 +71,7 @@ func (i *i18n) load() {
 	}
 
 	ts := make([]language.Tag, 0, len(fis))
-	ls := make(map[string]map[string]string, len(fis))
+	ls := make(map[string]map[string]string, len(ts))
 	for _, fi := range fis {
 		if fi.IsDir() {
 			continue
@@ -124,8 +124,10 @@ func (i *i18n) localize(r *Request) {
 	r.localizedString = func(key string) string {
 		if v, ok := l[key]; ok {
 			return v
-		} else if v, ok := i.locales[i.a.I18nLocaleBase][key]; ok {
-			return v
+		} else if l, ok := i.locales[i.a.I18nLocaleBase]; ok {
+			if v, ok := l[key]; ok {
+				return v
+			}
 		}
 
 		return key

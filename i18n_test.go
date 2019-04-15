@@ -109,20 +109,6 @@ func TestI18nLocalize(t *testing.T) {
 	assert.Equal(t, "测试", req.LocalizedString("Foobar"))
 
 	a = New()
-	a.I18nLocaleRoot = dir
-	a.I18nLocaleBase = "foobar"
-
-	i = a.i18n
-
-	req, _, _ = fakeRRCycle(a, http.MethodGet, "/", nil)
-
-	log.SetOutput(ioutil.Discard)
-	i.localize(req)
-	log.SetOutput(os.Stderr)
-
-	assert.Error(t, i.loadError)
-
-	a = New()
 	i = a.i18n
 
 	req, _, _ = fakeRRCycle(a, http.MethodGet, "/", nil)
