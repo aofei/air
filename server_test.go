@@ -24,6 +24,7 @@ func TestNewServer(t *testing.T) {
 	assert.NotNil(t, s)
 	assert.NotNil(t, s.a)
 	assert.NotNil(t, s.server)
+	assert.NotNil(t, s.allowedHosts)
 	assert.NotNil(t, s.requestPool)
 	assert.NotNil(t, s.responsePool)
 	assert.IsType(t, &Request{}, s.requestPool.Get())
@@ -38,6 +39,20 @@ func TestServerServe(t *testing.T) {
 
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)
+
+	assert.NoError(t, s.close())
+
+	a = New()
+	a.Address = "localhost:8080"
+	a.HostWhitelist = []string{"example.com"}
+
+	s = a.server
+
+	go s.serve()
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Len(t, s.allowedHosts, 1)
+	assert.True(t, s.allowedHosts["example.com"])
 
 	assert.NoError(t, s.close())
 
@@ -60,6 +75,7 @@ func TestServerServe(t *testing.T) {
 	s = a.server
 
 	stdout, err := ioutil.TempFile(dir, "")
+	assert.NoError(t, err)
 
 	stdoutBackup := os.Stdout
 	os.Stdout = stdout
@@ -298,6 +314,144 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	assert.NoError(t, s.close())
 }
 
+func TestServerAllowedHostCheckHandler(t *testing.T) {
+	a := New()
+	a.DebugMode = true
+	a.Address = "localhost:8080"
+
+	s := a.server
+
+	dir, err := ioutil.TempDir("", "air.TestServerAllowedHostCheckHandler")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, dir)
+	defer os.RemoveAll(dir)
+
+	stdout, err := ioutil.TempFile(dir, "")
+	assert.NoError(t, err)
+
+	stdoutBackup := os.Stdout
+	os.Stdout = stdout
+
+	go s.serve()
+	time.Sleep(100 * time.Millisecond)
+
+	os.Stdout = stdoutBackup
+
+	assert.NoError(t, stdout.Close())
+
+	h := s.allowedHostCheckHandler(nil)
+	h = s.allowedHostCheckHandler(http.HandlerFunc(func(
+		rw http.ResponseWriter,
+		r *http.Request,
+	) {
+		rw.Write([]byte("Foobar"))
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, "Foobar", rec.Body.String())
+
+	assert.NoError(t, s.close())
+
+	a = New()
+	a.Address = "localhost:8080"
+	a.HostWhitelist = nil
+
+	s = a.server
+
+	go s.serve()
+	time.Sleep(100 * time.Millisecond)
+
+	h = s.allowedHostCheckHandler(http.HandlerFunc(func(
+		rw http.ResponseWriter,
+		r *http.Request,
+	) {
+		rw.Write([]byte("Foobar"))
+	}))
+
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, "Foobar", rec.Body.String())
+
+	assert.NoError(t, s.close())
+
+	a = New()
+	a.Address = "localhost:8080"
+	a.HostWhitelist = []string{"example.com"}
+
+	s = a.server
+
+	go s.serve()
+	time.Sleep(100 * time.Millisecond)
+
+	h = s.allowedHostCheckHandler(http.HandlerFunc(func(
+		rw http.ResponseWriter,
+		r *http.Request,
+	) {
+		rw.Write([]byte("Foobar"))
+	}))
+
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, "Foobar", rec.Body.String())
+
+	assert.NoError(t, s.close())
+
+	a = New()
+	a.Address = "localhost:8080"
+	a.HostWhitelist = []string{"EXAMPLE.COM"}
+
+	s = a.server
+
+	go s.serve()
+	time.Sleep(100 * time.Millisecond)
+
+	h = s.allowedHostCheckHandler(http.HandlerFunc(func(
+		rw http.ResponseWriter,
+		r *http.Request,
+	) {
+		rw.Write([]byte("Foobar"))
+	}))
+
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, "Foobar", rec.Body.String())
+
+	assert.NoError(t, s.close())
+
+	a = New()
+	a.Address = "localhost:8080"
+	a.HostWhitelist = []string{"example.net"}
+
+	s = a.server
+
+	go s.serve()
+	time.Sleep(100 * time.Millisecond)
+
+	h = s.allowedHostCheckHandler(http.HandlerFunc(func(
+		rw http.ResponseWriter,
+		r *http.Request,
+	) {
+		rw.Write([]byte("Foobar"))
+	}))
+
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	assert.Empty(t, rec.Body.String())
+
+	assert.NoError(t, s.close())
+}
+
 func TestServerClose(t *testing.T) {
 	a := New()
 	a.Address = "localhost:8080"
@@ -320,58 +474,6 @@ func TestServerShutdown(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	assert.NoError(t, s.shutdown(context.Background()))
-}
-
-func TestServerAllowedHost(t *testing.T) {
-	a := New()
-	s := a.server
-
-	assert.True(t, s.allowedHost(""))
-	assert.True(t, s.allowedHost("example.com"))
-
-	a.DebugMode = true
-	a.HostWhitelist = nil
-	assert.True(t, s.allowedHost(""))
-	assert.True(t, s.allowedHost("example.com"))
-
-	a.DebugMode = true
-	a.HostWhitelist = []string{"example.net"}
-	assert.True(t, s.allowedHost(""))
-	assert.True(t, s.allowedHost("example.com"))
-
-	a.DebugMode = false
-	a.HostWhitelist = []string{"example.net"}
-	assert.False(t, s.allowedHost(""))
-	assert.False(t, s.allowedHost("example.com"))
-	assert.True(t, s.allowedHost("example.net"))
-	assert.True(t, s.allowedHost("EXAMPLE.NET"))
-}
-
-func TestServerAllowedHostCheckHandler(t *testing.T) {
-	a := New()
-	s := a.server
-
-	h := s.allowedHostCheckHandler(nil)
-	h = s.allowedHostCheckHandler(http.HandlerFunc(func(
-		rw http.ResponseWriter,
-		r *http.Request,
-	) {
-		rw.Write([]byte("Foobar"))
-	}))
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-
-	assert.Equal(t, "Foobar", rec.Body.String())
-
-	a.HostWhitelist = []string{"example.net"}
-
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-
-	assert.Empty(t, rec.Body.String())
 }
 
 func TestServerServeHTTP(t *testing.T) {
@@ -442,13 +544,13 @@ func TestServerServeHTTP(t *testing.T) {
 	a = New()
 	a.DebugMode = true
 
-	a.GET("/", func(req *Request, res *Response) error {
+	a.GET("/:Foo", func(req *Request, res *Response) error {
 		return errors.New("Handler error")
 	})
 
 	s = a.server
 
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req = httptest.NewRequest(http.MethodGet, "/bar", nil)
 	rec = httptest.NewRecorder()
 	s.ServeHTTP(rec, req)
 

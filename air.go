@@ -200,7 +200,7 @@ type Air struct {
 	// CA targeted by the `ACMEDirectoryURL`.
 	//
 	// The `ACMEEnabled` only works when the `DebugMode` is false and both
-	// of the `TLSCertFile` and the `TLSKeyFile` are empty.
+	// the `TLSCertFile` and the `TLSKeyFile` are empty.
 	//
 	// Default value: false
 	ACMEEnabled bool `mapstructure:"acme_enabled"`

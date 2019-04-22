@@ -13,12 +13,14 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"golang.org/x/net/idna"
 )
 
 // server is an HTTP server.
 type server struct {
 	a            *Air
 	server       *http.Server
+	allowedHosts map[string]bool
 	requestPool  *sync.Pool
 	responsePool *sync.Pool
 }
@@ -26,8 +28,9 @@ type server struct {
 // newServer returns a new instance of the `server` with the a.
 func newServer(a *Air) *server {
 	return &server{
-		a:      a,
-		server: &http.Server{},
+		a:            a,
+		server:       &http.Server{},
+		allowedHosts: map[string]bool{},
 		requestPool: &sync.Pool{
 			New: func() interface{} {
 				return &Request{}
@@ -43,13 +46,10 @@ func newServer(a *Air) *server {
 
 // serve starts the s.
 func (s *server) serve() error {
-	host, port, err := net.SplitHostPort(s.a.Address)
+	host, port, err := net.SplitHostPort(strings.ToLower(s.a.Address))
 	if err != nil {
 		return err
 	}
-
-	host = strings.ToLower(host)
-	port = strings.ToLower(port)
 
 	s.server.Addr = host + ":" + port
 	s.server.ReadTimeout = s.a.ReadTimeout
@@ -92,6 +92,12 @@ func (s *server) serve() error {
 		})
 	}
 
+	for _, h := range s.a.HostWhitelist {
+		if h, err := idna.Lookup.ToASCII(h); err == nil {
+			s.allowedHosts[h] = true
+		}
+	}
+
 	if s.a.DebugMode {
 		fmt.Println("air: serving in debug mode")
 	}
@@ -109,20 +115,15 @@ func (s *server) serve() error {
 		acm := &autocert.Manager{
 			Prompt: autocert.AcceptTOS,
 			Cache:  autocert.DirCache(s.a.ACMECertRoot),
-			HostPolicy: func(_ context.Context, host string) error {
-				if !s.allowedHost(host) {
-					return fmt.Errorf(
-						"air: disallowed host: %s",
-						host,
-					)
-				}
-
-				return nil
-			},
 			Client: &acme.Client{
 				DirectoryURL: s.a.ACMEDirectoryURL,
 			},
 			Email: s.a.MaintainerEmail,
+		}
+		if !s.a.DebugMode && len(s.a.HostWhitelist) > 0 {
+			acm.HostPolicy = autocert.HostWhitelist(
+				s.a.HostWhitelist...,
+			)
 		}
 
 		if hh != nil {
@@ -159,23 +160,6 @@ func (s *server) serve() error {
 	return s.server.ListenAndServeTLS("", "")
 }
 
-// close closes the s immediately.
-func (s *server) close() error {
-	return s.server.Close()
-}
-
-// shutdown gracefully shuts down the s without interrupting any active
-// connections.
-func (s *server) shutdown(ctx context.Context) error {
-	return s.server.Shutdown(ctx)
-}
-
-// allowedHost reports whether the host is allowed.
-func (s *server) allowedHost(host string) bool {
-	return s.a.DebugMode || len(s.a.HostWhitelist) == 0 ||
-		stringSliceContainsCIly(s.a.HostWhitelist, host)
-}
-
 // allowedHostCheckHandler returns an `http.Handler` that checks if the
 // request's host is allowed. If the request's host is allowed, then the h will
 // be called.
@@ -187,14 +171,34 @@ func (s *server) allowedHostCheckHandler(h http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if s.allowedHost(r.Host) {
+		if s.a.DebugMode || len(s.allowedHosts) == 0 {
 			h.ServeHTTP(rw, r)
-		} else if h, ok := rw.(http.Hijacker); ok {
+			return
+		}
+
+		host, err := idna.Lookup.ToASCII(r.Host)
+		if err == nil && s.allowedHosts[host] {
+			h.ServeHTTP(rw, r)
+			return
+		}
+
+		if h, ok := rw.(http.Hijacker); ok {
 			if c, _, _ := h.Hijack(); c != nil {
 				c.Close()
 			}
 		}
 	})
+}
+
+// close closes the s immediately.
+func (s *server) close() error {
+	return s.server.Close()
+}
+
+// shutdown gracefully shuts down the s without interrupting any active
+// connections.
+func (s *server) shutdown(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
 }
 
 // ServeHTTP implements the `http.Handler`.

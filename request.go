@@ -75,11 +75,11 @@ type Request struct {
 	//
 	// See RFC 7231, section 5.
 	//
-	// The `Header` is basically the same for both of HTTP/1.x and HTTP/2.
-	// The only difference is that HTTP/2 requires header names to be
-	// lowercase (for aesthetic reasons, this framework decided to follow
-	// this rule implicitly, so please use the header name in the HTTP/1.x
-	// way). See RFC 7540, section 8.1.2.
+	// The `Header` is basically the same for both HTTP/1.x and HTTP/2. The
+	// only difference is that HTTP/2 requires header names to be lowercase
+	// (for aesthetic reasons, this framework decided to follow this rule
+	// implicitly, so please use the header name in the HTTP/1.x way). See
+	// RFC 7540, section 8.1.2.
 	//
 	// E.g.: {"Foo": ["bar"]}
 	Header http.Header
