@@ -126,6 +126,22 @@ func TestRouterRouteStatic(t *testing.T) {
 		},
 	)
 
+	r.register(
+		http.MethodGet,
+		"/foobar",
+		func(_ *Request, res *Response) error {
+			return res.WriteString("Matched [GET /foobar]")
+		},
+	)
+
+	r.register(
+		http.MethodGet,
+		"/foo/bar",
+		func(_ *Request, res *Response) error {
+			return res.WriteString("Matched [GET /foo/bar]")
+		},
+	)
+
 	req, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
 	assert.NoError(t, r.route(req)(req, res))
 	assert.Equal(t, http.StatusOK, res.Status)
@@ -137,6 +153,21 @@ func TestRouterRouteStatic(t *testing.T) {
 	assert.Equal(t, "Matched [GET /]", rec.Body.String())
 
 	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+	assert.NoError(t, r.route(req)(req, res))
+	assert.Equal(t, http.StatusOK, res.Status)
+	assert.Equal(t, "Matched [GET /foobar]", rec.Body.String())
+
+	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+	assert.NoError(t, r.route(req)(req, res))
+	assert.Equal(t, http.StatusOK, res.Status)
+	assert.Equal(t, "Matched [GET /foo/bar]", rec.Body.String())
+
+	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo", nil)
+	assert.Error(t, r.route(req)(req, res))
+	assert.Equal(t, http.StatusNotFound, res.Status)
+	assert.Empty(t, rec.Body.String())
+
+	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar/foobar", nil)
 	assert.Error(t, r.route(req)(req, res))
 	assert.Equal(t, http.StatusNotFound, res.Status)
 	assert.Empty(t, rec.Body.String())
@@ -364,6 +395,12 @@ func TestRouterRouteMix(t *testing.T) {
 		func(_ *Request, res *Response) error {
 			return res.WriteString("Matched [GET /]")
 		},
+		func(next Handler) Handler {
+			return func(req *Request, res *Response) error {
+				res.Header.Set("Foo", "bar")
+				return next(req, res)
+			}
+		},
 	)
 
 	r.register(
@@ -465,6 +502,7 @@ func TestRouterRouteMix(t *testing.T) {
 	req, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
 	assert.NoError(t, r.route(req)(req, res))
 	assert.Equal(t, http.StatusOK, res.Status)
+	assert.Equal(t, "bar", res.Header.Get("Foo"))
 	assert.Equal(t, "Matched [GET /]", rec.Body.String())
 
 	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo", nil)
@@ -570,6 +608,52 @@ func TestRouterRouteMix(t *testing.T) {
 	assert.Equal(t, "foobar", req.Param("*").Value().String())
 	assert.Equal(t, http.StatusOK, res.Status)
 	assert.Equal(t, "Matched [GET /:foo/:bar/*]", rec.Body.String())
+}
+
+func TestRouterRouteFallBackToAny(t *testing.T) {
+	a := New()
+	r := a.router
+
+	r.register(
+		http.MethodGet,
+		"/*",
+		func(_ *Request, res *Response) error {
+			return res.WriteString("Matched [GET /*]")
+		},
+	)
+
+	r.register(
+		http.MethodGet,
+		"/:foo/:bar",
+		func(_ *Request, res *Response) error {
+			return res.WriteString("Matched [GET /:foo/:bar]")
+		},
+	)
+
+	req, res, rec := fakeRRCycle(a, http.MethodGet, "/foo", nil)
+	assert.NoError(t, r.route(req)(req, res))
+	assert.Equal(t, "foo", req.Param("*").Value().String())
+	assert.Equal(t, http.StatusOK, res.Status)
+	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+
+	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+	assert.NoError(t, r.route(req)(req, res))
+	assert.Equal(t, "foobar", req.Param("*").Value().String())
+	assert.Equal(t, http.StatusOK, res.Status)
+	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+
+	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+	assert.NoError(t, r.route(req)(req, res))
+	assert.Equal(t, "foo", req.Param("foo").Value().String())
+	assert.Equal(t, "bar", req.Param("bar").Value().String())
+	assert.Equal(t, http.StatusOK, res.Status)
+	assert.Equal(t, "Matched [GET /:foo/:bar]", rec.Body.String())
+
+	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar/foobar", nil)
+	assert.NoError(t, r.route(req)(req, res))
+	assert.Equal(t, "foo/bar/foobar", req.Param("*").Value().String())
+	assert.Equal(t, http.StatusOK, res.Status)
+	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
 }
 
 func TestRouteNodeChild(t *testing.T) {

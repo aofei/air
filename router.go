@@ -299,20 +299,36 @@ func (r *router) route(req *Request) Handler {
 		s, _ = splitPathQuery(req.Path) // Search
 		cn   = r.routeTree              // Current node
 		nn   *routeNode                 // Next node
-		nnt  routeNodeType              // Next node type
 		sn   *routeNode                 // Saved node
+		snt  routeNodeType              // Saved type
 		ss   string                     // Saved search
+		sapn *routeNode                 // Saved any parent node
+		saps string                     // Saved any parent search
 		sl   int                        // Search length
 		pl   int                        // Prefix length
 		ll   int                        // LCP length
 		ml   int                        // Minimum length of sl and pl
 		i    int                        // Index
-		pi   int                        // Param index
+		pc   int                        // Param counter
 	)
 
 	// Search order: static route > param route > any route.
 	for {
 		if s == "" {
+			if len(cn.handlers) == 0 {
+				if cn.childByType(routeNodeTypeParam) != nil {
+					goto TryParam
+				}
+
+				if cn.childByType(routeNodeTypeAny) != nil {
+					goto TryAny
+				}
+
+				if sapn != nil {
+					goto Struggle
+				}
+			}
+
 			break
 		}
 
@@ -343,26 +359,22 @@ func (r *router) route(req *Request) Handler {
 		}
 
 		if s = s[ll:]; s == "" {
-			if len(cn.handlers) == 0 {
-				if cn.childByType(routeNodeTypeParam) != nil {
-					goto Param
-				}
-
-				if cn.childByType(routeNodeTypeAny) != nil {
-					goto Any
-				}
-			}
-
-			break
+			continue
 		}
 
-		// Static node.
+		// Save any parent node for struggling.
+		if cn != sapn && cn.childByType(routeNodeTypeAny) != nil {
+			sapn = cn
+			saps = s
+		}
+
+		// Try static node.
 		if nn = cn.child(s[0], routeNodeTypeStatic); nn != nil {
-			// Save next.
+			// Save node for struggling.
 			if pl = len(cn.prefix); pl > 0 &&
 				cn.prefix[pl-1] == '/' {
-				nnt = routeNodeTypeParam
 				sn = cn
+				snt = routeNodeTypeParam
 				ss = s
 			}
 
@@ -371,14 +383,14 @@ func (r *router) route(req *Request) Handler {
 			continue
 		}
 
-		// Param node.
-	Param:
+		// Try param node.
+	TryParam:
 		if nn = cn.childByType(routeNodeTypeParam); nn != nil {
-			// Save next.
+			// Save node for struggling.
 			if pl = len(cn.prefix); pl > 0 &&
 				cn.prefix[pl-1] == '/' {
-				nnt = routeNodeTypeAny
 				sn = cn
+				snt = routeNodeTypeAny
 				ss = s
 			}
 
@@ -392,16 +404,16 @@ func (r *router) route(req *Request) Handler {
 					Get().([]string)
 			}
 
-			req.routeParamValues[pi] = s[:i]
-			pi++
+			req.routeParamValues[pc] = s[:i]
+			pc++
 
 			s = s[i:]
 
 			continue
 		}
 
-		// Any node.
-	Any:
+		// Try any node.
+	TryAny:
 		if cn = cn.childByType(routeNodeTypeAny); cn != nil {
 			if req.routeParamValues == nil {
 				req.routeParamValues = r.routeParamValuesPool.
@@ -419,13 +431,17 @@ func (r *router) route(req *Request) Handler {
 			cn = sn
 			sn = nil
 			s = ss
-
-			switch nnt {
+			switch snt {
 			case routeNodeTypeParam:
-				goto Param
+				goto TryParam
 			case routeNodeTypeAny:
-				goto Any
+				goto TryAny
 			}
+		} else if sapn != nil {
+			cn = sapn
+			sapn = nil
+			s = saps
+			goto TryAny
 		}
 
 		return r.a.NotFoundHandler
