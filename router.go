@@ -29,7 +29,7 @@ func newRouter(a *Air) *router {
 	}
 	r.routeParamValuesPool = &sync.Pool{
 		New: func() interface{} {
-			return make([]string, r.maxRouteParams)
+			return make([]string, 0, r.maxRouteParams)
 		},
 	}
 
@@ -400,12 +400,15 @@ func (r *router) route(req *Request) Handler {
 			}
 
 			if req.routeParamValues == nil {
-				req.routeParamValues = r.routeParamValuesPool.
-					Get().([]string)
+				req.routeParamValues = r.allocRouteParamValues()
 			}
 
-			req.routeParamValues[pc] = s[:i]
-			pc++
+			if pc < len(cn.paramNames) {
+				pc++
+			}
+
+			req.routeParamValues = req.routeParamValues[:pc]
+			req.routeParamValues[pc-1] = s[:i]
 
 			s = s[i:]
 
@@ -416,11 +419,12 @@ func (r *router) route(req *Request) Handler {
 	TryAny:
 		if cn = cn.childByType(routeNodeTypeAny); cn != nil {
 			if req.routeParamValues == nil {
-				req.routeParamValues = r.routeParamValuesPool.
-					Get().([]string)
+				req.routeParamValues = r.allocRouteParamValues()
 			}
 
-			req.routeParamValues[len(cn.paramNames)-1] = s
+			pc = len(cn.paramNames)
+			req.routeParamValues = req.routeParamValues[:pc]
+			req.routeParamValues[pc-1] = s
 
 			break
 		}
@@ -457,6 +461,17 @@ func (r *router) route(req *Request) Handler {
 	}
 
 	return h
+}
+
+// allocRouteParamValues reuses or creates a string slice for storing route
+// param values.
+func (r *router) allocRouteParamValues() []string {
+	rpvs := r.routeParamValuesPool.Get().([]string)
+	if cap(rpvs) < r.maxRouteParams {
+		rpvs = r.routeParamValuesPool.New().([]string)
+	}
+
+	return rpvs[:0]
 }
 
 // routeNode is the node of the route radix tree.

@@ -120,14 +120,6 @@ func TestRouterRouteStatic(t *testing.T) {
 
 	r.register(
 		http.MethodGet,
-		"/",
-		func(_ *Request, res *Response) error {
-			return res.WriteString("Matched [GET /]")
-		},
-	)
-
-	r.register(
-		http.MethodGet,
 		"/foobar",
 		func(_ *Request, res *Response) error {
 			return res.WriteString("Matched [GET /foobar]")
@@ -139,6 +131,14 @@ func TestRouterRouteStatic(t *testing.T) {
 		"/foo/bar",
 		func(_ *Request, res *Response) error {
 			return res.WriteString("Matched [GET /foo/bar]")
+		},
+	)
+
+	r.register(
+		http.MethodGet,
+		"/",
+		func(_ *Request, res *Response) error {
+			return res.WriteString("Matched [GET /]")
 		},
 	)
 
@@ -242,6 +242,25 @@ func TestRouterRouteParam(t *testing.T) {
 	assert.Equal(t, "bar", req.Param("bar").Value().String())
 	assert.Equal(t, http.StatusOK, res.Status)
 	assert.Equal(t, "Matched [GET /foo:bar]", rec.Body.String())
+
+	r.register(
+		http.MethodGet,
+		"/:foo/:bar",
+		func(_ *Request, res *Response) error {
+			return res.WriteString("Matched [GET /:foo/:bar]")
+		},
+	)
+
+	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+	assert.NoError(t, r.route(req)(req, res))
+	assert.NotNil(t, req.Param("foo"))
+	assert.NotNil(t, req.Param("foo").Value())
+	assert.NotNil(t, req.Param("bar"))
+	assert.NotNil(t, req.Param("bar").Value())
+	assert.Equal(t, "foo", req.Param("foo").Value().String())
+	assert.Equal(t, "bar", req.Param("bar").Value().String())
+	assert.Equal(t, http.StatusOK, res.Status)
+	assert.Equal(t, "Matched [GET /:foo/:bar]", rec.Body.String())
 }
 
 func TestRouterRouteAny(t *testing.T) {
@@ -654,6 +673,28 @@ func TestRouterRouteFallBackToAny(t *testing.T) {
 	assert.Equal(t, "foo/bar/foobar", req.Param("*").Value().String())
 	assert.Equal(t, http.StatusOK, res.Status)
 	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+}
+
+func TestRouterAllocRouteParamValues(t *testing.T) {
+	a := New()
+	r := a.router
+
+	rpvs := r.allocRouteParamValues()
+	assert.Len(t, rpvs, 0)
+	assert.Zero(t, cap(rpvs))
+
+	r.maxRouteParams++
+
+	rpvs = r.allocRouteParamValues()
+	assert.Len(t, rpvs, 0)
+	assert.Equal(t, 1, cap(rpvs))
+
+	r.routeParamValuesPool.Put(rpvs)
+	r.maxRouteParams++
+
+	rpvs = r.allocRouteParamValues()
+	assert.Len(t, rpvs, 0)
+	assert.Equal(t, 2, cap(rpvs))
 }
 
 func TestRouteNodeChild(t *testing.T) {
