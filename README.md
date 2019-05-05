@@ -150,7 +150,7 @@ A: Far from enough. But it's already working.
 	* Hot update support
 * I18n
 	* Adapt to the request's favorite conventions
-	* Implanted into the `air.Response.Render`
+	* Implanted into the [`air.Response.Render`](https://godoc.org/github.com/aofei/air#Response.Render)
 	* Hot update support
 * Error
 	* Centralized handling
@@ -211,6 +211,15 @@ the [`air.Request`](https://godoc.org/github.com/aofei/air#Request) and the
 [`air.Response`](https://godoc.org/github.com/aofei/air#Response) which it uses
 to perform a specific action, for example, logging every request or recovering
 from panics.
+
+```go
+return func(next air.Handler) air.Handler {
+	return func(req *air.Request, res *air.Response) error {
+		// Do something here...
+		return next(req, res) // Execute the next handler
+	}
+}
+```
 
 If you already have some good HTTP middleware, you can simply wrap them into
 gases by calling the
