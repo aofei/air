@@ -5,13 +5,13 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/aofei/air)](https://goreportcard.com/report/github.com/aofei/air)
 [![GoDoc](https://godoc.org/github.com/aofei/air?status.svg)](https://godoc.org/github.com/aofei/air)
 
-An ideally refined web framework for Go. You can use it to build a web
-application as natural as breathing.
+An ideally refined web framework for Go.
 
 High-performance? Fastest? Almost all web frameworks are using these words to
 tell people that they are the best. Maybe they are, maybe not. Air does not
-intend to follow the crowd. It can only guarantee you one thing: **it can serve
-properly.**
+intend to follow the crowd. Our goal is always to strive to make it easy for you
+to use Air to build your web applications. So, we can only guarantee you one
+thing: **Air can serve properly**.
 
 ## FAQ
 
@@ -19,23 +19,26 @@ properly.**
 
 A: "A" for "An", "I" for "Ideally" and "R" for "Refined". So, Air.
 
-**Q: Why based on the `net/http`?**
+**Q: Why based on the [net/http](https://godoc.org/net/http)?**
 
 A: In fact, I've tried to implement a full-featured HTTP server (just like the
 awesome [valyala/fasthttp](https://github.com/valyala/fasthttp)). But when I
 finished about half of the work, I suddenly realized: What about stability? What
 about those awesome middleware outside? And, seriously, what am I doing?
 
-**Q: Why not just use the `net/http`?**
+**Q: Why not just use the [net/http](https://godoc.org/net/http)?**
 
-A: Yeah, we can of course use the `net/http` directly, after all, it can meet
-many requirements. But, ummm... It's really too stable, isn't it? I mean, to
-ensure Go's backward compatibility (which is extremely necessary), we can't
-easily add some handy features to the `net/http`. And, the `http.Request` does
-not only represents the request received by the server, but also represents the
-request made by the client. In some cases it can be confusing. So why not just
-use the `net/http` as the underlying server, and then implement a refined web
-framework that are only used for the server-side on top of it?
+A: Yeah, we can of course use the [net/http](https://godoc.org/net/http)
+directly, after all, it can meet many requirements. But, ummm... it's really too
+stable, isn't it? I mean, to ensure Go's backward compatibility (which is
+extremely necessary), we can't easily add some handy features to the
+[net/http](https://godoc.org/net/http). And, the
+[`http.Request`](https://godoc.org/net/http#Request) does not only represents
+the request received by the server, but also represents the request made by the
+client. In some cases it can be confusing. So why not just use the
+[net/http](https://godoc.org/net/http) as the underlying server, and then
+implement a refined web framework that are only used for the server-side on top
+of it?
 
 **Q: Do you know we already got the
 [gin-gonic/gin](https://github.com/gin-gonic/gin) and the
@@ -43,14 +46,17 @@ framework that are only used for the server-side on top of it?
 
 A: Of course, I knew it when I started Go. And, I love both of them! But, why
 not try some new flavors? Are you sure you prefer them instead of Air? Don't
-even give Air a try? Wow... Well, maybe Air is not for you. After all, it's for
+even give Air a try? Wow... well, maybe Air is not for you. After all, it's for
 people who love to try new things. Relax and continue to maintain the status
 quo, you will be fine.
 
 **Q: What about the fantastic
 [Gorilla web toolkit](https://github.com/gorilla)?**
 
-A: Just call the `air.WrapHTTPHandler` and the `air.WrapHTTPMiddleware`.
+A: Just call the
+[`air.WrapHTTPHandler`](https://godoc.org/github.com/aofei/air#WrapHTTPHandler)
+and the
+[`air.WrapHTTPMiddleware`](https://godoc.org/github.com/aofei/air#WrapHTTPMiddleware).
 
 **Q: Is Air good enough?**
 
@@ -125,7 +131,7 @@ A: Far from enough. But it's already working.
 	* Hot update support
 * Coffer
 	* Accesses binary asset files by using the runtime memory
-	* Significantly improves the performance of the `air.Response.WriteFile`
+	* Significantly improves the performance of the [`air.Response.WriteFile`](https://godoc.org/github.com/aofei/air#Response.WriteFile)
 	* Asset file minimization and gzip support
 	* Default asset file extensions:
 		* `.html`
@@ -197,32 +203,35 @@ large document.
 ## Gases
 
 As we all know that the air of earth is a mixture of gases. So the same is that
-this framework adopts the gas as its composition. Everyone can create new gas
-and use it within this framework simply.
+Air adopts the gas as its composition. Everyone can create new gas and use it
+within Air simply.
 
 A gas is a function chained in the HTTP request-response cycle with access to
-the `air.Request` and the `air.Response` which it uses to perform a specific
-action, for example, logging every request or recovering from panics.
+the [`air.Request`](https://godoc.org/github.com/aofei/air#Request) and the
+[`air.Response`](https://godoc.org/github.com/aofei/air#Response) which it uses
+to perform a specific action, for example, logging every request or recovering
+from panics.
 
-If you have got some good HTTP middleware, you can simply wrap them into gases
-by calling the `air.WrapHTTPMiddleware`.
+If you already have some good HTTP middleware, you can simply wrap them into
+gases by calling the
+[`air.WrapHTTPMiddleware`](https://godoc.org/github.com/aofei/air#WrapHTTPMiddleware).
 
 If you are looking for some useful gases, simply visit
 [here](https://github.com/air-gases).
 
 ## Examples
 
-If you want to be familiar with this framework as soon as possible, simply visit
+If you want to be familiar with Air as soon as possible, simply visit
 [here](https://github.com/air-examples).
 
 ## Community
 
-If you want to discuss this framework, or ask questions about it, simply post
-questions or ideas [here](https://github.com/aofei/air/issues).
+If you want to discuss Air, or ask questions about it, simply post questions or
+ideas [here](https://github.com/aofei/air/issues).
 
 ## Contributing
 
-If you want to help build this framework, simply follow
+If you want to help build Air, simply follow
 [this](https://github.com/aofei/air/wiki/Contributing) to send pull requests
 [here](https://github.com/aofei/air/pulls).
 
