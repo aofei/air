@@ -31,12 +31,12 @@ framework, registering a route usually requires at least two params:
 
 The first param is a route path that contains 6 components. Among them, "users",
 "posts" and "assets" are static components, ":UserID" and ":PostID" are param
-components, "*" is an any param component. It should be noted that all route
-params (param component(s) and any param component) will be parsed into the
-`Request` and can be accessed via the `Request.Param` and the `Request.Params`.
-The name of a `RequestParam` parsed from a param component always discards its
-leading ":", such as ":UserID" will become "UserID". The name of a
-`RequestParam` parsed from an any param component is "*".
+components, "*" is an any param component. Note that all route params (param
+component(s) and any param component) will be parsed into the `Request` and can
+be accessed via the `Request.Param` and the `Request.Params`. The name of a
+`RequestParam` parsed from a param component always discards its leading ":",
+such as ":UserID" will become "UserID". The name of a `RequestParam` parsed from
+an any param component is "*".
 
 The second param is a `Handler` that serves the requests that match this route.
 */

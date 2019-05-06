@@ -60,6 +60,40 @@ func TestWebSocketListen(t *testing.T) {
 
 		return nil
 	})
+	a.GET("/foo", func(req *Request, res *Response) error {
+		ws, err := res.WebSocket()
+		if err != nil {
+			return err
+		}
+		defer ws.Close()
+
+		ws.TextHandler = func(text string) error {
+			return errors.New("Text Error")
+		}
+
+		ws.BinaryHandler = func(b []byte) error {
+			return errors.New("Binary Error")
+		}
+
+		ws.ErrorHandler = func(err error) {
+			buf.WriteString(err.Error())
+		}
+
+		ws.Listen()
+
+		return nil
+	})
+	a.GET("/bar", func(req *Request, res *Response) error {
+		ws, err := res.WebSocket()
+		if err != nil {
+			return err
+		}
+		defer ws.Close()
+
+		ws.Listen()
+
+		return nil
+	})
 
 	go a.Serve()
 	defer a.Close()
@@ -116,6 +150,46 @@ func TestWebSocketListen(t *testing.T) {
 	))
 	time.Sleep(100 * time.Millisecond)
 	assert.Equal(t, "1000 - Normal Closure - No Error", buf.String())
+
+	conn2, _, err := websocket.DefaultDialer.Dial(
+		"ws://localhost:8080/foo",
+		nil,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn2)
+	defer conn2.Close()
+
+	buf.Reset()
+
+	assert.NoError(t, conn2.WriteMessage(websocket.TextMessage, nil))
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, "Text Error", buf.String())
+
+	buf.Reset()
+
+	assert.NoError(t, conn2.WriteMessage(websocket.BinaryMessage, nil))
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, "Binary Error", buf.String())
+
+	conn3, _, err := websocket.DefaultDialer.Dial(
+		"ws://localhost:8080/bar",
+		nil,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn3)
+	defer conn3.Close()
+
+	buf.Reset()
+
+	assert.NoError(t, conn3.WriteMessage(websocket.TextMessage, nil))
+	time.Sleep(100 * time.Millisecond)
+	assert.Empty(t, buf.String())
+
+	buf.Reset()
+
+	assert.NoError(t, conn3.WriteMessage(websocket.BinaryMessage, nil))
+	time.Sleep(100 * time.Millisecond)
+	assert.Empty(t, buf.String())
 }
 
 func TestWebSocketWriteText(t *testing.T) {

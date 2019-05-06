@@ -65,7 +65,9 @@ func (ws *WebSocket) Listen() {
 				ws.ErrorHandler(err)
 			}
 
-			break
+			ws.Close() // Close it even if it has closed (insurance)
+
+			continue
 		}
 
 		switch mt {

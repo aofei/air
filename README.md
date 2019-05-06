@@ -9,9 +9,9 @@ An ideally refined web framework for Go.
 
 High-performance? Fastest? Almost all web frameworks are using these words to
 tell people that they are the best. Maybe they are, maybe not. Air does not
-intend to follow the crowd. Our goal is always to strive to make it easy for you
-to use Air to build your web applications. So, we can only guarantee you one
-thing: **Air can serve properly**.
+intend to follow the crowd. Our goal is always to strive to make it easy for
+people to use Air to build their web applications. So, we can only guarantee you
+one thing: **Air can serve properly**.
 
 ## FAQ
 

@@ -447,7 +447,7 @@ type RequestParam struct {
 // Value returns the first value of the rp. It returns nil if the rp is nil or
 // there are no values.
 //
-// It should be noted that route params always have values.
+// Note that route params always have values.
 func (rp *RequestParam) Value() *RequestParamValue {
 	if rp == nil || len(rp.Values) == 0 {
 		return nil
