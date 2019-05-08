@@ -176,7 +176,12 @@ func (s *server) allowedHostCheckHandler(h http.Handler) http.Handler {
 			return
 		}
 
-		host, err := idna.Lookup.ToASCII(r.Host)
+		host, _, _ := net.SplitHostPort(r.Host)
+		if host == "" {
+			host = r.Host
+		}
+
+		host, err := idna.Lookup.ToASCII(host)
 		if err == nil && s.allowedHosts[host] {
 			h.ServeHTTP(rw, r)
 			return
