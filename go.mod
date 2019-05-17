@@ -12,13 +12,13 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/stretchr/testify v1.3.0
-	github.com/tdewolff/minify/v2 v2.4.0
+	github.com/tdewolff/minify/v2 v2.5.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	golang.org/x/crypto v0.0.0-20190506204251-e1dfcc566284
-	golang.org/x/net v0.0.0-20190503192946-f4e77d36d62c
-	golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b // indirect
+	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
+	golang.org/x/net v0.0.0-20190514140710-3ec191127204
+	golang.org/x/sys v0.0.0-20190516110030-61b9204099cb // indirect
 	golang.org/x/text v0.3.2
-	google.golang.org/appengine v1.5.0 // indirect
+	google.golang.org/appengine v1.6.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 )
