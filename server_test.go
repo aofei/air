@@ -43,6 +43,13 @@ func TestServerServe(t *testing.T) {
 	assert.NoError(t, s.close())
 
 	a = New()
+	a.Address = ":-1"
+
+	s = a.server
+
+	assert.Error(t, s.serve())
+
+	a = New()
 	a.Address = "localhost:8080"
 	a.HostWhitelist = []string{"example.com"}
 
@@ -278,6 +285,28 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	assert.NotNil(t, res)
 
 	assert.NoError(t, s.close())
+
+	a = New()
+	a.Address = ":-1"
+	a.HostWhitelist = []string{"localhost"}
+	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")
+	a.TLSKeyFile = filepath.Join(dir, "tls_key.pem")
+
+	s = a.server
+
+	assert.Error(t, s.serve())
+
+	a = New()
+	a.Address = "localhost:1443"
+	a.HostWhitelist = []string{"localhost"}
+	a.HTTPSEnforced = true
+	a.HTTPSEnforcedPort = "-1"
+	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")
+	a.TLSKeyFile = filepath.Join(dir, "tls_key.pem")
+
+	s = a.server
+
+	assert.Error(t, s.serve())
 
 	a = New()
 	a.Address = "localhost:1443"
