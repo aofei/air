@@ -153,6 +153,7 @@ func TestServerServe(t *testing.T) {
 	a.Address = "localhost:1443"
 	a.HostWhitelist = []string{"localhost"}
 	a.HTTPSEnforced = true
+	a.HTTPSEnforcedPort = "8080"
 	a.PROXYProtocolEnabled = true
 	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
 
@@ -261,6 +262,21 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	res, err = http.DefaultClient.Do(&http.Request{
+		Method: http.MethodGet,
+		URL: &url.URL{
+			Scheme: "http",
+			Host:   "localhost:8080",
+		},
+		Host: "localhost",
+	})
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = nil
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
 	assert.NoError(t, s.close())
 
 	a = New()
@@ -268,7 +284,7 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	a.HostWhitelist = []string{"localhost"}
 	a.ACMEEnabled = true
 	a.ACMECertRoot = dir
-	a.HTTPSEnforced = true
+	a.HTTPSEnforcedPort = "8080"
 	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
 
 	s = a.server
@@ -294,6 +310,7 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	a.HostWhitelist = []string{"localhost"}
 	a.ACMEEnabled = true
 	a.ACMECertRoot = dir
+	a.HTTPSEnforcedPort = "8080"
 	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
 
 	s = a.server

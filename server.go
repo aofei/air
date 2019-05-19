@@ -70,27 +70,24 @@ func (s *server) serve() error {
 		IdleTimeout: idleTimeout,
 	})
 
-	var hh http.Handler
-	if s.a.HTTPSEnforced && port != "80" && port != "http" {
-		hh = http.HandlerFunc(func(
-			rw http.ResponseWriter,
-			r *http.Request,
-		) {
-			host, _, _ := net.SplitHostPort(r.Host)
-			if host == "" {
-				host = r.Host
-			}
+	hh := http.Handler(http.HandlerFunc(func(
+		rw http.ResponseWriter,
+		r *http.Request,
+	) {
+		host, _, _ := net.SplitHostPort(r.Host)
+		if host == "" {
+			host = r.Host
+		}
 
-			host = fmt.Sprint(host, ":", port)
+		host = fmt.Sprint(host, ":", port)
 
-			http.Redirect(
-				rw,
-				r,
-				"https://"+host+r.RequestURI,
-				http.StatusMovedPermanently,
-			)
-		})
-	}
+		http.Redirect(
+			rw,
+			r,
+			"https://"+host+r.RequestURI,
+			http.StatusMovedPermanently,
+		)
+	}))
 
 	for _, h := range s.a.HostWhitelist {
 		if h, err := idna.Lookup.ToASCII(h); err == nil {
@@ -126,13 +123,9 @@ func (s *server) serve() error {
 			)
 		}
 
-		if hh != nil {
-			hh = acm.HTTPHandler(hh)
-		} else {
-			hh = acm.HTTPHandler(h2ch)
-		}
+		hh = acm.HTTPHandler(hh)
+		s.a.HTTPSEnforced = true
 
-		s.server.Addr = host + ":443"
 		s.server.TLSConfig = acm.TLSConfig()
 	} else {
 		s.server.Handler = s.allowedHostCheckHandler(h2ch)
@@ -146,9 +139,9 @@ func (s *server) serve() error {
 		return s.server.Serve(l)
 	}
 
-	if hh != nil {
+	if s.a.HTTPSEnforced {
 		hs := &http.Server{
-			Addr:              host + ":80",
+			Addr:              host + ":" + s.a.HTTPSEnforcedPort,
 			Handler:           s.allowedHostCheckHandler(hh),
 			ReadTimeout:       s.a.ReadTimeout,
 			ReadHeaderTimeout: s.a.ReadHeaderTimeout,

@@ -228,12 +228,23 @@ type Air struct {
 	// forcibly accessible only via the HTTPS scheme (HTTP requests will
 	// automatically redirect to HTTPS).
 	//
-	// The `HTTPSEnforced` only works when the port of the `Address` is
-	// neither "80" nor "http" and the server of the current web application
-	// can handle requests on incoming TLS connections.
+	// The `HTTPSEnforced` only works when the server of the current web
+	// application can handle requests on incoming TLS connections.
+	//
+	// The `HTTPSEnforced` will be forced to true when the `ACMEEnabled` is
+	// true, the `DebugMode` is false and both the `TLSCertFile` and the
+	// `TLSKeyFile` are empty.
 	//
 	// Default value: false
 	HTTPSEnforced bool `mapstructure:"https_enforced"`
+
+	// HTTPSEnforcedPort is the port of the TCP address (share the same host
+	// as the `Address`) that the server of the current web application
+	// listens on. All requests to this port will be forced to redirect to
+	// HTTPS.
+	//
+	// Default value: "80"
+	HTTPSEnforcedPort string `mapstructure:"https_enforced_port"`
 
 	// WebSocketHandshakeTimeout is the maximum amount of time the server of
 	// the current web application waits for a WebSocket handshake to
@@ -255,7 +266,7 @@ type Air struct {
 	WebSocketSubprotocols []string `mapstructure:"websocket_subprotocols"`
 
 	// PROXYProtocolEnabled indicates whether the PROXY protocol of the
-	// server of the current web application is enabled.
+	// current web application is enabled.
 	//
 	// The `PROXYProtocolEnabled` gives the server of the current web
 	// application the ability to support the PROXY protocol (See
