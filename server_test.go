@@ -24,7 +24,6 @@ func TestNewServer(t *testing.T) {
 	assert.NotNil(t, s)
 	assert.NotNil(t, s.a)
 	assert.NotNil(t, s.server)
-	assert.NotNil(t, s.allowedHosts)
 	assert.NotNil(t, s.requestPool)
 	assert.NotNil(t, s.responsePool)
 	assert.IsType(t, &Request{}, s.requestPool.Get())
@@ -48,20 +47,6 @@ func TestServerServe(t *testing.T) {
 	s = a.server
 
 	assert.Error(t, s.serve())
-
-	a = New()
-	a.Address = "localhost:8080"
-	a.HostWhitelist = []string{"example.com"}
-
-	s = a.server
-
-	go s.serve()
-	time.Sleep(100 * time.Millisecond)
-
-	assert.Len(t, s.allowedHosts, 1)
-	assert.True(t, s.allowedHosts["example.com"])
-
-	assert.NoError(t, s.close())
 
 	dir, err := ioutil.TempDir("", "air.TestServerServe")
 	assert.NoError(t, err)
@@ -102,7 +87,6 @@ func TestServerServe(t *testing.T) {
 
 	a = New()
 	a.Address = "localhost:8080"
-	a.HostWhitelist = []string{"localhost"}
 
 	s = a.server
 
@@ -128,14 +112,13 @@ func TestServerServe(t *testing.T) {
 		},
 		Host: "example.com",
 	})
-	assert.Error(t, err)
-	assert.Nil(t, res)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
 
 	assert.NoError(t, s.close())
 
 	a = New()
 	a.Address = "localhost:1443"
-	a.HostWhitelist = []string{"localhost"}
 
 	assert.NoError(t, ioutil.WriteFile(
 		filepath.Join(dir, "tls_cert.pem"),
@@ -158,7 +141,6 @@ func TestServerServe(t *testing.T) {
 
 	a = New()
 	a.Address = "localhost:1443"
-	a.HostWhitelist = []string{"localhost"}
 	a.HTTPSEnforced = true
 	a.HTTPSEnforcedPort = "8080"
 	a.PROXYProtocolEnabled = true
@@ -288,7 +270,6 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 
 	a = New()
 	a.Address = ":-1"
-	a.HostWhitelist = []string{"localhost"}
 	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")
 	a.TLSKeyFile = filepath.Join(dir, "tls_key.pem")
 
@@ -298,7 +279,6 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 
 	a = New()
 	a.Address = "localhost:1443"
-	a.HostWhitelist = []string{"localhost"}
 	a.HTTPSEnforced = true
 	a.HTTPSEnforcedPort = "-1"
 	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")
@@ -310,9 +290,9 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 
 	a = New()
 	a.Address = "localhost:1443"
-	a.HostWhitelist = []string{"localhost"}
 	a.ACMEEnabled = true
 	a.ACMECertRoot = dir
+	a.ACMEHostWhitelist = []string{"localhost"}
 	a.HTTPSEnforcedPort = "8080"
 	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
 
@@ -336,9 +316,9 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 
 	a = New()
 	a.Address = "localhost:1443"
-	a.HostWhitelist = []string{"localhost"}
 	a.ACMEEnabled = true
 	a.ACMECertRoot = dir
+	a.ACMEHostWhitelist = []string{"localhost"}
 	a.HTTPSEnforcedPort = "8080"
 	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
 
@@ -357,144 +337,6 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	})
 	assert.Error(t, err)
 	assert.Nil(t, res)
-
-	assert.NoError(t, s.close())
-}
-
-func TestServerAllowedHostCheckHandler(t *testing.T) {
-	a := New()
-	a.DebugMode = true
-	a.Address = "localhost:8080"
-
-	s := a.server
-
-	dir, err := ioutil.TempDir("", "air.TestServerAllowedHostCheckHandler")
-	assert.NoError(t, err)
-	assert.NotEmpty(t, dir)
-	defer os.RemoveAll(dir)
-
-	stdout, err := ioutil.TempFile(dir, "")
-	assert.NoError(t, err)
-
-	stdoutBackup := os.Stdout
-	os.Stdout = stdout
-
-	go s.serve()
-	time.Sleep(100 * time.Millisecond)
-
-	os.Stdout = stdoutBackup
-
-	assert.NoError(t, stdout.Close())
-
-	h := s.allowedHostCheckHandler(nil)
-	h = s.allowedHostCheckHandler(http.HandlerFunc(func(
-		rw http.ResponseWriter,
-		r *http.Request,
-	) {
-		rw.Write([]byte("Foobar"))
-	}))
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-
-	assert.Equal(t, "Foobar", rec.Body.String())
-
-	assert.NoError(t, s.close())
-
-	a = New()
-	a.Address = "localhost:8080"
-	a.HostWhitelist = nil
-
-	s = a.server
-
-	go s.serve()
-	time.Sleep(100 * time.Millisecond)
-
-	h = s.allowedHostCheckHandler(http.HandlerFunc(func(
-		rw http.ResponseWriter,
-		r *http.Request,
-	) {
-		rw.Write([]byte("Foobar"))
-	}))
-
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-
-	assert.Equal(t, "Foobar", rec.Body.String())
-
-	assert.NoError(t, s.close())
-
-	a = New()
-	a.Address = "localhost:8080"
-	a.HostWhitelist = []string{"example.com"}
-
-	s = a.server
-
-	go s.serve()
-	time.Sleep(100 * time.Millisecond)
-
-	h = s.allowedHostCheckHandler(http.HandlerFunc(func(
-		rw http.ResponseWriter,
-		r *http.Request,
-	) {
-		rw.Write([]byte("Foobar"))
-	}))
-
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-
-	assert.Equal(t, "Foobar", rec.Body.String())
-
-	assert.NoError(t, s.close())
-
-	a = New()
-	a.Address = "localhost:8080"
-	a.HostWhitelist = []string{"EXAMPLE.COM"}
-
-	s = a.server
-
-	go s.serve()
-	time.Sleep(100 * time.Millisecond)
-
-	h = s.allowedHostCheckHandler(http.HandlerFunc(func(
-		rw http.ResponseWriter,
-		r *http.Request,
-	) {
-		rw.Write([]byte("Foobar"))
-	}))
-
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-
-	assert.Equal(t, "Foobar", rec.Body.String())
-
-	assert.NoError(t, s.close())
-
-	a = New()
-	a.Address = "localhost:8080"
-	a.HostWhitelist = []string{"example.net"}
-
-	s = a.server
-
-	go s.serve()
-	time.Sleep(100 * time.Millisecond)
-
-	h = s.allowedHostCheckHandler(http.HandlerFunc(func(
-		rw http.ResponseWriter,
-		r *http.Request,
-	) {
-		rw.Write([]byte("Foobar"))
-	}))
-
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-
-	assert.Empty(t, rec.Body.String())
 
 	assert.NoError(t, s.close())
 }

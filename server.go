@@ -15,14 +15,12 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
-	"golang.org/x/net/idna"
 )
 
 // server is an HTTP server.
 type server struct {
 	a            *Air
 	server       *http.Server
-	allowedHosts map[string]bool
 	requestPool  *sync.Pool
 	responsePool *sync.Pool
 }
@@ -30,9 +28,8 @@ type server struct {
 // newServer returns a new instance of the `server` with the a.
 func newServer(a *Air) *server {
 	return &server{
-		a:            a,
-		server:       &http.Server{},
-		allowedHosts: map[string]bool{},
+		a:      a,
+		server: &http.Server{},
 		requestPool: &sync.Pool{
 			New: func() interface{} {
 				return &Request{}
@@ -54,21 +51,13 @@ func (s *server) serve() error {
 	}
 
 	s.server.Addr = host + ":" + port
+	s.server.Handler = s
 	s.server.ReadTimeout = s.a.ReadTimeout
 	s.server.ReadHeaderTimeout = s.a.ReadHeaderTimeout
 	s.server.WriteTimeout = s.a.WriteTimeout
 	s.server.IdleTimeout = s.a.IdleTimeout
 	s.server.MaxHeaderBytes = s.a.MaxHeaderBytes
 	s.server.ErrorLog = s.a.errorLogger
-
-	idleTimeout := s.a.IdleTimeout
-	if idleTimeout == 0 {
-		idleTimeout = s.a.ReadTimeout
-	}
-
-	h2ch := h2c.NewHandler(s, &http2.Server{
-		IdleTimeout: idleTimeout,
-	})
 
 	hh := http.Handler(http.HandlerFunc(func(
 		rw http.ResponseWriter,
@@ -88,12 +77,6 @@ func (s *server) serve() error {
 			http.StatusMovedPermanently,
 		)
 	}))
-
-	for _, h := range s.a.HostWhitelist {
-		if h, err := idna.Lookup.ToASCII(h); err == nil {
-			s.allowedHosts[h] = true
-		}
-	}
 
 	if s.a.DebugMode {
 		fmt.Println("air: serving in debug mode")
@@ -117,9 +100,9 @@ func (s *server) serve() error {
 			},
 			Email: s.a.MaintainerEmail,
 		}
-		if !s.a.DebugMode && len(s.a.HostWhitelist) > 0 {
+		if s.a.ACMEHostWhitelist != nil {
 			acm.HostPolicy = autocert.HostWhitelist(
-				s.a.HostWhitelist...,
+				s.a.ACMEHostWhitelist...,
 			)
 		}
 
@@ -128,7 +111,14 @@ func (s *server) serve() error {
 
 		s.server.TLSConfig = acm.TLSConfig()
 	} else {
-		s.server.Handler = s.allowedHostCheckHandler(h2ch)
+		h2s := &http2.Server{
+			IdleTimeout: s.a.IdleTimeout,
+		}
+		if h2s.IdleTimeout == 0 {
+			h2s.IdleTimeout = s.a.ReadTimeout
+		}
+
+		s.server.Handler = h2c.NewHandler(s.server.Handler, h2s)
 
 		l, err := s.fullFeaturedListener("")
 		if err != nil {
@@ -142,7 +132,7 @@ func (s *server) serve() error {
 	if s.a.HTTPSEnforced {
 		hs := &http.Server{
 			Addr:              host + ":" + s.a.HTTPSEnforcedPort,
-			Handler:           s.allowedHostCheckHandler(hh),
+			Handler:           hh,
 			ReadTimeout:       s.a.ReadTimeout,
 			ReadHeaderTimeout: s.a.ReadHeaderTimeout,
 			WriteTimeout:      s.a.WriteTimeout,
@@ -160,8 +150,6 @@ func (s *server) serve() error {
 		go hs.Serve(l)
 		defer hs.Close()
 	}
-
-	s.server.Handler = s.allowedHostCheckHandler(nil)
 
 	l, err := s.fullFeaturedListener("")
 	if err != nil {
@@ -193,41 +181,6 @@ func (s *server) fullFeaturedListener(address string) (net.Listener, error) {
 	}
 
 	return l, nil
-}
-
-// allowedHostCheckHandler returns an `http.Handler` that checks if the
-// request's host is allowed. If the request's host is allowed, then the h will
-// be called.
-//
-// If the h is nil, the s is used.
-func (s *server) allowedHostCheckHandler(h http.Handler) http.Handler {
-	if h == nil {
-		h = s
-	}
-
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if s.a.DebugMode || len(s.allowedHosts) == 0 {
-			h.ServeHTTP(rw, r)
-			return
-		}
-
-		host, _, _ := net.SplitHostPort(r.Host)
-		if host == "" {
-			host = r.Host
-		}
-
-		host, err := idna.Lookup.ToASCII(host)
-		if err == nil && s.allowedHosts[host] {
-			h.ServeHTTP(rw, r)
-			return
-		}
-
-		if h, ok := rw.(http.Hijacker); ok {
-			if c, _, _ := h.Hijack(); c != nil {
-				c.Close()
-			}
-		}
-	})
 }
 
 // close closes the s immediately.

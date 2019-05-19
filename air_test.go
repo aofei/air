@@ -27,7 +27,6 @@ func TestNew(t *testing.T) {
 	assert.Empty(t, a.MaintainerEmail)
 	assert.False(t, a.DebugMode)
 	assert.Equal(t, ":8080", a.Address)
-	assert.Nil(t, a.HostWhitelist)
 	assert.Zero(t, a.ReadTimeout)
 	assert.Zero(t, a.ReadHeaderTimeout)
 	assert.Zero(t, a.WriteTimeout)
@@ -42,6 +41,7 @@ func TestNew(t *testing.T) {
 		a.ACMEDirectoryURL,
 	)
 	assert.Equal(t, "acme-certs", a.ACMECertRoot)
+	assert.Nil(t, a.ACMEHostWhitelist)
 	assert.False(t, a.HTTPSEnforced)
 	assert.Zero(t, a.WebSocketHandshakeTimeout)
 	assert.Nil(t, a.WebSocketSubprotocols)

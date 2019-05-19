@@ -110,18 +110,6 @@ type Air struct {
 	// Default value: ":8080"
 	Address string `mapstructure:"address"`
 
-	// HostWhitelist is the list of hosts allowed by the server of the
-	// current web application.
-	//
-	// It is highly recommended to set a list of hosts when in non-debug
-	// mode. If the length of the list is not zero, then all connections
-	// that are not connected to the hosts in the list will be rejected.
-	//
-	// The `HostWhitelist` only works when the `DebugMode` is false.
-	//
-	// Default value: nil
-	HostWhitelist []string `mapstructure:"host_whitelist"`
-
 	// ReadTimeout is the maximum duration the server of the current web
 	// application reads a request entirely, including the body part.
 	//
@@ -223,6 +211,17 @@ type Air struct {
 	//
 	// Default value: "acme-certs"
 	ACMECertRoot string `mapstructure:"acme_cert_root"`
+
+	// ACMEHostWhitelist is the list of hosts allowed by the ACME feature of
+	// the server of the current web application.
+	//
+	// It is highly recommended to set a list of hosts. If the length of the
+	// list is not zero, then all connections that are not connected to the
+	// hosts in the list will not be able to obtain new TLS certificates
+	// from the ACME CA targeted by the `ACMEDirectoryURL`.
+	//
+	// Default value: nil
+	ACMEHostWhitelist []string `mapstructure:"acme_host_whitelist"`
 
 	// HTTPSEnforced indicates whether the current web application is
 	// forcibly accessible only via the HTTPS scheme (HTTP requests will
