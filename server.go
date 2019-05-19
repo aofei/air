@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/armon/go-proxyproto"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
@@ -79,9 +81,7 @@ func (s *server) serve() error {
 				host = r.Host
 			}
 
-			if port != "443" && port != "https" {
-				host = fmt.Sprint(host, ":", port)
-			}
+			host = fmt.Sprint(host, ":", port)
 
 			http.Redirect(
 				rw,
@@ -136,7 +136,14 @@ func (s *server) serve() error {
 		s.server.TLSConfig = acm.TLSConfig()
 	} else {
 		s.server.Handler = s.allowedHostCheckHandler(h2ch)
-		return s.server.ListenAndServe()
+
+		l, err := s.fullFeaturedListener("")
+		if err != nil {
+			return err
+		}
+		defer l.Close()
+
+		return s.server.Serve(l)
 	}
 
 	if hh != nil {
@@ -151,13 +158,48 @@ func (s *server) serve() error {
 			ErrorLog:          s.a.errorLogger,
 		}
 
-		go hs.ListenAndServe()
+		l, err := s.fullFeaturedListener(hs.Addr)
+		if err != nil {
+			return err
+		}
+		defer l.Close()
+
+		go hs.Serve(l)
 		defer hs.Close()
 	}
 
 	s.server.Handler = s.allowedHostCheckHandler(nil)
 
-	return s.server.ListenAndServeTLS("", "")
+	l, err := s.fullFeaturedListener("")
+	if err != nil {
+		return err
+	}
+	defer l.Close()
+
+	return s.server.ServeTLS(l, "", "")
+}
+
+// fullFeaturedListener returns a full-featured `net.Listener`.
+//
+// If the address is empty, the `server.Addr` is used.
+func (s *server) fullFeaturedListener(address string) (net.Listener, error) {
+	if address == "" {
+		address = s.server.Addr
+	}
+
+	l, err := net.Listen("tcp", address)
+	if err != nil {
+		return nil, err
+	}
+
+	l = &tcpKeepAliveListener{l.(*net.TCPListener)}
+	if s.a.PROXYProtocolEnabled {
+		l = &proxyproto.Listener{
+			Listener: l,
+		}
+	}
+
+	return l, nil
 }
 
 // allowedHostCheckHandler returns an `http.Handler` that checks if the
@@ -295,4 +337,22 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	s.requestPool.Put(req)
 	s.responsePool.Put(res)
+}
+
+// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted connections.
+type tcpKeepAliveListener struct {
+	*net.TCPListener
+}
+
+// Accept implements the `net.Listener`.
+func (tkal *tcpKeepAliveListener) Accept() (net.Conn, error) {
+	tc, err := tkal.AcceptTCP()
+	if err != nil {
+		return nil, err
+	}
+
+	tc.SetKeepAlive(true)
+	tc.SetKeepAlivePeriod(3 * time.Minute)
+
+	return tc, nil
 }

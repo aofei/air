@@ -195,7 +195,7 @@ type Air struct {
 	// ACMEEnabled indicates whether the ACME feature of the current web
 	// application is enabled.
 	//
-	// The ACME feature gives the server of the current web application the
+	// The `ACMEEnabled` gives the server of the current web application the
 	// ability to automatically retrieve new TLS certificates from the ACME
 	// CA targeted by the `ACMEDirectoryURL`.
 	//
@@ -253,6 +253,16 @@ type Air struct {
 	//
 	// Default value: nil
 	WebSocketSubprotocols []string `mapstructure:"websocket_subprotocols"`
+
+	// PROXYProtocolEnabled indicates whether the PROXY protocol of the
+	// server of the current web application is enabled.
+	//
+	// The `PROXYProtocolEnabled` gives the server of the current web
+	// application the ability to support the PROXY protocol (See
+	// https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt).
+	//
+	// Default value: false
+	PROXYProtocolEnabled bool `mapstructure:"proxy_protocol_enabled"`
 
 	// Pregases is the `Gas` chain stack of the current web application
 	// that performs before routing.

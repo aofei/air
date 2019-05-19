@@ -4,6 +4,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/VictoriaMetrics/fastcache v1.5.0
 	github.com/aofei/mimesniffer v1.1.2
+	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
 	github.com/cespare/xxhash/v2 v2.0.1-0.20190104013014-3767db7a7e18
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/golang/protobuf v1.3.1

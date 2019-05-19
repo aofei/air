@@ -153,6 +153,7 @@ func TestServerServe(t *testing.T) {
 	a.Address = "localhost:1443"
 	a.HostWhitelist = []string{"localhost"}
 	a.HTTPSEnforced = true
+	a.PROXYProtocolEnabled = true
 	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
 
 	assert.NoError(t, ioutil.WriteFile(
