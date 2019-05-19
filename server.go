@@ -201,16 +201,16 @@ func (s *server) fullFeaturedListener(address string) (net.Listener, error) {
 	if s.a.PROXYProtocolEnabled {
 		l = &proxyproto.Listener{
 			Listener:    l,
-			SourceCheck: s.checkPROXYProtocolRelayerIP,
+			SourceCheck: s.allowedPROXYProtocolRelayerIP,
 		}
 	}
 
 	return l, nil
 }
 
-// checkPROXYProtocolRelayerIP checks if the ra is allowed by the PROXY protocol
-// featuer of the s.
-func (s *server) checkPROXYProtocolRelayerIP(ra net.Addr) (bool, error) {
+// allowedPROXYProtocolRelayerIP reports whether the ra is allowed by the PROXY
+// protocol featuer of the s.
+func (s *server) allowedPROXYProtocolRelayerIP(ra net.Addr) (bool, error) {
 	if s.allowedPROXYProtocolRelayerIPNets == nil {
 		return true, nil
 	}
@@ -223,7 +223,7 @@ func (s *server) checkPROXYProtocolRelayerIP(ra net.Addr) (bool, error) {
 		}
 	}
 
-	return false, proxyproto.ErrInvalidUpstream
+	return false, nil
 }
 
 // close closes the s immediately.

@@ -375,7 +375,7 @@ func TestServerClose(t *testing.T) {
 	assert.NoError(t, s.close())
 }
 
-func TestServerCheckPROXYProtocolRelayerIP(t *testing.T) {
+func TestServerAllowedPROXYProtocolRelayerIP(t *testing.T) {
 	a := New()
 	a.Address = "localhost:8080"
 	a.PROXYProtocolEnabled = true
@@ -389,16 +389,16 @@ func TestServerCheckPROXYProtocolRelayerIP(t *testing.T) {
 	assert.NotNil(t, ra)
 	assert.NoError(t, err)
 
-	b, err := s.checkPROXYProtocolRelayerIP(ra)
-	assert.True(t, b)
+	allowed, err := s.allowedPROXYProtocolRelayerIP(ra)
+	assert.True(t, allowed)
 	assert.NoError(t, err)
 
 	ra, err = net.ResolveTCPAddr("tcp", "127.0.0.2:80")
 	assert.NotNil(t, ra)
 	assert.NoError(t, err)
 
-	b, err = s.checkPROXYProtocolRelayerIP(ra)
-	assert.True(t, b)
+	allowed, err = s.allowedPROXYProtocolRelayerIP(ra)
+	assert.True(t, allowed)
 	assert.NoError(t, err)
 
 	assert.NoError(t, s.close())
@@ -417,17 +417,17 @@ func TestServerCheckPROXYProtocolRelayerIP(t *testing.T) {
 	assert.NotNil(t, ra)
 	assert.NoError(t, err)
 
-	b, err = s.checkPROXYProtocolRelayerIP(ra)
-	assert.True(t, b)
+	allowed, err = s.allowedPROXYProtocolRelayerIP(ra)
+	assert.True(t, allowed)
 	assert.Nil(t, err)
 
 	ra, err = net.ResolveTCPAddr("tcp", "127.0.0.2:80")
-	assert.NotNil(t, ra)
+	assert.NotNil(t, allowed)
 	assert.NoError(t, err)
 
-	b, err = s.checkPROXYProtocolRelayerIP(ra)
-	assert.False(t, b)
-	assert.Error(t, err)
+	allowed, err = s.allowedPROXYProtocolRelayerIP(ra)
+	assert.False(t, allowed)
+	assert.NoError(t, err)
 
 	assert.NoError(t, s.close())
 }
