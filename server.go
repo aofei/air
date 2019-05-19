@@ -19,10 +19,11 @@ import (
 
 // server is an HTTP server.
 type server struct {
-	a            *Air
-	server       *http.Server
-	requestPool  *sync.Pool
-	responsePool *sync.Pool
+	a                                 *Air
+	server                            *http.Server
+	allowedPROXYProtocolRelayerIPNets []*net.IPNet
+	requestPool                       *sync.Pool
+	responsePool                      *sync.Pool
 }
 
 // newServer returns a new instance of the `server` with the a.
@@ -77,6 +78,29 @@ func (s *server) serve() error {
 			http.StatusMovedPermanently,
 		)
 	}))
+
+	if len(s.a.PROXYProtocolRelayerIPWhitelist) > 0 {
+		for _, str := range s.a.PROXYProtocolRelayerIPWhitelist {
+			if ip := net.ParseIP(str); ip != nil {
+				str = ip.String()
+				switch {
+				case ip.IsUnspecified():
+					str += "/0"
+				case ip.To4() != nil: // IPv4
+					str += "/32"
+				case ip.To16() != nil: // IPv6
+					str += "/128"
+				}
+			}
+
+			if _, ipNet, _ := net.ParseCIDR(str); ipNet != nil {
+				s.allowedPROXYProtocolRelayerIPNets = append(
+					s.allowedPROXYProtocolRelayerIPNets,
+					ipNet,
+				)
+			}
+		}
+	}
 
 	if s.a.DebugMode {
 		fmt.Println("air: serving in debug mode")
@@ -176,11 +200,30 @@ func (s *server) fullFeaturedListener(address string) (net.Listener, error) {
 	l = &tcpKeepAliveListener{l.(*net.TCPListener)}
 	if s.a.PROXYProtocolEnabled {
 		l = &proxyproto.Listener{
-			Listener: l,
+			Listener:    l,
+			SourceCheck: s.checkPROXYProtocolRelayerIP,
 		}
 	}
 
 	return l, nil
+}
+
+// checkPROXYProtocolRelayerIP checks if the ra is allowed by the PROXY protocol
+// featuer of the s.
+func (s *server) checkPROXYProtocolRelayerIP(ra net.Addr) (bool, error) {
+	if s.allowedPROXYProtocolRelayerIPNets == nil {
+		return true, nil
+	}
+
+	host, _, _ := net.SplitHostPort(ra.String())
+	ip := net.ParseIP(host)
+	for _, ipNet := range s.allowedPROXYProtocolRelayerIPNets {
+		if ipNet.Contains(ip) {
+			return true, nil
+		}
+	}
+
+	return false, proxyproto.ErrInvalidUpstream
 }
 
 // close closes the s immediately.

@@ -264,8 +264,8 @@ type Air struct {
 	// Default value: nil
 	WebSocketSubprotocols []string `mapstructure:"websocket_subprotocols"`
 
-	// PROXYProtocolEnabled indicates whether the PROXY protocol of the
-	// current web application is enabled.
+	// PROXYProtocolEnabled indicates whether the PROXY protocol feature of
+	// the current web application is enabled.
 	//
 	// The `PROXYProtocolEnabled` gives the server of the current web
 	// application the ability to support the PROXY protocol (See
@@ -273,6 +273,18 @@ type Air struct {
 	//
 	// Default value: false
 	PROXYProtocolEnabled bool `mapstructure:"proxy_protocol_enabled"`
+
+	// PROXYProtocolRelayerIPWhitelist is the list of IP addresses or CIDR
+	// notation IP address ranges of the relayers allowed by the PROXY
+	// protocol feature of the server of the current web application.
+	//
+	// It is highly recommended to set a list of IP addresses or CIDR
+	// notation IP address ranges. If the length of the list is not zero,
+	// then all connections relayed from the IP addresses are not in the
+	// list will be rejected.
+	//
+	// Default value: nil
+	PROXYProtocolRelayerIPWhitelist []string `mapstructure:"proxy_protocol_relayer_ip_whitelist"`
 
 	// Pregases is the `Gas` chain stack of the current web application
 	// that performs before routing.
@@ -553,6 +565,7 @@ func New() *Air {
 		MaxHeaderBytes:          1 << 20,
 		ACMEDirectoryURL:        "https://acme-v01.api.letsencrypt.org/directory",
 		ACMECertRoot:            "acme-certs",
+		HTTPSEnforcedPort:       "80",
 		NotFoundHandler:         DefaultNotFoundHandler,
 		MethodNotAllowedHandler: DefaultMethodNotAllowedHandler,
 		ErrorHandler:            DefaultErrorHandler,

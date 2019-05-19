@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -24,6 +25,7 @@ func TestNewServer(t *testing.T) {
 	assert.NotNil(t, s)
 	assert.NotNil(t, s.a)
 	assert.NotNil(t, s.server)
+	assert.Nil(t, s.allowedPROXYProtocolRelayerIPNets)
 	assert.NotNil(t, s.requestPool)
 	assert.NotNil(t, s.responsePool)
 	assert.IsType(t, &Request{}, s.requestPool.Get())
@@ -42,7 +44,35 @@ func TestServerServe(t *testing.T) {
 	assert.NoError(t, s.close())
 
 	a = New()
+	a.Address = "localhost:8080"
+	a.PROXYProtocolEnabled = true
+	a.PROXYProtocolRelayerIPWhitelist = []string{
+		"0.0.0.0",
+		"::",
+		"127.0.0.1",
+		"127.0.0.1/32",
+		"::1",
+		"::1/128",
+	}
+
+	s = a.server
+
+	go s.serve()
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Len(t, s.allowedPROXYProtocolRelayerIPNets, 6)
+
+	assert.NoError(t, s.close())
+
+	a = New()
 	a.Address = ":-1"
+
+	s = a.server
+
+	assert.Error(t, s.serve())
+
+	a = New()
+	a.Address = ""
 
 	s = a.server
 
@@ -52,13 +82,6 @@ func TestServerServe(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, dir)
 	defer os.RemoveAll(dir)
-
-	a = New()
-	a.Address = ""
-
-	s = a.server
-
-	assert.Error(t, s.serve())
 
 	a = New()
 	a.DebugMode = true
@@ -143,7 +166,6 @@ func TestServerServe(t *testing.T) {
 	a.Address = "localhost:1443"
 	a.HTTPSEnforced = true
 	a.HTTPSEnforcedPort = "8080"
-	a.PROXYProtocolEnabled = true
 	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
 
 	assert.NoError(t, ioutil.WriteFile(
@@ -349,6 +371,63 @@ func TestServerClose(t *testing.T) {
 
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)
+
+	assert.NoError(t, s.close())
+}
+
+func TestServerCheckPROXYProtocolRelayerIP(t *testing.T) {
+	a := New()
+	a.Address = "localhost:8080"
+	a.PROXYProtocolEnabled = true
+
+	s := a.server
+
+	go s.serve()
+	time.Sleep(100 * time.Millisecond)
+
+	ra, err := net.ResolveTCPAddr("tcp", "127.0.0.1:80")
+	assert.NotNil(t, ra)
+	assert.NoError(t, err)
+
+	b, err := s.checkPROXYProtocolRelayerIP(ra)
+	assert.True(t, b)
+	assert.NoError(t, err)
+
+	ra, err = net.ResolveTCPAddr("tcp", "127.0.0.2:80")
+	assert.NotNil(t, ra)
+	assert.NoError(t, err)
+
+	b, err = s.checkPROXYProtocolRelayerIP(ra)
+	assert.True(t, b)
+	assert.NoError(t, err)
+
+	assert.NoError(t, s.close())
+
+	a = New()
+	a.Address = "localhost:8080"
+	a.PROXYProtocolEnabled = true
+	a.PROXYProtocolRelayerIPWhitelist = []string{"127.0.0.1"}
+
+	s = a.server
+
+	go s.serve()
+	time.Sleep(100 * time.Millisecond)
+
+	ra, err = net.ResolveTCPAddr("tcp", "127.0.0.1:80")
+	assert.NotNil(t, ra)
+	assert.NoError(t, err)
+
+	b, err = s.checkPROXYProtocolRelayerIP(ra)
+	assert.True(t, b)
+	assert.Nil(t, err)
+
+	ra, err = net.ResolveTCPAddr("tcp", "127.0.0.2:80")
+	assert.NotNil(t, ra)
+	assert.NoError(t, err)
+
+	b, err = s.checkPROXYProtocolRelayerIP(ra)
+	assert.False(t, b)
+	assert.Error(t, err)
 
 	assert.NoError(t, s.close())
 }
