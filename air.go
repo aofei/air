@@ -213,7 +213,7 @@ type Air struct {
 	ACMECertRoot string `mapstructure:"acme_cert_root"`
 
 	// ACMEHostWhitelist is the list of hosts allowed by the ACME feature of
-	// the server of the current web application.
+	// the current web application.
 	//
 	// It is highly recommended to set a list of hosts. If the length of the
 	// list is not zero, then all connections that are not connected to the
@@ -274,14 +274,24 @@ type Air struct {
 	// Default value: false
 	PROXYProtocolEnabled bool `mapstructure:"proxy_protocol_enabled"`
 
+	// PROXYProtocolReadHeaderTimeout is the amount of time allowed the
+	// PROXY protocol feature of the current web application reads the
+	// PROXY protocol header of a connection.
+	//
+	// The connection's read deadline is reset after reading the PROXY
+	// protocol header.
+	//
+	// Default value: 0
+	PROXYProtocolReadHeaderTimeout time.Duration `mapstructure:"proxy_protocol_read_header_timeout"`
+
 	// PROXYProtocolRelayerIPWhitelist is the list of IP addresses or CIDR
 	// notation IP address ranges of the relayers allowed by the PROXY
-	// protocol feature of the server of the current web application.
+	// protocol feature of the current web application.
 	//
 	// It is highly recommended to set a list of IP addresses or CIDR
 	// notation IP address ranges. If the length of the list is not zero,
 	// then all connections relayed from the IP addresses are not in the
-	// list will be rejected.
+	// list will not be able to act the PROXY protocol.
 	//
 	// Default value: nil
 	PROXYProtocolRelayerIPWhitelist []string `mapstructure:"proxy_protocol_relayer_ip_whitelist"`

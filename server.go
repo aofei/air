@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -46,7 +45,7 @@ func newServer(a *Air) *server {
 
 // serve starts the s.
 func (s *server) serve() error {
-	host, port, err := net.SplitHostPort(strings.ToLower(s.a.Address))
+	host, port, err := net.SplitHostPort(s.a.Address)
 	if err != nil {
 		return err
 	}
@@ -200,8 +199,9 @@ func (s *server) fullFeaturedListener(address string) (net.Listener, error) {
 	l = &tcpKeepAliveListener{l.(*net.TCPListener)}
 	if s.a.PROXYProtocolEnabled {
 		l = &proxyproto.Listener{
-			Listener:    l,
-			SourceCheck: s.allowedPROXYProtocolRelayerIP,
+			Listener:           l,
+			ProxyHeaderTimeout: s.a.PROXYProtocolReadHeaderTimeout,
+			SourceCheck:        s.allowedPROXYProtocolRelayerIP,
 		}
 	}
 

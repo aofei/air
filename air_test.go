@@ -47,6 +47,7 @@ func TestNew(t *testing.T) {
 	assert.Zero(t, a.WebSocketHandshakeTimeout)
 	assert.Nil(t, a.WebSocketSubprotocols)
 	assert.False(t, a.PROXYProtocolEnabled)
+	assert.Zero(t, a.PROXYProtocolReadHeaderTimeout)
 	assert.Nil(t, a.PROXYProtocolRelayerIPWhitelist)
 	assert.Nil(t, a.Pregases)
 	assert.Nil(t, a.Gases)
