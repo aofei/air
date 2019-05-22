@@ -617,6 +617,39 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.True(t, ok)
 
 	go func() {
+		cc.Write([]byte("PROXY TCP4 127.0.0 127.0.0.3 8081 8082\r\n"))
+		cc.Close()
+	}()
+
+	ppc.readHeader()
+	assert.Nil(t, ppc.srcAddr)
+	assert.Nil(t, ppc.dstAddr)
+	assert.Error(t, ppc.readHeaderError)
+
+	assert.NoError(t, l.Close())
+
+	a = New()
+	a.PROXYProtocolEnabled = true
+	a.PROXYProtocolReadHeaderTimeout = 100 * time.Millisecond
+
+	l = newListener(a)
+
+	assert.NoError(t, l.listen("localhost:0"))
+
+	cc, err = net.Dial("tcp", l.Addr().String())
+	assert.NotNil(t, cc)
+	assert.NoError(t, err)
+	assert.NoError(t, cc.SetDeadline(time.Now().Add(100*time.Millisecond)))
+
+	c, err = l.Accept()
+	assert.NotNil(t, c)
+	assert.NoError(t, err)
+
+	ppc, ok = c.(*proxyProtocolConn)
+	assert.NotNil(t, ppc)
+	assert.True(t, ok)
+
+	go func() {
 		cc.Write([]byte("PROXY TCP4 127.0.0.2 127.0.0 8081 8082\r\n"))
 		cc.Close()
 	}()
