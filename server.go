@@ -7,9 +7,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
-	"github.com/armon/go-proxyproto"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
@@ -18,11 +16,10 @@ import (
 
 // server is an HTTP server.
 type server struct {
-	a                                 *Air
-	server                            *http.Server
-	allowedPROXYProtocolRelayerIPNets []*net.IPNet
-	requestPool                       *sync.Pool
-	responsePool                      *sync.Pool
+	a            *Air
+	server       *http.Server
+	requestPool  *sync.Pool
+	responsePool *sync.Pool
 }
 
 // newServer returns a new instance of the `server` with the a.
@@ -78,29 +75,6 @@ func (s *server) serve() error {
 		)
 	}))
 
-	if len(s.a.PROXYProtocolRelayerIPWhitelist) > 0 {
-		for _, str := range s.a.PROXYProtocolRelayerIPWhitelist {
-			if ip := net.ParseIP(str); ip != nil {
-				str = ip.String()
-				switch {
-				case ip.IsUnspecified():
-					str += "/0"
-				case ip.To4() != nil: // IPv4
-					str += "/32"
-				case ip.To16() != nil: // IPv6
-					str += "/128"
-				}
-			}
-
-			if _, ipNet, _ := net.ParseCIDR(str); ipNet != nil {
-				s.allowedPROXYProtocolRelayerIPNets = append(
-					s.allowedPROXYProtocolRelayerIPNets,
-					ipNet,
-				)
-			}
-		}
-	}
-
 	if s.a.DebugMode {
 		fmt.Println("air: serving in debug mode")
 	}
@@ -143,8 +117,8 @@ func (s *server) serve() error {
 
 		s.server.Handler = h2c.NewHandler(s.server.Handler, h2s)
 
-		l, err := s.fullFeaturedListener("")
-		if err != nil {
+		l := newListener(s.a)
+		if err := l.listen(s.server.Addr); err != nil {
 			return err
 		}
 		defer l.Close()
@@ -164,8 +138,8 @@ func (s *server) serve() error {
 			ErrorLog:          s.a.errorLogger,
 		}
 
-		l, err := s.fullFeaturedListener(hs.Addr)
-		if err != nil {
+		l := newListener(s.a)
+		if err := l.listen(hs.Addr); err != nil {
 			return err
 		}
 		defer l.Close()
@@ -174,56 +148,13 @@ func (s *server) serve() error {
 		defer hs.Close()
 	}
 
-	l, err := s.fullFeaturedListener("")
-	if err != nil {
+	l := newListener(s.a)
+	if err := l.listen(s.server.Addr); err != nil {
 		return err
 	}
 	defer l.Close()
 
 	return s.server.ServeTLS(l, "", "")
-}
-
-// fullFeaturedListener returns a full-featured `net.Listener`.
-//
-// If the address is empty, the `server.Addr` is used.
-func (s *server) fullFeaturedListener(address string) (net.Listener, error) {
-	if address == "" {
-		address = s.server.Addr
-	}
-
-	l, err := net.Listen("tcp", address)
-	if err != nil {
-		return nil, err
-	}
-
-	l = &tcpKeepAliveListener{l.(*net.TCPListener)}
-	if s.a.PROXYProtocolEnabled {
-		l = &proxyproto.Listener{
-			Listener:           l,
-			ProxyHeaderTimeout: s.a.PROXYProtocolReadHeaderTimeout,
-			SourceCheck:        s.allowedPROXYProtocolRelayerIP,
-		}
-	}
-
-	return l, nil
-}
-
-// allowedPROXYProtocolRelayerIP reports whether the ra is allowed by the PROXY
-// protocol featuer of the s.
-func (s *server) allowedPROXYProtocolRelayerIP(ra net.Addr) (bool, error) {
-	if s.allowedPROXYProtocolRelayerIPNets == nil {
-		return true, nil
-	}
-
-	host, _, _ := net.SplitHostPort(ra.String())
-	ip := net.ParseIP(host)
-	for _, ipNet := range s.allowedPROXYProtocolRelayerIPNets {
-		if ipNet.Contains(ip) {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
 
 // close closes the s immediately.
@@ -326,22 +257,4 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	s.requestPool.Put(req)
 	s.responsePool.Put(res)
-}
-
-// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted connections.
-type tcpKeepAliveListener struct {
-	*net.TCPListener
-}
-
-// Accept implements the `net.Listener`.
-func (tkal *tcpKeepAliveListener) Accept() (net.Conn, error) {
-	tc, err := tkal.AcceptTCP()
-	if err != nil {
-		return nil, err
-	}
-
-	tc.SetKeepAlive(true)
-	tc.SetKeepAlivePeriod(3 * time.Minute)
-
-	return tc, nil
 }
