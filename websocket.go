@@ -2,6 +2,7 @@ package air
 
 import (
 	"io/ioutil"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -40,6 +41,27 @@ type WebSocket struct {
 
 	conn     *websocket.Conn
 	listened bool
+}
+
+// SetMaxMessageBytes sets the maximum number of bytes the ws will read messages
+// from the remote peer. If a message exceeds the limit, the ws sends a close
+// message to the remote peer and returns an error immediately.
+func (ws *WebSocket) SetMaxMessageBytes(mmb int64) {
+	ws.conn.SetReadLimit(mmb)
+}
+
+// SetReadDeadline sets the read deadline on the underlying connection of the
+// ws. After a read has timed out, the state of the ws is corrupt and all future
+// reads will return an error immediately.
+func (ws *WebSocket) SetReadDeadline(t time.Time) error {
+	return ws.conn.SetReadDeadline(t)
+}
+
+// SetWriteDeadline sets the write deadline on the underlying connection of the
+// ws. After a write has timed out, the state of the ws is corrupt and all
+// future writes will return an error immediately.
+func (ws *WebSocket) SetWriteDeadline(t time.Time) error {
+	return ws.conn.SetWriteDeadline(t)
 }
 
 // Listen listens for the messages sent from the remote peer of the ws. After

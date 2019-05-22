@@ -4,12 +4,157 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestWebSocketSetMaxMessageBytes(t *testing.T) {
+	a := New()
+	a.Address = "localhost:8080"
+
+	buf := bytes.Buffer{}
+	a.GET("/", func(req *Request, res *Response) error {
+		ws, err := res.WebSocket()
+		if err != nil {
+			return err
+		}
+		defer ws.Close()
+
+		ws.SetMaxMessageBytes(3)
+		ws.ErrorHandler = func(err error) {
+			if err == websocket.ErrReadLimit {
+				buf.WriteString("Oversized message")
+			} else {
+				buf.WriteString(err.Error())
+			}
+		}
+
+		ws.Listen()
+
+		return nil
+	})
+
+	go a.Serve()
+	defer a.Close()
+
+	time.Sleep(100 * time.Millisecond)
+
+	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080", nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+	defer conn.Close()
+
+	assert.NoError(t, conn.WriteMessage(
+		websocket.TextMessage,
+		[]byte("Foobar"),
+	))
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, "Oversized message", buf.String())
+}
+
+func TestWebSocketSetReadDeadline(t *testing.T) {
+	a := New()
+	a.Address = "localhost:8080"
+
+	buf := bytes.Buffer{}
+	a.GET("/", func(req *Request, res *Response) error {
+		ws, err := res.WebSocket()
+		if err != nil {
+			return err
+		}
+		defer ws.Close()
+
+		if err := ws.SetReadDeadline(
+			time.Now().Add(100 * time.Millisecond),
+		); err != nil {
+			return err
+		}
+
+		ws.ErrorHandler = func(err error) {
+			if ne, ok := err.(net.Error); ok && ne.Timeout() {
+				buf.WriteString("Timeout")
+			} else {
+				buf.WriteString(err.Error())
+			}
+		}
+
+		ws.Listen()
+
+		return nil
+	})
+
+	go a.Serve()
+	defer a.Close()
+
+	time.Sleep(100 * time.Millisecond)
+
+	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080", nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+	defer conn.Close()
+
+	time.Sleep(150 * time.Millisecond)
+
+	assert.NoError(t, conn.WriteMessage(
+		websocket.TextMessage,
+		[]byte("Foobar"),
+	))
+	assert.Equal(t, "Timeout", buf.String())
+}
+
+func TestWebSocketSetWriteDeadline(t *testing.T) {
+	a := New()
+	a.Address = "localhost:8080"
+
+	buf := bytes.Buffer{}
+	a.GET("/", func(req *Request, res *Response) error {
+		ws, err := res.WebSocket()
+		if err != nil {
+			return err
+		}
+		defer ws.Close()
+
+		if err := ws.SetWriteDeadline(
+			time.Now().Add(100 * time.Millisecond),
+		); err != nil {
+			return err
+		}
+
+		ws.ErrorHandler = func(err error) {
+			if ne, ok := err.(net.Error); ok && ne.Timeout() {
+				buf.WriteString("Timeout")
+			} else {
+				buf.WriteString(err.Error())
+			}
+		}
+
+		ws.Listen()
+
+		return nil
+	})
+
+	go a.Serve()
+	defer a.Close()
+
+	time.Sleep(100 * time.Millisecond)
+
+	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080", nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+	defer conn.Close()
+
+	time.Sleep(150 * time.Millisecond)
+
+	assert.NoError(t, conn.WriteMessage(
+		websocket.TextMessage,
+		[]byte("Foobar"),
+	))
+	assert.Empty(t, buf.String())
+}
 
 func TestWebSocketListen(t *testing.T) {
 	a := New()
