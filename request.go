@@ -204,6 +204,11 @@ func (r *Request) ClientAddress() string {
 	return ca
 }
 
+// Cookies returns all `http.Cookie` in the r.
+func (r *Request) Cookies() []*http.Cookie {
+	return r.hr.Cookies()
+}
+
 // Cookie returns the matched `http.Cookie` for the name. It returns nil if not
 // found.
 func (r *Request) Cookie(name string) *http.Cookie {
@@ -211,9 +216,15 @@ func (r *Request) Cookie(name string) *http.Cookie {
 	return c
 }
 
-// Cookies returns all `http.Cookie` in the r.
-func (r *Request) Cookies() []*http.Cookie {
-	return r.hr.Cookies()
+// Params returns all `RequestParam` in the r.
+func (r *Request) Params() []*RequestParam {
+	if r.routeParamNames != nil {
+		r.parseRouteParamsOnce.Do(r.parseRouteParams)
+	}
+
+	r.parseOtherParamsOnce.Do(r.parseOtherParams)
+
+	return r.params
 }
 
 // Param returns the matched `RequestParam` for the name. It returns nil if not
@@ -232,17 +243,6 @@ func (r *Request) Param(name string) *RequestParam {
 	}
 
 	return nil
-}
-
-// Params returns all `RequestParam` in the r.
-func (r *Request) Params() []*RequestParam {
-	if r.routeParamNames != nil {
-		r.parseRouteParamsOnce.Do(r.parseRouteParams)
-	}
-
-	r.parseOtherParamsOnce.Do(r.parseOtherParams)
-
-	return r.params
 }
 
 // parseRouteParams parses the route params sent with the r into the `r.params`.
@@ -396,6 +396,40 @@ func (r *Request) growParams(n int) {
 	ps := make([]*RequestParam, len(r.params), cap(r.params)+n)
 	copy(ps, r.params)
 	r.params = ps
+}
+
+// RequestValuesKey is used to act as the key of the entries of the
+// `map[string]interface{}` (the values associated with a `Request`) associated
+// with a `Request.Context` when accessing values with the `Request.Values`, the
+// `Request.Value`, and the `Request.SetValue`.
+var RequestValuesKey = "Air-Request-Values"
+
+// Values uses the `Context.Value` (`RequestValuesKey` as the key) of the r to
+// return the values (a `map[string]interface{}`) associated with the r. It may
+// use the `context.WithValue` to initialize the map, so it may cause the
+// `Context` of the r to change.
+//
+// Note that the returned map is always non-nil.
+func (r *Request) Values() map[string]interface{} {
+	vs, ok := r.Context.Value(RequestValuesKey).(map[string]interface{})
+	if !ok {
+		vs = map[string]interface{}{}
+		r.Context = context.WithValue(r.Context, RequestValuesKey, vs)
+	}
+
+	return vs
+}
+
+// Value returns the matched `interface{}` for the key from the values
+// associated with the r. It returns nil if not found.
+func (r *Request) Value(key string) interface{} {
+	return r.Values()[key]
+}
+
+// SetValue sets the matched `interface{}` for the key from the values
+// associated with the r to the value.
+func (r *Request) SetValue(key string, value interface{}) {
+	r.Values()[key] = value
 }
 
 // Bind binds the r into the v based on the Content-Type header.

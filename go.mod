@@ -15,8 +15,8 @@ require (
 	github.com/tdewolff/minify/v2 v2.5.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
-	golang.org/x/net v0.0.0-20190522135303-fa69b94a3b58
-	golang.org/x/sys v0.0.0-20190522044717-8097e1b27ff5 // indirect
+	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
+	golang.org/x/sys v0.0.0-20190524152521-dbbf3f1254d4 // indirect
 	golang.org/x/text v0.3.2
 	google.golang.org/appengine v1.6.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect

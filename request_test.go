@@ -100,25 +100,6 @@ func TestRequestRemoteAddress(t *testing.T) {
 	assert.Equal(t, "[2001:Db8:CaFe::17]", req.ClientAddress())
 }
 
-func TestRequestCookie(t *testing.T) {
-	a := New()
-
-	req, _, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
-
-	hr := req.HTTPRequest()
-	hr.AddCookie(&http.Cookie{
-		Name:  "foo",
-		Value: "bar",
-	})
-
-	c := req.Cookie("foo")
-	assert.NotNil(t, c)
-	assert.Equal(t, "bar", c.Value)
-
-	c = req.Cookie("bar")
-	assert.Nil(t, c)
-}
-
 func TestRequestCookies(t *testing.T) {
 	a := New()
 
@@ -145,6 +126,36 @@ func TestRequestCookies(t *testing.T) {
 	assert.Equal(t, "bar", cs[0].Value)
 	assert.Equal(t, "bar", cs[1].Name)
 	assert.Equal(t, "foo", cs[1].Value)
+}
+
+func TestRequestCookie(t *testing.T) {
+	a := New()
+
+	req, _, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
+
+	hr := req.HTTPRequest()
+	hr.AddCookie(&http.Cookie{
+		Name:  "foo",
+		Value: "bar",
+	})
+
+	c := req.Cookie("foo")
+	assert.NotNil(t, c)
+	assert.Equal(t, "bar", c.Value)
+
+	c = req.Cookie("bar")
+	assert.Nil(t, c)
+}
+
+func TestRequestParams(t *testing.T) {
+	a := New()
+
+	req, _, _ := fakeRRCycle(a, http.MethodGet, "/?foo=bar&bar=foo", nil)
+	req.routeParamNames = []string{"Foo"}
+	req.routeParamValues = []string{"bar"}
+
+	ps := req.Params()
+	assert.Len(t, ps, 3)
 }
 
 func TestRequestParam(t *testing.T) {
@@ -180,17 +191,6 @@ func TestRequestParam(t *testing.T) {
 	assert.Equal(t, "bar", p.Values[0].String())
 	assert.Equal(t, "bar1", p.Values[1].String())
 	assert.Equal(t, "bar2", p.Values[2].String())
-}
-
-func TestRequestParams(t *testing.T) {
-	a := New()
-
-	req, _, _ := fakeRRCycle(a, http.MethodGet, "/?foo=bar&bar=foo", nil)
-	req.routeParamNames = []string{"Foo"}
-	req.routeParamValues = []string{"bar"}
-
-	ps := req.Params()
-	assert.Len(t, ps, 3)
 }
 
 func TestRequestParseRouteParams(t *testing.T) {
@@ -314,6 +314,42 @@ func TestRequestGrowParams(t *testing.T) {
 	req.growParams(1)
 	assert.Len(t, req.params, 0)
 	assert.Equal(t, 1, cap(req.params))
+}
+
+func TestRequestValues(t *testing.T) {
+	a := New()
+
+	req, _, _ := fakeRRCycle(a, http.MethodGet, "/foo", nil)
+
+	vs := req.Values()
+	assert.NotNil(t, vs)
+	assert.Equal(t, vs, req.Context.Value(RequestValuesKey))
+}
+
+func TestRequestValue(t *testing.T) {
+	a := New()
+
+	req, _, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
+
+	req.Context = context.WithValue(
+		req.Context,
+		RequestValuesKey,
+		map[string]interface{}{
+			"foo": "bar",
+		},
+	)
+	assert.Equal(t, "bar", req.Value("foo"))
+}
+
+func TestRequestSetValue(t *testing.T) {
+	a := New()
+
+	req, _, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
+
+	req.SetValue("foo", "bar")
+	vs := req.Context.Value(RequestValuesKey).(map[string]interface{})
+	assert.NotNil(t, vs)
+	assert.Equal(t, "bar", vs["foo"])
 }
 
 func TestRequestBind(t *testing.T) {
