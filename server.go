@@ -47,6 +47,11 @@ func (s *server) serve() error {
 		return err
 	}
 
+	numericPort, err := net.LookupPort("tcp", port)
+	if err != nil {
+		return err
+	}
+
 	s.server.Addr = host + ":" + port
 	s.server.Handler = s
 	s.server.ReadTimeout = s.a.ReadTimeout
@@ -60,12 +65,14 @@ func (s *server) serve() error {
 		rw http.ResponseWriter,
 		r *http.Request,
 	) {
-		host, _, _ := net.SplitHostPort(r.Host)
-		if host == "" {
+		host, _, err := net.SplitHostPort(r.Host)
+		if err != nil {
 			host = r.Host
 		}
 
-		host = fmt.Sprint(host, ":", port)
+		if numericPort != 443 {
+			host = fmt.Sprint(host, ":", numericPort)
+		}
 
 		http.Redirect(
 			rw,

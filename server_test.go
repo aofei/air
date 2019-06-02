@@ -42,7 +42,7 @@ func TestServerServe(t *testing.T) {
 	assert.NoError(t, s.close())
 
 	a = New()
-	a.Address = ":-1"
+	a.Address = "-1:8080"
 
 	s = a.server
 
@@ -268,7 +268,7 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	assert.NoError(t, s.close())
 
 	a = New()
-	a.Address = ":-1"
+	a.Address = "-1:1443"
 	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")
 	a.TLSKeyFile = filepath.Join(dir, "tls_key.pem")
 
