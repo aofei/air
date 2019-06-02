@@ -107,6 +107,7 @@ type Request struct {
 	routeParamValues     []string
 	parseRouteParamsOnce *sync.Once
 	parseOtherParamsOnce *sync.Once
+	values               map[string]interface{}
 	localizedString      func(string) string
 }
 
@@ -398,26 +399,15 @@ func (r *Request) growParams(n int) {
 	r.params = ps
 }
 
-// RequestValuesKey is used to act as the key of the entries of the
-// `map[string]interface{}` (the values associated with a `Request`) associated
-// with a `Request.Context` when accessing values with the `Request.Values`, the
-// `Request.Value`, and the `Request.SetValue`.
-var RequestValuesKey = "Air-Request-Values"
-
-// Values uses the `Context.Value` (`RequestValuesKey` as the key) of the r to
-// return the values (a `map[string]interface{}`) associated with the r. It may
-// use the `context.WithValue` to initialize the map, so it may cause the
-// `Context` of the r to change.
+// Values returns the values associated with the r.
 //
 // Note that the returned map is always non-nil.
 func (r *Request) Values() map[string]interface{} {
-	vs, ok := r.Context.Value(RequestValuesKey).(map[string]interface{})
-	if !ok {
-		vs = map[string]interface{}{}
-		r.Context = context.WithValue(r.Context, RequestValuesKey, vs)
+	if r.values == nil {
+		r.values = map[string]interface{}{}
 	}
 
-	return vs
+	return r.values
 }
 
 // Value returns the matched `interface{}` for the key from the values

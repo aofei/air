@@ -28,6 +28,7 @@ func TestRequestHTTPRequest(t *testing.T) {
 	assert.Len(t, req.routeParamValues, 0)
 	assert.NotNil(t, req.parseRouteParamsOnce)
 	assert.NotNil(t, req.parseOtherParamsOnce)
+	assert.Nil(t, req.values)
 	assert.Nil(t, req.localizedString)
 
 	hr := req.HTTPRequest()
@@ -323,7 +324,7 @@ func TestRequestValues(t *testing.T) {
 
 	vs := req.Values()
 	assert.NotNil(t, vs)
-	assert.Equal(t, vs, req.Context.Value(RequestValuesKey))
+	assert.Equal(t, vs, req.values)
 }
 
 func TestRequestValue(t *testing.T) {
@@ -331,13 +332,7 @@ func TestRequestValue(t *testing.T) {
 
 	req, _, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
 
-	req.Context = context.WithValue(
-		req.Context,
-		RequestValuesKey,
-		map[string]interface{}{
-			"foo": "bar",
-		},
-	)
+	req.values = map[string]interface{}{"foo": "bar"}
 	assert.Equal(t, "bar", req.Value("foo"))
 }
 
@@ -347,9 +342,8 @@ func TestRequestSetValue(t *testing.T) {
 	req, _, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	req.SetValue("foo", "bar")
-	vs := req.Context.Value(RequestValuesKey).(map[string]interface{})
-	assert.NotNil(t, vs)
-	assert.Equal(t, "bar", vs["foo"])
+	assert.NotNil(t, req.values)
+	assert.Equal(t, "bar", req.values["foo"])
 }
 
 func TestRequestBind(t *testing.T) {

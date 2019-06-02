@@ -55,6 +55,20 @@ func TestServerServe(t *testing.T) {
 
 	assert.Error(t, s.serve())
 
+	a = New()
+	a.Address = ":-1"
+
+	s = a.server
+
+	assert.Error(t, s.serve())
+
+	a = New()
+	a.Address = ""
+
+	s = a.server
+
+	assert.Error(t, s.serve())
+
 	dir, err := ioutil.TempDir("", "air.TestServerServe")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, dir)
@@ -368,6 +382,10 @@ func TestServerServeHTTP(t *testing.T) {
 	a := New()
 	a.Pregases = []Gas{func(next Handler) Handler {
 		return func(req *Request, res *Response) error {
+			if len(req.Values()) != 0 {
+				return errors.New("Malformed request")
+			}
+
 			res.Defer(func() {
 				res.WriteString("Defer")
 			})
@@ -396,6 +414,11 @@ func TestServerServeHTTP(t *testing.T) {
 	})
 
 	s := a.server
+	s.requestPool.New = func() interface{} {
+		req := &Request{}
+		req.values = map[string]interface{}{"foo": "bar"}
+		return req
+	}
 
 	req := httptest.NewRequest(http.MethodGet, "/hello/Air", nil)
 	rec := httptest.NewRecorder()

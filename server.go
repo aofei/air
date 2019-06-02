@@ -200,6 +200,10 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	req.routeParamValues = nil
 	req.parseRouteParamsOnce = &sync.Once{}
 	req.parseOtherParamsOnce = &sync.Once{}
+	for key := range req.values {
+		delete(req.values, key)
+	}
+
 	req.localizedString = nil
 
 	// Reset the response.
