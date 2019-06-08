@@ -447,7 +447,7 @@ func (r *Response) WriteFile(filename string) error {
 			return r.Redirect(p)
 		}
 
-		filename += "index.html"
+		filename = fmt.Sprint(filename, "index.html")
 	}
 
 	var (
@@ -652,64 +652,148 @@ func (r *Response) Push(target string, pos *http.PushOptions) error {
 }
 
 // ProxyPass passes the request to the target and writes the response from the
-// target to the client by using the reverse proxy technique.
+// target to the client by using the reverse proxy technique. If the rpm is
+// non-nil, then it will be used to modify the request to the target and the
+// response from the target.
 //
 // The target must be based on the HTTP protocol (such as HTTP(S), WebSocket and
 // gRPC). So, the scheme of the target must be "http", "https", "ws", "wss",
 // "grpc" or "grpcs".
-func (r *Response) ProxyPass(target string) error {
-	u, err := url.Parse(target)
+func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
+	if r.Written {
+		return errors.New("air: request has been written")
+	}
+
+	if rpm == nil {
+		rpm = &ReverseProxyModifier{}
+	}
+
+	targetURL, err := url.Parse(target)
 	if err != nil {
 		return err
 	}
 
-	u.Scheme = strings.ToLower(u.Scheme)
-	u.Host = strings.ToLower(u.Host)
-
-	switch u.Scheme {
+	targetURL.Scheme = strings.ToLower(targetURL.Scheme)
+	switch targetURL.Scheme {
 	case "http", "https", "ws", "wss", "grpc", "grpcs":
 	default:
 		return fmt.Errorf(
 			"air: unsupported reverse proxy scheme: %s",
-			u.Scheme,
+			targetURL.Scheme,
 		)
 	}
 
-	if u.Scheme != "ws" && u.Scheme != "wss" {
-		rp := httputil.NewSingleHostReverseProxy(u)
-		rp.Transport = r.Air.reverseProxyTransport
-		switch u.Scheme {
-		case "http", "https":
-			rp.FlushInterval = 100 * time.Millisecond
-		case "grpc", "grpcs":
-			rp.FlushInterval = time.Millisecond
+	targetURL.Host = strings.ToLower(targetURL.Host)
+
+	reqPath, reqQuery := splitPathQuery(r.req.Path)
+	targetURL.Path = path.Join(targetURL.Path, reqPath)
+	if targetURL.RawQuery == "" || reqQuery == "" {
+		targetURL.RawQuery = fmt.Sprint(targetURL.RawQuery, reqQuery)
+	} else {
+		targetURL.RawQuery = fmt.Sprint(
+			targetURL.RawQuery,
+			"&",
+			reqQuery,
+		)
+	}
+
+	targetPathQuery := targetURL.Path
+	if targetURL.RawQuery != "" {
+		targetPathQuery = fmt.Sprint(
+			targetPathQuery,
+			"?",
+			targetURL.RawQuery,
+		)
+	}
+
+	if mrp := rpm.ModifyRequestPath; mrp != nil {
+		mp := mrp(targetPathQuery)
+		if mp != targetPathQuery {
+			targetURL.Path, targetURL.RawQuery = splitPathQuery(mp)
 		}
+	}
 
-		rp.ErrorLog = r.Air.errorLogger
-		rp.BufferPool = r.Air.reverseProxyBufferPool
-		rp.ModifyResponse = func(res *http.Response) error {
-			if httpguts.HeaderValuesContainsToken(
-				res.Header["Content-Encoding"],
-				"gzip",
-			) {
-				r.Gzipped = true
-			}
+	targetHeader := make(http.Header, len(r.req.Header))
+	for n, vs := range r.req.Header {
+		targetHeader[n] = make([]string, len(vs))
+		copy(targetHeader[n], vs)
+	}
 
-			for n := range r.Header {
-				res.Header.Del(n)
-			}
+	if mrh := rpm.ModifyRequestHeader; mrh != nil {
+		mrh(targetHeader)
+	}
 
-			return nil
+	if _, ok := targetHeader["User-Agent"]; !ok {
+		// Explicitly disable the User-Agent header so it's not set to
+		// default value.
+		targetHeader.Set("User-Agent", "")
+	}
+
+	targetBody := r.req.Body
+	if mrb := rpm.ModifyRequestBody; mrb != nil {
+		targetBody, err = mrb(r.req.Body)
+		if err != nil {
+			return err
 		}
+	}
 
+	switch targetURL.Scheme {
+	case "ws", "wss":
+	default:
 		var reverseProxyError error
-		rp.ErrorHandler = func(
-			_ http.ResponseWriter,
-			_ *http.Request,
-			err error,
-		) {
-			r.Status = http.StatusBadGateway
-			reverseProxyError = err
+		rp := &httputil.ReverseProxy{
+			Director: func(req *http.Request) {
+				if mrm := rpm.ModifyRequestMethod; mrm != nil {
+					req.Method = mrm(req.Method)
+				}
+
+				req.URL = targetURL
+				req.Header = targetHeader
+				req.Body = ioutil.NopCloser(targetBody)
+			},
+			FlushInterval: 100 * time.Millisecond,
+			Transport:     r.Air.reverseProxyTransport,
+			ErrorLog:      r.Air.errorLogger,
+			BufferPool:    r.Air.reverseProxyBufferPool,
+			ModifyResponse: func(res *http.Response) error {
+				if mrs := rpm.ModifyResponseStatus; mrs != nil {
+					res.StatusCode = mrs(res.StatusCode)
+				}
+
+				if mrh := rpm.ModifyResponseHeader; mrh != nil {
+					mrh(res.Header)
+				}
+
+				if httpguts.HeaderValuesContainsToken(
+					res.Header["Content-Encoding"],
+					"gzip",
+				) {
+					r.Gzipped = true
+				}
+
+				if mrb := rpm.ModifyResponseBody; mrb != nil {
+					b, err := mrb(res.Body)
+					if err != nil {
+						return err
+					}
+
+					res.Body = b
+				}
+
+				return nil
+			},
+			ErrorHandler: func(
+				_ http.ResponseWriter,
+				_ *http.Request,
+				err error,
+			) {
+				r.Status = http.StatusBadGateway
+				reverseProxyError = err
+			},
+		}
+		switch targetURL.Scheme {
+		case "grpc", "grpcs":
+			rp.FlushInterval /= 100 // For gRPC streaming
 		}
 
 		r.reverseProxying = true
@@ -719,23 +803,20 @@ func (r *Response) ProxyPass(target string) error {
 		return reverseProxyError
 	}
 
-	oreqh := make(http.Header, len(r.req.Header)+1)
-	oreqh.Set("Host", r.req.Authority)
-	for n, vs := range r.req.Header {
-		oreqh[n] = append(oreqh[n], vs...)
-	}
+	targetHeader.Del("Upgrade")
+	targetHeader.Del("Connection")
+	targetHeader.Del("Keep-Alive")
+	targetHeader.Del("TE")
+	targetHeader.Del("Trailer")
+	targetHeader.Del("Sec-WebSocket-Key")
+	targetHeader.Del("Sec-WebSocket-Extensions")
+	targetHeader.Del("Sec-WebSocket-Accept")
+	targetHeader.Del("Sec-WebSocket-Version")
 
-	oreqh.Del("Upgrade")
-	oreqh.Del("Connection")
-	oreqh.Del("Keep-Alive")
-	oreqh.Del("TE")
-	oreqh.Del("Trailer")
-	oreqh.Del("Sec-WebSocket-Key")
-	oreqh.Del("Sec-WebSocket-Extensions")
-	oreqh.Del("Sec-WebSocket-Accept")
-	oreqh.Del("Sec-WebSocket-Version")
-
-	dc, res, err := websocket.DefaultDialer.Dial(u.String(), oreqh)
+	dc, res, err := websocket.DefaultDialer.Dial(
+		targetURL.String(),
+		targetHeader,
+	)
 	if err != nil {
 		r.Status = http.StatusBadGateway
 		return err
@@ -749,16 +830,12 @@ func (r *Response) ProxyPass(target string) error {
 	res.Header.Del("Trailer")
 	res.Header.Del("Sec-WebSocket-Extensions")
 	res.Header.Del("Sec-WebSocket-Accept")
-	for n := range r.Header {
-		res.Header.Del(n)
-	}
 
-	r.Status = http.StatusSwitchingProtocols
 	for n, vs := range res.Header {
-		r.Header[n] = append(r.Header[n], vs...)
+		for _, v := range vs {
+			targetHeader.Add(n, v)
+		}
 	}
-
-	r.Written = true
 
 	wsu := &websocket.Upgrader{
 		HandshakeTimeout: r.Air.WebSocketHandshakeTimeout,
@@ -769,7 +846,6 @@ func (r *Response) ProxyPass(target string) error {
 			_ error,
 		) {
 			r.Status = status
-			r.Written = false
 		},
 		CheckOrigin: func(*http.Request) bool {
 			return true
@@ -784,6 +860,9 @@ func (r *Response) ProxyPass(target string) error {
 		return err
 	}
 	defer uc.Close()
+
+	r.Status = http.StatusSwitchingProtocols
+	r.Written = true
 
 	errChan := make(chan error, 1)
 	go replicateWebSocketConn(uc, dc, errChan)
@@ -803,6 +882,44 @@ func (r *Response) Defer(f func()) {
 	if f != nil {
 		r.deferredFuncs = append(r.deferredFuncs, f)
 	}
+}
+
+// ReverseProxyModifier is used by the `Response.ProxyPass` to modify the
+// request to the target and the response from the traget.
+//
+// Note that any field in the `ReverseProxyModifier` can be nil, which means
+// there is no need to modify that value.
+type ReverseProxyModifier struct {
+	// ModifyRequestMethod modifies the method of the request to the target.
+	ModifyRequestMethod func(method string) string
+
+	// ModifyRequestPath modifies the path of the request to the target.
+	//
+	// Note that the path contains the query part (anyway, the HTTP/2
+	// specification says so). Therefore, the returned path must also be in
+	// this format.
+	ModifyRequestPath func(path string) string
+
+	// ModifyRequestHeader modifies the header of the request to the target.
+	ModifyRequestHeader func(header http.Header)
+
+	// ModifyRequestBody modifies the body of the request from the target.
+	ModifyRequestBody func(body io.Reader) (io.Reader, error)
+
+	// ModifyResponseStatus modifies the status of the response from the
+	// target.
+	ModifyResponseStatus func(status int) int
+
+	// ModifyResponseHeader modifies the header of the response from the
+	// target.
+	ModifyResponseHeader func(header http.Header)
+
+	// ModifyResponseBody modifies the body of the response from the target.
+	//
+	// It is the caller's responsibility to close the returned
+	// `io.ReadCloser`, which means that the `Response.ProxyPass` will be
+	/// responsible for closing it.
+	ModifyResponseBody func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // responseWriter used to tie the `Response` and the `http.ResponseWriter`
