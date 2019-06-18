@@ -959,114 +959,8 @@ func (rw *responseWriter) WriteHeader(status int) {
 		}
 	}
 
-	mt, _, _ := mime.ParseMediaType(rw.r.Header.Get("Content-Type"))
-	cl, _ := strconv.ParseInt(rw.r.Header.Get("Content-Length"), 10, 64)
-	if mt != "" && rw.r.Air.GzipEnabled &&
-		cl >= rw.r.Air.GzipMinContentLength &&
-		stringSliceContainsCIly(rw.r.Air.GzipMIMETypes, mt) {
-		if !httpguts.HeaderValuesContainsToken(
-			rw.r.Header["Vary"],
-			"Accept-Encoding",
-		) {
-			rw.r.Header.Add("Vary", "Accept-Encoding")
-		}
-
-		if !rw.r.Gzipped && httpguts.HeaderValuesContainsToken(
-			rw.r.req.Header["Accept-Encoding"],
-			"gzip",
-		) {
-			rw.gw, _ = rw.r.Air.gzipWriterPool.Get().(*gzip.Writer)
-			if rw.gw != nil {
-				rw.gw.Reset(rw.w)
-				rw.r.Gzipped = true
-				rw.r.Defer(func() {
-					rw.gw.Close()
-					rw.r.Air.gzipWriterPool.Put(rw.gw)
-				})
-			}
-		}
-	}
-
-	if rw.r.Gzipped {
-		if !httpguts.HeaderValuesContainsToken(
-			rw.r.Header["Content-Encoding"],
-			"gzip",
-		) {
-			rw.r.Header.Add("Content-Encoding", "gzip")
-		}
-
-		rw.r.Header.Del("Content-Length")
-
-		if et := rw.r.Header.Get("ETag"); et != "" &&
-			!strings.HasPrefix(et, "W/") {
-			rw.r.Header.Set("ETag", fmt.Sprint("W/", et))
-		}
-	}
-
-	if reqct := rw.r.req.Header.Get("Content-Type"); rw.r.reverseProxying &&
-		strings.HasPrefix(reqct, "application/grpc-web") {
-		reqmt := "application/grpc-web-text"
-		if strings.HasSuffix(reqct, reqmt) {
-			w := io.Writer(rw.w)
-			if rw.gw != nil {
-				w = rw.gw
-			}
-
-			rw.b64wc = base64.NewEncoder(base64.StdEncoding, w)
-		} else {
-			reqmt = "application/grpc-web"
-		}
-
-		rw.r.Header.Set("Content-Type", strings.Replace(
-			rw.r.Header.Get("Content-Type"),
-			"application/grpc",
-			reqmt,
-			1,
-		))
-
-		tns := strings.Split(rw.r.Header.Get("Trailer"), ", ")
-		rw.r.Header.Del("Trailer")
-
-		hns := make([]string, 0, len(rw.r.Header))
-		for n := range rw.r.Header {
-			hns = append(hns, n)
-		}
-
-		rw.r.Header.Set(
-			"Access-Control-Expose-Headers",
-			strings.Join(hns, ", "),
-		)
-
-		rw.r.Defer(func() {
-			ts := make(http.Header, len(tns))
-			for _, tn := range tns {
-				ltn := strings.ToLower(tn)
-				ts[ltn] = append(ts[ltn], rw.r.Header[tn]...)
-				rw.r.Header.Del(tn)
-			}
-
-			for n, vs := range rw.r.Header {
-				if strings.HasPrefix(n, http.TrailerPrefix) {
-					ltn := strings.ToLower(
-						n[len(http.TrailerPrefix):],
-					)
-					ts[ltn] = append(ts[ltn], vs...)
-					rw.r.Header.Del(n)
-				}
-			}
-
-			tb := bytes.Buffer{}
-			ts.Write(&tb)
-
-			th := []byte{1 << 7, 0, 0, 0, 0}
-			binary.BigEndian.PutUint32(th[1:5], uint32(tb.Len()))
-
-			rw.Write(th)
-			rw.Write(tb.Bytes())
-			rw.Flush()
-		})
-	}
-
+	rw.handleGzip()
+	rw.handleReverseProxy()
 	rw.w.WriteHeader(status)
 
 	rw.r.Status = status
@@ -1138,6 +1032,147 @@ func (rw *responseWriter) Push(target string, pos *http.PushOptions) error {
 	}
 
 	return p.Push(target, pos)
+}
+
+// handleGzip handles the gzip feature for the rw.
+func (rw *responseWriter) handleGzip() {
+	if !rw.r.Air.GzipEnabled {
+		return
+	}
+
+	if mt, _, _ := mime.ParseMediaType(
+		rw.r.Header.Get("Content-Type"),
+	); mt == "" || !stringSliceContainsCIly(rw.r.Air.GzipMIMETypes, mt) {
+		return
+	}
+
+	if cl, _ := strconv.ParseInt(
+		rw.r.Header.Get("Content-Length"),
+		10,
+		64,
+	); cl < rw.r.Air.GzipMinContentLength {
+		return
+	}
+
+	if !httpguts.HeaderValuesContainsToken(
+		rw.r.Header["Vary"],
+		"Accept-Encoding",
+	) {
+		rw.r.Header.Add("Vary", "Accept-Encoding")
+	}
+
+	if !httpguts.HeaderValuesContainsToken(
+		rw.r.req.Header["Accept-Encoding"],
+		"gzip",
+	) {
+		return
+	}
+
+	if !rw.r.Gzipped {
+		rw.gw, _ = rw.r.Air.gzipWriterPool.Get().(*gzip.Writer)
+		if rw.gw == nil {
+			return
+		}
+
+		rw.gw.Reset(rw.w)
+		rw.r.Defer(func() {
+			if rw.gwn == 0 {
+				rw.gw.Reset(ioutil.Discard)
+			}
+
+			rw.gw.Close()
+			rw.r.Air.gzipWriterPool.Put(rw.gw)
+			rw.gw = nil
+		})
+
+		rw.r.Gzipped = true
+	}
+
+	rw.r.Header.Del("Content-Length")
+	if !httpguts.HeaderValuesContainsToken(
+		rw.r.Header["Content-Encoding"],
+		"gzip",
+	) {
+		rw.r.Header.Add("Content-Encoding", "gzip")
+	}
+
+	if et := rw.r.Header.Get("ETag"); et != "" &&
+		!strings.HasPrefix(et, "W/") {
+		rw.r.Header.Set("ETag", fmt.Sprint("W/", et))
+	}
+}
+
+// handleReverseProxy handles the reverse proxy feature for the rw.
+func (rw *responseWriter) handleReverseProxy() {
+	if !rw.r.reverseProxying {
+		return
+	}
+
+	reqct := rw.r.req.Header.Get("Content-Type")
+	if !strings.HasPrefix(reqct, "application/grpc-web") {
+		return
+	}
+
+	reqmt := "application/grpc-web-text"
+	if strings.HasSuffix(reqct, reqmt) {
+		w := io.Writer(rw.w)
+		if rw.gw != nil {
+			w = rw.gw
+		}
+
+		rw.b64wc = base64.NewEncoder(base64.StdEncoding, w)
+	} else {
+		reqmt = "application/grpc-web"
+	}
+
+	rw.r.Header.Set("Content-Type", strings.Replace(
+		rw.r.Header.Get("Content-Type"),
+		"application/grpc",
+		reqmt,
+		1,
+	))
+
+	tns := strings.Split(rw.r.Header.Get("Trailer"), ", ")
+	rw.r.Header.Del("Trailer")
+
+	hns := make([]string, 0, len(rw.r.Header))
+	for n := range rw.r.Header {
+		hns = append(hns, n)
+	}
+
+	rw.r.Header.Set(
+		"Access-Control-Expose-Headers",
+		strings.Join(hns, ", "),
+	)
+
+	rw.r.Defer(func() {
+		ts := make(http.Header, len(tns))
+		for _, tn := range tns {
+			ltn := strings.ToLower(tn)
+			ts[ltn] = append(ts[ltn], rw.r.Header[tn]...)
+			rw.r.Header.Del(tn)
+		}
+
+		for n, vs := range rw.r.Header {
+			if !strings.HasPrefix(n, http.TrailerPrefix) {
+				continue
+			}
+
+			ltn := strings.ToLower(n[len(http.TrailerPrefix):])
+			ts[ltn] = append(ts[ltn], vs...)
+			rw.r.Header.Del(n)
+		}
+
+		tb := bytes.Buffer{}
+		ts.Write(&tb)
+
+		th := []byte{1 << 7, 0, 0, 0, 0}
+		binary.BigEndian.PutUint32(th[1:5], uint32(tb.Len()))
+
+		rw.Write(th)
+		rw.Write(tb.Bytes())
+		rw.Flush()
+	})
 }
 
 // newReverseProxyTransport returns a new instance of the `http.Transport` with
