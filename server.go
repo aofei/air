@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sort"
 	"sync"
 
 	"golang.org/x/crypto/acme"
@@ -18,6 +19,7 @@ import (
 type server struct {
 	a            *Air
 	server       *http.Server
+	addressMap   map[string]int
 	requestPool  *sync.Pool
 	responsePool *sync.Pool
 }
@@ -25,8 +27,9 @@ type server struct {
 // newServer returns a new instance of the `server` with the a.
 func newServer(a *Air) *server {
 	return &server{
-		a:      a,
-		server: &http.Server{},
+		a:          a,
+		server:     &http.Server{},
+		addressMap: map[string]int{},
 		requestPool: &sync.Pool{
 			New: func() interface{} {
 				return &Request{}
@@ -47,11 +50,6 @@ func (s *server) serve() error {
 		return err
 	}
 
-	numericPort, err := net.LookupPort("tcp", port)
-	if err != nil {
-		return err
-	}
-
 	s.server.Addr = host + ":" + port
 	s.server.Handler = s
 	s.server.ReadTimeout = s.a.ReadTimeout
@@ -61,6 +59,7 @@ func (s *server) serve() error {
 	s.server.MaxHeaderBytes = s.a.MaxHeaderBytes
 	s.server.ErrorLog = s.a.errorLogger
 
+	realPort := port
 	hh := http.Handler(http.HandlerFunc(func(
 		rw http.ResponseWriter,
 		r *http.Request,
@@ -70,8 +69,8 @@ func (s *server) serve() error {
 			host = r.Host
 		}
 
-		if numericPort != 443 {
-			host = fmt.Sprint(host, ":", numericPort)
+		if realPort != "443" {
+			host = fmt.Sprint(host, ":", realPort)
 		}
 
 		http.Redirect(
@@ -130,6 +129,14 @@ func (s *server) serve() error {
 		}
 		defer l.Close()
 
+		s.addressMap[l.Addr().String()] = 0
+		defer delete(s.addressMap, l.Addr().String())
+
+		if realPort == "0" {
+			_, realPort, _ = net.SplitHostPort(l.Addr().String())
+			fmt.Printf("air: listening on %v\n", s.addresses())
+		}
+
 		return s.server.Serve(l)
 	}
 
@@ -151,6 +158,9 @@ func (s *server) serve() error {
 		}
 		defer l.Close()
 
+		s.addressMap[l.Addr().String()] = 1
+		defer delete(s.addressMap, l.Addr().String())
+
 		go hs.Serve(l)
 		defer hs.Close()
 	}
@@ -160,6 +170,14 @@ func (s *server) serve() error {
 		return err
 	}
 	defer l.Close()
+
+	s.addressMap[l.Addr().String()] = 0
+	defer delete(s.addressMap, l.Addr().String())
+
+	if realPort == "0" {
+		_, realPort, _ = net.SplitHostPort(l.Addr().String())
+		fmt.Printf("air: listening on %v\n", s.addresses())
+	}
 
 	return s.server.ServeTLS(l, "", "")
 }
@@ -173,6 +191,27 @@ func (s *server) close() error {
 // connections.
 func (s *server) shutdown(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
+}
+
+// addresses returns all TCP addresses that the s actually listens on.
+func (s *server) addresses() []string {
+	asl := len(s.addressMap)
+	if asl == 0 {
+		return nil
+	}
+
+	as := make([]string, 0, asl)
+	for a := range s.addressMap {
+		as = append(as, a)
+	}
+
+	sort.Slice(as, func(i, j int) bool {
+		iw := s.addressMap[as[i]]
+		jw := s.addressMap[as[j]]
+		return iw < jw
+	})
+
+	return as
 }
 
 // ServeHTTP implements the `http.Handler`.

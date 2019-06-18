@@ -107,6 +107,9 @@ type Air struct {
 	//
 	// There is always an address here that contains a free port.
 	//
+	// If the port of the `Address` is "0", a port is automatically chosen.
+	// The `Addresses` can be used to discover the chosen port.
+	//
 	// Default value: ":8080"
 	Address string `mapstructure:"address"`
 
@@ -241,6 +244,9 @@ type Air struct {
 	// as the `Address`) that the server of the current web application
 	// listens on. All requests to this port will be forced to redirect to
 	// HTTPS.
+	//
+	// If the `HTTPSEnforcedPort` is "0", a port is automatically chosen.
+	// The `Addresses` can be used to discover the chosen port.
 	//
 	// Default value: "80"
 	HTTPSEnforcedPort string `mapstructure:"https_enforced_port"`
@@ -928,6 +934,12 @@ func (a *Air) Close() error {
 // connections of shutdown and wait for them to close, if desired.
 func (a *Air) Shutdown(ctx context.Context) error {
 	return a.server.shutdown(ctx)
+}
+
+// Addresses returns all TCP addresses that the server of the a actually listens
+// on.
+func (a *Air) Addresses() []string {
+	return a.server.addresses()
 }
 
 // Handler defines a function to serve requests.

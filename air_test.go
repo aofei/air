@@ -449,10 +449,14 @@ func TestAirGroup(t *testing.T) {
 
 func TestAirServe(t *testing.T) {
 	a := New()
-	a.Address = "localhost:8080"
+	a.Address = "localhost:0"
+
+	hijackOSStdout()
 
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
 
 	assert.NoError(t, a.Close())
 
@@ -462,7 +466,7 @@ func TestAirServe(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	a = New()
-	a.Address = "localhost:8080"
+	a.Address = "localhost:0"
 	a.ConfigFile = filepath.Join(dir, "config.json")
 
 	assert.NoError(t, ioutil.WriteFile(
@@ -471,15 +475,19 @@ func TestAirServe(t *testing.T) {
 		os.ModePerm,
 	))
 
+	hijackOSStdout()
+
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
 
 	assert.Equal(t, "foobar", a.AppName)
 
 	assert.NoError(t, a.Close())
 
 	a = New()
-	a.Address = "localhost:8080"
+	a.Address = "localhost:0"
 	a.ConfigFile = filepath.Join(dir, "config.toml")
 
 	assert.NoError(t, ioutil.WriteFile(
@@ -488,15 +496,19 @@ func TestAirServe(t *testing.T) {
 		os.ModePerm,
 	))
 
+	hijackOSStdout()
+
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
 
 	assert.Equal(t, "foobar", a.AppName)
 
 	assert.NoError(t, a.Close())
 
 	a = New()
-	a.Address = "localhost:8080"
+	a.Address = "localhost:0"
 	a.ConfigFile = filepath.Join(dir, "config.yaml")
 
 	assert.NoError(t, ioutil.WriteFile(
@@ -505,15 +517,19 @@ func TestAirServe(t *testing.T) {
 		os.ModePerm,
 	))
 
+	hijackOSStdout()
+
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
 
 	assert.Equal(t, "foobar", a.AppName)
 
 	assert.NoError(t, a.Close())
 
 	a = New()
-	a.Address = "localhost:8080"
+	a.Address = "localhost:0"
 	a.ConfigFile = filepath.Join(dir, "config.yml")
 
 	assert.NoError(t, ioutil.WriteFile(
@@ -522,8 +538,12 @@ func TestAirServe(t *testing.T) {
 		os.ModePerm,
 	))
 
+	hijackOSStdout()
+
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
 
 	assert.Equal(t, "foobar", a.AppName)
 
@@ -556,22 +576,46 @@ func TestAirServe(t *testing.T) {
 
 func TestAirClose(t *testing.T) {
 	a := New()
-	a.Address = "localhost:8080"
+	a.Address = "localhost:0"
+
+	hijackOSStdout()
 
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
 
 	assert.NoError(t, a.Close())
 }
 
 func TestAirShutdown(t *testing.T) {
 	a := New()
-	a.Address = "localhost:8080"
+	a.Address = "localhost:0"
+
+	hijackOSStdout()
 
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
 
+	revertOSStdout()
+
 	assert.NoError(t, a.Shutdown(context.Background()))
+}
+
+func TestAirAddresses(t *testing.T) {
+	a := New()
+	a.Address = "localhost:0"
+
+	hijackOSStdout()
+
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	assert.Len(t, a.Addresses(), 1)
+
+	assert.NoError(t, a.Close())
 }
 
 func TestWrapHTTPHandler(t *testing.T) {
@@ -732,4 +776,21 @@ func fakeRRCycle(
 	req.res = res
 
 	return req, res, rec
+}
+
+var (
+	osStdout     = os.Stdout
+	fakeOSStdout *os.File
+)
+
+func hijackOSStdout() {
+	if fakeOSStdout == nil {
+		fakeOSStdout, _ = ioutil.TempFile("", "")
+	}
+
+	os.Stdout = fakeOSStdout
+}
+
+func revertOSStdout() {
+	os.Stdout = osStdout
 }

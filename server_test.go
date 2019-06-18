@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -24,6 +25,7 @@ func TestNewServer(t *testing.T) {
 	assert.NotNil(t, s)
 	assert.NotNil(t, s.a)
 	assert.NotNil(t, s.server)
+	assert.NotNil(t, s.addressMap)
 	assert.NotNil(t, s.requestPool)
 	assert.NotNil(t, s.responsePool)
 	assert.IsType(t, &Request{}, s.requestPool.Get())
@@ -32,17 +34,21 @@ func TestNewServer(t *testing.T) {
 
 func TestServerServe(t *testing.T) {
 	a := New()
-	a.Address = "localhost:8080"
+	a.Address = "localhost:http"
 
 	s := a.server
+
+	hijackOSStdout()
 
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)
 
+	revertOSStdout()
+
 	assert.NoError(t, s.close())
 
 	a = New()
-	a.Address = "-1:8080"
+	a.Address = "-1:0"
 
 	s = a.server
 
@@ -76,7 +82,7 @@ func TestServerServe(t *testing.T) {
 
 	a = New()
 	a.DebugMode = true
-	a.Address = "localhost:8080"
+	a.Address = "localhost:0"
 
 	s = a.server
 
@@ -95,23 +101,34 @@ func TestServerServe(t *testing.T) {
 
 	b, err := ioutil.ReadFile(stdout.Name())
 	assert.NoError(t, err)
-	assert.Equal(t, "air: serving in debug mode\n", string(b))
+	assert.Equal(
+		t,
+		fmt.Sprintf(
+			"air: serving in debug mode\nair: listening on %v\n",
+			s.addresses(),
+		),
+		string(b),
+	)
 
 	assert.NoError(t, s.close())
 
 	a = New()
-	a.Address = "localhost:8080"
+	a.Address = "localhost:0"
 
 	s = a.server
 
+	hijackOSStdout()
+
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
 
 	res, err := http.DefaultClient.Do(&http.Request{
 		Method: http.MethodGet,
 		URL: &url.URL{
 			Scheme: "http",
-			Host:   "localhost:8080",
+			Host:   s.addresses()[0],
 		},
 		Host: "localhost",
 	})
@@ -122,7 +139,7 @@ func TestServerServe(t *testing.T) {
 		Method: http.MethodGet,
 		URL: &url.URL{
 			Scheme: "http",
-			Host:   "localhost:8080",
+			Host:   s.addresses()[0],
 		},
 		Host: "example.com",
 	})
@@ -132,7 +149,7 @@ func TestServerServe(t *testing.T) {
 	assert.NoError(t, s.close())
 
 	a = New()
-	a.Address = "localhost:1443"
+	a.Address = "localhost:0"
 
 	assert.NoError(t, ioutil.WriteFile(
 		filepath.Join(dir, "tls_cert.pem"),
@@ -154,9 +171,9 @@ func TestServerServe(t *testing.T) {
 	assert.Error(t, s.serve())
 
 	a = New()
-	a.Address = "localhost:1443"
+	a.Address = "localhost:0"
 	a.HTTPSEnforced = true
-	a.HTTPSEnforcedPort = "8080"
+	a.HTTPSEnforcedPort = "0"
 	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
 
 	assert.NoError(t, ioutil.WriteFile(
@@ -235,14 +252,18 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 
 	s = a.server
 
+	hijackOSStdout()
+
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
 
 	res, err = http.DefaultClient.Do(&http.Request{
 		Method: http.MethodGet,
 		URL: &url.URL{
 			Scheme: "https",
-			Host:   "localhost:1443",
+			Host:   s.addresses()[0],
 		},
 		Host: "example.com",
 	})
@@ -256,7 +277,7 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 		Method: http.MethodGet,
 		URL: &url.URL{
 			Scheme: "https",
-			Host:   "localhost:1443",
+			Host:   s.addresses()[0],
 		},
 		Host: "localhost",
 	})
@@ -271,7 +292,7 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 		Method: http.MethodGet,
 		URL: &url.URL{
 			Scheme: "http",
-			Host:   "localhost:8080",
+			Host:   s.addresses()[1],
 		},
 		Host: "localhost",
 	})
@@ -282,7 +303,7 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	assert.NoError(t, s.close())
 
 	a = New()
-	a.Address = "-1:1443"
+	a.Address = "-1:0"
 	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")
 	a.TLSKeyFile = filepath.Join(dir, "tls_key.pem")
 
@@ -291,7 +312,7 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	assert.Error(t, s.serve())
 
 	a = New()
-	a.Address = "localhost:1443"
+	a.Address = "localhost:0"
 	a.HTTPSEnforced = true
 	a.HTTPSEnforcedPort = "-1"
 	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")
@@ -302,23 +323,27 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	assert.Error(t, s.serve())
 
 	a = New()
-	a.Address = "localhost:1443"
+	a.Address = "localhost:0"
 	a.ACMEEnabled = true
 	a.ACMECertRoot = dir
 	a.ACMEHostWhitelist = []string{"localhost"}
-	a.HTTPSEnforcedPort = "8080"
+	a.HTTPSEnforcedPort = "0"
 	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
 
 	s = a.server
 
+	hijackOSStdout()
+
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
 
 	res, err = http.DefaultClient.Do(&http.Request{
 		Method: http.MethodGet,
 		URL: &url.URL{
 			Scheme: "https",
-			Host:   "localhost:1443",
+			Host:   s.addresses()[0],
 		},
 		Host: "example.com",
 	})
@@ -328,23 +353,27 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 	assert.NoError(t, s.close())
 
 	a = New()
-	a.Address = "localhost:1443"
+	a.Address = "localhost:0"
 	a.ACMEEnabled = true
 	a.ACMECertRoot = dir
 	a.ACMEHostWhitelist = []string{"localhost"}
-	a.HTTPSEnforcedPort = "8080"
+	a.HTTPSEnforcedPort = "0"
 	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
 
 	s = a.server
 
+	hijackOSStdout()
+
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
 
 	res, err = http.DefaultClient.Do(&http.Request{
 		Method: http.MethodGet,
 		URL: &url.URL{
 			Scheme: "https",
-			Host:   "localhost:1443",
+			Host:   s.addresses()[0],
 		},
 		Host: "example.com",
 	})
@@ -356,26 +385,52 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 
 func TestServerClose(t *testing.T) {
 	a := New()
-	a.Address = "localhost:8080"
+	a.Address = "localhost:0"
 
 	s := a.server
 
+	hijackOSStdout()
+
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
 
 	assert.NoError(t, s.close())
 }
 
 func TestServerShutdown(t *testing.T) {
 	a := New()
-	a.Address = "localhost:8080"
+	a.Address = "localhost:0"
 
 	s := a.server
+
+	hijackOSStdout()
 
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)
 
+	revertOSStdout()
+
 	assert.NoError(t, s.shutdown(context.Background()))
+}
+
+func TestServerAddresses(t *testing.T) {
+	a := New()
+	a.Address = "localhost:0"
+
+	s := a.server
+
+	hijackOSStdout()
+
+	go s.serve()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	assert.Len(t, s.addresses(), 1)
+
+	assert.NoError(t, s.close())
 }
 
 func TestServerServeHTTP(t *testing.T) {
