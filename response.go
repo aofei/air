@@ -1040,18 +1040,59 @@ func (rw *responseWriter) handleGzip() {
 		return
 	}
 
-	if mt, _, _ := mime.ParseMediaType(
-		rw.r.Header.Get("Content-Type"),
-	); mt == "" || !stringSliceContainsCIly(rw.r.Air.GzipMIMETypes, mt) {
-		return
+	if !rw.r.Gzipped {
+		if cl, _ := strconv.ParseInt(
+			rw.r.Header.Get("Content-Length"),
+			10,
+			64,
+		); cl < rw.r.Air.GzipMinContentLength {
+			return
+		}
+
+		if mt, _, _ := mime.ParseMediaType(
+			rw.r.Header.Get("Content-Type"),
+		); !stringSliceContainsCIly(rw.r.Air.GzipMIMETypes, mt) {
+			return
+		}
+
+		if httpguts.HeaderValuesContainsToken(
+			rw.r.req.Header["Accept-Encoding"],
+			"gzip",
+		) {
+			rw.gw, _ = rw.r.Air.gzipWriterPool.Get().(*gzip.Writer)
+			if rw.gw == nil {
+				return
+			}
+
+			rw.gw.Reset(rw.w)
+			rw.r.Defer(func() {
+				if rw.gwn == 0 {
+					rw.gw.Reset(ioutil.Discard)
+				}
+
+				rw.gw.Close()
+				rw.r.Air.gzipWriterPool.Put(rw.gw)
+				rw.gw = nil
+			})
+
+			rw.r.Gzipped = true
+		}
 	}
 
-	if cl, _ := strconv.ParseInt(
-		rw.r.Header.Get("Content-Length"),
-		10,
-		64,
-	); cl < rw.r.Air.GzipMinContentLength {
-		return
+	if rw.r.Gzipped {
+		if !httpguts.HeaderValuesContainsToken(
+			rw.r.Header["Content-Encoding"],
+			"gzip",
+		) {
+			rw.r.Header.Add("Content-Encoding", "gzip")
+		}
+
+		rw.r.Header.Del("Content-Length")
+
+		if et := rw.r.Header.Get("ETag"); et != "" &&
+			!strings.HasPrefix(et, "W/") {
+			rw.r.Header.Set("ETag", fmt.Sprint("W/", et))
+		}
 	}
 
 	if !httpguts.HeaderValuesContainsToken(
@@ -1059,46 +1100,6 @@ func (rw *responseWriter) handleGzip() {
 		"Accept-Encoding",
 	) {
 		rw.r.Header.Add("Vary", "Accept-Encoding")
-	}
-
-	if !httpguts.HeaderValuesContainsToken(
-		rw.r.req.Header["Accept-Encoding"],
-		"gzip",
-	) {
-		return
-	}
-
-	if !rw.r.Gzipped {
-		rw.gw, _ = rw.r.Air.gzipWriterPool.Get().(*gzip.Writer)
-		if rw.gw == nil {
-			return
-		}
-
-		rw.gw.Reset(rw.w)
-		rw.r.Defer(func() {
-			if rw.gwn == 0 {
-				rw.gw.Reset(ioutil.Discard)
-			}
-
-			rw.gw.Close()
-			rw.r.Air.gzipWriterPool.Put(rw.gw)
-			rw.gw = nil
-		})
-
-		rw.r.Gzipped = true
-	}
-
-	rw.r.Header.Del("Content-Length")
-	if !httpguts.HeaderValuesContainsToken(
-		rw.r.Header["Content-Encoding"],
-		"gzip",
-	) {
-		rw.r.Header.Add("Content-Encoding", "gzip")
-	}
-
-	if et := rw.r.Header.Get("ETag"); et != "" &&
-		!strings.HasPrefix(et, "W/") {
-		rw.r.Header.Set("ETag", fmt.Sprint("W/", et))
 	}
 }
 

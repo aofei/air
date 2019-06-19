@@ -431,6 +431,9 @@ func TestServerAddresses(t *testing.T) {
 	assert.Len(t, s.addresses(), 1)
 
 	assert.NoError(t, s.close())
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Len(t, s.addresses(), 0)
 }
 
 func TestServerServeHTTP(t *testing.T) {

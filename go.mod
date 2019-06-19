@@ -15,8 +15,8 @@ require (
 	github.com/stretchr/testify v1.3.0
 	github.com/tdewolff/minify/v2 v2.5.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	golang.org/x/crypto v0.0.0-20190617133340-57b3e21c3d56
-	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980
+	golang.org/x/crypto v0.0.0-20190618222545-ea8f1a30c443
+	golang.org/x/net v0.0.0-20190619014844-b5b0513f8c1b
 	golang.org/x/sys v0.0.0-20190618155005-516e3c20635f // indirect
 	golang.org/x/text v0.3.2
 	google.golang.org/appengine v1.6.1 // indirect
