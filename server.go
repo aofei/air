@@ -57,7 +57,7 @@ func (s *server) serve() error {
 	s.server.WriteTimeout = s.a.WriteTimeout
 	s.server.IdleTimeout = s.a.IdleTimeout
 	s.server.MaxHeaderBytes = s.a.MaxHeaderBytes
-	s.server.ErrorLog = s.a.errorLogger
+	s.server.ErrorLog = s.a.ErrorLogger
 
 	realPort := port
 	hh := http.Handler(http.HandlerFunc(func(
@@ -149,7 +149,7 @@ func (s *server) serve() error {
 			WriteTimeout:      s.a.WriteTimeout,
 			IdleTimeout:       s.a.IdleTimeout,
 			MaxHeaderBytes:    s.a.MaxHeaderBytes,
-			ErrorLog:          s.a.errorLogger,
+			ErrorLog:          s.a.ErrorLogger,
 		}
 
 		l := newListener(s.a)

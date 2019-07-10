@@ -112,10 +112,6 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, "en-US", a.I18nLocaleBase)
 	assert.Empty(t, a.ConfigFile)
 
-	assert.NotNil(t, a.errorLogger)
-	assert.Empty(t, a.errorLogger.Prefix())
-	assert.Zero(t, a.errorLogger.Flags())
-
 	assert.NotNil(t, a.server)
 	assert.NotNil(t, a.router)
 	assert.NotNil(t, a.binder)
@@ -618,6 +614,25 @@ func TestAirAddresses(t *testing.T) {
 	assert.NoError(t, a.Close())
 }
 
+func TestAirLogErrorf(t *testing.T) {
+	a := New()
+
+	buf := bytes.Buffer{}
+
+	log.SetOutput(&buf)
+	log.SetFlags(0)
+	a.logErrorf("air: some error: %v", errors.New("foobar"))
+	assert.Equal(t, buf.String(), "air: some error: foobar\n")
+	log.SetOutput(os.Stderr)
+	log.SetFlags(log.LstdFlags)
+
+	buf.Reset()
+
+	a.ErrorLogger = log.New(&buf, "", 0)
+	a.logErrorf("air: some error: %v", errors.New("foobar"))
+	assert.Equal(t, buf.String(), "air: some error: foobar\n")
+}
+
 func TestWrapHTTPHandler(t *testing.T) {
 	a := New()
 
@@ -690,36 +705,6 @@ func TestWrapHTTPMiddleWare(t *testing.T) {
 	assert.Equal(t, http.MethodGet, req.Method)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Foobar", rec.Body.String())
-}
-
-func TestNewErrorLogWriter(t *testing.T) {
-	a := New()
-	elw := newErrorLogWriter(a)
-
-	assert.NotNil(t, elw)
-	assert.Equal(t, a, elw.a)
-}
-
-func TestErrorLogWriterWrite(t *testing.T) {
-	a := New()
-	elw := newErrorLogWriter(a)
-
-	buf := bytes.Buffer{}
-
-	log.SetOutput(&buf)
-	n, err := elw.Write([]byte("foobar"))
-	assert.Equal(t, len("air: foobar"), n)
-	assert.NoError(t, err)
-	assert.Contains(t, buf.String(), "air: foobar")
-	log.SetOutput(os.Stderr)
-
-	buf.Reset()
-
-	a.ErrorLogger = log.New(&buf, "", 0)
-	n, err = elw.Write([]byte("air: foobar"))
-	assert.Equal(t, len("air: foobar"), n)
-	assert.NoError(t, err)
-	assert.Contains(t, buf.String(), "air: foobar")
 }
 
 func TestStringSliceContains(t *testing.T) {

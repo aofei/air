@@ -753,7 +753,7 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 			},
 			FlushInterval: 100 * time.Millisecond,
 			Transport:     r.Air.reverseProxyTransport,
-			ErrorLog:      r.Air.errorLogger,
+			ErrorLog:      r.Air.ErrorLogger,
 			BufferPool:    r.Air.reverseProxyBufferPool,
 			ModifyResponse: func(res *http.Response) error {
 				if mrs := rpm.ModifyResponseStatus; mrs != nil {

@@ -67,7 +67,7 @@ func (c *coffer) load() {
 						c.cache.Del(a.gzippedDigest)
 					}
 				case err := <-c.watcher.Errors:
-					c.a.errorLogger.Printf(
+					c.a.logErrorf(
 						"air: coffer watcher error: %v",
 						err,
 					)

@@ -57,7 +57,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/BurntSushi/toml"
 	"github.com/mitchellh/mapstructure"
@@ -549,7 +548,6 @@ type Air struct {
 	// Default value: ""
 	ConfigFile string `mapstructure:"-"`
 
-	errorLogger                  *log.Logger
 	server                       *server
 	router                       *router
 	binder                       *binder
@@ -632,7 +630,6 @@ func New() *Air {
 		I18nLocaleBase: "en-US",
 	}
 
-	a.errorLogger = log.New(newErrorLogWriter(a), "", 0)
 	a.server = newServer(a)
 	a.router = newRouter(a)
 	a.binder = newBinder(a)
@@ -942,6 +939,16 @@ func (a *Air) Addresses() []string {
 	return a.server.addresses()
 }
 
+// logErrorf logs the v as an error in the format.
+func (a *Air) logErrorf(format string, v ...interface{}) {
+	s := fmt.Sprintf(format, v...)
+	if a.ErrorLogger != nil {
+		a.ErrorLogger.Output(2, s)
+	} else {
+		log.Output(2, s)
+	}
+}
+
 // Handler defines a function to serve requests.
 type Handler func(*Request, *Response) error
 
@@ -1012,32 +1019,6 @@ func WrapHTTPMiddleware(hm func(http.Handler) http.Handler) Gas {
 			return err
 		}
 	}
-}
-
-// errorLogWriter is an error log writer.
-type errorLogWriter struct {
-	a *Air
-}
-
-// newErrorLogWriter returns a new instance of the `errorLogWriter` with the a.
-func newErrorLogWriter(a *Air) *errorLogWriter {
-	return &errorLogWriter{
-		a: a,
-	}
-}
-
-// Write implements the `io.Writer`.
-func (elw *errorLogWriter) Write(b []byte) (int, error) {
-	s := *(*string)(unsafe.Pointer(&b))
-	if !strings.HasPrefix(s, "air: ") {
-		s = fmt.Sprint("air: ", s)
-	}
-
-	if elw.a.ErrorLogger != nil {
-		return len(s), elw.a.ErrorLogger.Output(2, s)
-	}
-
-	return len(s), log.Output(2, s)
 }
 
 // stringSliceContains reports whether the ss contains the s.

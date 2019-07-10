@@ -50,7 +50,7 @@ func (r *renderer) load() {
 				case <-r.watcher.Events:
 					r.loadOnce = &sync.Once{}
 				case err := <-r.watcher.Errors:
-					r.a.errorLogger.Printf(
+					r.a.logErrorf(
 						"air: renderer watcher error: "+
 							"%v",
 						err,

@@ -50,7 +50,7 @@ func (i *i18n) load() {
 				case <-i.watcher.Events:
 					i.loadOnce = &sync.Once{}
 				case err := <-i.watcher.Errors:
-					i.a.errorLogger.Printf(
+					i.a.logErrorf(
 						"air: i18n watcher error: %v",
 						err,
 					)
@@ -108,13 +108,8 @@ func (i *i18n) load() {
 // localize localizes the r.
 func (i *i18n) localize(r *Request) {
 	if i.loadOnce.Do(i.load); i.loadError != nil {
-		i.a.errorLogger.Printf(
-			"air: failed to load i18n: %v",
-			i.loadError,
-		)
-
+		i.a.logErrorf("air: failed to load i18n: %v", i.loadError)
 		r.localizedString = locstr
-
 		return
 	}
 
