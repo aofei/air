@@ -249,8 +249,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	res.Air = s.a
 	res.SetHTTPResponseWriter(&responseWriter{
-		r: res,
-		w: rw,
+		r:  res,
+		rw: rw,
 	})
 	res.Status = http.StatusOK
 	res.ContentLength = -1

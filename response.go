@@ -922,13 +922,14 @@ type ReverseProxyModifier struct {
 	ModifyResponseBody func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
-// responseWriter used to tie the `Response` and the `http.ResponseWriter`
+// responseWriter is used to tie the `Response` and the `http.ResponseWriter`
 // together.
 type responseWriter struct {
 	sync.Mutex
 
 	r     *Response
-	w     http.ResponseWriter
+	rw    http.ResponseWriter
+	w     *countWriter
 	gw    *gzip.Writer
 	gwn   int
 	b64wc io.WriteCloser
@@ -936,7 +937,7 @@ type responseWriter struct {
 
 // Header implements the `http.ResponseWriter`.
 func (rw *responseWriter) Header() http.Header {
-	return rw.w.Header()
+	return rw.rw.Header()
 }
 
 // WriteHeader implements the `http.ResponseWriter`.
@@ -959,9 +960,14 @@ func (rw *responseWriter) WriteHeader(status int) {
 		}
 	}
 
+	rw.w = &countWriter{
+		w: rw.rw,
+		c: &rw.r.ContentLength,
+	}
+
 	rw.handleGzip()
 	rw.handleReverseProxy()
-	rw.w.WriteHeader(status)
+	rw.rw.WriteHeader(status)
 
 	rw.r.Status = status
 	rw.r.ContentLength = 0
@@ -991,8 +997,7 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 
 	n, err := w.Write(b)
 	if n > 0 {
-		rw.r.ContentLength += int64(n)
-		if w == rw.gw && rw.r.Air.GzipFlushThreshold > 0 {
+		if n > 0 && w == rw.gw && rw.r.Air.GzipFlushThreshold > 0 {
 			rw.gwn += n
 			if rw.gwn >= rw.r.Air.GzipFlushThreshold {
 				rw.gwn = 0
@@ -1021,12 +1026,12 @@ func (rw *responseWriter) Flush() {
 		rw.gw.Flush()
 	}
 
-	rw.w.(http.Flusher).Flush()
+	rw.rw.(http.Flusher).Flush()
 }
 
 // Push implements the `http.Pusher`.
 func (rw *responseWriter) Push(target string, pos *http.PushOptions) error {
-	p, ok := rw.w.(http.Pusher)
+	p, ok := rw.rw.(http.Pusher)
 	if !ok {
 		return http.ErrNotSupported
 	}
@@ -1066,11 +1071,12 @@ func (rw *responseWriter) handleGzip() {
 
 			rw.gw.Reset(rw.w)
 			rw.r.Defer(func() {
-				if rw.gwn == 0 {
+				if rw.r.ContentLength == 0 {
 					rw.gw.Reset(ioutil.Discard)
 				}
 
 				rw.gw.Close()
+
 				rw.r.Air.gzipWriterPool.Put(rw.gw)
 				rw.gw = nil
 			})
@@ -1174,6 +1180,20 @@ func (rw *responseWriter) handleReverseProxy() {
 		rw.Write(tb.Bytes())
 		rw.Flush()
 	})
+}
+
+// countWriter is used to count the number of bytes written to the underlying
+// `io.Writer`.
+type countWriter struct {
+	w io.Writer
+	c *int64
+}
+
+// Write implements the `io.Writer`.
+func (cw *countWriter) Write(b []byte) (int, error) {
+	n, err := cw.w.Write(b)
+	*cw.c += int64(n)
+	return n, err
 }
 
 // newReverseProxyTransport returns a new instance of the `http.Transport` with

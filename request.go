@@ -705,7 +705,7 @@ func (rpv *RequestParamValue) File() (*multipart.FileHeader, error) {
 	return rpv.f, nil
 }
 
-// requestBody used to tie the `Request.Body` and the `http.Request.Body`
+// requestBody is used to tie the `Request.Body` and the `http.Request.Body`
 // together.
 type requestBody struct {
 	sync.Mutex

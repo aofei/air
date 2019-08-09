@@ -754,8 +754,8 @@ func fakeRRCycle(
 		ohrw: rec,
 	}
 	res.SetHTTPResponseWriter(&responseWriter{
-		r: res,
-		w: rec,
+		r:  res,
+		rw: rec,
 	})
 
 	req.res = res
