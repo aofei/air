@@ -748,6 +748,11 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 				req.URL = targetURL
 				req.Header = targetHeader
 				req.Body = ioutil.NopCloser(targetBody)
+
+				// TODO: Remove the following line when the
+				// "net/http/httputil" of the minimum supported
+				// Go version of Air has fixed this bug.
+				req.Host = ""
 			},
 			FlushInterval: 100 * time.Millisecond,
 			Transport:     r.Air.reverseProxyTransport,
