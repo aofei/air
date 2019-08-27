@@ -19,6 +19,6 @@ jobs:
     - name: Test
       run: go test -v --coverprofile=cover.out ./...
     - name: Upload coverage profile
-      run: |
-        GOBIN=/tmp/gobin go install github.com/mattn/goveralls
-        /tmp/gobin/goveralls --coverprofile=cover.out --service=github-actions
+      uses: coverallsapp/github-action@v1
+      with:
+        path-to-lcov: cover.out
