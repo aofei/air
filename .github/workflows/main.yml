@@ -21,4 +21,5 @@ jobs:
     - name: Upload coverage profile
       uses: coverallsapp/github-action@v1.0.1
       with:
+        github-token: ${{ secrets.github_token }}
         path-to-lcov: cover.out
