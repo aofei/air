@@ -77,7 +77,7 @@ func benchRequest(b *testing.B, router *Air, r *http.Request) {
 		// WrapHTTPHandler(http.Handler(r))
 	}
 }
-func benchRoutes(b *testing.B, router http.Handler, routes []route) {
+func benchRoutes(b *testing.B, router *Air, routes []route) {
 	w := new(mockResponseWriter)
 	r, _ := http.NewRequest("GET", "/", nil)
 	u := r.URL
@@ -92,7 +92,7 @@ func benchRoutes(b *testing.B, router http.Handler, routes []route) {
 			r.RequestURI = route.path
 			u.Path = route.path
 			u.RawQuery = rq
-			router.ServeHTTP(w, r)
+			router.server.ServeHTTP(w, r)
 		}
 	}
 }
