@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"runtime"
 )
 
 type route struct {
@@ -42,43 +43,50 @@ func airHandler(req *Request, res *Response) error {
 	return nil
 }
 
-func airHandlerWrite(req Request, res Response) error {
+func airHandlerWrite(req *Request, res *Response) error {
 	// io.WriteString(res, s)
 	return res.WriteString(req.Param("name").Value().String())
 }
-func airHandlerTest(req Request, res Response) error {
+func airHandlerTest(req *Request, res *Response) error {
 	return res.WriteString(req.Path)
+}
+func init() {
+	runtime.GOMAXPROCS(1)
+
+	// makes logging 'webscale' (ignores them)
+	log.SetOutput(new(mockResponseWriter))
+	nullLogger = log.New(new(mockResponseWriter), "", 0)
 }
 
 // // func (a *air.Air) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // // 	// a := air.New()
 // // 	a.server.ServeHTTP(r, w)
 // // }
-// // func loadAir(routes []route) http.Handler {
-// // 	h := airHandler
-// // 	if loadTestHandler {
-// // 		h = airHandlerTest
-// // 	}
-// // 	app := air.Default
-// // 	for _, r := range routes {
-// // 		switch r.method {
-// // 		case "GET":
-// // 			app.GET(r.path, h)
-// // 		case "POST":
-// // 			app.POST(r.path, h)
-// // 		case "PUT":
-// // 			app.PUT(r.path, h)
-// // 		case "PATCH":
-// // 			app.PATCH(r.path, h)
-// // 		case "DELETE":
-// // 			app.DELETE(r.path, h)
-// // 		default:
-// // 			panic("Unknow HTTP method: " + r.method)
-// // 		}
-// // 	}
+func loadAir(routes []route) *Air {
+	h := airHandler
+	// if loadTestHandler {
+	// 	h = airHandlerTest
+	// }
+	app := New()
+	for _, r := range routes {
+		switch r.method {
+		case "GET":
+			app.GET(r.path, h)
+		case "POST":
+			app.POST(r.path, h)
+		case "PUT":
+			app.PUT(r.path, h)
+		case "PATCH":
+			app.PATCH(r.path, h)
+		case "DELETE":
+			app.DELETE(r.path, h)
+		default:
+			panic("Unknow HTTP method: " + r.method)
+		}
+	}
 
-// // 	return app
-// // }
+	return app
+}
 func loadAirSingle(method, path string, h Handler) *Air {
 
 	app := New()
