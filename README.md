@@ -1,6 +1,6 @@
 # Air
 
-[![Coverage Status](https://coveralls.io/repos/github/aofei/air/badge.svg?branch=master)](https://coveralls.io/github/aofei/air?branch=master)
+[![codecov](https://codecov.io/gh/aofei/air/branch/master/graph/badge.svg)](https://codecov.io/gh/aofei/air)
 [![Go Report Card](https://goreportcard.com/badge/github.com/aofei/air)](https://goreportcard.com/report/github.com/aofei/air)
 [![GoDoc](https://godoc.org/github.com/aofei/air?status.svg)](https://godoc.org/github.com/aofei/air)
 

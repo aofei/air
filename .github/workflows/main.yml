@@ -11,7 +11,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v1.0.2
       with:
-        go-version: ${{ matrix.go }}
+        go-version: ${{matrix.go}}
     - name: Check out code
       uses: actions/checkout@v1.0.0
     - name: Get modules
@@ -19,7 +19,7 @@ jobs:
     - name: Test
       run: go test -v --coverprofile=cover.out ./...
     - name: Upload coverage profile
-      uses: coverallsapp/github-action@v1.0.1
+      uses: codecov/codecov-action@v1.0.2
       with:
-        github-token: ${{ secrets.github_token }}
-        path-to-lcov: cover.out
+        token: ${{secrets.CODECOV_TOKEN}}
+        file: cover.out
