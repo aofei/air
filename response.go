@@ -685,7 +685,12 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 
 	targetURL.Host = strings.ToLower(targetURL.Host)
 
-	reqPath, reqQuery := splitPathQuery(r.req.Path)
+	reqPath := r.req.Path
+	if mrp := rpm.ModifyRequestPath; mrp != nil {
+		reqPath = mrp(reqPath)
+	}
+
+	reqPath, reqQuery := splitPathQuery(reqPath)
 	targetURL.Path = path.Join(targetURL.Path, reqPath)
 	if targetURL.RawQuery == "" || reqQuery == "" {
 		targetURL.RawQuery = fmt.Sprint(targetURL.RawQuery, reqQuery)
@@ -704,13 +709,6 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 			"?",
 			targetURL.RawQuery,
 		)
-	}
-
-	if mrp := rpm.ModifyRequestPath; mrp != nil {
-		mp := mrp(targetPathQuery)
-		if mp != targetPathQuery {
-			targetURL.Path, targetURL.RawQuery = splitPathQuery(mp)
-		}
 	}
 
 	targetHeader := make(http.Header, len(r.req.Header))
@@ -750,6 +748,11 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 				req.URL = targetURL
 				req.Header = targetHeader
 				req.Body = ioutil.NopCloser(targetBody)
+
+				// TODO: Remove the following line when the
+				// "net/http/httputil" of the minimum supported
+				// Go version of Air has fixed this bug.
+				req.Host = ""
 			},
 			FlushInterval: 100 * time.Millisecond,
 			Transport:     r.Air.reverseProxyTransport,

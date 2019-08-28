@@ -1,0 +1,27 @@
+name: Main
+on: [push, pull_request]
+jobs:
+  test:
+    name: Test all
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+          - "1.11.x"
+          - "1.12.x"
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1.0.2
+        with:
+          go-version: ${{matrix.go}}
+      - name: Check out code
+        uses: actions/checkout@v1.0.0
+      - name: Get modules
+        run: go get -v -t -d ./...
+      - name: Test
+        run: go test -v --coverprofile=cover.out ./...
+      - name: Upload coverage profile
+        uses: codecov/codecov-action@v1.0.2
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
+          file: cover.out
