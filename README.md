@@ -1,5 +1,6 @@
 # Air
 
+[![GitHub Actions](https://github.com/aofei/air/workflows/Main/badge.svg)](https://github.com/aofei/air)
 [![codecov](https://codecov.io/gh/aofei/air/branch/master/graph/badge.svg)](https://codecov.io/gh/aofei/air)
 [![Go Report Card](https://goreportcard.com/badge/github.com/aofei/air)](https://goreportcard.com/report/github.com/aofei/air)
 [![GoDoc](https://godoc.org/github.com/aofei/air?status.svg)](https://godoc.org/github.com/aofei/air)
