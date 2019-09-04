@@ -40,7 +40,7 @@ func (m *mockResponseWriter) WriteHeader(int) {}
 // 	os.Exit(1)
 // }
 func airHandler(req *Request, res *Response) error {
-	return nil
+	return res.WriteString("Hello")
 }
 
 func airHandlerWrite(req *Request, res *Response) error {
