@@ -96,27 +96,9 @@ func benchRoutes(b *testing.B, router *Air, routes []route) {
 		}
 	}
 }
-func BenchmarkAir_Param(b *testing.B) {
+func BenchmarkAir_Error404(b *testing.B) {
 	router := loadAirSingle("GET", "/user/:name", airHandler)
 
-	r, _ := http.NewRequest("GET", "/user/gordon", nil)
-	benchRequest(b, router, r)
-}
-func BenchmarkAir_Param5(b *testing.B) {
-	router := loadAirSingle("GET", fiveColon, airHandler)
-
-	r, _ := http.NewRequest("GET", fiveRoute, nil)
-	benchRequest(b, router, r)
-}
-func BenchmarkAir_Param20(b *testing.B) {
-	router := loadAirSingle("GET", twentyColon, airHandler)
-
-	r, _ := http.NewRequest("GET", twentyRoute, nil)
-	benchRequest(b, router, r)
-}
-func BenchmarkAir_ParamWrite(b *testing.B) {
-	router := loadAirSingle("GET", "/user/:name", airHandlerWrite)
-
-	r, _ := http.NewRequest("GET", "/user/gordon", nil)
+	r, _ := http.NewRequest("GET", "/test/gordon", nil)
 	benchRequest(b, router, r)
 }
