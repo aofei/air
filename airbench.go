@@ -40,12 +40,19 @@ func (m *mockResponseWriter) WriteHeader(int) {}
 // 	os.Exit(1)
 // }
 func airHandler(req *Request, res *Response) error {
-	return res.WriteString("Hello")
+	var msg struct {
+		Name string `json:"user"`
+	}
+	msg.Name = "Hello"
+	return res.WriteJSON(msg)
 }
 
 func airHandlerWrite(req *Request, res *Response) error {
-	// io.WriteString(res, s)
-	return res.WriteString(req.Param("name").Value().String())
+	var msg struct {
+		Name string `json:"user"`
+	}
+	msg.Name = "Hello"
+	return res.WriteJSON(msg)
 }
 func airHandlerTest(req *Request, res *Response) error {
 	return res.WriteString(req.Path)
