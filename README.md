@@ -166,7 +166,7 @@ $ go get github.com/aofei/air
 
 done.
 
-> The only requirement is the [Go](https://golang.org), at least v1.11.
+> The only requirement is the [Go](https://golang.org), at least v1.12.
 
 ## Hello, 世界
 

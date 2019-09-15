@@ -668,6 +668,11 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 		rpm = &ReverseProxyModifier{}
 	}
 
+	targetMethod := r.req.Method
+	if mrm := rpm.ModifyRequestMethod; mrm != nil {
+		targetMethod = mrm(r.req.Method)
+	}
+
 	targetURL, err := url.Parse(target)
 	if err != nil {
 		return err
@@ -735,148 +740,69 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 		}
 	}
 
-	switch targetURL.Scheme {
-	case "ws", "wss":
-	default:
-		var reverseProxyError error
-		rp := &httputil.ReverseProxy{
-			Director: func(req *http.Request) {
-				if mrm := rpm.ModifyRequestMethod; mrm != nil {
-					req.Method = mrm(req.Method)
-				}
+	var reverseProxyError error
+	rp := &httputil.ReverseProxy{
+		Director: func(req *http.Request) {
+			req.Method = targetMethod
+			req.URL = targetURL
+			req.Header = targetHeader
+			req.Body = ioutil.NopCloser(targetBody)
 
-				req.URL = targetURL
-				req.Header = targetHeader
-				req.Body = ioutil.NopCloser(targetBody)
+			// TODO: Remove the following line when the
+			// "net/http/httputil" of the minimum supported Go
+			// version of Air has fixed this bug.
+			req.Host = ""
+		},
+		FlushInterval: 100 * time.Millisecond,
+		Transport:     r.Air.reverseProxyTransport,
+		ErrorLog:      r.Air.ErrorLogger,
+		BufferPool:    r.Air.reverseProxyBufferPool,
+		ModifyResponse: func(res *http.Response) error {
+			if mrs := rpm.ModifyResponseStatus; mrs != nil {
+				res.StatusCode = mrs(res.StatusCode)
+			}
 
-				// TODO: Remove the following line when the
-				// "net/http/httputil" of the minimum supported
-				// Go version of Air has fixed this bug.
-				req.Host = ""
-			},
-			FlushInterval: 100 * time.Millisecond,
-			Transport:     r.Air.reverseProxyTransport,
-			ErrorLog:      r.Air.ErrorLogger,
-			BufferPool:    r.Air.reverseProxyBufferPool,
-			ModifyResponse: func(res *http.Response) error {
-				if mrs := rpm.ModifyResponseStatus; mrs != nil {
-					res.StatusCode = mrs(res.StatusCode)
-				}
+			if mrh := rpm.ModifyResponseHeader; mrh != nil {
+				mrh(res.Header)
+			}
 
-				if mrh := rpm.ModifyResponseHeader; mrh != nil {
-					mrh(res.Header)
-				}
-
-				if httpguts.HeaderValuesContainsToken(
-					res.Header["Content-Encoding"],
-					"gzip",
-				) {
-					r.Gzipped = true
-				}
-
-				if mrb := rpm.ModifyResponseBody; mrb != nil {
-					b, err := mrb(res.Body)
-					if err != nil {
-						return err
-					}
-
-					res.Body = b
-				}
-
-				return nil
-			},
-			ErrorHandler: func(
-				_ http.ResponseWriter,
-				_ *http.Request,
-				err error,
+			if httpguts.HeaderValuesContainsToken(
+				res.Header["Content-Encoding"],
+				"gzip",
 			) {
-				r.Status = http.StatusBadGateway
-				reverseProxyError = err
-			},
-		}
-		switch targetURL.Scheme {
-		case "grpc", "grpcs":
-			rp.FlushInterval /= 100 // For gRPC streaming
-		}
+				r.Gzipped = true
+			}
 
-		r.reverseProxying = true
-		rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
-		r.reverseProxying = false
+			if mrb := rpm.ModifyResponseBody; mrb != nil {
+				b, err := mrb(res.Body)
+				if err != nil {
+					return err
+				}
 
-		return reverseProxyError
-	}
+				res.Body = b
+			}
 
-	targetHeader.Del("Upgrade")
-	targetHeader.Del("Connection")
-	targetHeader.Del("Keep-Alive")
-	targetHeader.Del("TE")
-	targetHeader.Del("Trailer")
-	targetHeader.Del("Sec-WebSocket-Key")
-	targetHeader.Del("Sec-WebSocket-Extensions")
-	targetHeader.Del("Sec-WebSocket-Accept")
-	targetHeader.Del("Sec-WebSocket-Version")
-
-	dc, res, err := websocket.DefaultDialer.Dial(
-		targetURL.String(),
-		targetHeader,
-	)
-	if err != nil {
-		r.Status = http.StatusBadGateway
-		return err
-	}
-	defer dc.Close()
-
-	res.Header.Del("Upgrade")
-	res.Header.Del("Connection")
-	res.Header.Del("Keep-Alive")
-	res.Header.Del("Transfer-Encoding")
-	res.Header.Del("Trailer")
-	res.Header.Del("Sec-WebSocket-Extensions")
-	res.Header.Del("Sec-WebSocket-Accept")
-
-	for n, vs := range res.Header {
-		for _, v := range vs {
-			targetHeader.Add(n, v)
-		}
-	}
-
-	wsu := &websocket.Upgrader{
-		HandshakeTimeout: r.Air.WebSocketHandshakeTimeout,
-		Error: func(
+			return nil
+		},
+		ErrorHandler: func(
 			_ http.ResponseWriter,
 			_ *http.Request,
-			status int,
-			_ error,
+			err error,
 		) {
-			r.Status = status
-		},
-		CheckOrigin: func(*http.Request) bool {
-			return true
+			r.Status = http.StatusBadGateway
+			reverseProxyError = err
 		},
 	}
-	if len(r.Air.WebSocketSubprotocols) > 0 {
-		wsu.Subprotocols = r.Air.WebSocketSubprotocols
+	switch targetURL.Scheme {
+	case "grpc", "grpcs":
+		rp.FlushInterval /= 100 // For gRPC streaming
 	}
 
-	uc, err := wsu.Upgrade(r.ohrw, r.req.HTTPRequest(), r.Header)
-	if err != nil {
-		return err
-	}
-	defer uc.Close()
+	r.reverseProxying = true
+	rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
+	r.reverseProxying = false
 
-	r.Status = http.StatusSwitchingProtocols
-	r.Written = true
-
-	errChan := make(chan error, 1)
-	go replicateWebSocketConn(uc, dc, errChan)
-	go replicateWebSocketConn(dc, uc, errChan)
-
-	err = <-errChan
-	if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-		err = nil
-	}
-
-	return err
+	return reverseProxyError
 }
 
 // Defer pushes the f onto the stack of functions that will be called after
@@ -1199,86 +1125,94 @@ func (cw *countWriter) Write(b []byte) (int, error) {
 	return n, err
 }
 
-// newReverseProxyTransport returns a new instance of the `http.Transport` with
-// reverse proxy support.
-func newReverseProxyTransport() *http.Transport {
-	rpt := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
-		DisableCompression:    true,
-		MaxIdleConnsPerHost:   200,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-
-	rpt.RegisterProtocol("grpc", newGRPCTransport(false))
-	rpt.RegisterProtocol("grpcs", newGRPCTransport(true))
-
-	return rpt
+// reverseProxyTransport is a transport with the reverse proxy support.
+type reverseProxyTransport struct {
+	hTransport   *http.Transport
+	h2Transport  *http2.Transport
+	h2cTransport *http2.Transport
 }
 
-// grpcTransport is a transport with the gRPC support.
-type grpcTransport struct {
-	*http2.Transport
-
-	tlsed bool
+// newReverseProxyTransport returns a new instance of the
+// `reverseProxyTransport`.
+func newReverseProxyTransport() *reverseProxyTransport {
+	return &reverseProxyTransport{
+		hTransport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			DisableCompression:    true,
+			MaxIdleConnsPerHost:   200,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+		h2Transport: &http2.Transport{
+			DisableCompression: true,
+		},
+		h2cTransport: &http2.Transport{
+			DialTLS: func(
+				network string,
+				address string,
+				_ *tls.Config,
+			) (net.Conn, error) {
+				return net.Dial(network, address)
+			},
+			DisableCompression: true,
+			AllowHTTP:          true,
+		},
+	}
 }
 
-// newGRPCTransport returns a new instance of the `grpcTransport` with the
-// tlsed.
-func newGRPCTransport(tlsed bool) *grpcTransport {
-	gt := &grpcTransport{
-		Transport: &http2.Transport{},
+// RoundTrip implements the `http.RoundTripper`.
+func (rpt *reverseProxyTransport) RoundTrip(
+	req *http.Request,
+) (*http.Response, error) {
+	var (
+		transport     http.RoundTripper
+		handleGRPCWeb bool
+	)
 
-		tlsed: tlsed,
-	}
-	if !tlsed {
-		gt.DialTLS = func(
-			network string,
-			address string,
-			_ *tls.Config,
-		) (net.Conn, error) {
-			return net.Dial(network, address)
-		}
-
-		gt.AllowHTTP = true
-	}
-
-	return gt
-}
-
-// RoundTrip implements the `http2.Transport`.
-func (gt *grpcTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if gt.tlsed {
-		req.URL.Scheme = "https"
-	} else {
+	switch req.URL.Scheme {
+	case "ws":
 		req.URL.Scheme = "http"
+		transport = rpt.hTransport
+	case "wss":
+		req.URL.Scheme = "https"
+		transport = rpt.hTransport
+	case "grpc":
+		req.URL.Scheme = "http"
+		transport = rpt.h2cTransport
+		handleGRPCWeb = true
+	case "grpcs":
+		req.URL.Scheme = "https"
+		transport = rpt.h2Transport
+		handleGRPCWeb = true
 	}
 
-	ct := req.Header.Get("Content-Type")
-	if strings.HasPrefix(ct, "application/grpc-web") {
-		mt := "application/grpc-web-text"
-		if strings.HasSuffix(ct, mt) {
-			req.Body = ioutil.NopCloser(base64.NewDecoder(
-				base64.StdEncoding,
-				req.Body,
-			))
-		} else {
-			mt = "application/grpc-web"
+	if handleGRPCWeb {
+		ct := req.Header.Get("Content-Type")
+		if strings.HasPrefix(ct, "application/grpc-web") {
+			mt := "application/grpc-web-text"
+			if strings.HasSuffix(ct, mt) {
+				req.Body = ioutil.NopCloser(base64.NewDecoder(
+					base64.StdEncoding,
+					req.Body,
+				))
+			} else {
+				mt = "application/grpc-web"
+			}
+
+			req.Header.Set(
+				"Content-Type",
+				strings.Replace(ct, mt, "application/grpc", 1),
+			)
 		}
-
-		req.Header.Set(
-			"Content-Type",
-			strings.Replace(ct, mt, "application/grpc", 1),
-		)
 	}
 
-	return gt.Transport.RoundTrip(req)
+	return transport.RoundTrip(req)
 }
 
 // reverseProxyBufferPool is a buffer pool for the reverse proxy.
@@ -1306,58 +1240,4 @@ func (rpbp *reverseProxyBufferPool) Get() []byte {
 // Put implements the `httputil.BufferPool`.
 func (rpbp *reverseProxyBufferPool) Put(bytes []byte) {
 	rpbp.pool.Put(bytes)
-}
-
-// replicateWebSocketConn replicates data from the src to the dst with the
-// errChan.
-func replicateWebSocketConn(dst, src *websocket.Conn, errChan chan error) {
-	fwd := func(messageType int, r io.Reader) error {
-		w, err := dst.NextWriter(messageType)
-		if err != nil {
-			return err
-		} else if _, err := io.Copy(w, r); err != nil {
-			return err
-		}
-
-		return w.Close()
-	}
-
-	src.SetPingHandler(func(appData string) error {
-		return fwd(websocket.PingMessage, strings.NewReader(appData))
-	})
-
-	src.SetPongHandler(func(appData string) error {
-		return fwd(websocket.PongMessage, strings.NewReader(appData))
-	})
-
-	for {
-		mt, r, err := src.NextReader()
-		if err != nil {
-			errChan <- err
-
-			var m []byte
-			if e, ok := err.(*websocket.CloseError); !ok ||
-				e.Code == websocket.CloseNoStatusReceived {
-				m = websocket.FormatCloseMessage(
-					websocket.CloseNormalClosure,
-					err.Error(),
-				)
-			} else if ok &&
-				e.Code != websocket.CloseAbnormalClosure &&
-				e.Code != websocket.CloseTLSHandshake {
-				m = websocket.FormatCloseMessage(e.Code, e.Text)
-			}
-
-			if m != nil {
-				fwd(websocket.CloseMessage, bytes.NewReader(m))
-			}
-
-			break
-		}
-
-		if err := fwd(mt, r); err != nil {
-			errChan <- err
-			break
-		}
-	}
 }

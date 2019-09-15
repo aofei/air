@@ -557,7 +557,7 @@ type Air struct {
 	i18n                         *i18n
 	contentTypeSnifferBufferPool *sync.Pool
 	gzipWriterPool               *sync.Pool
-	reverseProxyTransport        *http.Transport
+	reverseProxyTransport        *reverseProxyTransport
 	reverseProxyBufferPool       *reverseProxyBufferPool
 }
 

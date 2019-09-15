@@ -50,8 +50,8 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 
 	path = ppath.Clean(path)
 	path = url.PathEscape(path)
-	path = strings.Replace(path, "%2F", "/", -1)
-	path = strings.Replace(path, "%2A", "*", -1)
+	path = strings.ReplaceAll(path, "%2F", "/")
+	path = strings.ReplaceAll(path, "%2A", "*")
 	if path[0] != '/' {
 		panic("air: route path must start with /")
 	} else if strings.Count(path, ":") > 1 {
