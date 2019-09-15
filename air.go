@@ -269,29 +269,29 @@ type Air struct {
 	// Default value: nil
 	WebSocketSubprotocols []string `mapstructure:"websocket_subprotocols"`
 
-	// PROXYProtocolEnabled indicates whether the PROXY protocol feature of
-	// the current web application is enabled.
+	// PROXYEnabled indicates whether the PROXY feature of the current web
+	// application is enabled.
 	//
-	// The `PROXYProtocolEnabled` gives the server of the current web
-	// application the ability to support the PROXY protocol (See
+	// The `PROXYEnabled` gives the server of the current web application
+	// the ability to support the PROXY protocol (See
 	// https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt).
 	//
 	// Default value: false
-	PROXYProtocolEnabled bool `mapstructure:"proxy_protocol_enabled"`
+	PROXYEnabled bool `mapstructure:"proxy_enabled"`
 
-	// PROXYProtocolReadHeaderTimeout is the amount of time allowed the
-	// PROXY protocol feature of the current web application reads the
-	// PROXY protocol header of a connection.
+	// PROXYReadHeaderTimeout is the amount of time allowed the PROXY
+	// feature of the current web application reads the PROXY protocol
+	// header of a connection.
 	//
 	// The connection's read deadline is reset after reading the PROXY
 	// protocol header.
 	//
 	// Default value: 0
-	PROXYProtocolReadHeaderTimeout time.Duration `mapstructure:"proxy_protocol_read_header_timeout"`
+	PROXYReadHeaderTimeout time.Duration `mapstructure:"proxy_read_header_timeout"`
 
-	// PROXYProtocolRelayerIPWhitelist is the list of IP addresses or CIDR
-	// notation IP address ranges of the relayers allowed by the PROXY
-	// protocol feature of the current web application.
+	// PROXYRelayerIPWhitelist is the list of IP addresses or CIDR notation
+	// IP address ranges of the relayers allowed by the PROXY feature of the
+	// current web application.
 	//
 	// It is highly recommended to set a list of IP addresses or CIDR
 	// notation IP address ranges. If the length of the list is not zero,
@@ -299,7 +299,7 @@ type Air struct {
 	// list will not be able to act the PROXY protocol.
 	//
 	// Default value: nil
-	PROXYProtocolRelayerIPWhitelist []string `mapstructure:"proxy_protocol_relayer_ip_whitelist"`
+	PROXYRelayerIPWhitelist []string `mapstructure:"proxy_relayer_ip_whitelist"`
 
 	// Pregases is the `Gas` chain stack of the current web application
 	// that performs before routing.

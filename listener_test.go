@@ -10,18 +10,18 @@ import (
 
 func TestNewListener(t *testing.T) {
 	a := New()
-	a.PROXYProtocolEnabled = true
+	a.PROXYEnabled = true
 
 	l := newListener(a)
 
 	assert.NotNil(t, l)
 	assert.Nil(t, l.TCPListener)
 	assert.NotNil(t, l.a)
-	assert.Nil(t, l.allowedPROXYProtocolRelayerIPNets)
+	assert.Nil(t, l.allowedPROXYRelayerIPNets)
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolRelayerIPWhitelist = []string{
+	a.PROXYEnabled = true
+	a.PROXYRelayerIPWhitelist = []string{
 		"0.0.0.0",
 		"::",
 		"127.0.0.1",
@@ -35,7 +35,7 @@ func TestNewListener(t *testing.T) {
 	assert.NotNil(t, l)
 	assert.Nil(t, l.TCPListener)
 	assert.NotNil(t, l.a)
-	assert.Len(t, l.allowedPROXYProtocolRelayerIPNets, 6)
+	assert.Len(t, l.allowedPROXYRelayerIPNets, 6)
 }
 
 func TestListenerListen(t *testing.T) {
@@ -76,7 +76,7 @@ func TestListenerAccept(t *testing.T) {
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
+	a.PROXYEnabled = true
 
 	l = newListener(a)
 
@@ -91,22 +91,22 @@ func TestListenerAccept(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok := c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok := c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
-	assert.NotNil(t, ppc.Conn)
-	assert.NotNil(t, ppc.bufReader)
-	assert.Nil(t, ppc.srcAddr)
-	assert.Nil(t, ppc.dstAddr)
-	assert.NotNil(t, ppc.readHeaderOnce)
-	assert.Nil(t, ppc.readHeaderError)
-	assert.Zero(t, ppc.readHeaderTimeout)
+	assert.NotNil(t, pc.Conn)
+	assert.NotNil(t, pc.bufReader)
+	assert.Nil(t, pc.srcAddr)
+	assert.Nil(t, pc.dstAddr)
+	assert.NotNil(t, pc.readHeaderOnce)
+	assert.Nil(t, pc.readHeaderError)
+	assert.Zero(t, pc.readHeaderTimeout)
 
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolRelayerIPWhitelist = []string{"127.0.0.1"}
+	a.PROXYEnabled = true
+	a.PROXYRelayerIPWhitelist = []string{"127.0.0.1"}
 
 	l = newListener(a)
 
@@ -124,8 +124,8 @@ func TestListenerAccept(t *testing.T) {
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolRelayerIPWhitelist = []string{"127.0.0.2"}
+	a.PROXYEnabled = true
+	a.PROXYRelayerIPWhitelist = []string{"127.0.0.2"}
 
 	l = newListener(a)
 
@@ -143,9 +143,9 @@ func TestListenerAccept(t *testing.T) {
 	assert.NoError(t, l.Close())
 }
 
-func TestPROXYProtocolConnRead(t *testing.T) {
+func TestPROXYConnRead(t *testing.T) {
 	a := New()
-	a.PROXYProtocolEnabled = true
+	a.PROXYEnabled = true
 
 	l := newListener(a)
 
@@ -160,8 +160,8 @@ func TestPROXYProtocolConnRead(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok := c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok := c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -170,7 +170,7 @@ func TestPROXYProtocolConnRead(t *testing.T) {
 	}()
 
 	b := make([]byte, 3)
-	n, err := ppc.Read(b)
+	n, err := pc.Read(b)
 	assert.Equal(t, 3, n)
 	assert.NoError(t, err)
 	assert.Equal(t, "air", string(b))
@@ -178,7 +178,7 @@ func TestPROXYProtocolConnRead(t *testing.T) {
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
+	a.PROXYEnabled = true
 
 	l = newListener(a)
 
@@ -193,8 +193,8 @@ func TestPROXYProtocolConnRead(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -203,7 +203,7 @@ func TestPROXYProtocolConnRead(t *testing.T) {
 	}()
 
 	b = make([]byte, 6)
-	n, err = ppc.Read(b)
+	n, err = pc.Read(b)
 	assert.Zero(t, n)
 	assert.Error(t, err)
 	assert.Equal(t, "\x00\x00\x00\x00\x00\x00", string(b))
@@ -211,9 +211,9 @@ func TestPROXYProtocolConnRead(t *testing.T) {
 	assert.NoError(t, l.Close())
 }
 
-func TestPROXYProtocolConnLocalAddr(t *testing.T) {
+func TestPROXYConnLocalAddr(t *testing.T) {
 	a := New()
-	a.PROXYProtocolEnabled = true
+	a.PROXYEnabled = true
 
 	l := newListener(a)
 
@@ -228,8 +228,8 @@ func TestPROXYProtocolConnLocalAddr(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok := c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok := c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -238,12 +238,12 @@ func TestPROXYProtocolConnLocalAddr(t *testing.T) {
 	}()
 
 	b := make([]byte, 3)
-	n, err := ppc.Read(b)
+	n, err := pc.Read(b)
 	assert.Equal(t, 3, n)
 	assert.NoError(t, err)
 	assert.Equal(t, "air", string(b))
 
-	na := ppc.LocalAddr()
+	na := pc.LocalAddr()
 	assert.NotNil(t, na)
 	assert.Equal(t, c.LocalAddr().Network(), na.Network())
 	assert.Equal(t, c.LocalAddr().String(), na.String())
@@ -251,7 +251,7 @@ func TestPROXYProtocolConnLocalAddr(t *testing.T) {
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
+	a.PROXYEnabled = true
 
 	l = newListener(a)
 
@@ -266,8 +266,8 @@ func TestPROXYProtocolConnLocalAddr(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -275,7 +275,7 @@ func TestPROXYProtocolConnLocalAddr(t *testing.T) {
 		cc.Close()
 	}()
 
-	na = ppc.LocalAddr()
+	na = pc.LocalAddr()
 	assert.NotNil(t, na)
 	assert.Equal(t, "tcp", na.Network())
 	assert.Equal(t, "127.0.0.3:8082", na.String())
@@ -283,9 +283,9 @@ func TestPROXYProtocolConnLocalAddr(t *testing.T) {
 	assert.NoError(t, l.Close())
 }
 
-func TestPROXYProtocolConnRemoteAddr(t *testing.T) {
+func TestPROXYConnRemoteAddr(t *testing.T) {
 	a := New()
-	a.PROXYProtocolEnabled = true
+	a.PROXYEnabled = true
 
 	l := newListener(a)
 
@@ -300,8 +300,8 @@ func TestPROXYProtocolConnRemoteAddr(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok := c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok := c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -310,12 +310,12 @@ func TestPROXYProtocolConnRemoteAddr(t *testing.T) {
 	}()
 
 	b := make([]byte, 3)
-	n, err := ppc.Read(b)
+	n, err := pc.Read(b)
 	assert.Equal(t, 3, n)
 	assert.NoError(t, err)
 	assert.Equal(t, "air", string(b))
 
-	na := ppc.RemoteAddr()
+	na := pc.RemoteAddr()
 	assert.NotNil(t, na)
 	assert.Equal(t, c.RemoteAddr().Network(), na.Network())
 	assert.Equal(t, c.RemoteAddr().String(), na.String())
@@ -323,7 +323,7 @@ func TestPROXYProtocolConnRemoteAddr(t *testing.T) {
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
+	a.PROXYEnabled = true
 
 	l = newListener(a)
 
@@ -338,8 +338,8 @@ func TestPROXYProtocolConnRemoteAddr(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -347,7 +347,7 @@ func TestPROXYProtocolConnRemoteAddr(t *testing.T) {
 		cc.Close()
 	}()
 
-	na = ppc.RemoteAddr()
+	na = pc.RemoteAddr()
 	assert.NotNil(t, na)
 	assert.Equal(t, "tcp", na.Network())
 	assert.Equal(t, "127.0.0.2:8081", na.String())
@@ -355,10 +355,10 @@ func TestPROXYProtocolConnRemoteAddr(t *testing.T) {
 	assert.NoError(t, l.Close())
 }
 
-func TestPROXYProtocolConnReadHeader(t *testing.T) {
+func TestPROXYConnReadHeader(t *testing.T) {
 	a := New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolReadHeaderTimeout = 100 * time.Millisecond
+	a.PROXYEnabled = true
+	a.PROXYReadHeaderTimeout = 100 * time.Millisecond
 
 	l := newListener(a)
 
@@ -373,8 +373,8 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok := c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok := c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -382,16 +382,16 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
-	ppc.readHeader()
-	assert.Nil(t, ppc.srcAddr)
-	assert.Nil(t, ppc.dstAddr)
-	assert.Nil(t, ppc.readHeaderError)
+	pc.readHeader()
+	assert.Nil(t, pc.srcAddr)
+	assert.Nil(t, pc.dstAddr)
+	assert.Nil(t, pc.readHeaderError)
 
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolReadHeaderTimeout = 100 * time.Millisecond
+	a.PROXYEnabled = true
+	a.PROXYReadHeaderTimeout = 100 * time.Millisecond
 
 	l = newListener(a)
 
@@ -406,8 +406,8 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -415,20 +415,20 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
-	ppc.readHeader()
-	assert.NotNil(t, ppc.srcAddr)
-	assert.NotNil(t, ppc.dstAddr)
-	assert.NoError(t, ppc.readHeaderError)
-	assert.Equal(t, "tcp", ppc.srcAddr.Network())
-	assert.Equal(t, "127.0.0.2:8081", ppc.srcAddr.String())
-	assert.Equal(t, "tcp", ppc.dstAddr.Network())
-	assert.Equal(t, "127.0.0.3:8082", ppc.dstAddr.String())
+	pc.readHeader()
+	assert.NotNil(t, pc.srcAddr)
+	assert.NotNil(t, pc.dstAddr)
+	assert.NoError(t, pc.readHeaderError)
+	assert.Equal(t, "tcp", pc.srcAddr.Network())
+	assert.Equal(t, "127.0.0.2:8081", pc.srcAddr.String())
+	assert.Equal(t, "tcp", pc.dstAddr.Network())
+	assert.Equal(t, "127.0.0.3:8082", pc.dstAddr.String())
 
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolReadHeaderTimeout = 100 * time.Millisecond
+	a.PROXYEnabled = true
+	a.PROXYReadHeaderTimeout = 100 * time.Millisecond
 
 	l = newListener(a)
 
@@ -443,8 +443,8 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -453,16 +453,16 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
-	ppc.readHeader()
-	assert.Nil(t, ppc.srcAddr)
-	assert.Nil(t, ppc.dstAddr)
-	assert.NoError(t, ppc.readHeaderError)
+	pc.readHeader()
+	assert.Nil(t, pc.srcAddr)
+	assert.Nil(t, pc.dstAddr)
+	assert.NoError(t, pc.readHeaderError)
 
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolReadHeaderTimeout = 100 * time.Millisecond
+	a.PROXYEnabled = true
+	a.PROXYReadHeaderTimeout = 100 * time.Millisecond
 
 	l = newListener(a)
 
@@ -477,8 +477,8 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -486,17 +486,17 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
-	assert.NoError(t, ppc.Close())
+	assert.NoError(t, pc.Close())
 
-	ppc.readHeader()
-	assert.Nil(t, ppc.srcAddr)
-	assert.Nil(t, ppc.dstAddr)
-	assert.Error(t, ppc.readHeaderError)
+	pc.readHeader()
+	assert.Nil(t, pc.srcAddr)
+	assert.Nil(t, pc.dstAddr)
+	assert.Error(t, pc.readHeaderError)
 
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
+	a.PROXYEnabled = true
 
 	l = newListener(a)
 
@@ -511,8 +511,8 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -522,16 +522,16 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
-	ppc.readHeader()
-	assert.Nil(t, ppc.srcAddr)
-	assert.Nil(t, ppc.dstAddr)
-	assert.Error(t, ppc.readHeaderError)
+	pc.readHeader()
+	assert.Nil(t, pc.srcAddr)
+	assert.Nil(t, pc.dstAddr)
+	assert.Error(t, pc.readHeaderError)
 
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolReadHeaderTimeout = 100 * time.Millisecond
+	a.PROXYEnabled = true
+	a.PROXYReadHeaderTimeout = 100 * time.Millisecond
 
 	l = newListener(a)
 
@@ -546,8 +546,8 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -555,16 +555,16 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
-	ppc.readHeader()
-	assert.Nil(t, ppc.srcAddr)
-	assert.Nil(t, ppc.dstAddr)
-	assert.Error(t, ppc.readHeaderError)
+	pc.readHeader()
+	assert.Nil(t, pc.srcAddr)
+	assert.Nil(t, pc.dstAddr)
+	assert.Error(t, pc.readHeaderError)
 
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolReadHeaderTimeout = 100 * time.Millisecond
+	a.PROXYEnabled = true
+	a.PROXYReadHeaderTimeout = 100 * time.Millisecond
 
 	l = newListener(a)
 
@@ -579,8 +579,8 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -588,16 +588,16 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
-	ppc.readHeader()
-	assert.Nil(t, ppc.srcAddr)
-	assert.Nil(t, ppc.dstAddr)
-	assert.Error(t, ppc.readHeaderError)
+	pc.readHeader()
+	assert.Nil(t, pc.srcAddr)
+	assert.Nil(t, pc.dstAddr)
+	assert.Error(t, pc.readHeaderError)
 
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolReadHeaderTimeout = 100 * time.Millisecond
+	a.PROXYEnabled = true
+	a.PROXYReadHeaderTimeout = 100 * time.Millisecond
 
 	l = newListener(a)
 
@@ -612,8 +612,8 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -621,16 +621,16 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
-	ppc.readHeader()
-	assert.Nil(t, ppc.srcAddr)
-	assert.Nil(t, ppc.dstAddr)
-	assert.Error(t, ppc.readHeaderError)
+	pc.readHeader()
+	assert.Nil(t, pc.srcAddr)
+	assert.Nil(t, pc.dstAddr)
+	assert.Error(t, pc.readHeaderError)
 
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolReadHeaderTimeout = 100 * time.Millisecond
+	a.PROXYEnabled = true
+	a.PROXYReadHeaderTimeout = 100 * time.Millisecond
 
 	l = newListener(a)
 
@@ -645,8 +645,8 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -654,16 +654,16 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
-	ppc.readHeader()
-	assert.Nil(t, ppc.srcAddr)
-	assert.Nil(t, ppc.dstAddr)
-	assert.Error(t, ppc.readHeaderError)
+	pc.readHeader()
+	assert.Nil(t, pc.srcAddr)
+	assert.Nil(t, pc.dstAddr)
+	assert.Error(t, pc.readHeaderError)
 
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolReadHeaderTimeout = 100 * time.Millisecond
+	a.PROXYEnabled = true
+	a.PROXYReadHeaderTimeout = 100 * time.Millisecond
 
 	l = newListener(a)
 
@@ -678,8 +678,8 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -687,16 +687,16 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
-	ppc.readHeader()
-	assert.Nil(t, ppc.srcAddr)
-	assert.Nil(t, ppc.dstAddr)
-	assert.Error(t, ppc.readHeaderError)
+	pc.readHeader()
+	assert.Nil(t, pc.srcAddr)
+	assert.Nil(t, pc.dstAddr)
+	assert.Error(t, pc.readHeaderError)
 
 	assert.NoError(t, l.Close())
 
 	a = New()
-	a.PROXYProtocolEnabled = true
-	a.PROXYProtocolReadHeaderTimeout = 100 * time.Millisecond
+	a.PROXYEnabled = true
+	a.PROXYReadHeaderTimeout = 100 * time.Millisecond
 
 	l = newListener(a)
 
@@ -711,8 +711,8 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 
-	ppc, ok = c.(*proxyProtocolConn)
-	assert.NotNil(t, ppc)
+	pc, ok = c.(*proxyConn)
+	assert.NotNil(t, pc)
 	assert.True(t, ok)
 
 	go func() {
@@ -720,10 +720,10 @@ func TestPROXYProtocolConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
-	ppc.readHeader()
-	assert.Nil(t, ppc.srcAddr)
-	assert.Nil(t, ppc.dstAddr)
-	assert.Error(t, ppc.readHeaderError)
+	pc.readHeader()
+	assert.Nil(t, pc.srcAddr)
+	assert.Nil(t, pc.dstAddr)
+	assert.Error(t, pc.readHeaderError)
 
 	assert.NoError(t, l.Close())
 }

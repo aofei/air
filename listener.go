@@ -16,15 +16,15 @@ import (
 type listener struct {
 	*net.TCPListener
 
-	a                                 *Air
-	allowedPROXYProtocolRelayerIPNets []*net.IPNet
+	a                         *Air
+	allowedPROXYRelayerIPNets []*net.IPNet
 }
 
 // newListener returns a new instance of the `listener` with the a.
 func newListener(a *Air) *listener {
 	var ipNets []*net.IPNet
-	if len(a.PROXYProtocolRelayerIPWhitelist) > 0 {
-		for _, s := range a.PROXYProtocolRelayerIPWhitelist {
+	if len(a.PROXYRelayerIPWhitelist) > 0 {
+		for _, s := range a.PROXYRelayerIPWhitelist {
 			if ip := net.ParseIP(s); ip != nil {
 				s = ip.String()
 				switch {
@@ -44,8 +44,8 @@ func newListener(a *Air) *listener {
 	}
 
 	return &listener{
-		a:                                 a,
-		allowedPROXYProtocolRelayerIPNets: ipNets,
+		a:                         a,
+		allowedPROXYRelayerIPNets: ipNets,
 	}
 }
 
@@ -71,15 +71,15 @@ func (l *listener) Accept() (net.Conn, error) {
 	tc.SetKeepAlive(true)
 	tc.SetKeepAlivePeriod(3 * time.Minute)
 
-	if !l.a.PROXYProtocolEnabled {
+	if !l.a.PROXYEnabled {
 		return tc, nil
 	}
 
-	proxyable := len(l.allowedPROXYProtocolRelayerIPNets) == 0
+	proxyable := len(l.allowedPROXYRelayerIPNets) == 0
 	if !proxyable {
 		host, _, _ := net.SplitHostPort(tc.RemoteAddr().String())
 		ip := net.ParseIP(host)
-		for _, ipNet := range l.allowedPROXYProtocolRelayerIPNets {
+		for _, ipNet := range l.allowedPROXYRelayerIPNets {
 			if ipNet.Contains(ip) {
 				proxyable = true
 				break
@@ -88,20 +88,20 @@ func (l *listener) Accept() (net.Conn, error) {
 	}
 
 	if proxyable {
-		return &proxyProtocolConn{
+		return &proxyConn{
 			Conn:              tc,
 			bufReader:         bufio.NewReader(tc),
 			readHeaderOnce:    &sync.Once{},
-			readHeaderTimeout: l.a.PROXYProtocolReadHeaderTimeout,
+			readHeaderTimeout: l.a.PROXYReadHeaderTimeout,
 		}, nil
 	}
 
 	return tc, nil
 }
 
-// proxyProtocolConn implements the `net.Conn`. It is used to wrap a `net.Conn`
-// which may be speaking the PROXY protocol.
-type proxyProtocolConn struct {
+// proxyConn implements the `net.Conn`. It is used to wrap a `net.Conn` which
+// may be speaking the PROXY protocol.
+type proxyConn struct {
 	net.Conn
 
 	bufReader         *bufio.Reader
@@ -113,57 +113,57 @@ type proxyProtocolConn struct {
 }
 
 // Read implements the `net.Conn`.
-func (ppc *proxyProtocolConn) Read(b []byte) (int, error) {
-	ppc.readHeaderOnce.Do(ppc.readHeader)
-	if ppc.readHeaderError != nil {
-		return 0, ppc.readHeaderError
+func (pc *proxyConn) Read(b []byte) (int, error) {
+	pc.readHeaderOnce.Do(pc.readHeader)
+	if pc.readHeaderError != nil {
+		return 0, pc.readHeaderError
 	}
 
-	return ppc.bufReader.Read(b)
+	return pc.bufReader.Read(b)
 }
 
 // LocalAddr implements the `net.Conn`.
-func (ppc *proxyProtocolConn) LocalAddr() net.Addr {
-	ppc.readHeaderOnce.Do(ppc.readHeader)
-	if ppc.dstAddr != nil {
-		return ppc.dstAddr
+func (pc *proxyConn) LocalAddr() net.Addr {
+	pc.readHeaderOnce.Do(pc.readHeader)
+	if pc.dstAddr != nil {
+		return pc.dstAddr
 	}
 
-	return ppc.Conn.LocalAddr()
+	return pc.Conn.LocalAddr()
 }
 
 // RemoteAddr implements the `net.Conn`.
-func (ppc *proxyProtocolConn) RemoteAddr() net.Addr {
-	ppc.readHeaderOnce.Do(ppc.readHeader)
-	if ppc.srcAddr != nil {
-		return ppc.srcAddr
+func (pc *proxyConn) RemoteAddr() net.Addr {
+	pc.readHeaderOnce.Do(pc.readHeader)
+	if pc.srcAddr != nil {
+		return pc.srcAddr
 	}
 
-	return ppc.Conn.RemoteAddr()
+	return pc.Conn.RemoteAddr()
 }
 
-// readHeader reads the PROXY protocol header. It does nothing if the
-// underlying connection is not speaking the PROXY protocol.
-func (ppc *proxyProtocolConn) readHeader() {
-	if ppc.readHeaderTimeout != 0 {
-		ppc.SetReadDeadline(time.Now().Add(ppc.readHeaderTimeout))
-		defer ppc.SetReadDeadline(time.Time{})
+// readHeader reads the PROXY protocol header. It does nothing if the underlying
+// connection is not speaking the PROXY protocol.
+func (pc *proxyConn) readHeader() {
+	if pc.readHeaderTimeout != 0 {
+		pc.SetReadDeadline(time.Now().Add(pc.readHeaderTimeout))
+		defer pc.SetReadDeadline(time.Time{})
 	}
 
 	defer func() {
-		if ppc.readHeaderError != nil && ppc.readHeaderError != io.EOF {
-			ppc.Close()
-			ppc.bufReader = bufio.NewReader(ppc.Conn)
+		if pc.readHeaderError != nil && pc.readHeaderError != io.EOF {
+			pc.Close()
+			pc.bufReader = bufio.NewReader(pc.Conn)
 		}
 	}()
 
 	for i := 0; i < 6; i++ { // i < len("PROXY ")
 		var b []byte
-		b, ppc.readHeaderError = ppc.bufReader.Peek(i + 1)
-		if ppc.readHeaderError != nil {
-			ne, ok := ppc.readHeaderError.(net.Error)
+		b, pc.readHeaderError = pc.bufReader.Peek(i + 1)
+		if pc.readHeaderError != nil {
+			ne, ok := pc.readHeaderError.(net.Error)
 			if ok && ne.Timeout() {
-				ppc.readHeaderError = nil
+				pc.readHeaderError = nil
 				return
 			}
 
@@ -176,8 +176,8 @@ func (ppc *proxyProtocolConn) readHeader() {
 	}
 
 	var header string
-	header, ppc.readHeaderError = ppc.bufReader.ReadString('\n')
-	if ppc.readHeaderError != nil {
+	header, pc.readHeaderError = pc.bufReader.ReadString('\n')
+	if pc.readHeaderError != nil {
 		return
 	}
 
@@ -186,7 +186,7 @@ func (ppc *proxyProtocolConn) readHeader() {
 	// PROXY <protocol> <src ip> <dst ip> <src port> <dst port>
 	parts := strings.Split(header, " ")
 	if len(parts) != 6 {
-		ppc.readHeaderError = fmt.Errorf(
+		pc.readHeaderError = fmt.Errorf(
 			"air: malformed proxy header line: %s",
 			header,
 		)
@@ -196,7 +196,7 @@ func (ppc *proxyProtocolConn) readHeader() {
 	switch parts[1] { // <protocol>
 	case "TCP4", "TCP6":
 	default:
-		ppc.readHeaderError = fmt.Errorf(
+		pc.readHeaderError = fmt.Errorf(
 			"air: unsupported proxy protocol: %s",
 			parts[1],
 		)
@@ -205,7 +205,7 @@ func (ppc *proxyProtocolConn) readHeader() {
 
 	srcIP := net.ParseIP(parts[2]) // <src ip>
 	if srcIP == nil {
-		ppc.readHeaderError = fmt.Errorf(
+		pc.readHeaderError = fmt.Errorf(
 			"air: invalid proxy source ip: %s",
 			parts[2],
 		)
@@ -214,7 +214,7 @@ func (ppc *proxyProtocolConn) readHeader() {
 
 	dstIP := net.ParseIP(parts[3]) // <dst ip>
 	if dstIP == nil {
-		ppc.readHeaderError = fmt.Errorf(
+		pc.readHeaderError = fmt.Errorf(
 			"air: invalid proxy destination ip: %s",
 			parts[3],
 		)
@@ -223,7 +223,7 @@ func (ppc *proxyProtocolConn) readHeader() {
 
 	srcPort, err := strconv.Atoi(parts[4]) // <src port>
 	if err != nil {
-		ppc.readHeaderError = fmt.Errorf(
+		pc.readHeaderError = fmt.Errorf(
 			"air: invalid proxy source port: %s",
 			parts[4],
 		)
@@ -232,15 +232,15 @@ func (ppc *proxyProtocolConn) readHeader() {
 
 	dstPort, err := strconv.Atoi(parts[5]) // <dst port>
 	if err != nil {
-		ppc.readHeaderError = fmt.Errorf(
+		pc.readHeaderError = fmt.Errorf(
 			"air: invalid proxy destination port: %s",
 			parts[5],
 		)
 		return
 	}
 
-	ppc.srcAddr = &net.TCPAddr{IP: srcIP, Port: srcPort}
-	ppc.dstAddr = &net.TCPAddr{IP: dstIP, Port: dstPort}
+	pc.srcAddr = &net.TCPAddr{IP: srcIP, Port: srcPort}
+	pc.dstAddr = &net.TCPAddr{IP: dstIP, Port: dstPort}
 
 	return
 }

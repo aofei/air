@@ -73,7 +73,7 @@ A: Far from enough. But it's already working.
 	* HTTP/2 (including h2c) support
 	* SSL/TLS support
 	* ACME support
-	* PROXY protocol support
+	* PROXY (only version 1) support
 	* Graceful shutdown support
 * Router
 	* Based on the Radix Tree
