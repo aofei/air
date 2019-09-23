@@ -99,6 +99,6 @@ func benchRoutes(b *testing.B, router *Air, routes []route) {
 func BenchmarkAir_Error404(b *testing.B) {
 	router := loadAirSingle("GET", "/user/:name", airHandler)
 
-	r, _ := http.NewRequest("GET", "/test/gordon", nil)
+	r, _ := http.NewRequest("GET", "/user/gordon", nil)
 	benchRequest(b, router, r)
 }

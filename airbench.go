@@ -1,10 +1,12 @@
 package air
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"runtime"
+	"time"
 )
 
 type route struct {
@@ -57,6 +59,19 @@ func airHandlerWrite(req *Request, res *Response) error {
 func airHandlerTest(req *Request, res *Response) error {
 	return res.WriteString(req.Path)
 }
+func airMiddleware(next Handler) Handler {
+	return func(req *Request, res *Response) error {
+		start := time.Now()
+		err := next(req, res)
+		responseTime := time.Since(start)
+
+		// Write it to the log
+		fmt.Println(responseTime)
+
+		// Make sure to pass the error back!
+		return err
+	}
+}
 func init() {
 	runtime.GOMAXPROCS(1)
 
@@ -64,50 +79,20 @@ func init() {
 	log.SetOutput(new(mockResponseWriter))
 	nullLogger = log.New(new(mockResponseWriter), "", 0)
 }
-
-// // func (a *air.Air) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-// // 	// a := air.New()
-// // 	a.server.ServeHTTP(r, w)
-// // }
-func loadAir(routes []route) *Air {
-	h := airHandler
-	// if loadTestHandler {
-	// 	h = airHandlerTest
-	// }
-	app := New()
-	for _, r := range routes {
-		switch r.method {
-		case "GET":
-			app.GET(r.path, h)
-		case "POST":
-			app.POST(r.path, h)
-		case "PUT":
-			app.PUT(r.path, h)
-		case "PATCH":
-			app.PATCH(r.path, h)
-		case "DELETE":
-			app.DELETE(r.path, h)
-		default:
-			panic("Unknow HTTP method: " + r.method)
-		}
-	}
-
-	return app
-}
 func loadAirSingle(method, path string, h Handler) *Air {
 
 	app := New()
 	switch method {
 	case "GET":
-		app.GET(path, h)
+		app.GET(path, h, airMiddleware)
 	case "POST":
-		app.POST(path, h)
+		app.POST(path, h, airMiddleware)
 	case "PUT":
-		app.PUT(path, h)
+		app.PUT(path, h, airMiddleware)
 	case "PATCH":
-		app.PATCH(path, h)
+		app.PATCH(path, h, airMiddleware)
 	case "DELETE":
-		app.DELETE(path, h)
+		app.DELETE(path, h, airMiddleware)
 	default:
 		panic("Unknow HTTP method: " + method)
 	}
