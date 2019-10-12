@@ -37,7 +37,7 @@ func TestNew(t *testing.T) {
 	assert.False(t, a.ACMEEnabled)
 	assert.Equal(
 		t,
-		"https://acme-v01.api.letsencrypt.org/directory",
+		"https://acme-v02.api.letsencrypt.org/directory",
 		a.ACMEDirectoryURL,
 	)
 	assert.Equal(t, "acme-certs", a.ACMECertRoot)

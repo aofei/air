@@ -201,7 +201,7 @@ type Air struct {
 	// The CA directory must be trusted because the ACME will automatically
 	// accept the Terms of Service (TOS) prompted from it.
 	//
-	// Default value: "https://acme-v01.api.letsencrypt.org/directory"
+	// Default value: "https://acme-v02.api.letsencrypt.org/directory"
 	ACMEDirectoryURL string `mapstructure:"acme_directory_url"`
 
 	// ACMECertRoot is the root of the certificates of the ACME feature of
@@ -577,7 +577,7 @@ func New() *Air {
 		AppName:                 "air",
 		Address:                 ":8080",
 		MaxHeaderBytes:          1 << 20,
-		ACMEDirectoryURL:        "https://acme-v01.api.letsencrypt.org/directory",
+		ACMEDirectoryURL:        "https://acme-v02.api.letsencrypt.org/directory",
 		ACMECertRoot:            "acme-certs",
 		HTTPSEnforcedPort:       "80",
 		NotFoundHandler:         DefaultNotFoundHandler,
