@@ -1190,6 +1190,8 @@ func (rpt *reverseProxyTransport) RoundTrip(
 		req.URL.Scheme = "https"
 		transport = rpt.h2Transport
 		handleGRPCWeb = true
+	default:
+		transport = rpt.hTransport
 	}
 
 	if handleGRPCWeb {
