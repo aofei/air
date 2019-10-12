@@ -798,6 +798,15 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 		rp.FlushInterval /= 100 // For gRPC streaming
 	}
 
+	defer func() {
+		r := recover()
+		if r == nil || r == http.ErrAbortHandler {
+			return
+		}
+
+		panic(r)
+	}()
+
 	r.reverseProxying = true
 	rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
 	r.reverseProxying = false
@@ -925,13 +934,11 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	}
 
 	n, err := w.Write(b)
-	if n > 0 {
-		if n > 0 && w == rw.gw && rw.r.Air.GzipFlushThreshold > 0 {
-			rw.gwn += n
-			if rw.gwn >= rw.r.Air.GzipFlushThreshold {
-				rw.gwn = 0
-				rw.gw.Flush()
-			}
+	if n > 0 && w == rw.gw && rw.r.Air.GzipFlushThreshold > 0 {
+		rw.gwn += n
+		if rw.gwn >= rw.r.Air.GzipFlushThreshold {
+			rw.gwn = 0
+			rw.gw.Flush()
 		}
 	}
 
