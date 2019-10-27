@@ -26,7 +26,7 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, "air", a.AppName)
 	assert.Empty(t, a.MaintainerEmail)
 	assert.False(t, a.DebugMode)
-	assert.Equal(t, ":8080", a.Address)
+	assert.Equal(t, "localhost:8080", a.Address)
 	assert.Zero(t, a.ReadTimeout)
 	assert.Zero(t, a.ReadHeaderTimeout)
 	assert.Zero(t, a.WriteTimeout)

@@ -465,13 +465,14 @@ type RequestParam struct {
 	// Access order: route param value (always at the first) > request query
 	// value(s) > request form value(s) > request multipart form value(s) >
 	// request multipart form file(s).
+	//
+	// Note that there will always be at least one value when the current
+	// request param is from the `Request.Param` or the `Request.Params`.
 	Values []*RequestParamValue
 }
 
 // Value returns the first value of the rp. It returns nil if the rp is nil or
 // there are no values.
-//
-// Note that route params always have values.
 func (rp *RequestParam) Value() *RequestParamValue {
 	if rp == nil || len(rp.Values) == 0 {
 		return nil

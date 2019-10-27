@@ -167,6 +167,13 @@ func TestRequestParam(t *testing.T) {
 	p := req.Param("foo")
 	assert.Nil(t, p)
 
+	req, _, _ = fakeRRCycle(a, http.MethodGet, "/?foobar", nil)
+
+	p = req.Param("foobar")
+	assert.NotNil(t, p)
+	assert.Len(t, p.Values, 1)
+	assert.Empty(t, p.Value().String())
+
 	req, _, _ = fakeRRCycle(a, http.MethodGet, "/?foo=bar", nil)
 
 	p = req.Param("foo")

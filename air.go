@@ -109,7 +109,7 @@ type Air struct {
 	// If the port of the `Address` is "0", a port is automatically chosen.
 	// The `Addresses` can be used to discover the chosen port.
 	//
-	// Default value: ":8080"
+	// Default value: "localhost:8080"
 	Address string `mapstructure:"address"`
 
 	// ReadTimeout is the maximum duration the server of the current web
@@ -575,7 +575,7 @@ var Default = New()
 func New() *Air {
 	a := &Air{
 		AppName:                 "air",
-		Address:                 ":8080",
+		Address:                 "localhost:8080",
 		MaxHeaderBytes:          1 << 20,
 		ACMEDirectoryURL:        "https://acme-v02.api.letsencrypt.org/directory",
 		ACMECertRoot:            "acme-certs",
