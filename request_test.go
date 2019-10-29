@@ -43,7 +43,7 @@ func TestRequestHTTPRequest(t *testing.T) {
 
 	req.Path = "/foobar?foo=bar"
 	req.Body = &bytes.Buffer{}
-	req.Context = context.WithValue(req.Context, "foo", "bar")
+	req.Context = context.WithValue(req.Context, struct{}{}, "foobar")
 
 	hr = req.HTTPRequest()
 	assert.Equal(t, req.Path, hr.RequestURI)

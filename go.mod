@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/VictoriaMetrics/fastcache v1.5.1
+	github.com/VictoriaMetrics/fastcache v1.5.2
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/aofei/mimesniffer v1.1.3
 	github.com/cespare/xxhash/v2 v2.1.0
@@ -16,9 +16,9 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/tdewolff/minify/v2 v2.5.2
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
-	golang.org/x/net v0.0.0-20191021144547-ec77196f6094
-	golang.org/x/sys v0.0.0-20191026070338-33540a1f6037 // indirect
+	golang.org/x/crypto v0.0.0-20191029031824-8986dd9e96cf
+	golang.org/x/net v0.0.0-20191028085509-fe3aa8a45271
+	golang.org/x/sys v0.0.0-20191028164358-195ce5e7f934 // indirect
 	golang.org/x/text v0.3.2
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect

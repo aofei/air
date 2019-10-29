@@ -89,7 +89,7 @@ type Response struct {
 	Written bool
 
 	// Minified indicates whether the message body of the current response
-	// has been minifed.
+	// has been minified.
 	Minified bool
 
 	// Gzipped indicates whether the message body of the current response
@@ -704,15 +704,6 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 			targetURL.RawQuery,
 			"&",
 			reqQuery,
-		)
-	}
-
-	targetPathQuery := targetURL.Path
-	if targetURL.RawQuery != "" {
-		targetPathQuery = fmt.Sprint(
-			targetPathQuery,
-			"?",
-			targetURL.RawQuery,
 		)
 	}
 
