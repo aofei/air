@@ -185,20 +185,20 @@ If you are looking for some useful gases, simply visit
 If you want to be familiar with Air as soon as possible, simply visit
 [here](https://github.com/air-examples).
 
-## FAQs
+## FAQ
 
-**Q: Why named Air?**
+### Q: Why named Air?
 
 A: "A" for "An", "I" for "Ideally" and "R" for "Refined". So, Air.
 
-**Q: Why based on the [net/http](https://godoc.org/net/http)?**
+### Q: Why based on the [net/http](https://godoc.org/net/http)?
 
 A: In fact, I've tried to implement a full-featured HTTP server (just like the
 awesome [valyala/fasthttp](https://github.com/valyala/fasthttp)). But when I
 finished about half of the work, I suddenly realized: What about stability? What
 about those awesome middleware outside? And, seriously, what am I doing?
 
-**Q: Why not just use the [net/http](https://godoc.org/net/http)?**
+### Q: Why not just use the [net/http](https://godoc.org/net/http)?
 
 A: Yeah, we can of course use the [net/http](https://godoc.org/net/http)
 directly, after all, it can meet many requirements. But, ummm... it's really too
@@ -212,9 +212,7 @@ client. In some cases it can be confusing. So why not just use the
 implement a refined web framework that are only used for the server-side on top
 of it?
 
-**Q: Do you know we already got the
-[gin-gonic/gin](https://github.com/gin-gonic/gin) and the
-[labstack/echo](https://github.com/labstack/echo)?**
+### Q: Do you know we already got the [gin-gonic/gin](https://github.com/gin-gonic/gin) and the [labstack/echo](https://github.com/labstack/echo)?
 
 A: Of course, I knew it when I started Go. And, I love both of them! But, why
 not try some new flavors? Are you sure you prefer them instead of Air? Don't
@@ -222,15 +220,14 @@ even give Air a try? Wow... well, maybe Air is not for you. After all, it's for
 people who love to try new things. Relax and continue to maintain the status
 quo, you will be fine.
 
-**Q: What about the fantastic
-[Gorilla web toolkit](https://github.com/gorilla)?**
+### Q: What about the fantastic [Gorilla web toolkit](https://github.com/gorilla)?
 
 A: Just call the
 [`air.WrapHTTPHandler`](https://godoc.org/github.com/aofei/air#WrapHTTPHandler)
 and the
 [`air.WrapHTTPMiddleware`](https://godoc.org/github.com/aofei/air#WrapHTTPMiddleware).
 
-**Q: Is Air good enough?**
+### Q: Is Air good enough?
 
 A: Far from enough. But it's already working.
 
