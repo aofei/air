@@ -670,7 +670,12 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 
 	targetMethod := r.req.Method
 	if mrm := rpm.ModifyRequestMethod; mrm != nil {
-		targetMethod = mrm(r.req.Method)
+		m, err := mrm(r.req.Method)
+		if err != nil {
+			return err
+		}
+
+		targetMethod = m
 	}
 
 	targetURL, err := url.Parse(target)
@@ -692,7 +697,12 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 
 	reqPath := r.req.Path
 	if mrp := rpm.ModifyRequestPath; mrp != nil {
-		reqPath = mrp(reqPath)
+		p, err := mrp(reqPath)
+		if err != nil {
+			return err
+		}
+
+		reqPath = p
 	}
 
 	reqPath, reqQuery := splitPathQuery(reqPath)
@@ -714,7 +724,12 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 	}
 
 	if mrh := rpm.ModifyRequestHeader; mrh != nil {
-		mrh(targetHeader)
+		h, err := mrh(targetHeader)
+		if err != nil {
+			return err
+		}
+
+		targetHeader = h
 	}
 
 	if _, ok := targetHeader["User-Agent"]; !ok {
@@ -725,10 +740,12 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 
 	targetBody := r.req.Body
 	if mrb := rpm.ModifyRequestBody; mrb != nil {
-		targetBody, err = mrb(r.req.Body)
+		b, err := mrb(r.req.Body)
 		if err != nil {
 			return err
 		}
+
+		targetBody = b
 	}
 
 	var reverseProxyError error
@@ -750,18 +767,21 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 		BufferPool:    r.Air.reverseProxyBufferPool,
 		ModifyResponse: func(res *http.Response) error {
 			if mrs := rpm.ModifyResponseStatus; mrs != nil {
-				res.StatusCode = mrs(res.StatusCode)
+				s, err := mrs(res.StatusCode)
+				if err != nil {
+					return err
+				}
+
+				res.StatusCode = s
 			}
 
 			if mrh := rpm.ModifyResponseHeader; mrh != nil {
-				mrh(res.Header)
-			}
+				h, err := mrh(res.Header)
+				if err != nil {
+					return err
+				}
 
-			if httpguts.HeaderValuesContainsToken(
-				res.Header["Content-Encoding"],
-				"gzip",
-			) {
-				r.Gzipped = true
+				res.Header = h
 			}
 
 			if mrb := rpm.ModifyResponseBody; mrb != nil {
@@ -773,6 +793,11 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 				res.Body = b
 			}
 
+			r.Gzipped = httpguts.HeaderValuesContainsToken(
+				res.Header["Content-Encoding"],
+				"gzip",
+			)
+
 			return nil
 		},
 		ErrorHandler: func(
@@ -780,7 +805,10 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 			_ *http.Request,
 			err error,
 		) {
-			r.Status = http.StatusBadGateway
+			if r.Status < http.StatusBadRequest {
+				r.Status = http.StatusBadGateway
+			}
+
 			reverseProxyError = err
 		},
 	}
@@ -820,28 +848,28 @@ func (r *Response) Defer(f func()) {
 // there is no need to modify that value.
 type ReverseProxyModifier struct {
 	// ModifyRequestMethod modifies the method of the request to the target.
-	ModifyRequestMethod func(method string) string
+	ModifyRequestMethod func(method string) (string, error)
 
 	// ModifyRequestPath modifies the path of the request to the target.
 	//
 	// Note that the path contains the query part (anyway, the HTTP/2
 	// specification says so). Therefore, the returned path must also be in
 	// this format.
-	ModifyRequestPath func(path string) string
+	ModifyRequestPath func(path string) (string, error)
 
 	// ModifyRequestHeader modifies the header of the request to the target.
-	ModifyRequestHeader func(header http.Header)
+	ModifyRequestHeader func(header http.Header) (http.Header, error)
 
 	// ModifyRequestBody modifies the body of the request from the target.
 	ModifyRequestBody func(body io.Reader) (io.Reader, error)
 
 	// ModifyResponseStatus modifies the status of the response from the
 	// target.
-	ModifyResponseStatus func(status int) int
+	ModifyResponseStatus func(status int) (int, error)
 
 	// ModifyResponseHeader modifies the header of the response from the
 	// target.
-	ModifyResponseHeader func(header http.Header)
+	ModifyResponseHeader func(header http.Header) (http.Header, error)
 
 	// ModifyResponseBody modifies the body of the response from the target.
 	//
