@@ -154,7 +154,7 @@ large document.
 
 ## Gases
 
-As we all know that the air of earth is a mixture of gases. So the same is that
+As we all know that the air of Earth is a mixture of gases. So the same is that
 Air adopts the gas as its composition. Everyone can create new gas and use it
 within Air simply.
 
