@@ -20,6 +20,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const easterEgg = `
+01000010 01100001 01111010 01101001
+01101110 01100111 01100001 00100001
+`
+
 func TestNew(t *testing.T) {
 	a := New()
 

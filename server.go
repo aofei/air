@@ -234,16 +234,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	req.Air = s.a
 	req.SetHTTPRequest(r)
 	req.res = res
-	req.params = req.params[:0]
-	req.routeParamNames = nil
-	req.routeParamValues = nil
 	req.parseRouteParamsOnce = &sync.Once{}
 	req.parseOtherParamsOnce = &sync.Once{}
-	for key := range req.values {
-		delete(req.values, key)
-	}
-
-	req.localizedString = nil
 
 	// Reset the response.
 
@@ -260,9 +252,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	res.req = req
 	res.ohrw = rw
 	res.servingContent = false
-	res.serveContentError = nil
 	res.reverseProxying = false
-	res.deferredFuncs = res.deferredFuncs[:0]
 
 	// Chain the gases stack.
 
@@ -303,8 +293,37 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		s.a.router.routeParamValuesPool.Put(req.routeParamValues)
 	}
 
-	// Put the request and response back to the pool.
+	// Put the request back to the pool.
+
+	req.Air = nil
+	req.Header = nil
+	req.Body = nil
+	req.Context = nil
+	req.hr = nil
+	req.res = nil
+	req.params = req.params[:0]
+	req.routeParamNames = nil
+	req.routeParamValues = nil
+	req.parseRouteParamsOnce = nil
+	req.parseOtherParamsOnce = nil
+	for key := range req.values {
+		delete(req.values, key)
+	}
+
+	req.localizedString = nil
 
 	s.requestPool.Put(req)
+
+	// Put the response back to the pool.
+
+	res.Air = nil
+	res.Header = nil
+	res.Body = nil
+	res.req = nil
+	res.hrw = nil
+	res.ohrw = nil
+	res.serveContentError = nil
+	res.deferredFuncs = res.deferredFuncs[:0]
+
 	s.responsePool.Put(res)
 }

@@ -29,7 +29,7 @@ func newRouter(a *Air) *router {
 	}
 	r.routeParamValuesPool = &sync.Pool{
 		New: func() interface{} {
-			return make([]string, 0, r.maxRouteParams)
+			return make([]string, r.maxRouteParams)
 		},
 	}
 
@@ -407,7 +407,6 @@ func (r *router) route(req *Request) Handler {
 				pc++
 			}
 
-			req.routeParamValues = req.routeParamValues[:pc]
 			req.routeParamValues[pc-1] = s[:i]
 
 			s = s[i:]
@@ -423,7 +422,6 @@ func (r *router) route(req *Request) Handler {
 			}
 
 			pc = len(cn.paramNames)
-			req.routeParamValues = req.routeParamValues[:pc]
 			req.routeParamValues[pc-1] = s
 
 			break
@@ -467,11 +465,11 @@ func (r *router) route(req *Request) Handler {
 // param values.
 func (r *router) allocRouteParamValues() []string {
 	rpvs := r.routeParamValuesPool.Get().([]string)
-	if cap(rpvs) < r.maxRouteParams {
+	if len(rpvs) < r.maxRouteParams {
 		rpvs = r.routeParamValuesPool.New().([]string)
 	}
 
-	return rpvs[:0]
+	return rpvs
 }
 
 // routeNode is the node of the route radix tree.

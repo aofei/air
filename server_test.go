@@ -440,9 +440,7 @@ func TestServerServeHTTP(t *testing.T) {
 	a := New()
 	a.Pregases = []Gas{func(next Handler) Handler {
 		return func(req *Request, res *Response) error {
-			if len(req.Values()) != 0 {
-				return errors.New("Malformed request")
-			}
+			req.SetValue("EasterEgg", easterEgg)
 
 			res.Defer(func() {
 				res.WriteString("Defer")
@@ -466,17 +464,16 @@ func TestServerServeHTTP(t *testing.T) {
 	}}
 
 	a.GET("/hello/:Name", func(req *Request, res *Response) error {
+		if req.Value("EasterEgg") != easterEgg {
+			return errors.New("wrong easter egg")
+		}
+
 		return res.WriteString(
 			"Hello, " + req.Param("Name").Value().String() + " - ",
 		)
 	})
 
 	s := a.server
-	s.requestPool.New = func() interface{} {
-		req := &Request{}
-		req.values = map[string]interface{}{"foo": "bar"}
-		return req
-	}
 
 	req := httptest.NewRequest(http.MethodGet, "/hello/Air", nil)
 	rec := httptest.NewRecorder()
@@ -493,7 +490,7 @@ func TestServerServeHTTP(t *testing.T) {
 	a = New()
 
 	a.GET("/", func(req *Request, res *Response) error {
-		return errors.New("Handler error")
+		return errors.New("handler error")
 	})
 
 	s = a.server
@@ -514,7 +511,7 @@ func TestServerServeHTTP(t *testing.T) {
 	a.DebugMode = true
 
 	a.GET("/:Foo", func(req *Request, res *Response) error {
-		return errors.New("Handler error")
+		return errors.New("handler error")
 	})
 
 	s = a.server
@@ -529,5 +526,5 @@ func TestServerServeHTTP(t *testing.T) {
 		"text/plain; charset=utf-8",
 		rec.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, "Handler error", rec.Body.String())
+	assert.Equal(t, "handler error", rec.Body.String())
 }

@@ -153,8 +153,9 @@ func (r *Request) HTTPRequest() *http.Request {
 // doing.
 func (r *Request) SetHTTPRequest(hr *http.Request) {
 	r.Method = hr.Method
-	r.Scheme = "http"
-	if hr.TLS != nil {
+	if hr.TLS == nil {
+		r.Scheme = "http"
+	} else {
 		r.Scheme = "https"
 	}
 
@@ -219,24 +220,16 @@ func (r *Request) Cookie(name string) *http.Cookie {
 
 // Params returns all `RequestParam` in the r.
 func (r *Request) Params() []*RequestParam {
-	if r.routeParamNames != nil {
-		r.parseRouteParamsOnce.Do(r.parseRouteParams)
-	}
-
+	r.parseRouteParamsOnce.Do(r.parseRouteParams)
 	r.parseOtherParamsOnce.Do(r.parseOtherParams)
-
 	return r.params
 }
 
 // Param returns the matched `RequestParam` for the name. It returns nil if not
 // found.
 func (r *Request) Param(name string) *RequestParam {
-	if r.routeParamNames != nil {
-		r.parseRouteParamsOnce.Do(r.parseRouteParams)
-	}
-
+	r.parseRouteParamsOnce.Do(r.parseRouteParams)
 	r.parseOtherParamsOnce.Do(r.parseOtherParams)
-
 	for _, p := range r.params {
 		if p.Name == name {
 			return p
@@ -248,6 +241,10 @@ func (r *Request) Param(name string) *RequestParam {
 
 // parseRouteParams parses the route params sent with the r into the `r.params`.
 func (r *Request) parseRouteParams() {
+	if r.routeParamNames == nil {
+		return
+	}
+
 	r.growParams(len(r.routeParamNames))
 
 RouteParamLoop:
@@ -284,6 +281,7 @@ RouteParamLoop:
 	}
 
 	r.Air.router.routeParamValuesPool.Put(r.routeParamValues)
+
 	r.routeParamNames = nil
 	r.routeParamValues = nil
 }

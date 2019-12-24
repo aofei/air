@@ -686,14 +686,14 @@ func TestRouterAllocRouteParamValues(t *testing.T) {
 	r.maxRouteParams++
 
 	rpvs = r.allocRouteParamValues()
-	assert.Len(t, rpvs, 0)
+	assert.Len(t, rpvs, 1)
 	assert.Equal(t, 1, cap(rpvs))
 
 	r.routeParamValuesPool.Put(rpvs)
 	r.maxRouteParams++
 
 	rpvs = r.allocRouteParamValues()
-	assert.Len(t, rpvs, 0)
+	assert.Len(t, rpvs, 2)
 	assert.Equal(t, 2, cap(rpvs))
 }
 
