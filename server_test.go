@@ -26,6 +26,8 @@ func TestNewServer(t *testing.T) {
 	assert.NotNil(t, s.a)
 	assert.NotNil(t, s.server)
 	assert.NotNil(t, s.addressMap)
+	assert.Nil(t, s.shutdownJobs)
+	assert.NotNil(t, s.shutdownJobMutex)
 	assert.NotNil(t, s.requestPool)
 	assert.NotNil(t, s.responsePool)
 	assert.IsType(t, &Request{}, s.requestPool.Get())
@@ -407,12 +409,51 @@ func TestServerShutdown(t *testing.T) {
 
 	hijackOSStdout()
 
+	foo := ""
+	s.addShutdownJob(func() {
+		foo = "bar"
+	})
+
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)
 
 	revertOSStdout()
 
 	assert.NoError(t, s.shutdown(context.Background()))
+
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, "bar", foo)
+	assert.Len(t, s.shutdownJobs, 1)
+	assert.Nil(t, s.shutdownJobs[0])
+}
+
+func TestServerAddShutdownJob(t *testing.T) {
+	a := New()
+
+	s := a.server
+
+	assert.Len(t, s.shutdownJobs, 0)
+	id := s.addShutdownJob(func() {})
+	assert.Len(t, s.shutdownJobs, 1)
+	assert.NotNil(t, s.shutdownJobs[0])
+	assert.Equal(t, 0, id)
+}
+
+func TestServerRemoveShutdownJob(t *testing.T) {
+	a := New()
+
+	s := a.server
+
+	assert.Len(t, s.shutdownJobs, 0)
+	id := s.addShutdownJob(func() {})
+	assert.Len(t, s.shutdownJobs, 1)
+	assert.NotNil(t, s.shutdownJobs[0])
+	assert.Equal(t, 0, id)
+
+	s.removeShutdownJob(id)
+	assert.Len(t, s.shutdownJobs, 1)
+	assert.Nil(t, s.shutdownJobs[0])
 }
 
 func TestServerAddresses(t *testing.T) {

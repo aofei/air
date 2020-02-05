@@ -17,19 +17,22 @@ import (
 
 // server is an HTTP server.
 type server struct {
-	a            *Air
-	server       *http.Server
-	addressMap   map[string]int
-	requestPool  *sync.Pool
-	responsePool *sync.Pool
+	a                *Air
+	server           *http.Server
+	addressMap       map[string]int
+	shutdownJobs     []func()
+	shutdownJobMutex *sync.Mutex
+	requestPool      *sync.Pool
+	responsePool     *sync.Pool
 }
 
 // newServer returns a new instance of the `server` with the a.
 func newServer(a *Air) *server {
 	return &server{
-		a:          a,
-		server:     &http.Server{},
-		addressMap: map[string]int{},
+		a:                a,
+		server:           &http.Server{},
+		addressMap:       map[string]int{},
+		shutdownJobMutex: &sync.Mutex{},
 		requestPool: &sync.Pool{
 			New: func() interface{} {
 				return &Request{}
@@ -80,6 +83,17 @@ func (s *server) serve() error {
 			http.StatusMovedPermanently,
 		)
 	}))
+
+	s.server.RegisterOnShutdown(func() {
+		s.shutdownJobMutex.Lock()
+		defer s.shutdownJobMutex.Unlock()
+		for i, job := range s.shutdownJobs {
+			if job != nil {
+				go job()
+				s.shutdownJobs[i] = nil
+			}
+		}
+	})
 
 	if s.a.DebugMode {
 		fmt.Println("air: serving in debug mode")
@@ -191,6 +205,24 @@ func (s *server) close() error {
 // connections.
 func (s *server) shutdown(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
+}
+
+// addShutdownJob adds the f to the shutdown job queue and returns an unique ID.
+func (s *server) addShutdownJob(f func()) int {
+	s.shutdownJobMutex.Lock()
+	defer s.shutdownJobMutex.Unlock()
+	s.shutdownJobs = append(s.shutdownJobs, f)
+	return len(s.shutdownJobs) - 1
+}
+
+// removeShutdownJob removes the shutdown job targeted by the id from the
+// shutdown job queue.
+func (s *server) removeShutdownJob(id int) {
+	s.shutdownJobMutex.Lock()
+	defer s.shutdownJobMutex.Unlock()
+	if id >= 0 && id < len(s.shutdownJobs) {
+		s.shutdownJobs[id] = nil
+	}
 }
 
 // addresses returns all TCP addresses that the s actually listens on.

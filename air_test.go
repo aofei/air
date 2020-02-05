@@ -595,12 +595,73 @@ func TestAirShutdown(t *testing.T) {
 
 	hijackOSStdout()
 
+	foo := ""
+	a.AddShutdownJob(func() {
+		foo = "bar"
+	})
+
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
 
 	revertOSStdout()
 
 	assert.NoError(t, a.Shutdown(context.Background()))
+
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, "bar", foo)
+}
+
+func TestAirAddShutdownJob(t *testing.T) {
+	a := New()
+	a.Address = "localhost:0"
+
+	hijackOSStdout()
+
+	foo := ""
+	id := a.AddShutdownJob(func() {
+		foo = "bar"
+	})
+
+	assert.Equal(t, 0, id)
+
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	assert.NoError(t, a.Shutdown(context.Background()))
+
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, "bar", foo)
+}
+
+func TestAirRemoveShutdownJob(t *testing.T) {
+	a := New()
+	a.Address = "localhost:0"
+
+	hijackOSStdout()
+
+	foo := ""
+	id := a.AddShutdownJob(func() {
+		foo = "bar"
+	})
+
+	assert.Equal(t, 0, id)
+
+	a.RemoveShutdownJob(id)
+
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	assert.NoError(t, a.Shutdown(context.Background()))
+
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Empty(t, foo)
 }
 
 func TestAirAddresses(t *testing.T) {

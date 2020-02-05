@@ -916,11 +916,13 @@ func (a *Air) Close() error {
 }
 
 // Shutdown gracefully shuts down the server of the a without interrupting any
-// active connections. It works by first closing all open listeners, then
-// closing all idle connections, and then waiting indefinitely for connections
-// to return to idle and then shut down. If the ctx expires before the shutdown
-// is complete, it returns the context's error, otherwise it returns any error
-// returned from closing the underlying listener(s) of the server of the a.
+// active connections. It works by first closing all open listeners, then start
+// running all shutdown jobs added via the `AddShutdownJob` concurrently, and
+// then closing all idle connections, and then waiting indefinitely for
+// connections to return to idle and then shut down. If the ctx expires before
+// the shutdown is complete, it returns the context's error, otherwise it
+// returns any error returned from closing the underlying listener(s) of the
+// server of the a.
 //
 // When the `Shutdown` is called, the `Serve` immediately return the
 // `http.ErrServerClosed`. Make sure the program does not exit and waits instead
@@ -928,9 +930,24 @@ func (a *Air) Close() error {
 //
 // The `Shutdown` does not attempt to close nor wait for hijacked connections
 // such as WebSockets. The caller should separately notify such long-lived
-// connections of shutdown and wait for them to close, if desired.
+// connections of shutdown and wait for them to close, if desired. See the
+// `AddShutdownJob` for a way to add shutdown jobs.
 func (a *Air) Shutdown(ctx context.Context) error {
 	return a.server.shutdown(ctx)
+}
+
+// AddShutdownJob adds the f as a shutdown job that will run only once when the
+// `Shutdown` is called. The return value is an unique ID assigned to the f,
+// which can be used to remove the f from the shutdown job queue by calling the
+// `RemoveShutdownJob`.
+func (a *Air) AddShutdownJob(f func()) int {
+	return a.server.addShutdownJob(f)
+}
+
+// RemoveShutdownJob removes the shutdown job targeted by the id from the
+// shutdown job queue.
+func (a *Air) RemoveShutdownJob(id int) {
+	a.server.removeShutdownJob(id)
 }
 
 // Addresses returns all TCP addresses that the server of the a actually listens
