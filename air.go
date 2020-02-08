@@ -919,10 +919,10 @@ func (a *Air) Close() error {
 // active connections. It works by first closing all open listeners, then start
 // running all shutdown jobs added via the `AddShutdownJob` concurrently, and
 // then closing all idle connections, and then waiting indefinitely for
-// connections to return to idle and then shut down. If the ctx expires before
-// the shutdown is complete, it returns the context's error, otherwise it
-// returns any error returned from closing the underlying listener(s) of the
-// server of the a.
+// connections to return to idle and shutdown jobs to complete and then shut
+// down. If the ctx expires before the shutdown is complete, it returns the
+// context's error, otherwise it returns any error returned from closing the
+// underlying listener(s) of the server of the a.
 //
 // When the `Shutdown` is called, the `Serve` immediately return the
 // `http.ErrServerClosed`. Make sure the program does not exit and waits instead

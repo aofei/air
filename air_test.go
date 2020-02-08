@@ -606,9 +606,6 @@ func TestAirShutdown(t *testing.T) {
 	revertOSStdout()
 
 	assert.NoError(t, a.Shutdown(context.Background()))
-
-	time.Sleep(100 * time.Millisecond)
-
 	assert.Equal(t, "bar", foo)
 }
 
@@ -631,9 +628,6 @@ func TestAirAddShutdownJob(t *testing.T) {
 	revertOSStdout()
 
 	assert.NoError(t, a.Shutdown(context.Background()))
-
-	time.Sleep(100 * time.Millisecond)
-
 	assert.Equal(t, "bar", foo)
 }
 
@@ -658,9 +652,6 @@ func TestAirRemoveShutdownJob(t *testing.T) {
 	revertOSStdout()
 
 	assert.NoError(t, a.Shutdown(context.Background()))
-
-	time.Sleep(100 * time.Millisecond)
-
 	assert.Empty(t, foo)
 }
 

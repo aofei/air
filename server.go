@@ -22,6 +22,7 @@ type server struct {
 	addressMap       map[string]int
 	shutdownJobs     []func()
 	shutdownJobMutex *sync.Mutex
+	shutdownJobDone  chan struct{}
 	requestPool      *sync.Pool
 	responsePool     *sync.Pool
 }
@@ -33,6 +34,7 @@ func newServer(a *Air) *server {
 		server:           &http.Server{},
 		addressMap:       map[string]int{},
 		shutdownJobMutex: &sync.Mutex{},
+		shutdownJobDone:  make(chan struct{}),
 		requestPool: &sync.Pool{
 			New: func() interface{} {
 				return &Request{}
@@ -84,15 +86,26 @@ func (s *server) serve() error {
 		)
 	}))
 
+	shutdownJobOnce := sync.Once{}
 	s.server.RegisterOnShutdown(func() {
 		s.shutdownJobMutex.Lock()
 		defer s.shutdownJobMutex.Unlock()
-		for i, job := range s.shutdownJobs {
-			if job != nil {
-				go job()
-				s.shutdownJobs[i] = nil
+
+		shutdownJobOnce.Do(func() {
+			waitGroup := sync.WaitGroup{}
+			for _, job := range s.shutdownJobs {
+				if job != nil {
+					waitGroup.Add(1)
+					go func(job func()) {
+						job()
+						waitGroup.Done()
+					}(job)
+				}
 			}
-		}
+
+			waitGroup.Wait()
+			close(s.shutdownJobDone)
+		})
 	})
 
 	if s.a.DebugMode {
@@ -204,7 +217,14 @@ func (s *server) close() error {
 // shutdown gracefully shuts down the s without interrupting any active
 // connections.
 func (s *server) shutdown(ctx context.Context) error {
-	return s.server.Shutdown(ctx)
+	err := s.server.Shutdown(ctx)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-s.shutdownJobDone:
+	}
+
+	return err
 }
 
 // addShutdownJob adds the f to the shutdown job queue and returns an unique ID.
