@@ -52,6 +52,11 @@ func (c *coffer) load() {
 		}
 
 		go func() {
+			done := make(chan struct{})
+			c.a.AddShutdownJob(func() {
+				close(done)
+			})
+
 			for {
 				select {
 				case e := <-c.watcher.Events:
@@ -71,6 +76,8 @@ func (c *coffer) load() {
 						"air: coffer watcher error: %v",
 						err,
 					)
+				case <-done:
+					return
 				}
 			}
 		}()

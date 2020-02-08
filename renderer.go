@@ -45,6 +45,11 @@ func (r *renderer) load() {
 		}
 
 		go func() {
+			done := make(chan struct{})
+			r.a.AddShutdownJob(func() {
+				close(done)
+			})
+
 			for {
 				select {
 				case <-r.watcher.Events:
@@ -55,6 +60,8 @@ func (r *renderer) load() {
 							"%v",
 						err,
 					)
+				case <-done:
+					return
 				}
 			}
 		}()

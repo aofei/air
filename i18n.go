@@ -45,6 +45,11 @@ func (i *i18n) load() {
 		}
 
 		go func() {
+			done := make(chan struct{})
+			i.a.AddShutdownJob(func() {
+				close(done)
+			})
+
 			for {
 				select {
 				case <-i.watcher.Events:
@@ -54,6 +59,8 @@ func (i *i18n) load() {
 						"air: i18n watcher error: %v",
 						err,
 					)
+				case <-done:
+					return
 				}
 			}
 		}()
