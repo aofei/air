@@ -134,6 +134,32 @@ func TestRequestClientHost(t *testing.T) {
 	assert.Equal(t, "2001:Db8:CaFe::17", req.ClientHost())
 }
 
+func TestRequestRawPath(t *testing.T) {
+	a := New()
+
+	req, _, _ := fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+	assert.Equal(t, "/foo/bar", req.RawPath())
+
+	req, _, _ = fakeRRCycle(a, http.MethodGet, "/foo/bar?", nil)
+	assert.Equal(t, "/foo/bar", req.RawPath())
+
+	req, _, _ = fakeRRCycle(a, http.MethodGet, "/foo/bar?foo=bar", nil)
+	assert.Equal(t, "/foo/bar", req.RawPath())
+}
+
+func TestRequestRawQuery(t *testing.T) {
+	a := New()
+
+	req, _, _ := fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+	assert.Empty(t, req.RawQuery())
+
+	req, _, _ = fakeRRCycle(a, http.MethodGet, "/foo/bar?", nil)
+	assert.Empty(t, req.RawQuery())
+
+	req, _, _ = fakeRRCycle(a, http.MethodGet, "/foo/bar?foo=bar", nil)
+	assert.Equal(t, "foo=bar", req.RawQuery())
+}
+
 func TestRequestCookies(t *testing.T) {
 	a := New()
 

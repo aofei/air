@@ -774,20 +774,6 @@ func TestStringSliceContainsCIly(t *testing.T) {
 	assert.False(t, stringSliceContainsCIly([]string{"foo"}, "BAR"))
 }
 
-func TestSplitPathQuery(t *testing.T) {
-	p, q := splitPathQuery("/foobar")
-	assert.Equal(t, "/foobar", p)
-	assert.Empty(t, q)
-
-	p, q = splitPathQuery("/foobar?")
-	assert.Equal(t, "/foobar", p)
-	assert.Empty(t, q)
-
-	p, q = splitPathQuery("/foobar?foo=bar")
-	assert.Equal(t, "/foobar", p)
-	assert.Equal(t, "foo=bar", q)
-}
-
 func fakeRRCycle(
 	a *Air,
 	method string,

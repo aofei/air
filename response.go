@@ -435,10 +435,10 @@ func (r *Response) WriteFile(filename string) error {
 	} else if fi, err := os.Stat(filename); err != nil {
 		return err
 	} else if fi.IsDir() {
-		p, q := splitPathQuery(r.req.Path)
+		p := r.req.RawPath()
 		if !strings.HasSuffix(p, "/") {
 			p = fmt.Sprint(path.Base(p), "/")
-			if q != "" {
+			if q := r.req.RawQuery(); q != "" {
 				p = fmt.Sprint(p, "?", q)
 			}
 
@@ -705,7 +705,7 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 		reqPath = p
 	}
 
-	reqPath, reqQuery := splitPathQuery(reqPath)
+	reqPath, reqQuery := r.req.RawPath(), r.req.RawQuery()
 	targetURL.Path = path.Join(targetURL.Path, reqPath)
 	if targetURL.RawQuery == "" || reqQuery == "" {
 		targetURL.RawQuery = fmt.Sprint(targetURL.RawQuery, reqQuery)

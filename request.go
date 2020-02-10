@@ -121,7 +121,7 @@ func (r *Request) HTTPRequest() *http.Request {
 	r.hr.Method = r.Method
 	r.hr.Host = r.Authority
 	if r.hr.RequestURI != r.Path {
-		p, q := splitPathQuery(r.Path)
+		p := r.RawPath()
 		if p != r.hr.URL.Path {
 			r.hr.URL.Path = p
 			r.hr.URL.RawPath = ""
@@ -129,7 +129,7 @@ func (r *Request) HTTPRequest() *http.Request {
 
 		r.hr.URL.ForceQuery = strings.HasSuffix(r.Path, "?") &&
 			strings.Count(r.Path, "?") == 1
-		r.hr.URL.RawQuery = q
+		r.hr.URL.RawQuery = r.RawQuery()
 	}
 
 	r.hr.RequestURI = r.Path
@@ -191,6 +191,32 @@ func (r *Request) RemoteHost() string {
 	}
 
 	return r.RemoteAddress()
+}
+
+// RawPath returns the raw path part of the `Path`.
+//
+// E.g.: "/foo/bar?foo=bar" -> "/foo/bar"
+func (r *Request) RawPath() string {
+	i, l := 0, len(r.Path)
+	for ; i < l && r.Path[i] != '?'; i++ {
+	}
+
+	return r.Path[:i]
+}
+
+// RawQuery returns the raw query part (without '?') of the `Path`.
+//
+// E.g.: "/foo/bar?foo=bar" -> "foo=bar"
+func (r *Request) RawQuery() string {
+	i, l := 0, len(r.Path)
+	for ; i < l && r.Path[i] != '?'; i++ {
+	}
+
+	if i < l {
+		return r.Path[i+1:]
+	}
+
+	return ""
 }
 
 // ClientAddress returns the original network address that sent the r.

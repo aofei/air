@@ -296,20 +296,20 @@ func (r *router) insert(
 // route returns a handler registered for the req.
 func (r *router) route(req *Request) Handler {
 	var (
-		s, _ = splitPathQuery(req.Path) // Search
-		cn   = r.routeTree              // Current node
-		nn   *routeNode                 // Next node
-		sn   *routeNode                 // Saved node
-		snt  routeNodeType              // Saved type
-		ss   string                     // Saved search
-		sapn *routeNode                 // Saved any parent node
-		saps string                     // Saved any parent search
-		sl   int                        // Search length
-		pl   int                        // Prefix length
-		ll   int                        // LCP length
-		ml   int                        // Minimum length of sl and pl
-		i    int                        // Index
-		pc   int                        // Param counter
+		s    = req.RawPath() // Search
+		cn   = r.routeTree   // Current node
+		nn   *routeNode      // Next node
+		sn   *routeNode      // Saved node
+		snt  routeNodeType   // Saved type
+		ss   string          // Saved search
+		sapn *routeNode      // Saved any parent node
+		saps string          // Saved any parent search
+		sl   int             // Search length
+		pl   int             // Prefix length
+		ll   int             // LCP length
+		ml   int             // Minimum length of sl and pl
+		i    int             // Index
+		pc   int             // Param counter
 	)
 
 	// Search order: static route > param route > any route.
