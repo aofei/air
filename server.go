@@ -55,7 +55,7 @@ func (s *server) serve() error {
 		return err
 	}
 
-	s.server.Addr = host + ":" + port
+	s.server.Addr = net.JoinHostPort(host, port)
 	s.server.Handler = s
 	s.server.ReadTimeout = s.a.ReadTimeout
 	s.server.ReadHeaderTimeout = s.a.ReadHeaderTimeout
@@ -75,7 +75,7 @@ func (s *server) serve() error {
 		}
 
 		if realPort != "443" {
-			host = fmt.Sprint(host, ":", realPort)
+			host = net.JoinHostPort(host, realPort)
 		}
 
 		http.Redirect(
@@ -169,7 +169,8 @@ func (s *server) serve() error {
 
 	if s.a.HTTPSEnforced {
 		hs := &http.Server{
-			Addr:              host + ":" + s.a.HTTPSEnforcedPort,
+			Addr: net.JoinHostPort(host, s.a.HTTPSEnforcedPort),
+
 			Handler:           hh,
 			ReadTimeout:       s.a.ReadTimeout,
 			ReadHeaderTimeout: s.a.ReadHeaderTimeout,

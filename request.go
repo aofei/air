@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -182,6 +183,16 @@ func (r *Request) RemoteAddress() string {
 	return r.hr.RemoteAddr
 }
 
+// RemoteHost is like the `RemoteAddress`, but only returns the host part.
+func (r *Request) RemoteHost() string {
+	remoteHost, _, err := net.SplitHostPort(r.RemoteAddress())
+	if err == nil {
+		return remoteHost
+	}
+
+	return r.RemoteAddress()
+}
+
 // ClientAddress returns the original network address that sent the r.
 //
 // Usually, the original network address is the same as the last network address
@@ -204,6 +215,16 @@ func (r *Request) ClientAddress() string {
 	}
 
 	return ca
+}
+
+// ClientHost is like the `ClientAddress`, but only returns the host part.
+func (r *Request) ClientHost() string {
+	clientHost, _, err := net.SplitHostPort(r.ClientAddress())
+	if err == nil {
+		return clientHost
+	}
+
+	return r.ClientAddress()
 }
 
 // Cookies returns all `http.Cookie` in the r.

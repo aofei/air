@@ -83,6 +83,23 @@ func TestRequestRemoteAddress(t *testing.T) {
 
 	req, _, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
 	assert.Equal(t, "192.0.2.1:1234", req.RemoteAddress())
+}
+
+func TestRequestRemoteHost(t *testing.T) {
+	a := New()
+
+	req, _, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
+	assert.Equal(t, "192.0.2.1", req.RemoteHost())
+
+	req, _, _ = fakeRRCycle(a, http.MethodGet, "/", nil)
+	req.hr.RemoteAddr = "192.0.2.1"
+	assert.Equal(t, "192.0.2.1", req.RemoteHost())
+}
+
+func TestRequestClientAddress(t *testing.T) {
+	a := New()
+
+	req, _, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
 	assert.Equal(t, "192.0.2.1:1234", req.ClientAddress())
 
 	req.Header.Set("X-Forwarded-For", "192.0.2.2:1234, 192.0.2.3:1234")
@@ -91,14 +108,30 @@ func TestRequestRemoteAddress(t *testing.T) {
 	req.Header.Set("Forwarded", "for=192.0.2.4:1234, for=192.0.2.5:1234")
 	assert.Equal(t, "192.0.2.4:1234", req.ClientAddress())
 
-	req.Header.Set("Forwarded", `for="[2001:db8:cafe::17]"`)
-	assert.Equal(t, "[2001:db8:cafe::17]", req.ClientAddress())
-
 	req.Header.Set("Forwarded", `for="[2001:db8:cafe::17]:4711"`)
 	assert.Equal(t, "[2001:db8:cafe::17]:4711", req.ClientAddress())
 
-	req.Header.Set("Forwarded", `FoR="[2001:Db8:CaFe::17]"`)
-	assert.Equal(t, "[2001:Db8:CaFe::17]", req.ClientAddress())
+	req.Header.Set("Forwarded", `FoR="2001:Db8:CaFe::17"`)
+	assert.Equal(t, "2001:Db8:CaFe::17", req.ClientAddress())
+}
+
+func TestRequestClientHost(t *testing.T) {
+	a := New()
+
+	req, _, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
+	assert.Equal(t, "192.0.2.1", req.ClientHost())
+
+	req.Header.Set("X-Forwarded-For", "192.0.2.2:1234, 192.0.2.3:1234")
+	assert.Equal(t, "192.0.2.2", req.ClientHost())
+
+	req.Header.Set("Forwarded", "for=192.0.2.4:1234, for=192.0.2.5:1234")
+	assert.Equal(t, "192.0.2.4", req.ClientHost())
+
+	req.Header.Set("Forwarded", `for="[2001:db8:cafe::17]:4711"`)
+	assert.Equal(t, "2001:db8:cafe::17", req.ClientHost())
+
+	req.Header.Set("Forwarded", `FoR="2001:Db8:CaFe::17"`)
+	assert.Equal(t, "2001:Db8:CaFe::17", req.ClientHost())
 }
 
 func TestRequestCookies(t *testing.T) {
