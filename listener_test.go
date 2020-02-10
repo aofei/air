@@ -169,6 +169,8 @@ func TestPROXYConnRead(t *testing.T) {
 		cc.Close()
 	}()
 
+	time.Sleep(100 * time.Millisecond)
+
 	b := make([]byte, 3)
 	n, err := pc.Read(b)
 	assert.Equal(t, 3, n)
@@ -201,6 +203,8 @@ func TestPROXYConnRead(t *testing.T) {
 		cc.Write([]byte("PROXY "))
 		cc.Close()
 	}()
+
+	time.Sleep(100 * time.Millisecond)
 
 	b = make([]byte, 6)
 	n, err = pc.Read(b)
@@ -236,6 +240,8 @@ func TestPROXYConnLocalAddr(t *testing.T) {
 		cc.Write([]byte("air"))
 		cc.Close()
 	}()
+
+	time.Sleep(100 * time.Millisecond)
 
 	b := make([]byte, 3)
 	n, err := pc.Read(b)
@@ -275,6 +281,8 @@ func TestPROXYConnLocalAddr(t *testing.T) {
 		cc.Close()
 	}()
 
+	time.Sleep(100 * time.Millisecond)
+
 	na = pc.LocalAddr()
 	assert.NotNil(t, na)
 	assert.Equal(t, "tcp", na.Network())
@@ -308,6 +316,8 @@ func TestPROXYConnRemoteAddr(t *testing.T) {
 		cc.Write([]byte("air"))
 		cc.Close()
 	}()
+
+	time.Sleep(100 * time.Millisecond)
 
 	b := make([]byte, 3)
 	n, err := pc.Read(b)
@@ -347,6 +357,8 @@ func TestPROXYConnRemoteAddr(t *testing.T) {
 		cc.Close()
 	}()
 
+	time.Sleep(100 * time.Millisecond)
+
 	na = pc.RemoteAddr()
 	assert.NotNil(t, na)
 	assert.Equal(t, "tcp", na.Network())
@@ -382,6 +394,8 @@ func TestPROXYConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
+	time.Sleep(100 * time.Millisecond)
+
 	pc.readHeader()
 	assert.Nil(t, pc.srcAddr)
 	assert.Nil(t, pc.dstAddr)
@@ -414,6 +428,8 @@ func TestPROXYConnReadHeader(t *testing.T) {
 		cc.Write([]byte("PROXY TCP4 127.0.0.2 127.0.0.3 8081 8082\r\n"))
 		cc.Close()
 	}()
+
+	time.Sleep(100 * time.Millisecond)
 
 	pc.readHeader()
 	assert.NotNil(t, pc.srcAddr)
@@ -486,6 +502,8 @@ func TestPROXYConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
+	time.Sleep(100 * time.Millisecond)
+
 	assert.NoError(t, pc.Close())
 
 	pc.readHeader()
@@ -522,6 +540,8 @@ func TestPROXYConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
+	time.Sleep(100 * time.Millisecond)
+
 	pc.readHeader()
 	assert.Nil(t, pc.srcAddr)
 	assert.Nil(t, pc.dstAddr)
@@ -554,6 +574,8 @@ func TestPROXYConnReadHeader(t *testing.T) {
 		cc.Write([]byte("PROXY TCP4\r\n"))
 		cc.Close()
 	}()
+
+	time.Sleep(100 * time.Millisecond)
 
 	pc.readHeader()
 	assert.Nil(t, pc.srcAddr)
@@ -588,6 +610,8 @@ func TestPROXYConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
+	time.Sleep(100 * time.Millisecond)
+
 	pc.readHeader()
 	assert.Nil(t, pc.srcAddr)
 	assert.Nil(t, pc.dstAddr)
@@ -620,6 +644,8 @@ func TestPROXYConnReadHeader(t *testing.T) {
 		cc.Write([]byte("PROXY TCP4 127.0.0 127.0.0.3 8081 8082\r\n"))
 		cc.Close()
 	}()
+
+	time.Sleep(100 * time.Millisecond)
 
 	pc.readHeader()
 	assert.Nil(t, pc.srcAddr)
@@ -654,6 +680,8 @@ func TestPROXYConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
+	time.Sleep(100 * time.Millisecond)
+
 	pc.readHeader()
 	assert.Nil(t, pc.srcAddr)
 	assert.Nil(t, pc.dstAddr)
@@ -687,6 +715,8 @@ func TestPROXYConnReadHeader(t *testing.T) {
 		cc.Close()
 	}()
 
+	time.Sleep(100 * time.Millisecond)
+
 	pc.readHeader()
 	assert.Nil(t, pc.srcAddr)
 	assert.Nil(t, pc.dstAddr)
@@ -719,6 +749,8 @@ func TestPROXYConnReadHeader(t *testing.T) {
 		cc.Write([]byte("PROXY TCP4 127.0.0.2 127.0.0.3 8081 PORT\r\n"))
 		cc.Close()
 	}()
+
+	time.Sleep(100 * time.Millisecond)
 
 	pc.readHeader()
 	assert.Nil(t, pc.srcAddr)
