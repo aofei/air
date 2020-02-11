@@ -806,19 +806,16 @@ func fakeRRCycle(
 	return req, res, rec
 }
 
-var (
-	osStdout     = os.Stdout
-	fakeOSStdout *os.File
-)
+var osStdout = os.Stdout
 
 func hijackOSStdout() {
-	if fakeOSStdout == nil {
-		fakeOSStdout, _ = ioutil.TempFile("", "")
-	}
-
-	os.Stdout = fakeOSStdout
+	os.Stdout, _ = ioutil.TempFile("", "air.FakeStdout")
 }
 
 func revertOSStdout() {
+	if os.Stdout != osStdout {
+		os.Remove(os.Stdout.Name())
+	}
+
 	os.Stdout = osStdout
 }
