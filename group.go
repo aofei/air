@@ -4,7 +4,7 @@ package air
 // routes that share common gases or functionality that should be separate from
 // the parent while still inheriting from it.
 type Group struct {
-	// Air is where the current group belong.
+	// Air is where the current group belongs.
 	Air *Air
 
 	// Prefix is the prefix of all route paths of the current group.

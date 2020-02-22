@@ -1038,23 +1038,21 @@ func WrapHTTPMiddleware(hm func(http.Handler) http.Handler) Gas {
 	}
 }
 
-// stringSliceContains reports whether the ss contains the s.
-func stringSliceContains(ss []string, s string) bool {
-	for _, v := range ss {
-		if v == s {
-			return true
+// stringSliceContains reports whether the ss contains the s. The
+// caseInsensitive indicates whether to ignore case when comparing.
+func stringSliceContains(ss []string, s string, caseInsensitive bool) bool {
+	if caseInsensitive {
+		for _, v := range ss {
+			if strings.EqualFold(v, s) {
+				return true
+			}
 		}
+
+		return false
 	}
 
-	return false
-}
-
-// stringSliceContainsCIly reports whether the ss contains the s
-// case-insensitively.
-func stringSliceContainsCIly(ss []string, s string) bool {
-	s = strings.ToLower(s)
 	for _, v := range ss {
-		if strings.ToLower(v) == s {
+		if v == s {
 			return true
 		}
 	}

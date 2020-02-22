@@ -100,7 +100,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 	}
 
 	ext := filepath.Ext(name)
-	if !stringSliceContainsCIly(c.a.CofferAssetExts, ext) {
+	if !stringSliceContains(c.a.CofferAssetExts, ext, true) {
 		return nil, nil
 	}
 
@@ -130,7 +130,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 	}
 
 	if c.a.MinifierEnabled &&
-		stringSliceContainsCIly(c.a.MinifierMIMETypes, pmt) {
+		stringSliceContains(c.a.MinifierMIMETypes, pmt, true) {
 		if b, err = c.a.minifier.minify(pmt, b); err != nil {
 			return nil, err
 		}
@@ -139,7 +139,7 @@ func (c *coffer) asset(name string) (*asset, error) {
 	}
 
 	if c.a.GzipEnabled && int64(len(b)) >= c.a.GzipMinContentLength &&
-		stringSliceContainsCIly(c.a.GzipMIMETypes, pmt) {
+		stringSliceContains(c.a.GzipMIMETypes, pmt, true) {
 		buf := bytes.Buffer{}
 		if gw, err := gzip.NewWriterLevel(
 			&buf,

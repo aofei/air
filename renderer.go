@@ -89,9 +89,10 @@ func (r *renderer) load() {
 	if r.loadError = filepath.Walk(
 		tr,
 		func(p string, fi os.FileInfo, err error) error {
-			if fi == nil || fi.IsDir() || !stringSliceContainsCIly(
+			if fi == nil || fi.IsDir() || !stringSliceContains(
 				r.a.RendererTemplateExts,
 				filepath.Ext(p),
+				true,
 			) {
 				return err
 			}

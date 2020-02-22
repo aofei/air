@@ -19,7 +19,7 @@ import (
 // The `Request` not only represents HTTP/1.x requests, but also represents
 // HTTP/2 requests, and always acts as HTTP/2 requests.
 type Request struct {
-	// Air is where the current request belong.
+	// Air is where the current request belongs.
 	Air *Air
 
 	// Method is the method of the current request.

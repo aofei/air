@@ -43,7 +43,7 @@ import (
 // The `Response` not only represents HTTP/1.x responses, but also represents
 // HTTP/2 responses, and always acts as HTTP/2 responses.
 type Response struct {
-	// Air is where the current response belong.
+	// Air is where the current response belongs.
 	Air *Air
 
 	// Status is the status code giving the result of the attempt to
@@ -175,7 +175,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 
 	if !r.Minified && r.Air.MinifierEnabled {
 		mt, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
-		if stringSliceContainsCIly(r.Air.MinifierMIMETypes, mt) {
+		if stringSliceContains(r.Air.MinifierMIMETypes, mt, true) {
 			b, err := ioutil.ReadAll(content)
 			if err != nil {
 				return err
@@ -1011,7 +1011,7 @@ func (rw *responseWriter) handleGzip() {
 
 		if mt, _, _ := mime.ParseMediaType(
 			rw.r.Header.Get("Content-Type"),
-		); !stringSliceContainsCIly(rw.r.Air.GzipMIMETypes, mt) {
+		); !stringSliceContains(rw.r.Air.GzipMIMETypes, mt, true) {
 			return
 		}
 

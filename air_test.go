@@ -765,13 +765,12 @@ func TestWrapHTTPMiddleWare(t *testing.T) {
 }
 
 func TestStringSliceContains(t *testing.T) {
-	assert.True(t, stringSliceContains([]string{"foo"}, "foo"))
-	assert.False(t, stringSliceContains([]string{"foo"}, "bar"))
-}
-
-func TestStringSliceContainsCIly(t *testing.T) {
-	assert.True(t, stringSliceContainsCIly([]string{"foo"}, "FOO"))
-	assert.False(t, stringSliceContainsCIly([]string{"foo"}, "BAR"))
+	assert.True(t, stringSliceContains([]string{"foo"}, "foo", false))
+	assert.True(t, stringSliceContains([]string{"foo"}, "foo", true))
+	assert.False(t, stringSliceContains([]string{"foo"}, "Foo", false))
+	assert.True(t, stringSliceContains([]string{"foo"}, "FOO", true))
+	assert.False(t, stringSliceContains([]string{"foo"}, "bar", false))
+	assert.False(t, stringSliceContains([]string{"foo"}, "BAR", true))
 }
 
 func fakeRRCycle(
