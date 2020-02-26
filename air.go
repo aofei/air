@@ -958,11 +958,11 @@ func (a *Air) Addresses() []string {
 
 // logErrorf logs the v as an error in the format.
 func (a *Air) logErrorf(format string, v ...interface{}) {
-	s := fmt.Sprintf(format, v...)
+	e := fmt.Errorf(format, v...)
 	if a.ErrorLogger != nil {
-		a.ErrorLogger.Output(2, s)
+		a.ErrorLogger.Output(2, e.Error())
 	} else {
-		log.Output(2, s)
+		log.Output(2, e.Error())
 	}
 }
 

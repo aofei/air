@@ -42,12 +42,12 @@ func TestRequestHTTPRequest(t *testing.T) {
 	assert.Equal(t, req.Context, hr.Context())
 
 	req.Path = "/foobar?foo=bar"
-	req.Body = &bytes.Buffer{}
+	req.Body = ioutil.NopCloser(&bytes.Buffer{})
 	req.Context = context.WithValue(req.Context, struct{}{}, "foobar")
 
 	hr = req.HTTPRequest()
 	assert.Equal(t, req.Path, hr.RequestURI)
-	assert.NotEqual(t, req.Body, hr.Body)
+	assert.Equal(t, req.Body, hr.Body)
 	assert.Equal(t, req.Context, hr.Context())
 }
 
@@ -817,7 +817,7 @@ func TestRequestBodyRead(t *testing.T) {
 	assert.Zero(t, n)
 
 	n, err = rb.Read(nil)
-	assert.Equal(t, io.EOF, err)
+	assert.Equal(t, http.ErrBodyReadAfterClose, err)
 	assert.Zero(t, n)
 
 	req, _, _ = fakeRRCycle(

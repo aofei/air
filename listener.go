@@ -2,6 +2,7 @@ package air
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -161,8 +162,8 @@ func (pc *proxyConn) readHeader() {
 		var b []byte
 		b, pc.readHeaderError = pc.bufReader.Peek(i + 1)
 		if pc.readHeaderError != nil {
-			ne, ok := pc.readHeaderError.(net.Error)
-			if ok && ne.Timeout() {
+			var ne net.Error
+			if errors.As(pc.readHeaderError, &ne) && ne.Timeout() {
 				pc.readHeaderError = nil
 				return
 			}

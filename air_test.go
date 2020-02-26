@@ -679,7 +679,7 @@ func TestAirLogErrorf(t *testing.T) {
 	log.SetOutput(&buf)
 	log.SetFlags(0)
 	a.logErrorf("air: some error: %v", errors.New("foobar"))
-	assert.Equal(t, buf.String(), "air: some error: foobar\n")
+	assert.Equal(t, "air: some error: foobar\n", buf.String())
 	log.SetOutput(os.Stderr)
 	log.SetFlags(log.LstdFlags)
 
@@ -687,7 +687,7 @@ func TestAirLogErrorf(t *testing.T) {
 
 	a.ErrorLogger = log.New(&buf, "", 0)
 	a.logErrorf("air: some error: %v", errors.New("foobar"))
-	assert.Equal(t, buf.String(), "air: some error: foobar\n")
+	assert.Equal(t, "air: some error: foobar\n", buf.String())
 }
 
 func TestWrapHTTPHandler(t *testing.T) {

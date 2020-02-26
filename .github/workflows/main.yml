@@ -7,8 +7,8 @@ jobs:
     strategy:
       matrix:
         go:
-          - "1.12.x"
           - "1.13.x"
+          - "1.14.x"
     steps:
       - name: Set up Go
         uses: actions/setup-go@v1.1.2

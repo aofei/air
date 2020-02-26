@@ -26,7 +26,7 @@ func TestWebSocketSetMaxMessageBytes(t *testing.T) {
 
 		ws.SetMaxMessageBytes(3)
 		ws.ErrorHandler = func(err error) {
-			if err == websocket.ErrReadLimit {
+			if errors.Is(err, websocket.ErrReadLimit) {
 				buf.WriteString("Oversized message")
 			} else {
 				buf.WriteString(err.Error())
@@ -81,7 +81,8 @@ func TestWebSocketSetReadDeadline(t *testing.T) {
 		}
 
 		ws.ErrorHandler = func(err error) {
-			if ne, ok := err.(net.Error); ok && ne.Timeout() {
+			var ne net.Error
+			if errors.As(err, &ne) && ne.Timeout() {
 				buf.WriteString("Timeout")
 			} else {
 				buf.WriteString(err.Error())
@@ -137,7 +138,8 @@ func TestWebSocketSetWriteDeadline(t *testing.T) {
 		}
 
 		ws.ErrorHandler = func(err error) {
-			if ne, ok := err.(net.Error); ok && ne.Timeout() {
+			var ne net.Error
+			if errors.As(err, &ne) && ne.Timeout() {
 				buf.WriteString("Timeout")
 			} else {
 				buf.WriteString(err.Error())

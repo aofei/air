@@ -162,7 +162,9 @@ func (r *Response) Write(content io.ReadSeeker) error {
 		defer r.Air.contentTypeSnifferBufferPool.Put(b)
 
 		n, err := io.ReadFull(content, b)
-		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		if err != nil &&
+			!errors.Is(err, io.EOF) &&
+			!errors.Is(err, io.ErrUnexpectedEOF) {
 			return err
 		}
 
@@ -610,9 +612,12 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 			[]byte(appData),
 			time.Now().Add(time.Second),
 		)
-		if err == websocket.ErrCloseSent {
+		if errors.Is(err, websocket.ErrCloseSent) {
 			return nil
-		} else if e, ok := err.(net.Error); ok && e.Temporary() {
+		}
+
+		var ne net.Error
+		if errors.As(err, &ne) && ne.Temporary() {
 			return nil
 		}
 
@@ -670,7 +675,7 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 
 	targetMethod := r.req.Method
 	if mrm := rpm.ModifyRequestMethod; mrm != nil {
-		m, err := mrm(r.req.Method)
+		m, err := mrm(targetMethod)
 		if err != nil {
 			return err
 		}
@@ -717,12 +722,7 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 		)
 	}
 
-	targetHeader := make(http.Header, len(r.req.Header))
-	for n, vs := range r.req.Header {
-		targetHeader[n] = make([]string, len(vs))
-		copy(targetHeader[n], vs)
-	}
-
+	targetHeader := r.req.Header.Clone()
 	if mrh := rpm.ModifyRequestHeader; mrh != nil {
 		h, err := mrh(targetHeader)
 		if err != nil {
@@ -740,7 +740,7 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 
 	targetBody := r.req.Body
 	if mrb := rpm.ModifyRequestBody; mrb != nil {
-		b, err := mrb(r.req.Body)
+		b, err := mrb(targetBody)
 		if err != nil {
 			return err
 		}
@@ -754,7 +754,7 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 			req.Method = targetMethod
 			req.URL = targetURL
 			req.Header = targetHeader
-			req.Body = ioutil.NopCloser(targetBody)
+			req.Body = targetBody
 
 			// TODO: Remove the following line when the
 			// "net/http/httputil" of the minimum supported Go
@@ -861,7 +861,11 @@ type ReverseProxyModifier struct {
 	ModifyRequestHeader func(header http.Header) (http.Header, error)
 
 	// ModifyRequestBody modifies the body of the request from the target.
-	ModifyRequestBody func(body io.Reader) (io.Reader, error)
+	//
+	// It is the caller's responsibility to close the returned
+	// `io.ReadCloser`, which means that the `Response.ProxyPass` will be
+	/// responsible for closing it.
+	ModifyRequestBody func(body io.ReadCloser) (io.ReadCloser, error)
 
 	// ModifyResponseStatus modifies the status of the response from the
 	// target.
@@ -1225,10 +1229,16 @@ func (rpt *reverseProxyTransport) RoundTrip(
 		if strings.HasPrefix(ct, "application/grpc-web") {
 			mt := "application/grpc-web-text"
 			if strings.HasSuffix(ct, mt) {
-				req.Body = ioutil.NopCloser(base64.NewDecoder(
-					base64.StdEncoding,
+				req.Body = (&struct {
+					io.Reader
+					io.Closer
+				}{
+					base64.NewDecoder(
+						base64.StdEncoding,
+						req.Body,
+					),
 					req.Body,
-				))
+				})
 			} else {
 				mt = "application/grpc-web"
 			}

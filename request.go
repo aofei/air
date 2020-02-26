@@ -2,9 +2,9 @@ package air
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -85,8 +85,9 @@ type Request struct {
 	// E.g.: {"Foo": ["bar"]}
 	Header http.Header
 
-	// Body is the message body of the current request.
-	Body io.Reader
+	// Body is the message body of the current request. It will be closed by
+	// the server of the `Air`.
+	Body io.ReadCloser
 
 	// ContentLength records the length of the associated content. The value
 	// -1 indicates that the length is unknown (it will be set after reading
@@ -134,12 +135,7 @@ func (r *Request) HTTPRequest() *http.Request {
 
 	r.hr.RequestURI = r.Path
 	r.hr.Header = r.Header
-	if b, ok := r.Body.(io.ReadCloser); ok {
-		r.hr.Body = b
-	} else {
-		r.hr.Body = ioutil.NopCloser(r.Body)
-	}
-
+	r.hr.Body = r.Body
 	r.hr.ContentLength = r.ContentLength
 	if r.hr.Context() != r.Context {
 		r.hr = r.hr.WithContext(r.Context)
@@ -761,6 +757,7 @@ type requestBody struct {
 	rc     io.ReadCloser
 	cl     int64
 	sawEOF bool
+	closed bool
 }
 
 // Read implements the `io.Reader`.
@@ -768,7 +765,10 @@ func (rb *requestBody) Read(b []byte) (n int, err error) {
 	rb.Lock()
 	defer rb.Unlock()
 
-	if rb.sawEOF {
+	if rb.closed {
+		err = http.ErrBodyReadAfterClose
+		return
+	} else if rb.sawEOF {
 		err = io.EOF
 		return
 	}
@@ -786,14 +786,14 @@ func (rb *requestBody) Read(b []byte) (n int, err error) {
 	rb.cl += int64(n)
 	if err == nil && rb.r.ContentLength >= 0 &&
 		rb.r.ContentLength-rb.cl <= 0 {
-		if err = rb.rc.Close(); err != nil {
+		if err = rb.Close(); err != nil {
 			return
 		}
 
 		err = io.EOF
 	}
 
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		rb.sawEOF = true
 
 		tns := strings.Split(rb.r.Header.Get("Trailer"), ", ")
@@ -811,5 +811,6 @@ func (rb *requestBody) Read(b []byte) (n int, err error) {
 
 // Close implements the `io.Closer`.
 func (rb *requestBody) Close() error {
-	return nil
+	rb.closed = true
+	return rb.rc.Close()
 }

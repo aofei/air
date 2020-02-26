@@ -1,6 +1,7 @@
 package air
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/tdewolff/minify/v2"
@@ -43,7 +44,7 @@ func (m *minifier) minify(mimeType string, b []byte) ([]byte, error) {
 	m.loadOnce.Do(m.load)
 
 	mb, err := m.minifier.Bytes(mimeType, b)
-	if err == minify.ErrNotExist {
+	if errors.Is(err, minify.ErrNotExist) {
 		mb = b
 		err = nil
 	}
