@@ -13,9 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func TestResponseHTTPRequest(t *testing.T) {
@@ -245,10 +244,7 @@ func TestResponseWriteProtobuf(t *testing.T) {
 
 	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
 
-	assert.Error(t, res.WriteProtobuf(&errorProtobufMessageMarshaler{
-		Message: &wrappers.StringValue{},
-	}))
-	assert.NoError(t, res.WriteProtobuf(&wrappers.StringValue{
+	assert.NoError(t, res.WriteProtobuf(&wrapperspb.StringValue{
 		Value: "foobar",
 	}))
 	assert.Equal(t, http.StatusOK, rec.Code)
@@ -500,14 +496,6 @@ type errorXMLMarshaler struct {
 
 func (exm *errorXMLMarshaler) MarshalXML(*xml.Encoder, xml.StartElement) error {
 	return errors.New("marshal xml error")
-}
-
-type errorProtobufMessageMarshaler struct {
-	proto.Message
-}
-
-func (epbmm *errorProtobufMessageMarshaler) Marshal() ([]byte, error) {
-	return nil, errors.New("marshal error")
 }
 
 type errorMsgpackMarshaler struct {

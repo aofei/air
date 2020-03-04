@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func TestNewBinder(t *testing.T) {
@@ -260,7 +260,7 @@ func TestBindProtobuf(t *testing.T) {
 	)
 	req.Header.Set("Content-Type", "application/protobuf")
 
-	sv := wrappers.StringValue{}
+	sv := wrapperspb.StringValue{}
 	assert.NoError(t, b.bind(&sv, req))
 	assert.Equal(t, "foobar", sv.Value)
 }

@@ -29,12 +29,12 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/aofei/mimesniffer"
 	"github.com/cespare/xxhash/v2"
-	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack"
 	"golang.org/x/net/html"
 	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/http2"
+	"google.golang.org/protobuf/proto"
 	yaml "gopkg.in/yaml.v2"
 )
 

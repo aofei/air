@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/golang/protobuf/proto"
 	"github.com/vmihailenco/msgpack"
+	"google.golang.org/protobuf/proto"
 	yaml "gopkg.in/yaml.v2"
 )
 
