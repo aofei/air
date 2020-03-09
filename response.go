@@ -1054,9 +1054,11 @@ func (rw *responseWriter) handleGzip() {
 
 		rw.r.Header.Del("Content-Length")
 
-		if et := rw.r.Header.Get("ETag"); et != "" &&
-			!strings.HasPrefix(et, "W/") {
-			rw.r.Header.Set("ETag", fmt.Sprint("W/", et))
+		// See RFC 2732, section 2.3.3.
+		if et := rw.r.Header.Get("ETag"); et != "" {
+			et = strings.TrimSuffix(et, `"`)
+			et = fmt.Sprint(et, `-gzip"`)
+			rw.r.Header.Set("ETag", et)
 		}
 	}
 
