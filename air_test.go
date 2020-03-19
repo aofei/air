@@ -46,6 +46,7 @@ func TestNew(t *testing.T) {
 		a.ACMEDirectoryURL,
 	)
 	assert.Equal(t, "acme-certs", a.ACMECertRoot)
+	assert.Empty(t, a.ACMEDefaultHost)
 	assert.Nil(t, a.ACMEHostWhitelist)
 	assert.False(t, a.HTTPSEnforced)
 	assert.Equal(t, "80", a.HTTPSEnforcedPort)

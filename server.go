@@ -86,12 +86,11 @@ func (s *server) serve() error {
 		)
 	}))
 
-	shutdownJobOnce := sync.Once{}
+	shutdownJobRunOnce := sync.Once{}
 	s.server.RegisterOnShutdown(func() {
 		s.shutdownJobMutex.Lock()
 		defer s.shutdownJobMutex.Unlock()
-
-		shutdownJobOnce.Do(func() {
+		shutdownJobRunOnce.Do(func() {
 			waitGroup := sync.WaitGroup{}
 			for _, job := range s.shutdownJobs {
 				if job != nil {
@@ -104,6 +103,7 @@ func (s *server) serve() error {
 			}
 
 			waitGroup.Wait()
+
 			close(s.shutdownJobDone)
 		})
 	})
@@ -140,6 +140,15 @@ func (s *server) serve() error {
 		s.a.HTTPSEnforced = true
 
 		s.server.TLSConfig = acm.TLSConfig()
+		s.server.TLSConfig.GetCertificate = func(
+			chi *tls.ClientHelloInfo,
+		) (*tls.Certificate, error) {
+			if chi.ServerName == "" {
+				chi.ServerName = s.a.ACMEDefaultHost
+			}
+
+			return acm.GetCertificate(chi)
+		}
 	} else {
 		h2s := &http2.Server{
 			IdleTimeout: s.a.IdleTimeout,
