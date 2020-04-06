@@ -11,13 +11,13 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gorilla/websocket v1.4.2
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/mitchellh/mapstructure v1.2.1
+	github.com/mitchellh/mapstructure v1.2.2
 	github.com/stretchr/testify v1.5.1
 	github.com/tdewolff/minify/v2 v2.7.3
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	golang.org/x/crypto v0.0.0-20200317142112-1b76d66859c6
-	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
-	golang.org/x/sys v0.0.0-20200317113312-5766fd39f98d // indirect
+	golang.org/x/crypto v0.0.0-20200406173513-056763e48d71
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+	golang.org/x/sys v0.0.0-20200406155108-e3b113bbe6a4 // indirect
 	golang.org/x/text v0.3.2
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.20.1

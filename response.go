@@ -710,15 +710,23 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 		reqPath = p
 	}
 
-	reqPath, reqQuery := r.req.RawPath(), r.req.RawQuery()
-	targetURL.Path = path.Join(targetURL.Path, reqPath)
-	if targetURL.RawQuery == "" || reqQuery == "" {
-		targetURL.RawQuery = fmt.Sprint(targetURL.RawQuery, reqQuery)
+	reqURL, err := url.ParseRequestURI(reqPath)
+	if err != nil {
+		return err
+	}
+
+	targetURL.Path = path.Join(targetURL.Path, reqURL.Path)
+	targetURL.RawPath = path.Join(targetURL.RawPath, reqURL.RawPath)
+	if targetURL.RawQuery == "" || reqURL.RawQuery == "" {
+		targetURL.RawQuery = fmt.Sprint(
+			targetURL.RawQuery,
+			reqURL.RawQuery,
+		)
 	} else {
 		targetURL.RawQuery = fmt.Sprint(
 			targetURL.RawQuery,
 			"&",
-			reqQuery,
+			reqURL.RawQuery,
 		)
 	}
 
