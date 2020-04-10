@@ -835,7 +835,13 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 	}()
 
 	r.reverseProxying = true
-	rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
+	switch targetURL.Scheme {
+	case "ws", "wss":
+		rp.ServeHTTP(r.ohrw, r.req.HTTPRequest())
+	default:
+		rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
+	}
+
 	r.reverseProxying = false
 
 	return reverseProxyError
