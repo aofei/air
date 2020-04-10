@@ -543,6 +543,16 @@ type Air struct {
 	// Default value: "en-US"
 	I18nLocaleBase string `mapstructure:"i18n_locale_base"`
 
+	// ReverseProxyInsecureMode indicates whether the insecure mode is
+	// enabled for the reverse proxy feature of the current web application.
+	//
+	// If the `ReverseProxyInsecureMode` is true, TLS accepts any
+	// certificate presented by the server and any host name in that
+	// certificate.
+	//
+	// Default value: false
+	ReverseProxyInsecureMode bool `mapstructure:"reverse_proxy_insecure_mode"`
+
 	// ConfigFile is the path to the configuration file that will be parsed
 	// into the matching fields of the current web application before
 	// starting the server.
@@ -915,6 +925,11 @@ func (a *Air) Serve() error {
 			return err
 		}
 	}
+
+	a.reverseProxyTransport.hTransport.
+		TLSClientConfig.InsecureSkipVerify = a.ReverseProxyInsecureMode
+	a.reverseProxyTransport.h2Transport.
+		TLSClientConfig.InsecureSkipVerify = a.ReverseProxyInsecureMode
 
 	return a.server.serve()
 }

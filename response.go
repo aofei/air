@@ -1183,6 +1183,7 @@ func newReverseProxyTransport() *reverseProxyTransport {
 				KeepAlive: 30 * time.Second,
 				DualStack: true,
 			}).DialContext,
+			TLSClientConfig:       &tls.Config{},
 			DisableCompression:    true,
 			MaxIdleConnsPerHost:   200,
 			IdleConnTimeout:       90 * time.Second,
@@ -1190,6 +1191,7 @@ func newReverseProxyTransport() *reverseProxyTransport {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 		h2Transport: &http2.Transport{
+			TLSClientConfig:    &tls.Config{},
 			DisableCompression: true,
 		},
 		h2cTransport: &http2.Transport{
