@@ -1,6 +1,7 @@
 package air
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"crypto/tls"
@@ -98,7 +99,6 @@ type Response struct {
 
 	req               *Request
 	hrw               http.ResponseWriter
-	ohrw              http.ResponseWriter
 	servingContent    bool
 	serveContentError error
 	reverseProxying   bool
@@ -542,6 +542,10 @@ func (r *Response) WriteFile(filename string) error {
 // `Status` of the r will be the `http.StatusFound` if it is not a redirection
 // status.
 func (r *Response) Redirect(url string) error {
+	if r.Written {
+		return errors.New("air: request has been written")
+	}
+
 	if r.Status < http.StatusMultipleChoices ||
 		r.Status >= http.StatusBadRequest {
 		r.Status = http.StatusFound
@@ -555,8 +559,9 @@ func (r *Response) Redirect(url string) error {
 // WebSocket switches the connection of the r to the WebSocket protocol. See RFC
 // 6455.
 func (r *Response) WebSocket() (*WebSocket, error) {
-	r.Status = http.StatusSwitchingProtocols
-	r.Written = true
+	if r.Written {
+		return nil, errors.New("air: request has been written")
+	}
 
 	wsu := &websocket.Upgrader{
 		HandshakeTimeout: r.Air.WebSocketHandshakeTimeout,
@@ -567,7 +572,6 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 			_ error,
 		) {
 			r.Status = status
-			r.Written = false
 		},
 		CheckOrigin: func(*http.Request) bool {
 			return true
@@ -577,7 +581,9 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 		wsu.Subprotocols = r.Air.WebSocketSubprotocols
 	}
 
-	conn, err := wsu.Upgrade(r.ohrw, r.req.HTTPRequest(), r.Header)
+	r.Status = http.StatusSwitchingProtocols
+
+	conn, err := wsu.Upgrade(r.hrw, r.req.HTTPRequest(), r.Header)
 	if err != nil {
 		return nil, err
 	}
@@ -648,7 +654,7 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 // It returns `http.ErrNotSupported` if the client has disabled push or if push
 // is not supported on the underlying connection.
 func (r *Response) Push(target string, pos *http.PushOptions) error {
-	p, ok := r.ohrw.(http.Pusher)
+	p, ok := r.hrw.(http.Pusher)
 	if !ok {
 		return http.ErrNotSupported
 	}
@@ -821,8 +827,6 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 				r.Status = http.StatusBadGateway
 			}
 
-			r.Written = false
-
 			reverseProxyError = err
 		},
 	}
@@ -840,16 +844,13 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 		panic(r)
 	}()
 
-	r.reverseProxying = true
 	switch targetURL.Scheme {
 	case "ws", "wss":
 		r.Status = http.StatusSwitchingProtocols
-		r.Written = true
-		rp.ServeHTTP(r.ohrw, r.req.HTTPRequest())
-	default:
-		rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
 	}
 
+	r.reverseProxying = true
+	rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
 	r.reverseProxying = false
 
 	return reverseProxyError
@@ -1010,16 +1011,6 @@ func (rw *responseWriter) Flush() {
 	rw.rw.(http.Flusher).Flush()
 }
 
-// Push implements the `http.Pusher`.
-func (rw *responseWriter) Push(target string, pos *http.PushOptions) error {
-	p, ok := rw.rw.(http.Pusher)
-	if !ok {
-		return http.ErrNotSupported
-	}
-
-	return p.Push(target, pos)
-}
-
 // handleGzip handles the gzip feature for the rw.
 func (rw *responseWriter) handleGzip() {
 	if !rw.r.Air.GzipEnabled {
@@ -1163,6 +1154,23 @@ func (rw *responseWriter) handleReverseProxy() {
 		rw.Write(tb.Bytes())
 		rw.Flush()
 	})
+}
+
+// responseHijacker is used to tie the `Response` and the `http.Hijacker`
+// together.
+type responseHijacker struct {
+	r *Response
+	h http.Hijacker
+}
+
+// Hijack implements the `http.Hijacker`.
+func (rh *responseHijacker) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	c, rw, err := rh.h.Hijack()
+	if err == nil {
+		rh.r.Written = true
+	}
+
+	return c, rw, err
 }
 
 // countWriter is used to count the number of bytes written to the underlying

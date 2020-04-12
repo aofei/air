@@ -304,16 +304,40 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	res.Written = false
 	res.Minified = false
 	res.Gzipped = false
-	res.ohrw = rw
 	res.servingContent = false
 	res.serveContentError = nil
 	res.reverseProxying = false
 	res.deferredFuncs = res.deferredFuncs[:0]
 
-	res.SetHTTPResponseWriter(&responseWriter{
+	hrw := http.ResponseWriter(&responseWriter{
 		r:  res,
 		rw: rw,
 	})
+
+	if hijacker, ok := rw.(http.Hijacker); ok {
+		hrw = http.ResponseWriter(&struct {
+			http.ResponseWriter
+			http.Hijacker
+		}{
+			hrw,
+			&responseHijacker{
+				r: res,
+				h: hijacker,
+			},
+		})
+	}
+
+	if pusher, ok := rw.(http.Pusher); ok {
+		hrw = http.ResponseWriter(&struct {
+			http.ResponseWriter
+			http.Pusher
+		}{
+			hrw,
+			pusher,
+		})
+	}
+
+	res.SetHTTPResponseWriter(hrw)
 
 	// Tie the request and response together.
 

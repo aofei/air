@@ -24,7 +24,6 @@ func TestResponseHTTPRequest(t *testing.T) {
 	assert.Equal(t, a, res.Air)
 	assert.Equal(t, req, res.req)
 	assert.NotNil(t, res.hrw)
-	assert.NotNil(t, res.ohrw)
 
 	hrw := res.HTTPResponseWriter()
 	assert.NotNil(t, hrw)

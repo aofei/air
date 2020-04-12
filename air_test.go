@@ -792,9 +792,6 @@ func fakeRRCycle(
 	res := &Response{
 		Air:    a,
 		Status: http.StatusOK,
-
-		req:  req,
-		ohrw: rec,
 	}
 	res.SetHTTPResponseWriter(&responseWriter{
 		r:  res,
@@ -802,6 +799,7 @@ func fakeRRCycle(
 	})
 
 	req.res = res
+	res.req = req
 
 	return req, res, rec
 }
