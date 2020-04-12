@@ -278,10 +278,47 @@ func (s *server) addresses() []string {
 
 // ServeHTTP implements the `http.Handler`.
 func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	// Get request and response from the pool.
+	// Get request from the pool.
 
 	req := s.requestPool.Get().(*Request)
+	req.Air = s.a
+	req.params = req.params[:0]
+	req.routeParamNames = nil
+	req.routeParamValues = nil
+	req.parseRouteParamsOnce = &sync.Once{}
+	req.parseOtherParamsOnce = &sync.Once{}
+	for key := range req.values {
+		delete(req.values, key)
+	}
+
+	req.localizedString = nil
+
+	req.SetHTTPRequest(r)
+
+	// Get response from the pool.
+
 	res := s.responsePool.Get().(*Response)
+	res.Air = s.a
+	res.Status = http.StatusOK
+	res.ContentLength = -1
+	res.Written = false
+	res.Minified = false
+	res.Gzipped = false
+	res.ohrw = rw
+	res.servingContent = false
+	res.serveContentError = nil
+	res.reverseProxying = false
+	res.deferredFuncs = res.deferredFuncs[:0]
+
+	res.SetHTTPResponseWriter(&responseWriter{
+		r:  res,
+		rw: rw,
+	})
+
+	// Tie the request and response together.
+
+	req.res = res
+	res.req = req
 
 	// Tie the request body and the standard request body together.
 
@@ -290,31 +327,6 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		hr: r,
 		rc: r.Body,
 	}
-
-	// Reset the request.
-
-	req.Air = s.a
-	req.SetHTTPRequest(r)
-	req.res = res
-	req.parseRouteParamsOnce = &sync.Once{}
-	req.parseOtherParamsOnce = &sync.Once{}
-
-	// Reset the response.
-
-	res.Air = s.a
-	res.SetHTTPResponseWriter(&responseWriter{
-		r:  res,
-		rw: rw,
-	})
-	res.Status = http.StatusOK
-	res.ContentLength = -1
-	res.Written = false
-	res.Minified = false
-	res.Gzipped = false
-	res.req = req
-	res.ohrw = rw
-	res.servingContent = false
-	res.reverseProxying = false
 
 	// Chain the gases stack.
 
@@ -355,37 +367,8 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		s.a.router.routeParamValuesPool.Put(req.routeParamValues)
 	}
 
-	// Put the request back to the pool.
-
-	req.Air = nil
-	req.Header = nil
-	req.Body = nil
-	req.Context = nil
-	req.hr = nil
-	req.res = nil
-	req.params = req.params[:0]
-	req.routeParamNames = nil
-	req.routeParamValues = nil
-	req.parseRouteParamsOnce = nil
-	req.parseOtherParamsOnce = nil
-	for key := range req.values {
-		delete(req.values, key)
-	}
-
-	req.localizedString = nil
+	// Put the request and response back to the pool.
 
 	s.requestPool.Put(req)
-
-	// Put the response back to the pool.
-
-	res.Air = nil
-	res.Header = nil
-	res.Body = nil
-	res.req = nil
-	res.hrw = nil
-	res.ohrw = nil
-	res.serveContentError = nil
-	res.deferredFuncs = res.deferredFuncs[:0]
-
 	s.responsePool.Put(res)
 }

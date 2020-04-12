@@ -60,7 +60,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/mitchellh/mapstructure"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // Air is the top-level struct of this framework.
