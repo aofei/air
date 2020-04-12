@@ -710,6 +710,10 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 		reqPath = p
 	}
 
+	if reqPath == "" {
+		reqPath = "/"
+	}
+
 	reqURL, err := url.ParseRequestURI(reqPath)
 	if err != nil {
 		return err
@@ -817,6 +821,8 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 				r.Status = http.StatusBadGateway
 			}
 
+			r.Written = false
+
 			reverseProxyError = err
 		},
 	}
@@ -837,6 +843,8 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 	r.reverseProxying = true
 	switch targetURL.Scheme {
 	case "ws", "wss":
+		r.Status = http.StatusSwitchingProtocols
+		r.Written = true
 		rp.ServeHTTP(r.ohrw, r.req.HTTPRequest())
 	default:
 		rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
