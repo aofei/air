@@ -4,22 +4,22 @@ package air
 // routes that share common gases or functionality that should be separate from
 // the parent while still inheriting from it.
 type Group struct {
-	// Air is where the current group belongs.
+	// Air is where the group belongs.
 	Air *Air
 
-	// Prefix is the prefix of all route paths of the current group.
+	// Prefix is the prefix of all route paths.
 	//
-	// All paths of routes registered by the current group will share the
-	// same prefix.
+	// All paths of routes registered by the group will share the same
+	// prefix.
 	//
 	// The path prefix may consits of static component(s) and param
 	// component(s). But it must not contain an any param component.
 	Prefix string
 
-	// Gases is the group-level gases of the current group.
+	// Gases is the group-level gases.
 	//
-	// All gases of routes registered by the current group will share the
-	// same group-level gases at the bottom of the stack.
+	// All gases of routes registered by the group will share the same
+	// group-level gases at the bottom of the stack.
 	//
 	// The gases is always FILO.
 	Gases []Gas

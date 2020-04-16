@@ -33,7 +33,7 @@ The first param is a route path that contains 6 components. Among them, "users",
 "posts" and "assets" are static components, ":UserID" and ":PostID" are param
 components, "*" is an any param component. Note that all route params (param
 component(s) and any param component) will be parsed into the `Request` and can
-be accessed via the `Request.Param` and the `Request.Params`. The name of a
+be accessed via the `Request.Param` and `Request.Params`. The name of a
 `RequestParam` parsed from a param component always discards its leading ":",
 such as ":UserID" will become "UserID". The name of a `RequestParam` parsed from
 an any param component is "*".
@@ -72,7 +72,7 @@ import (
 // If you only need one instance of the `Air`, then it is recommended to use the
 // `Default`, which will help you simplify the scope management.
 type Air struct {
-	// AppName is the name of the current web application.
+	// AppName is the name of the web application.
 	//
 	// It is recommended to set a name and try to ensure that the name is
 	// unique (used to distinguish between different web applications).
@@ -81,28 +81,25 @@ type Air struct {
 	AppName string `mapstructure:"app_name"`
 
 	// MaintainerEmail is the e-mail address of the one who is responsible
-	// for maintaining the current web application.
+	// for maintenance.
 	//
-	// It is recommended to set an e-mail if the ACME feature of the current
-	// web application is enabled (used by the CAs, such as Let's Encrypt,
-	// to notify about problems with issued certificates).
+	// It is recommended to set an e-mail if the ACME feature is enabled
+	// (used by the CAs, such as Let's Encrypt, to notify about problems
+	// with issued certificates).
 	//
 	// Default value: ""
 	MaintainerEmail string `mapstructure:"maintainer_email"`
 
-	// DebugMode indicates whether the current web application is in debug
-	// mode.
+	// DebugMode indicates whether the web application is in debug mode.
 	//
 	// Please keep in mind that the debug mode is quite bossy, some features
-	// of the current web application will be affected in the debug mode. So
-	// never use the debug mode in a production environment unless you want
-	// to do something crazy.
+	// will be affected in the debug mode. So never use the debug mode in a
+	// production environment unless you want to do something crazy.
 	//
 	// Default value: false
 	DebugMode bool `mapstructure:"debug_mode"`
 
-	// Address is the TCP address that the server of the current web
-	// application listens on.
+	// Address is the TCP address that the server listens on.
 	//
 	// There is always an address here that contains a free port.
 	//
@@ -112,8 +109,8 @@ type Air struct {
 	// Default value: "localhost:8080"
 	Address string `mapstructure:"address"`
 
-	// ReadTimeout is the maximum duration the server of the current web
-	// application reads a request entirely, including the body part.
+	// ReadTimeout is the maximum duration the server reads a request
+	// entirely, including the body part.
 	//
 	// The `ReadTimeout` does not let the handlers make per-request
 	// decisions on each request body's acceptable deadline or upload rate.
@@ -121,8 +118,8 @@ type Air struct {
 	// Default value: 0
 	ReadTimeout time.Duration `mapstructure:"read_timeout"`
 
-	// ReadHeaderTimeout is the amount of time allowed the server of the
-	// current web application reads the headers of a request.
+	// ReadHeaderTimeout is the amount of time allowed the server reads the
+	// headers of a request.
 	//
 	// The connection's read deadline is reset after reading the headers and
 	// the handler can decide what is considered too slow for the body.
@@ -130,8 +127,7 @@ type Air struct {
 	// Default value: 0
 	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
 
-	// WriteTimeout is the maximum duration the server of the current web
-	// application writes a response.
+	// WriteTimeout is the maximum duration the server writes a response.
 	//
 	// The `WriteTimeout` is reset whenever a new request's header is read.
 	// Like the `ReadTimeout`, the `WriteTimeout` does not let handlers make
@@ -140,8 +136,8 @@ type Air struct {
 	// Default value: 0
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
 
-	// IdleTimeout is the maximum amount of time the server of the current
-	// web application waits for the next request.
+	// IdleTimeout is the maximum amount of time the server waits for the
+	// next request.
 	//
 	// If the `IdleTimeout` is zero, the value of the `ReadTimeout` is used.
 	// If both are zero, the value of the `ReadHeaderTimeout` is used.
@@ -149,54 +145,50 @@ type Air struct {
 	// Default value: 0
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 
-	// MaxHeaderBytes is the maximum number of bytes the server of the
-	// current web application will read parsing the request header's names
-	// and values, including the request line.
+	// MaxHeaderBytes is the maximum number of bytes the server will read
+	// parsing the request header's names and values, including the request
+	// line.
 	//
 	// Default value: 1048576
 	MaxHeaderBytes int `mapstructure:"max_header_bytes"`
 
 	// TLSCertFile is the path to the TLS certificate file used when
-	// starting the server of the current web application.
+	// starting the server.
 	//
 	// If the certificate is signed by a certificate authority, the TLS
 	// certificate file should be the concatenation of the certificate, any
 	// intermediates, and the CA's certificate.
 	//
 	// The `TLSCertFile` must be set at the same time as the `TLSKeyFile` to
-	// make the server of the current web application to handle requests on
-	// incoming TLS connections.
+	// make the server to handle requests on incoming TLS connections.
 	//
 	// Default value: ""
 	TLSCertFile string `mapstructure:"tls_cert_file"`
 
 	// TLSKeyFile is the path to the TLS key file used when starting the
-	// server of the current web application.
+	// server.
 	//
 	// The key must match the certificate targeted by the `TLSCertFile`.
 	//
 	// The `TLSKeyFile` must be set at the same time as the `TLSCertFile` to
-	// make the server of the current web application to handle requests on
-	// incoming TLS connections.
+	// make the server to handle requests on incoming TLS connections.
 	//
 	// Default value: ""
 	TLSKeyFile string `mapstructure:"tls_key_file"`
 
-	// ACMEEnabled indicates whether the ACME feature of the current web
-	// application is enabled.
+	// ACMEEnabled indicates whether the ACME feature is enabled.
 	//
-	// The `ACMEEnabled` gives the server of the current web application the
-	// ability to automatically retrieve new TLS certificates from the ACME
-	// CA targeted by the `ACMEDirectoryURL`.
+	// The `ACMEEnabled` gives the server the ability to automatically
+	// retrieve new TLS certificates from the ACME CA targeted by the
+	// `ACMEDirectoryURL`.
 	//
 	// The `ACMEEnabled` only works when the `DebugMode` is false and both
-	// the `TLSCertFile` and the `TLSKeyFile` are empty.
+	// the `TLSCertFile` and `TLSKeyFile` are empty.
 	//
 	// Default value: false
 	ACMEEnabled bool `mapstructure:"acme_enabled"`
 
-	// ACMEDirectoryURL is the CA directory URL of the ACME feature of the
-	// current web application.
+	// ACMEDirectoryURL is the CA directory URL of the ACME feature.
 	//
 	// The CA directory must be trusted because the ACME will automatically
 	// accept the Terms of Service (TOS) prompted from it.
@@ -204,8 +196,7 @@ type Air struct {
 	// Default value: "https://acme-v02.api.letsencrypt.org/directory"
 	ACMEDirectoryURL string `mapstructure:"acme_directory_url"`
 
-	// ACMECertRoot is the root of the certificates of the ACME feature of
-	// the current web application.
+	// ACMECertRoot is the root of the certificates of the ACME feature.
 	//
 	// It is recommended to set a persistent root since all CAs have a rate
 	// limit on issuing certificates. Different web applications can share
@@ -214,8 +205,7 @@ type Air struct {
 	// Default value: "acme-certs"
 	ACMECertRoot string `mapstructure:"acme_cert_root"`
 
-	// ACMEDefaultHost is the default host of the ACME feature of the
-	// current web application.
+	// ACMEDefaultHost is the default host of the ACME feature.
 	//
 	// The `ACMEDefaultHost` is only used when the host is missing from the
 	// TLS handshake.
@@ -223,8 +213,7 @@ type Air struct {
 	// Default value: ""
 	ACMEDefaultHost string `mapstructure:"acme_default_host"`
 
-	// ACMEHostWhitelist is the list of hosts allowed by the ACME feature of
-	// the current web application.
+	// ACMEHostWhitelist is the list of hosts allowed by the ACME feature.
 	//
 	// It is highly recommended to set a list of hosts. If the length of the
 	// list is not zero, then all connections that are not connected to the
@@ -234,24 +223,23 @@ type Air struct {
 	// Default value: nil
 	ACMEHostWhitelist []string `mapstructure:"acme_host_whitelist"`
 
-	// HTTPSEnforced indicates whether the current web application is
-	// forcibly accessible only via the HTTPS scheme (HTTP requests will
-	// automatically redirect to HTTPS).
+	// HTTPSEnforced indicates whether the server is forcibly accessible
+	// only via the HTTPS scheme (HTTP requests will automatically redirect
+	// to HTTPS).
 	//
-	// The `HTTPSEnforced` only works when the server of the current web
-	// application can handle requests on incoming TLS connections.
+	// The `HTTPSEnforced` only works when the server can handle requests on
+	// incoming TLS connections.
 	//
 	// The `HTTPSEnforced` will be forced to true when the `ACMEEnabled` is
-	// true, the `DebugMode` is false and both the `TLSCertFile` and the
+	// true, the `DebugMode` is false and both the `TLSCertFile` and
 	// `TLSKeyFile` are empty.
 	//
 	// Default value: false
 	HTTPSEnforced bool `mapstructure:"https_enforced"`
 
 	// HTTPSEnforcedPort is the port of the TCP address (share the same host
-	// as the `Address`) that the server of the current web application
-	// listens on. All requests to this port will be forced to redirect to
-	// HTTPS.
+	// as the `Address`) that the server listens on. All requests to this
+	// port will be forced to redirect to HTTPS.
 	//
 	// If the `HTTPSEnforcedPort` is "0", a port is automatically chosen.
 	// The `Addresses` can be used to discover the chosen port.
@@ -259,15 +247,14 @@ type Air struct {
 	// Default value: "80"
 	HTTPSEnforcedPort string `mapstructure:"https_enforced_port"`
 
-	// WebSocketHandshakeTimeout is the maximum amount of time the server of
-	// the current web application waits for a WebSocket handshake to
-	// complete.
+	// WebSocketHandshakeTimeout is the maximum amount of time the server
+	// waits for a WebSocket handshake to complete.
 	//
 	// Default value: 0
 	WebSocketHandshakeTimeout time.Duration `mapstructure:"websocket_handshake_timeout"`
 
 	// WebSocketSubprotocols is the list of supported WebSocket subprotocols
-	// of the server of the current web application.
+	// of the server.
 	//
 	// If the length of the list is not zero, then the `Response.WebSocket`
 	// negotiates a subprotocol by selecting the first match in the list
@@ -278,19 +265,17 @@ type Air struct {
 	// Default value: nil
 	WebSocketSubprotocols []string `mapstructure:"websocket_subprotocols"`
 
-	// PROXYEnabled indicates whether the PROXY feature of the current web
-	// application is enabled.
+	// PROXYEnabled indicates whether the PROXY feature is enabled.
 	//
-	// The `PROXYEnabled` gives the server of the current web application
-	// the ability to support the PROXY protocol (See
+	// The `PROXYEnabled` gives the server the ability to support the PROXY
+	// protocol (See
 	// https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt).
 	//
 	// Default value: false
 	PROXYEnabled bool `mapstructure:"proxy_enabled"`
 
 	// PROXYReadHeaderTimeout is the amount of time allowed the PROXY
-	// feature of the current web application reads the PROXY protocol
-	// header of a connection.
+	// feature reads the PROXY protocol header of a connection.
 	//
 	// The connection's read deadline is reset after reading the PROXY
 	// protocol header.
@@ -299,8 +284,7 @@ type Air struct {
 	PROXYReadHeaderTimeout time.Duration `mapstructure:"proxy_read_header_timeout"`
 
 	// PROXYRelayerIPWhitelist is the list of IP addresses or CIDR notation
-	// IP address ranges of the relayers allowed by the PROXY feature of the
-	// current web application.
+	// IP address ranges of the relayers allowed by the PROXY feature.
 	//
 	// It is highly recommended to set a list of IP addresses or CIDR
 	// notation IP address ranges. If the length of the list is not zero,
@@ -310,44 +294,39 @@ type Air struct {
 	// Default value: nil
 	PROXYRelayerIPWhitelist []string `mapstructure:"proxy_relayer_ip_whitelist"`
 
-	// Pregases is the `Gas` chain stack of the current web application
-	// that performs before routing.
+	// Pregases is the `Gas` chain stack that performs before routing.
 	//
 	// The stack is always FILO.
 	//
 	// Default value: nil
 	Pregases []Gas `mapstructure:"-"`
 
-	// Gases is the `Gas` chain stack of the current web application that
-	// performs after routing.
+	// Gases is the `Gas` chain stack that performs after routing.
 	//
 	// The stack is always FILO.
 	//
 	// Default value: nil
 	Gases []Gas `mapstructure:"-"`
 
-	// NotFoundHandler is the `Handler` of the current web application that
-	// returns not found error.
+	// NotFoundHandler is the `Handler` that returns not found error.
 	//
-	// The `NotFoundHandler` is never nil because the router of the current
-	// web application will use it as the default `Handler` when no matching
-	// routes are found.
+	// The `NotFoundHandler` is never nil because the router will use it as
+	// the default `Handler` when no matching routes are found.
 	//
 	// Default value: `DefaultNotFoundHandler`
 	NotFoundHandler func(*Request, *Response) error `mapstructure:"-"`
 
-	// MethodNotAllowedHandler is the `Handler` of the current web
-	// application that returns method not allowed error.
+	// MethodNotAllowedHandler is the `Handler` that returns method not
+	// allowed error.
 	//
-	// The `MethodNotAllowedHandler` is never nil because the router of the
-	// current web application will use it as the default `Handler` when it
-	// finds a matching route but its method is not registered.
+	// The `MethodNotAllowedHandler` is never nil because the router will
+	// use it as the default `Handler` when it finds a matching route but
+	// its method is not registered.
 	//
 	// Default value: `DefaultMethodNotAllowedHandler`
 	MethodNotAllowedHandler func(*Request, *Response) error `mapstructure:"-"`
 
-	// ErrorHandler is the centralized error handler of the server of the
-	// current web application.
+	// ErrorHandler is the centralized error handler of the server.
 	//
 	// The `ErrorHandler` is never nil because it is used in every
 	// request-response cycle that has an error.
@@ -356,7 +335,7 @@ type Air struct {
 	ErrorHandler func(error, *Request, *Response) `mapstructure:"-"`
 
 	// ErrorLogger is the `log.Logger` that logs errors that occur in the
-	// server of the current web application.
+	// server.
 	//
 	// If the `ErrorLogger` is nil, logging is done via the log package's
 	// standard logger.
@@ -365,11 +344,11 @@ type Air struct {
 	ErrorLogger *log.Logger `mapstructure:"-"`
 
 	// AutoPushEnabled indicates whether the HTTP/2 server push automatic
-	// mechanism feature of the current web application is enabled.
+	// mechanism feature is enabled.
 	//
 	// The `AutoPushEnabled` gives the `Response.WriteHTML` the ability to
-	// automatically analyze the response content and use the
-	// `Response.Push` to push the appropriate resources to the client.
+	// automatically analyze the response body and use the `Response.Push`
+	// to push the appropriate resources to the client.
 	//
 	// The `AutoPushEnabled` only works when the protocol version of the
 	// request is HTTP/2.
@@ -377,18 +356,17 @@ type Air struct {
 	// Default value: false
 	AutoPushEnabled bool `mapstructure:"auto_push_enabled"`
 
-	// MinifierEnabled indicates whether the minifier feature of the current
-	// web application is enabled.
+	// MinifierEnabled indicates whether the minifier feature is enabled.
 	//
 	// The `MinifierEnabled` gives the `Response.Write` the ability to
-	// minify the matching response content on the fly based on the
+	// minify the matching response body on the fly based on the
 	// Content-Type header.
 	//
 	// Default value: false
 	MinifierEnabled bool `mapstructure:"minifier_enabled"`
 
 	// MinifierMIMETypes is the list of MIME types of the minifier feature
-	// of the current web application that will trigger the minimization.
+	// that will trigger the minimization.
 	//
 	// Supported MIME types:
 	//   * text/html
@@ -404,41 +382,36 @@ type Air struct {
 	// "application/json", "application/xml", "image/svg+xml"]
 	MinifierMIMETypes []string `mapstructure:"minifier_mime_types"`
 
-	// GzipEnabled indicates whether the gzip feature of the current web
-	// application is enabled.
+	// GzipEnabled indicates whether the gzip feature is enabled.
 	//
 	// The `GzipEnabled` gives the `Response` the ability to gzip the
-	// matching response content on the fly based on the Content-Type
-	// header.
+	// matching response body on the fly based on the Content-Type header.
 	//
 	// Default value: false
 	GzipEnabled bool `mapstructure:"gzip_enabled"`
 
 	// GzipMinContentLength is the minimum content length of the gzip
-	// featrue of the current web application used to limit at least how
-	// much response content can be gzipped.
+	// featrue used to limit at least how much response body can be gzipped.
 	//
 	// The content length is determined only from the Content-Length header.
 	//
 	// Default value: 1024
 	GzipMinContentLength int64 `mapstructure:"gzip_min_content_length"`
 
-	// GzipMIMETypes is the list of MIME types of the gzip feature of the
-	// current web application that will trigger the gzip.
+	// GzipMIMETypes is the list of MIME types of the gzip feature that will
+	// trigger the gzip.
 	//
 	// Default value: ["text/plain", "text/html", "text/css",
 	// "application/javascript", "application/json", "application/xml",
 	// "application/toml", "application/yaml", "image/svg+xml"]
 	GzipMIMETypes []string `mapstructure:"gzip_mime_types"`
 
-	// GzipCompressionLevel is the compression level of the gzip feature of
-	// the current web application.
+	// GzipCompressionLevel is the compression level of the gzip feature.
 	//
 	// Default value: `gzip.DefaultCompression`
 	GzipCompressionLevel int `mapstructure:"gzip_compression_level"`
 
-	// GzipFlushThreshold is the flush threshold of the gzip feature of the
-	// current web application.
+	// GzipFlushThreshold is the flush threshold of the gzip feature.
 	//
 	// Once the pending compressed data in the gzip writer reach the flush
 	// threshold, they will be flushed into the underlying writer of the
@@ -450,7 +423,7 @@ type Air struct {
 	GzipFlushThreshold int `mapstructure:"gzip_flush_threshold"`
 
 	// RendererTemplateRoot is the root of the HTML templates of the
-	// renderer feature of the current web application.
+	// renderer feature.
 	//
 	// All HTML template files inside the root will be recursively parsed
 	// into the renderer.
@@ -459,33 +432,32 @@ type Air struct {
 	RendererTemplateRoot string `mapstructure:"renderer_template_root"`
 
 	// RendererTemplateExts is the list of filename extensions of the HTML
-	// templates of the renderer feature of the current web application used
-	// to distinguish the HTML template files in the `RendererTemplateRoot`
-	// when parsing them into the renderer.
+	// templates of the renderer feature used to distinguish the HTML
+	// template files in the `RendererTemplateRoot` when parsing them into
+	// the renderer.
 	//
 	// Default value: [".html"]
 	RendererTemplateExts []string `mapstructure:"renderer_template_exts"`
 
 	// RendererTemplateLeftDelim is the left side of the HTML template
-	// delimiter of the renderer feature of the current web application.
+	// delimiter of the renderer feature.
 	//
 	// default value: "{{"
 	RendererTemplateLeftDelim string `mapstructure:"renderer_template_left_delim"`
 
 	// RendererTemplateRightDelim is the right side of the HTML template
-	// delimiter of the renderer feature of the current web application.
+	// delimiter of the renderer feature.
 	//
 	// Default value: "}}"
 	RendererTemplateRightDelim string `mapstructure:"renderer_template_right_delim"`
 
 	// RendererTemplateFuncMap is the HTML template function map of the
-	// renderer feature of the current web application.
+	// renderer feature.
 	//
 	// Default value: nil
 	RendererTemplateFuncMap template.FuncMap `mapstructure:"-"`
 
-	// CofferEnabled indicates whether the coffer feature of the current web
-	// application is enabled.
+	// CofferEnabled indicates whether the coffer feature is enabled.
 	//
 	// The `CofferEnabled` gives the `Response.WriteFile` the ability to use
 	// the runtime memory to reduce the disk I/O pressure.
@@ -494,13 +466,12 @@ type Air struct {
 	CofferEnabled bool `mapstructure:"coffer_enabled"`
 
 	// CofferMaxMemoryBytes is the maximum number of bytes of the runtime
-	// memory the coffer feature of the current web application will use.
+	// memory the coffer feature will use.
 	//
 	// Default value: 33554432
 	CofferMaxMemoryBytes int `mapstructure:"coffer_max_memory_bytes"`
 
-	// CofferAssetRoot is the root of the assets of the coffer feature of
-	// the current web application.
+	// CofferAssetRoot is the root of the assets of the coffer feature.
 	//
 	// All asset files inside the root will be recursively parsed into the
 	// coffer.
@@ -509,26 +480,23 @@ type Air struct {
 	CofferAssetRoot string `mapstructure:"coffer_asset_root"`
 
 	// CofferAssetExts is the list of filename extensions of the assets of
-	// the coffer feature of the current web application used to distinguish
-	// the asset files in the `CofferAssetRoot` when loading them into the
-	// coffer.
+	// the coffer feature used to distinguish the asset files in the
+	// `CofferAssetRoot` when loading them into the coffer.
 	//
 	// Default value: [".html", ".css", ".js", ".json", ".xml", ".toml",
 	// ".yaml", ".yml", ".svg", ".jpg", ".jpeg", ".png", ".gif"]
 	CofferAssetExts []string `mapstructure:"coffer_asset_exts"`
 
-	// I18nEnabled indicates whether the i18n feature of the current web
-	// application is enabled.
+	// I18nEnabled indicates whether the i18n feature is enabled.
 	//
-	// The `I18nEnabled` gives the `Request.LocalizedString` and the
+	// The `I18nEnabled` gives the `Request.LocalizedString` and
 	// `Response.Render` the ability to adapt to the request's favorite
 	// conventions based on the Accept-Language header.
 	//
 	// Default value: false
 	I18nEnabled bool `mapstructure:"i18n_enabled"`
 
-	// I18nLocaleRoot is the root of the locales of the i18n feature of the
-	// current web application.
+	// I18nLocaleRoot is the root of the locales of the i18n feature.
 	//
 	// All TOML-based locale files (".toml" is the extension) inside the
 	// root will be parsed into the i18n and their names (without extension)
@@ -537,14 +505,14 @@ type Air struct {
 	// Default value: "locales"
 	I18nLocaleRoot string `mapstructure:"i18n_locale_root"`
 
-	// I18nLocaleBase is the base of the locales of the i18n feature of the
-	// current web application used when a locale cannot be found.
+	// I18nLocaleBase is the base of the locales of the i18n feature used
+	// when a locale cannot be found.
 	//
 	// Default value: "en-US"
 	I18nLocaleBase string `mapstructure:"i18n_locale_base"`
 
 	// ReverseProxyInsecureMode indicates whether the insecure mode is
-	// enabled for the reverse proxy feature of the current web application.
+	// enabled for the reverse proxy feature.
 	//
 	// If the `ReverseProxyInsecureMode` is true, TLS accepts any
 	// certificate presented by the server and any host name in that
@@ -554,14 +522,13 @@ type Air struct {
 	ReverseProxyInsecureMode bool `mapstructure:"reverse_proxy_insecure_mode"`
 
 	// ConfigFile is the path to the configuration file that will be parsed
-	// into the matching fields of the current web application before
-	// starting the server.
+	// into the matching fields before starting the server.
 	//
 	// The ".json" extension means the configuration file is JSON-based.
 	//
 	// The ".toml" extension means the configuration file is TOML-based.
 	//
-	// The ".yaml" and the ".yml" extensions means the configuration file is
+	// The ".yaml" and ".yml" extensions means the configuration file is
 	// YAML-based.
 	//
 	// Default value: ""
@@ -774,8 +741,8 @@ func (a *Air) TRACE(path string, h Handler, gases ...Gas) {
 	a.router.register(http.MethodTrace, path, h, gases...)
 }
 
-// BATCH registers a batch of routes for the methods and the path with the
-// matching h in the router of the a with the optional route-level gases.
+// BATCH registers a batch of routes for the methods and path with the matching
+// h in the router of the a with the optional route-level gases.
 //
 // The methods must either be nil (means all) or consists of one or more of the
 // "GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS" and
@@ -825,7 +792,7 @@ func (a *Air) BATCH(methods []string, path string, h Handler, gases ...Gas) {
 }
 
 // FILE registers a new GET route and a new HEAD route with the path in the
-// router of the a to serve a static file with the filename and the optional
+// router of the a to serve a static file with the filename and optional
 // route-level gases.
 //
 // The path may consist of static component(s), param component(s) and any param
@@ -880,8 +847,8 @@ func (a *Air) FILES(prefix, root string, gases ...Gas) {
 	a.BATCH([]string{http.MethodGet, http.MethodHead}, prefix, h, gases...)
 }
 
-// Group returns a new instance of the `Group` with the path prefix and the
-// optional group-level gases that inherited from the a.
+// Group returns a new instance of the `Group` with the path prefix and optional
+// group-level gases that inherited from the a.
 //
 // The path prefix may consits of static component(s) and param component(s).
 // But it must not contain an any param component.
@@ -1031,7 +998,7 @@ func DefaultErrorHandler(err error, req *Request, res *Response) {
 // Gas defines a function to process gases.
 //
 // A gas is a function chained in the request-response cycle with access to the
-// `Request` and the `Response` which it uses to perform a specific action, for
+// `Request` and `Response` which it uses to perform a specific action, for
 // example, logging every request or recovering from panics.
 //
 // The argument is the next `Handler` that the gas will be called.

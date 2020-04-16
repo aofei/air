@@ -344,7 +344,7 @@ func (s *server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	req.res = res
 	res.req = req
 
-	// Tie the request body and the standard request body together.
+	// Tie the request body and standard request body together.
 
 	r.Body = &requestBody{
 		r:  req,

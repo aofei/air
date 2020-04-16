@@ -13,7 +13,7 @@ import (
 )
 
 // listener implements the `net.Listener`. It supports the TCP keep-alive and
-// the PROXY protocol.
+// PROXY protocol.
 type listener struct {
 	*net.TCPListener
 

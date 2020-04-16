@@ -21,10 +21,10 @@ one thing: **Air can serve properly**.
 	* As simple as possible
 	* As expressive as possible
 * Server
-	* HTTP/2 (including h2c) support
+	* HTTP/2 (h2 & h2c) support
 	* SSL/TLS support
 	* ACME support
-	* PROXY (only version 1) support
+	* PROXY (only v1) support
 	* Graceful shutdown support
 * Router
 	* Based on the Radix Tree
@@ -43,9 +43,10 @@ one thing: **Air can serve properly**.
 * Reverse proxy
 	* Retrieves resources on behalf of a client from another server
 	* Supported protocols:
-		* HTTP(S)
+		* HTTP
 		* WebSocket
-		* gRPC (including gRPC-Web)
+		* gRPC
+		* gRPC-Web
 * Binder
 	* Binds HTTP request body into the provided struct
 	* Supported MIME types:
@@ -159,7 +160,7 @@ Air adopts the gas as its composition. Everyone can create new gas and use it
 within Air simply.
 
 A gas is a function chained in the HTTP request-response cycle with access to
-the [`air.Request`](https://godoc.org/github.com/aofei/air#Request) and the
+the [`air.Request`](https://godoc.org/github.com/aofei/air#Request) and
 [`air.Response`](https://godoc.org/github.com/aofei/air#Response) which it uses
 to perform a specific action, for example, logging every request or recovering
 from panics.
@@ -212,7 +213,7 @@ client. In some cases it can be confusing. So why not just use the
 implement a refined web framework that are only used for the server-side on top
 of it?
 
-### Do you know we already got the [gin-gonic/gin](https://github.com/gin-gonic/gin) and the [labstack/echo](https://github.com/labstack/echo)?
+### Do you know we already got the [gin-gonic/gin](https://github.com/gin-gonic/gin) and [labstack/echo](https://github.com/labstack/echo)?
 
 Of course, I knew it when I started Go. And, I love both of them! But, why not
 try some new flavors? Are you sure you prefer them instead of Air? Don't even
@@ -224,7 +225,7 @@ quo, you will be fine.
 
 Just call the
 [`air.WrapHTTPHandler`](https://godoc.org/github.com/aofei/air#WrapHTTPHandler)
-and the
+and
 [`air.WrapHTTPMiddleware`](https://godoc.org/github.com/aofei/air#WrapHTTPMiddleware).
 
 ### Is Air good enough?

@@ -12,31 +12,28 @@ import (
 // It is highly recommended not to modify the handlers of the `WebSocket` after
 // calling the `WebSocket.Listen`, which will cause unpredictable problems.
 type WebSocket struct {
-	// TextHandler is the handler that handles the incoming text messages of
-	// the current WebSocket.
+	// TextHandler is the handler that handles the incoming text messages.
 	TextHandler func(text string) error
 
 	// BinaryHandler is the handler that handles the incoming binary
-	// messages of the current WebSocket.
+	// messages.
 	BinaryHandler func(b []byte) error
 
 	// ConnectionCloseHandler is the handler that handles the incoming
-	// connection close messages of the current WebSocket.
+	// connection close messages.
 	ConnectionCloseHandler func(status int, reason string) error
 
-	// PingHandler is the handler that handles the incoming ping messages of
-	// the current WebSocket.
+	// PingHandler is the handler that handles the incoming ping messages.
 	PingHandler func(appData string) error
 
-	// PongHandler is the handler that handles the incoming pong messages of
-	// the current WebSocket.
+	// PongHandler is the handler that handles the incoming pong messages.
 	PongHandler func(appData string) error
 
 	// ErrorHandler is the handler that handles error occurs in the incoming
-	// messages of the current WebSocket.
+	// messages.
 	ErrorHandler func(err error)
 
-	// Closed indicates whether the current WebSocket has been closed.
+	// Closed indicates whether the underlying connection has been closed.
 	Closed bool
 
 	conn     *websocket.Conn
@@ -45,7 +42,7 @@ type WebSocket struct {
 
 // SetMaxMessageBytes sets the maximum number of bytes the ws will read messages
 // from the remote peer. If a message exceeds the limit, the ws sends a close
-// message to the remote peer and returns an error immediately.
+// message to the remote peer.
 func (ws *WebSocket) SetMaxMessageBytes(mmb int64) {
 	ws.conn.SetReadLimit(mmb)
 }
@@ -87,7 +84,7 @@ func (ws *WebSocket) Listen() {
 				ws.ErrorHandler(err)
 			}
 
-			ws.Close() // Close it even if it has closed (insurance)
+			ws.Close() // Close it even if it has been closed
 
 			continue
 		}
@@ -130,7 +127,7 @@ func (ws *WebSocket) WriteBinary(b []byte) error {
 }
 
 // WriteConnectionClose writes a connection close message to the remote peer of
-// the ws with the status and the reason.
+// the ws with the status and reason.
 func (ws *WebSocket) WriteConnectionClose(status int, reason string) error {
 	return ws.conn.WriteMessage(
 		websocket.CloseMessage,

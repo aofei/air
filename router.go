@@ -36,8 +36,8 @@ func newRouter(a *Air) *router {
 	return r
 }
 
-// register registers a new route for the method and the path with the matching
-// h in the r with the optional route-level gases.
+// register registers a new route for the method and path with the matching h in
+// the r with the optional route-level gases.
 func (r *router) register(method, path string, h Handler, gases ...Gas) {
 	r.Lock()
 	defer r.Unlock()
@@ -482,7 +482,7 @@ type routeNode struct {
 	handlers   map[string]Handler
 }
 
-// child returns a child node of the rn by the l and the t.
+// child returns a child node of the rn by the l and t.
 func (rn *routeNode) child(l byte, t routeNodeType) *routeNode {
 	for _, c := range rn.children {
 		if c.label == l && c.nType == t {

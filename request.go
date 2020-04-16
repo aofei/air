@@ -19,10 +19,10 @@ import (
 // The `Request` not only represents HTTP/1.x requests, but also represents
 // HTTP/2 requests, and always acts as HTTP/2 requests.
 type Request struct {
-	// Air is where the current request belongs.
+	// Air is where the request belongs.
 	Air *Air
 
-	// Method is the method of the current request.
+	// Method is the method.
 	//
 	// See RFC 7231, section 4.3.
 	//
@@ -33,7 +33,7 @@ type Request struct {
 	// E.g.: "GET"
 	Method string
 
-	// Scheme is the scheme of the current request, it is "http" or "https".
+	// Scheme is the scheme. It is "http" or "https".
 	//
 	// See RFC 3986, section 3.1.
 	//
@@ -44,8 +44,7 @@ type Request struct {
 	// E.g.: "http"
 	Scheme string
 
-	// Authority is the authority of the current request. It may be of the
-	// form "host:port".
+	// Authority is the authority. It may be of the form "host:port".
 	//
 	// See RFC 3986, Section 3.2.
 	//
@@ -56,8 +55,8 @@ type Request struct {
 	// E.g.: "localhost:8080"
 	Authority string
 
-	// Path is the path of the current request. Note that it contains the
-	// query part (anyway, the HTTP/2 specification says so).
+	// Path is the path. Note that it contains the query part (anyway, the
+	// HTTP/2 specification says so).
 	//
 	// For HTTP/1.x, it represents the request-target of the request-line.
 	// See RFC 7230, section 3.1.1.
@@ -68,7 +67,7 @@ type Request struct {
 	// E.g.: "/foo/bar?foo=bar"
 	Path string
 
-	// Header is the header map of the current request.
+	// Header is the header map.
 	//
 	// The values of the Trailer header are the names of the trailers which
 	// will come later. In this case, those names of the header map will be
@@ -85,21 +84,21 @@ type Request struct {
 	// E.g.: {"Foo": ["bar"]}
 	Header http.Header
 
-	// Body is the message body of the current request. It will be closed by
-	// the server of the `Air`.
+	// Body is the message body. It will be closed by the server of the
+	// `Air`.
 	Body io.ReadCloser
 
-	// ContentLength records the length of the associated content. The value
-	// -1 indicates that the length is unknown (it will be set after reading
+	// ContentLength records the length of the `Body`. The value -1
+	// indicates that the length is unknown (it will be set after reading
 	// from the `Body` returns the `io.EOF`). Values >= 0 indicate that the
 	// given number of bytes may be read from the `Body`.
 	ContentLength int64
 
-	// Context is the context that associated with the current request.
+	// Context is the associated context.
 	//
 	// The `Context` is canceled when the client's connection closes, the
-	// current request is canceled (with HTTP/2), or when the current
-	// request-response cycle is finished.
+	// request is canceled (with HTTP/2), or when the request-response cycle
+	// is finished.
 	Context context.Context
 
 	hr                   *http.Request
@@ -213,8 +212,8 @@ func (r *Request) RawQuery() string {
 // ClientAddress returns the original network address that sent the r.
 //
 // Usually, the original network address is the same as the last network address
-// that sent the r. But, the Forwarded header and the X-Forwarded-For header
-// will be considered, which may affect the return value.
+// that sent the r. But, the Forwarded and X-Forwarded-For headers will be
+// considered, which may affect the return value.
 func (r *Request) ClientAddress() string {
 	ca := r.RemoteAddress()
 	if f := r.Header.Get("Forwarded"); f != "" { // See RFC 7239
@@ -493,17 +492,17 @@ func (r *Request) LocalizedString(key string) string {
 // The param may come from the route params, the request query, the request
 // form, the request multipart form.
 type RequestParam struct {
-	// Name is the name of the current request param.
+	// Name is the name.
 	Name string
 
-	// Values is the values of the current request param.
+	// Values is the values.
 	//
 	// Access order: route param value (always at the first) > request query
 	// value(s) > request form value(s) > request multipart form value(s) >
 	// request multipart form file(s).
 	//
-	// Note that there will always be at least one value when the current
-	// request param is from the `Request.Param` or the `Request.Params`.
+	// Note that there will always be at least one value when the request
+	// param is from the `Request.Param` or the `Request.Params`.
 	Values []*RequestParamValue
 }
 
@@ -742,7 +741,7 @@ func (rpv *RequestParamValue) File() (*multipart.FileHeader, error) {
 	return rpv.f, nil
 }
 
-// requestBody is used to tie the `Request.Body` and the `http.Request.Body`
+// requestBody is used to tie the `Request.Body` and `http.Request.Body`
 // together.
 type requestBody struct {
 	sync.Mutex

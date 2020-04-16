@@ -44,11 +44,10 @@ import (
 // The `Response` not only represents HTTP/1.x responses, but also represents
 // HTTP/2 responses, and always acts as HTTP/2 responses.
 type Response struct {
-	// Air is where the current response belongs.
+	// Air is where the response belongs.
 	Air *Air
 
-	// Status is the status code giving the result of the attempt to
-	// understand and satisfy the request.
+	// Status is the status code.
 	//
 	// See RFC 7231, section 6.
 	//
@@ -59,7 +58,7 @@ type Response struct {
 	// E.g.: 200
 	Status int
 
-	// Header is the header map of the current response.
+	// Header is the header map.
 	//
 	// By setting the Trailer header to the names of the trailers which will
 	// come later. In this case, those names of the header map are treated
@@ -76,25 +75,24 @@ type Response struct {
 	// E.g.: {"Foo": ["bar"]}
 	Header http.Header
 
-	// Body is the message body of the current response. It can be used to
-	// write a streaming response.
+	// Body is the message body. It can be used to write a streaming
+	// response.
 	Body io.Writer
 
-	// ContentLength records the length of the associated content. The value
-	// -1 indicates that the length is unknown (it will continue to increase
+	// ContentLength records the length of the `Body`. The value -1
+	// indicates that the length is unknown (it will continue to increase
 	// as the data written to the `Body` increases). Values >= 0 indicate
 	// that the given number of bytes has been written to the `Body`.
 	ContentLength int64
 
-	// Written indicates whether the current response has been written.
+	// Written indicates whether at least one byte has been written to the
+	// client, or the underlying connection has been hijacked.
 	Written bool
 
-	// Minified indicates whether the message body of the current response
-	// has been minified.
+	// Minified indicates whether the `Body` has been minified.
 	Minified bool
 
-	// Gzipped indicates whether the message body of the current response
-	// has been gzipped.
+	// Gzipped indicates whether the `Body` has been gzipped.
 	Gzipped bool
 
 	req               *Request
@@ -136,10 +134,9 @@ func (r *Response) SetCookie(c *http.Cookie) {
 // Write writes the content to the client.
 //
 // The main benefit of the `Write` over the `io.Copy` with the `Body` of the r
-// is that it handles range requests properly, sets the Content-Type header, and
-// handles the If-Match header, the If-Unmodified-Since header, the
-// If-None-Match header, the If-Modified-Since header and the If-Range header of
-// the requests.
+// is that it handles range requests properly, sets the Content-Type response
+// header, and handles the If-Match, If-Unmodified-Since, If-None-Match,
+// If-Modified-Since and If-Range request headers.
 func (r *Response) Write(content io.ReadSeeker) error {
 	if content == nil { // No content, no benefit
 		if !r.Written {
@@ -642,7 +639,7 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 }
 
 // Push initiates an HTTP/2 server push. This constructs a synthetic request
-// using the target and the pos, serializes that request into a "PUSH_PROMISE"
+// using the target and pos, serializes that request into a "PUSH_PROMISE"
 // frame, then dispatches that request using the server's request handler. If
 // pos is nil, default options are used.
 //
@@ -664,7 +661,7 @@ func (r *Response) Push(target string, pos *http.PushOptions) error {
 
 // ProxyPass passes the request to the target and writes the response from the
 // target to the client by using the reverse proxy technique. If the rpm is
-// non-nil, then it will be used to modify the request to the target and the
+// non-nil, then it will be used to modify the request to the target and
 // response from the target.
 //
 // The target must be based on the HTTP protocol (such as HTTP(S), WebSocket and
@@ -865,7 +862,7 @@ func (r *Response) Defer(f func()) {
 }
 
 // ReverseProxyModifier is used by the `Response.ProxyPass` to modify the
-// request to the target and the response from the traget.
+// request to the target and response from the traget.
 //
 // Note that any field in the `ReverseProxyModifier` can be nil, which means
 // there is no need to modify that value.
@@ -906,7 +903,7 @@ type ReverseProxyModifier struct {
 	ModifyResponseBody func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
-// responseWriter is used to tie the `Response` and the `http.ResponseWriter`
+// responseWriter is used to tie the `Response` and `http.ResponseWriter`
 // together.
 type responseWriter struct {
 	sync.Mutex
@@ -1156,8 +1153,7 @@ func (rw *responseWriter) handleReverseProxy() {
 	})
 }
 
-// responseHijacker is used to tie the `Response` and the `http.Hijacker`
-// together.
+// responseHijacker is used to tie the `Response` and `http.Hijacker` together.
 type responseHijacker struct {
 	r *Response
 	h http.Hijacker
