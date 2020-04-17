@@ -38,7 +38,7 @@ func TestNewServer(t *testing.T) {
 
 func TestServerServe(t *testing.T) {
 	a := New()
-	a.Address = "localhost:http"
+	a.Address = "localhost:0"
 
 	s := a.server
 
@@ -409,12 +409,12 @@ func TestServerShutdown(t *testing.T) {
 
 	s := a.server
 
-	hijackOSStdout()
-
 	foo := ""
 	s.addShutdownJob(func() {
 		foo = "bar"
 	})
+
+	hijackOSStdout()
 
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)
@@ -430,13 +430,13 @@ func TestServerShutdown(t *testing.T) {
 
 	s = a.server
 
-	hijackOSStdout()
-
 	foo = ""
 	s.addShutdownJob(func() {
 		time.Sleep(100 * time.Millisecond)
 		foo = "bar"
 	})
+
+	hijackOSStdout()
 
 	go s.serve()
 	time.Sleep(100 * time.Millisecond)

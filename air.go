@@ -45,6 +45,7 @@ package air
 import (
 	"compress/gzip"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -152,15 +153,24 @@ type Air struct {
 	// Default value: 1048576
 	MaxHeaderBytes int `mapstructure:"max_header_bytes"`
 
+	// TLSConfig is the `tls.Config` to make the server to handle requests
+	// on incoming TLS connections.
+	//
+	// The `TLSConfig` will be forced to non-nil when both the `TLSCertFile`
+	// and `TLSKeyFile` are not empty, or the `ACMEEnabled` is true.
+	//
+	// Default value: nil
+	TLSConfig *tls.Config `mapstructure:"-"`
+
 	// TLSCertFile is the path to the TLS certificate file used when
-	// starting the server.
+	// starting the server. The target certificate will be appended to the
+	// end of the `TLSConfig.Certificates`.
 	//
 	// If the certificate is signed by a certificate authority, the TLS
 	// certificate file should be the concatenation of the certificate, any
 	// intermediates, and the CA's certificate.
 	//
-	// The `TLSCertFile` must be set at the same time as the `TLSKeyFile` to
-	// make the server to handle requests on incoming TLS connections.
+	// The `TLSCertFile` must be set at the same time as the `TLSKeyFile`.
 	//
 	// Default value: ""
 	TLSCertFile string `mapstructure:"tls_cert_file"`
@@ -169,9 +179,6 @@ type Air struct {
 	// server.
 	//
 	// The key must match the certificate targeted by the `TLSCertFile`.
-	//
-	// The `TLSKeyFile` must be set at the same time as the `TLSCertFile` to
-	// make the server to handle requests on incoming TLS connections.
 	//
 	// Default value: ""
 	TLSKeyFile string `mapstructure:"tls_key_file"`
@@ -182,8 +189,8 @@ type Air struct {
 	// retrieve new TLS certificates from the ACME CA targeted by the
 	// `ACMEDirectoryURL`.
 	//
-	// The `ACMEEnabled` only works when the `DebugMode` is false and both
-	// the `TLSCertFile` and `TLSKeyFile` are empty.
+	// If the `TLSConfig.GetCertificate` is not nil, then the server will
+	// respect it and use the ACME feature as a backup.
 	//
 	// Default value: false
 	ACMEEnabled bool `mapstructure:"acme_enabled"`
@@ -227,12 +234,8 @@ type Air struct {
 	// only via the HTTPS scheme (HTTP requests will automatically redirect
 	// to HTTPS).
 	//
-	// The `HTTPSEnforced` only works when the server can handle requests on
-	// incoming TLS connections.
-	//
 	// The `HTTPSEnforced` will be forced to true when the `ACMEEnabled` is
-	// true, the `DebugMode` is false and both the `TLSCertFile` and
-	// `TLSKeyFile` are empty.
+	// true.
 	//
 	// Default value: false
 	HTTPSEnforced bool `mapstructure:"https_enforced"`

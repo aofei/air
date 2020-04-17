@@ -118,10 +118,37 @@ func (s *server) serve() error {
 			return err
 		}
 
-		s.server.TLSConfig = &tls.Config{
-			Certificates: []tls.Certificate{c},
+		if s.a.TLSConfig == nil {
+			s.a.TLSConfig = &tls.Config{}
 		}
-	} else if !s.a.DebugMode && s.a.ACMEEnabled {
+
+		s.a.TLSConfig.Certificates = append(
+			s.a.TLSConfig.Certificates,
+			c,
+		)
+	}
+
+	if s.a.TLSConfig != nil {
+		if !stringSliceContains(s.a.TLSConfig.NextProtos, "h2", false) {
+			s.a.TLSConfig.NextProtos = append(
+				s.a.TLSConfig.NextProtos,
+				"h2",
+			)
+		}
+
+		if !stringSliceContains(
+			s.a.TLSConfig.NextProtos,
+			"http/1.1",
+			false,
+		) {
+			s.a.TLSConfig.NextProtos = append(
+				s.a.TLSConfig.NextProtos,
+				"http/1.1",
+			)
+		}
+	}
+
+	if s.a.ACMEEnabled {
 		acm := &autocert.Manager{
 			Prompt: autocert.AcceptTOS,
 			Cache:  autocert.DirCache(s.a.ACMECertRoot),
@@ -139,15 +166,86 @@ func (s *server) serve() error {
 		hh = acm.HTTPHandler(hh)
 		s.a.HTTPSEnforced = true
 
-		s.server.TLSConfig = acm.TLSConfig()
-		s.server.TLSConfig.GetCertificate = func(
+		acmTLSConfig := acm.TLSConfig()
+
+		if s.a.TLSConfig == nil {
+			s.a.TLSConfig = &tls.Config{}
+		}
+
+		getCertificate := s.a.TLSConfig.GetCertificate
+		s.a.TLSConfig.GetCertificate = func(
 			chi *tls.ClientHelloInfo,
 		) (*tls.Certificate, error) {
+			if getCertificate != nil {
+				c, err := getCertificate(chi)
+				if err != nil {
+					return nil, err
+				}
+
+				if c != nil {
+					return c, nil
+				}
+			}
+
 			if chi.ServerName == "" {
 				chi.ServerName = s.a.ACMEDefaultHost
 			}
 
 			return acm.GetCertificate(chi)
+		}
+
+		for _, proto := range acmTLSConfig.NextProtos {
+			if !stringSliceContains(
+				s.a.TLSConfig.NextProtos,
+				proto,
+				false,
+			) {
+				s.a.TLSConfig.NextProtos = append(
+					s.a.TLSConfig.NextProtos,
+					proto,
+				)
+			}
+		}
+	}
+
+	listener := newListener(s.a)
+	if err := listener.listen(s.server.Addr); err != nil {
+		return err
+	}
+	defer listener.Close()
+
+	s.addressMap[listener.Addr().String()] = 0
+	defer delete(s.addressMap, listener.Addr().String())
+
+	netListener := net.Listener(listener)
+	if s.a.TLSConfig != nil {
+		netListener = tls.NewListener(netListener, s.a.TLSConfig)
+		if s.a.HTTPSEnforced {
+			hs := &http.Server{
+				Addr: net.JoinHostPort(
+					host,
+					s.a.HTTPSEnforcedPort,
+				),
+				Handler:           hh,
+				ReadTimeout:       s.a.ReadTimeout,
+				ReadHeaderTimeout: s.a.ReadHeaderTimeout,
+				WriteTimeout:      s.a.WriteTimeout,
+				IdleTimeout:       s.a.IdleTimeout,
+				MaxHeaderBytes:    s.a.MaxHeaderBytes,
+				ErrorLog:          s.a.ErrorLogger,
+			}
+
+			l := newListener(s.a)
+			if err := l.listen(hs.Addr); err != nil {
+				return err
+			}
+			defer l.Close()
+
+			s.addressMap[l.Addr().String()] = 1
+			defer delete(s.addressMap, l.Addr().String())
+
+			go hs.Serve(l)
+			defer hs.Close()
 		}
 	} else {
 		h2s := &http2.Server{
@@ -158,65 +256,14 @@ func (s *server) serve() error {
 		}
 
 		s.server.Handler = h2c.NewHandler(s.server.Handler, h2s)
-
-		l := newListener(s.a)
-		if err := l.listen(s.server.Addr); err != nil {
-			return err
-		}
-		defer l.Close()
-
-		s.addressMap[l.Addr().String()] = 0
-		defer delete(s.addressMap, l.Addr().String())
-
-		if realPort == "0" {
-			_, realPort, _ = net.SplitHostPort(l.Addr().String())
-			fmt.Printf("air: listening on %v\n", s.addresses())
-		}
-
-		return s.server.Serve(l)
 	}
 
-	if s.a.HTTPSEnforced {
-		hs := &http.Server{
-			Addr: net.JoinHostPort(host, s.a.HTTPSEnforcedPort),
-
-			Handler:           hh,
-			ReadTimeout:       s.a.ReadTimeout,
-			ReadHeaderTimeout: s.a.ReadHeaderTimeout,
-			WriteTimeout:      s.a.WriteTimeout,
-			IdleTimeout:       s.a.IdleTimeout,
-			MaxHeaderBytes:    s.a.MaxHeaderBytes,
-			ErrorLog:          s.a.ErrorLogger,
-		}
-
-		l := newListener(s.a)
-		if err := l.listen(hs.Addr); err != nil {
-			return err
-		}
-		defer l.Close()
-
-		s.addressMap[l.Addr().String()] = 1
-		defer delete(s.addressMap, l.Addr().String())
-
-		go hs.Serve(l)
-		defer hs.Close()
-	}
-
-	l := newListener(s.a)
-	if err := l.listen(s.server.Addr); err != nil {
-		return err
-	}
-	defer l.Close()
-
-	s.addressMap[l.Addr().String()] = 0
-	defer delete(s.addressMap, l.Addr().String())
-
-	if realPort == "0" {
-		_, realPort, _ = net.SplitHostPort(l.Addr().String())
+	if realPort == "0" || s.a.HTTPSEnforcedPort == "0" {
+		_, realPort, _ = net.SplitHostPort(netListener.Addr().String())
 		fmt.Printf("air: listening on %v\n", s.addresses())
 	}
 
-	return s.server.ServeTLS(l, "", "")
+	return s.server.Serve(netListener)
 }
 
 // close closes the s immediately.

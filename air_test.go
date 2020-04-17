@@ -594,12 +594,12 @@ func TestAirShutdown(t *testing.T) {
 	a := New()
 	a.Address = "localhost:0"
 
-	hijackOSStdout()
-
 	foo := ""
 	a.AddShutdownJob(func() {
 		foo = "bar"
 	})
+
+	hijackOSStdout()
 
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
@@ -614,14 +614,14 @@ func TestAirAddShutdownJob(t *testing.T) {
 	a := New()
 	a.Address = "localhost:0"
 
-	hijackOSStdout()
-
 	foo := ""
 	id := a.AddShutdownJob(func() {
 		foo = "bar"
 	})
 
 	assert.Equal(t, 0, id)
+
+	hijackOSStdout()
 
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
@@ -636,8 +636,6 @@ func TestAirRemoveShutdownJob(t *testing.T) {
 	a := New()
 	a.Address = "localhost:0"
 
-	hijackOSStdout()
-
 	foo := ""
 	id := a.AddShutdownJob(func() {
 		foo = "bar"
@@ -646,6 +644,8 @@ func TestAirRemoveShutdownJob(t *testing.T) {
 	assert.Equal(t, 0, id)
 
 	a.RemoveShutdownJob(id)
+
+	hijackOSStdout()
 
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
