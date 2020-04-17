@@ -49,7 +49,7 @@ func TestNew(t *testing.T) {
 	assert.Empty(t, a.ACMEDefaultHost)
 	assert.Nil(t, a.ACMEHostWhitelist)
 	assert.False(t, a.HTTPSEnforced)
-	assert.Equal(t, "80", a.HTTPSEnforcedPort)
+	assert.Equal(t, "0", a.HTTPSEnforcedPort)
 	assert.Zero(t, a.WebSocketHandshakeTimeout)
 	assert.Nil(t, a.WebSocketSubprotocols)
 	assert.False(t, a.PROXYEnabled)

@@ -156,21 +156,24 @@ type Air struct {
 	// TLSConfig is the `tls.Config` to make the server to handle requests
 	// on incoming TLS connections.
 	//
-	// The `TLSConfig` will be forced to non-nil when both the `TLSCertFile`
-	// and `TLSKeyFile` are not empty, or the `ACMEEnabled` is true.
+	// The `TLSConfig` will be cloned when starting the server.
 	//
 	// Default value: nil
 	TLSConfig *tls.Config `mapstructure:"-"`
 
 	// TLSCertFile is the path to the TLS certificate file used when
-	// starting the server. The target certificate will be appended to the
-	// end of the `TLSConfig.Certificates`.
+	// starting the server.
 	//
 	// If the certificate is signed by a certificate authority, the TLS
 	// certificate file should be the concatenation of the certificate, any
 	// intermediates, and the CA's certificate.
 	//
 	// The `TLSCertFile` must be set at the same time as the `TLSKeyFile`.
+	//
+	// If the `TLSConfig` is not nil, then the certificate targeted by the
+	// `TLSCertFile` will be appended to the end of the `Certificates` of
+	// the `TLSConfig`'s clone. Otherwise, a new instance of the
+	// `tls.Config` will be created.
 	//
 	// Default value: ""
 	TLSCertFile string `mapstructure:"tls_cert_file"`
@@ -189,8 +192,9 @@ type Air struct {
 	// retrieve new TLS certificates from the ACME CA targeted by the
 	// `ACMEDirectoryURL`.
 	//
-	// If the `TLSConfig.GetCertificate` is not nil, then the server will
-	// respect it and use the ACME feature as a backup.
+	// If the `TLSConfig` and `TLSConfig.GetCertificate` are not nil, then
+	// the server will respect it and use the ACME feature as a backup.
+	// Otherwise, a new instance of the `tls.Config` will be created.
 	//
 	// Default value: false
 	ACMEEnabled bool `mapstructure:"acme_enabled"`
@@ -234,8 +238,8 @@ type Air struct {
 	// only via the HTTPS scheme (HTTP requests will automatically redirect
 	// to HTTPS).
 	//
-	// The `HTTPSEnforced` will be forced to true when the `ACMEEnabled` is
-	// true.
+	// The `HTTPSEnforced` will always be treated as true when the
+	// `ACMEEnabled` is true.
 	//
 	// Default value: false
 	HTTPSEnforced bool `mapstructure:"https_enforced"`
@@ -247,7 +251,7 @@ type Air struct {
 	// If the `HTTPSEnforcedPort` is "0", a port is automatically chosen.
 	// The `Addresses` can be used to discover the chosen port.
 	//
-	// Default value: "80"
+	// Default value: "0"
 	HTTPSEnforcedPort string `mapstructure:"https_enforced_port"`
 
 	// WebSocketHandshakeTimeout is the maximum amount of time the server
@@ -568,7 +572,7 @@ func New() *Air {
 		MaxHeaderBytes:          1 << 20,
 		ACMEDirectoryURL:        "https://acme-v02.api.letsencrypt.org/directory",
 		ACMECertRoot:            "acme-certs",
-		HTTPSEnforcedPort:       "80",
+		HTTPSEnforcedPort:       "0",
 		NotFoundHandler:         DefaultNotFoundHandler,
 		MethodNotAllowedHandler: DefaultMethodNotAllowedHandler,
 		ErrorHandler:            DefaultErrorHandler,

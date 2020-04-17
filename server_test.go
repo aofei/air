@@ -306,6 +306,30 @@ l7j2fuWjNfj9JfnXoP2SEgPG
 
 	assert.NoError(t, s.close())
 
+	c, err := tls.LoadX509KeyPair(
+		filepath.Join(dir, "tls_cert.pem"),
+		filepath.Join(dir, "tls_key.pem"),
+	)
+	assert.NotNil(t, c)
+	assert.NoError(t, err)
+
+	a = New()
+	a.Address = "localhost:0"
+	a.TLSConfig = &tls.Config{
+		Certificates: []tls.Certificate{c},
+	}
+
+	s = a.server
+
+	hijackOSStdout()
+
+	go s.serve()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	assert.NoError(t, s.close())
+
 	a = New()
 	a.Address = "-1:0"
 	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")

@@ -112,39 +112,36 @@ func (s *server) serve() error {
 		fmt.Println("air: serving in debug mode")
 	}
 
+	tlsConfig := s.a.TLSConfig
+	if tlsConfig != nil {
+		tlsConfig = tlsConfig.Clone()
+	}
+
 	if s.a.TLSCertFile != "" && s.a.TLSKeyFile != "" {
 		c, err := tls.LoadX509KeyPair(s.a.TLSCertFile, s.a.TLSKeyFile)
 		if err != nil {
 			return err
 		}
 
-		if s.a.TLSConfig == nil {
-			s.a.TLSConfig = &tls.Config{}
+		if tlsConfig == nil {
+			tlsConfig = &tls.Config{}
 		}
 
-		s.a.TLSConfig.Certificates = append(
-			s.a.TLSConfig.Certificates,
-			c,
-		)
+		tlsConfig.Certificates = append(tlsConfig.Certificates, c)
 	}
 
-	if s.a.TLSConfig != nil {
-		if !stringSliceContains(s.a.TLSConfig.NextProtos, "h2", false) {
-			s.a.TLSConfig.NextProtos = append(
-				s.a.TLSConfig.NextProtos,
-				"h2",
-			)
-		}
-
-		if !stringSliceContains(
-			s.a.TLSConfig.NextProtos,
-			"http/1.1",
-			false,
-		) {
-			s.a.TLSConfig.NextProtos = append(
-				s.a.TLSConfig.NextProtos,
-				"http/1.1",
-			)
+	if tlsConfig != nil {
+		for _, proto := range []string{"h2", "http/1.1"} {
+			if !stringSliceContains(
+				tlsConfig.NextProtos,
+				proto,
+				false,
+			) {
+				tlsConfig.NextProtos = append(
+					tlsConfig.NextProtos,
+					proto,
+				)
+			}
 		}
 	}
 
@@ -164,16 +161,15 @@ func (s *server) serve() error {
 		}
 
 		hh = acm.HTTPHandler(hh)
-		s.a.HTTPSEnforced = true
 
 		acmTLSConfig := acm.TLSConfig()
 
-		if s.a.TLSConfig == nil {
-			s.a.TLSConfig = &tls.Config{}
+		if tlsConfig == nil {
+			tlsConfig = &tls.Config{}
 		}
 
-		getCertificate := s.a.TLSConfig.GetCertificate
-		s.a.TLSConfig.GetCertificate = func(
+		getCertificate := tlsConfig.GetCertificate
+		tlsConfig.GetCertificate = func(
 			chi *tls.ClientHelloInfo,
 		) (*tls.Certificate, error) {
 			if getCertificate != nil {
@@ -196,12 +192,12 @@ func (s *server) serve() error {
 
 		for _, proto := range acmTLSConfig.NextProtos {
 			if !stringSliceContains(
-				s.a.TLSConfig.NextProtos,
+				tlsConfig.NextProtos,
 				proto,
 				false,
 			) {
-				s.a.TLSConfig.NextProtos = append(
-					s.a.TLSConfig.NextProtos,
+				tlsConfig.NextProtos = append(
+					tlsConfig.NextProtos,
 					proto,
 				)
 			}
@@ -218,9 +214,10 @@ func (s *server) serve() error {
 	defer delete(s.addressMap, listener.Addr().String())
 
 	netListener := net.Listener(listener)
-	if s.a.TLSConfig != nil {
-		netListener = tls.NewListener(netListener, s.a.TLSConfig)
-		if s.a.HTTPSEnforced {
+	httpsEnforced := s.a.ACMEEnabled || s.a.HTTPSEnforced
+	if tlsConfig != nil {
+		netListener = tls.NewListener(netListener, tlsConfig)
+		if httpsEnforced {
 			hs := &http.Server{
 				Addr: net.JoinHostPort(
 					host,
@@ -258,7 +255,7 @@ func (s *server) serve() error {
 		s.server.Handler = h2c.NewHandler(s.server.Handler, h2s)
 	}
 
-	if realPort == "0" || s.a.HTTPSEnforcedPort == "0" {
+	if realPort == "0" || (httpsEnforced && s.a.HTTPSEnforcedPort == "0") {
 		_, realPort, _ = net.SplitHostPort(netListener.Addr().String())
 		fmt.Printf("air: listening on %v\n", s.addresses())
 	}
