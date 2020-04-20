@@ -2,6 +2,7 @@ package air
 
 import (
 	"bufio"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +12,13 @@ import (
 	"sync"
 	"time"
 )
+
+// proxyProtocolSign is the signature of the PROXY protocol.
+var proxyProtocolSign = []byte{
+	0x0d, 0x0a, 0x0d, 0x0a,
+	0x00, 0x0d, 0x0a, 0x51,
+	0x55, 0x49, 0x54, 0x0a,
+}
 
 // listener implements the `net.Listener`. It supports the TCP keep-alive and
 // PROXY protocol.
@@ -158,6 +166,7 @@ func (pc *proxyConn) readHeader() {
 		}
 	}()
 
+	isV1 := true
 	for i := 0; i < 6; i++ { // i < len("PROXY ")
 		var b []byte
 		b, pc.readHeaderError = pc.bufReader.Peek(i + 1)
@@ -171,77 +180,225 @@ func (pc *proxyConn) readHeader() {
 			return
 		}
 
-		if b[i] != "PROXY "[i] { // Not speaking the PROXY protocol
+		// Check if it is speaking the PROXY protocol version 1.
+		if b[i] != "PROXY "[i] {
+			isV1 = false
+			break
+		}
+	}
+
+	if isV1 {
+		var header string
+		header, pc.readHeaderError = pc.bufReader.ReadString('\n')
+		if pc.readHeaderError != nil {
+			return
+		}
+
+		header = header[:len(header)-2] // Strip CRLF
+
+		// PROXY <protocol> <src ip> <dst ip> <src port> <dst port>
+		parts := strings.Split(header, " ")
+		if len(parts) != 6 {
+			pc.readHeaderError = fmt.Errorf(
+				"air: malformed proxy header line: %s",
+				header,
+			)
+			return
+		}
+
+		switch parts[1] { // <protocol>
+		case "TCP4", "TCP6":
+		default:
+			pc.readHeaderError = fmt.Errorf(
+				"air: unsupported proxy transport protocol: %s",
+				parts[1],
+			)
+			return
+		}
+
+		srcIP := net.ParseIP(parts[2]) // <src ip>
+		if srcIP == nil {
+			pc.readHeaderError = fmt.Errorf(
+				"air: invalid proxy source ip: %s",
+				parts[2],
+			)
+			return
+		}
+
+		dstIP := net.ParseIP(parts[3]) // <dst ip>
+		if dstIP == nil {
+			pc.readHeaderError = fmt.Errorf(
+				"air: invalid proxy destination ip: %s",
+				parts[3],
+			)
+			return
+		}
+
+		srcPort, err := strconv.Atoi(parts[4]) // <src port>
+		if err != nil {
+			pc.readHeaderError = fmt.Errorf(
+				"air: invalid proxy source port: %s",
+				parts[4],
+			)
+			return
+		}
+
+		dstPort, err := strconv.Atoi(parts[5]) // <dst port>
+		if err != nil {
+			pc.readHeaderError = fmt.Errorf(
+				"air: invalid proxy destination port: %s",
+				parts[5],
+			)
+			return
+		}
+
+		pc.srcAddr = &net.TCPAddr{
+			IP:   srcIP,
+			Port: srcPort,
+		}
+
+		pc.dstAddr = &net.TCPAddr{
+			IP:   dstIP,
+			Port: dstPort,
+		}
+
+		return
+	}
+
+	for i := 0; i < len(proxyProtocolSign); i++ {
+		var b []byte
+		b, pc.readHeaderError = pc.bufReader.Peek(i + 1)
+		if pc.readHeaderError != nil {
+			var ne net.Error
+			if errors.As(pc.readHeaderError, &ne) && ne.Timeout() {
+				pc.readHeaderError = nil
+				return
+			}
+
+			return
+		}
+
+		// Check if it is speaking the PROXY protocol.
+		if b[i] != proxyProtocolSign[i] {
 			return
 		}
 	}
 
-	var header string
-	header, pc.readHeaderError = pc.bufReader.ReadString('\n')
+	_, pc.readHeaderError = pc.bufReader.Discard(len(proxyProtocolSign))
 	if pc.readHeaderError != nil {
 		return
 	}
 
-	header = header[:len(header)-2] // Strip CRLF
+	// Protocol version and command.
 
-	// PROXY <protocol> <src ip> <dst ip> <src port> <dst port>
-	parts := strings.Split(header, " ")
-	if len(parts) != 6 {
-		pc.readHeaderError = fmt.Errorf(
-			"air: malformed proxy header line: %s",
-			header,
+	var b byte
+	b, pc.readHeaderError = pc.bufReader.ReadByte()
+	if b&0xf0 != 0x20 { // 2
+		pc.readHeaderError = errors.New(
+			"air: unsupported proxy protocol version",
+		)
+		return
+	} else if b&0x0f != 0x01 { // PROXY
+		pc.readHeaderError = errors.New(
+			"air: unsupported proxy command",
 		)
 		return
 	}
 
-	switch parts[1] { // <protocol>
-	case "TCP4", "TCP6":
+	// Address family and transport protocol.
+
+	b, pc.readHeaderError = pc.bufReader.ReadByte()
+	switch b & 0xf0 {
+	case 0x10: // AF_INET
+	case 0x20: // AF_INET6
 	default:
-		pc.readHeaderError = fmt.Errorf(
-			"air: unsupported proxy protocol: %s",
-			parts[1],
+		pc.readHeaderError = errors.New(
+			"air: unsupported proxy address family",
 		)
 		return
 	}
 
-	srcIP := net.ParseIP(parts[2]) // <src ip>
-	if srcIP == nil {
-		pc.readHeaderError = fmt.Errorf(
-			"air: invalid proxy source ip: %s",
-			parts[2],
+	if b&0x0f != 0x01 { // STREAM
+		pc.readHeaderError = errors.New(
+			"air: unsupported proxy transport protocol",
 		)
 		return
 	}
 
-	dstIP := net.ParseIP(parts[3]) // <dst ip>
-	if dstIP == nil {
-		pc.readHeaderError = fmt.Errorf(
-			"air: invalid proxy destination ip: %s",
-			parts[3],
+	var expectedAddressLength uint16
+	switch b {
+	case 0x11: // TCP over IPv4
+		expectedAddressLength = 12
+	case 0x21: // TCP over IPv6
+		expectedAddressLength = 36
+	default:
+		pc.readHeaderError = errors.New(
+			"air: unsupported combination of proxy address " +
+				"family and transport protocol",
 		)
 		return
 	}
 
-	srcPort, err := strconv.Atoi(parts[4]) // <src port>
-	if err != nil {
+	// Address length.
+
+	var addressLength uint16
+	if err := binary.Read(
+		io.LimitReader(pc.bufReader, 2),
+		binary.BigEndian,
+		&addressLength,
+	); err != nil {
 		pc.readHeaderError = fmt.Errorf(
-			"air: invalid proxy source port: %s",
-			parts[4],
+			"air: failed to read proxy address length: %v",
+			err,
 		)
 		return
 	}
 
-	dstPort, err := strconv.Atoi(parts[5]) // <dst port>
-	if err != nil {
+	if addressLength != expectedAddressLength {
 		pc.readHeaderError = fmt.Errorf(
-			"air: invalid proxy destination port: %s",
-			parts[5],
+			"air: invalid proxy address length: %d",
+			addressLength,
 		)
 		return
 	}
 
-	pc.srcAddr = &net.TCPAddr{IP: srcIP, Port: srcPort}
-	pc.dstAddr = &net.TCPAddr{IP: dstIP, Port: dstPort}
+	if _, err := pc.bufReader.Peek(int(addressLength)); err != nil {
+		pc.readHeaderError = fmt.Errorf(
+			"air: failed to peek proxy addresses and ports: %v",
+			err,
+		)
+		return
+	}
 
-	return
+	var srcIP, dstIP net.IP
+	switch addressLength {
+	case 12: // TCP over IPv4
+		srcIP, dstIP = make(net.IP, 4), make(net.IP, 4)
+	case 36: // TCP over IPv6
+		srcIP, dstIP = make(net.IP, 16), make(net.IP, 16)
+	}
+
+	var srcPort, dstPort = make([]byte, 2), make([]byte, 2)
+
+	if err := binary.Read(
+		io.LimitReader(pc.bufReader, int64(addressLength)),
+		binary.BigEndian,
+		append(srcIP, append(dstIP, append(srcPort, dstPort...)...)...),
+	); err != nil {
+		pc.readHeaderError = fmt.Errorf(
+			"air: failed to read proxy addresses and ports: %v",
+			err,
+		)
+		return
+	}
+
+	pc.srcAddr = &net.TCPAddr{
+		IP:   srcIP,
+		Port: int(binary.BigEndian.Uint16(srcPort)),
+	}
+
+	pc.dstAddr = &net.TCPAddr{
+		IP:   dstIP,
+		Port: int(binary.BigEndian.Uint16(dstPort)),
+	}
 }

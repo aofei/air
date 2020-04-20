@@ -24,7 +24,7 @@ one thing: **Air can serve properly**.
 	* HTTP/2 (h2 & h2c) support
 	* SSL/TLS support
 	* ACME support
-	* PROXY (only v1) support
+	* PROXY (v1 & v2) support
 	* Graceful shutdown support
 * Router
 	* Based on the Radix Tree
