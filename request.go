@@ -183,32 +183,6 @@ func (r *Request) RemoteHost() string {
 	return r.RemoteAddress()
 }
 
-// RawPath returns the raw path part of the `Path`.
-//
-// E.g.: "/foo/bar?foo=bar" -> "/foo/bar"
-func (r *Request) RawPath() string {
-	i, l := 0, len(r.Path)
-	for ; i < l && r.Path[i] != '?'; i++ {
-	}
-
-	return r.Path[:i]
-}
-
-// RawQuery returns the raw query part (without '?') of the `Path`.
-//
-// E.g.: "/foo/bar?foo=bar" -> "foo=bar"
-func (r *Request) RawQuery() string {
-	i, l := 0, len(r.Path)
-	for ; i < l && r.Path[i] != '?'; i++ {
-	}
-
-	if i < l {
-		return r.Path[i+1:]
-	}
-
-	return ""
-}
-
 // ClientAddress returns the original network address that sent the r.
 //
 // Usually, the original network address is the same as the last network address
@@ -241,6 +215,32 @@ func (r *Request) ClientHost() string {
 	}
 
 	return r.ClientAddress()
+}
+
+// RawPath returns the raw path part of the `Path`.
+//
+// E.g.: "/foo/bar?foo=bar" -> "/foo/bar"
+func (r *Request) RawPath() string {
+	i, l := 0, len(r.Path)
+	for ; i < l && r.Path[i] != '?'; i++ {
+	}
+
+	return r.Path[:i]
+}
+
+// RawQuery returns the raw query part (without '?') of the `Path`.
+//
+// E.g.: "/foo/bar?foo=bar" -> "foo=bar"
+func (r *Request) RawQuery() string {
+	i, l := 0, len(r.Path)
+	for ; i < l && r.Path[i] != '?'; i++ {
+	}
+
+	if i < l {
+		return r.Path[i+1:]
+	}
+
+	return ""
 }
 
 // Cookies returns all `http.Cookie` in the r.
