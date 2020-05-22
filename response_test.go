@@ -157,6 +157,21 @@ func TestResponseWriteString(t *testing.T) {
 	assert.Equal(t, "foobar", rec.Body.String())
 }
 
+func TestResponseWriteHTML(t *testing.T) {
+	a := New()
+
+	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+
+	assert.NoError(t, res.WriteHTML("<!DOCTYPE html>"))
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(
+		t,
+		"text/html; charset=utf-8",
+		rec.HeaderMap.Get("Content-Type"),
+	)
+	assert.Equal(t, "<!DOCTYPE html>", rec.Body.String())
+}
+
 func TestResponseWriteJSON(t *testing.T) {
 	a := New()
 
@@ -316,21 +331,6 @@ func TestResponseWriteYAML(t *testing.T) {
 		rec.HeaderMap.Get("Content-Type"),
 	)
 	assert.Equal(t, "foo: bar\n", rec.Body.String())
-}
-
-func TestResponseWriteHTML(t *testing.T) {
-	a := New()
-
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
-
-	assert.NoError(t, res.WriteHTML("<!DOCTYPE html>"))
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(
-		t,
-		"text/html; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
-	)
-	assert.Equal(t, "<!DOCTYPE html>", rec.Body.String())
 }
 
 func TestResponseRender(t *testing.T) {

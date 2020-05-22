@@ -238,6 +238,12 @@ func (r *Response) WriteString(s string) error {
 	return r.Write(strings.NewReader(s))
 }
 
+// WriteHTML writes the h as a "text/html" content to the client.
+func (r *Response) WriteHTML(h string) error {
+	r.Header.Set("Content-Type", "text/html; charset=utf-8")
+	return r.Write(strings.NewReader(h))
+}
+
 // WriteJSON writes an "application/json" content encoded from the v to the
 // client.
 func (r *Response) WriteJSON(v interface{}) error {
@@ -334,37 +340,6 @@ func (r *Response) WriteYAML(v interface{}) error {
 	r.Header.Set("Content-Type", "application/yaml; charset=utf-8")
 
 	return r.Write(bytes.NewReader(buf.Bytes()))
-}
-
-// WriteHTML writes the h as a "text/html" content to the client.
-func (r *Response) WriteHTML(h string) error {
-	r.Header.Set("Content-Type", "text/html; charset=utf-8")
-	return r.Write(strings.NewReader(h))
-}
-
-// Render renders one or more HTML templates with the m and writes the results
-// as a "text/html" content to the client. The results rendered by the former
-// can be inherited by accessing the `m["InheritedHTML"]`.
-func (r *Response) Render(m map[string]interface{}, templates ...string) error {
-	buf := bytes.Buffer{}
-	for _, t := range templates {
-		if buf.Len() > 0 {
-			if m == nil {
-				m = make(map[string]interface{}, 1)
-			}
-
-			m["InheritedHTML"] = template.HTML(buf.String())
-		}
-
-		buf.Reset()
-
-		err := r.Air.renderer.render(&buf, t, m, r.req.LocalizedString)
-		if err != nil {
-			return err
-		}
-	}
-
-	return r.WriteHTML(buf.String())
 }
 
 // WriteFile writes a file content targeted by the filename to the client.
@@ -474,6 +449,31 @@ func (r *Response) WriteFile(filename string) error {
 	}
 
 	return r.Write(c)
+}
+
+// Render renders one or more HTML templates with the m and writes the results
+// as a "text/html" content to the client. The results rendered by the former
+// can be inherited by accessing the `m["InheritedHTML"]`.
+func (r *Response) Render(m map[string]interface{}, templates ...string) error {
+	buf := bytes.Buffer{}
+	for _, t := range templates {
+		if buf.Len() > 0 {
+			if m == nil {
+				m = make(map[string]interface{}, 1)
+			}
+
+			m["InheritedHTML"] = template.HTML(buf.String())
+		}
+
+		buf.Reset()
+
+		err := r.Air.renderer.render(&buf, t, m, r.req.LocalizedString)
+		if err != nil {
+			return err
+		}
+	}
+
+	return r.WriteHTML(buf.String())
 }
 
 // Redirect writes the url as a redirection to the client. Note that the

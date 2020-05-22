@@ -350,6 +350,41 @@ type Air struct {
 	// Default value: nil
 	ErrorLogger *log.Logger `mapstructure:"-"`
 
+	// RendererTemplateRoot is the root of the HTML templates of the
+	// renderer feature.
+	//
+	// All HTML template files inside the root will be recursively parsed
+	// into the renderer.
+	//
+	// Default value: "templates"
+	RendererTemplateRoot string `mapstructure:"renderer_template_root"`
+
+	// RendererTemplateExts is the list of filename extensions of the HTML
+	// templates of the renderer feature used to distinguish the HTML
+	// template files in the `RendererTemplateRoot` when parsing them into
+	// the renderer.
+	//
+	// Default value: [".html"]
+	RendererTemplateExts []string `mapstructure:"renderer_template_exts"`
+
+	// RendererTemplateLeftDelim is the left side of the HTML template
+	// delimiter of the renderer feature.
+	//
+	// default value: "{{"
+	RendererTemplateLeftDelim string `mapstructure:"renderer_template_left_delim"`
+
+	// RendererTemplateRightDelim is the right side of the HTML template
+	// delimiter of the renderer feature.
+	//
+	// Default value: "}}"
+	RendererTemplateRightDelim string `mapstructure:"renderer_template_right_delim"`
+
+	// RendererTemplateFuncMap is the HTML template function map of the
+	// renderer feature.
+	//
+	// Default value: nil
+	RendererTemplateFuncMap template.FuncMap `mapstructure:"-"`
+
 	// MinifierEnabled indicates whether the minifier feature is enabled.
 	//
 	// The `MinifierEnabled` gives the `Response.Write` the ability to
@@ -415,41 +450,6 @@ type Air struct {
 	//
 	// Default value: 8192
 	GzipFlushThreshold int `mapstructure:"gzip_flush_threshold"`
-
-	// RendererTemplateRoot is the root of the HTML templates of the
-	// renderer feature.
-	//
-	// All HTML template files inside the root will be recursively parsed
-	// into the renderer.
-	//
-	// Default value: "templates"
-	RendererTemplateRoot string `mapstructure:"renderer_template_root"`
-
-	// RendererTemplateExts is the list of filename extensions of the HTML
-	// templates of the renderer feature used to distinguish the HTML
-	// template files in the `RendererTemplateRoot` when parsing them into
-	// the renderer.
-	//
-	// Default value: [".html"]
-	RendererTemplateExts []string `mapstructure:"renderer_template_exts"`
-
-	// RendererTemplateLeftDelim is the left side of the HTML template
-	// delimiter of the renderer feature.
-	//
-	// default value: "{{"
-	RendererTemplateLeftDelim string `mapstructure:"renderer_template_left_delim"`
-
-	// RendererTemplateRightDelim is the right side of the HTML template
-	// delimiter of the renderer feature.
-	//
-	// Default value: "}}"
-	RendererTemplateRightDelim string `mapstructure:"renderer_template_right_delim"`
-
-	// RendererTemplateFuncMap is the HTML template function map of the
-	// renderer feature.
-	//
-	// Default value: nil
-	RendererTemplateFuncMap template.FuncMap `mapstructure:"-"`
 
 	// CofferEnabled indicates whether the coffer feature is enabled.
 	//
@@ -531,8 +531,8 @@ type Air struct {
 	server                       *server
 	router                       *router
 	binder                       *binder
-	minifier                     *minifier
 	renderer                     *renderer
+	minifier                     *minifier
 	coffer                       *coffer
 	i18n                         *i18n
 	contentTypeSnifferBufferPool *sync.Pool
@@ -613,8 +613,8 @@ func New() *Air {
 	a.server = newServer(a)
 	a.router = newRouter(a)
 	a.binder = newBinder(a)
-	a.minifier = newMinifier(a)
 	a.renderer = newRenderer(a)
+	a.minifier = newMinifier(a)
 	a.coffer = newCoffer(a)
 	a.i18n = newI18n(a)
 	a.contentTypeSnifferBufferPool = &sync.Pool{

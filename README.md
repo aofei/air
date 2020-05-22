@@ -58,6 +58,9 @@ one thing: **Air can serve properly**.
 		* `application/yaml`
 		* `application/x-www-form-urlencoded`
 		* `multipart/form-data`
+* Renderer
+	* Rich template functions
+	* Hot update support
 * Minifier
 	* Minifies HTTP response on the fly
 	* Supported MIME types:
@@ -79,9 +82,6 @@ one thing: **Air can serve properly**.
 		* `application/toml`
 		* `application/yaml`
 		* `image/svg+xml`
-* Renderer
-	* Rich template functions
-	* Hot update support
 * Coffer
 	* Accesses binary asset files by using the runtime memory
 	* Significantly improves the performance of the [`air.Response.WriteFile`](https://godoc.org/github.com/aofei/air#Response.WriteFile)
