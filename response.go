@@ -617,8 +617,8 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 	}
 
 	targetMethod := r.req.Method
-	if rmm := rp.RequestMethodModifier; rmm != nil {
-		m, err := rmm(targetMethod)
+	if mrm := rp.ModifyRequestMethod; mrm != nil {
+		m, err := mrm(targetMethod)
 		if err != nil {
 			return err
 		}
@@ -644,8 +644,8 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 	targetURL.Host = strings.ToLower(targetURL.Host)
 
 	reqPath := r.req.Path
-	if rpm := rp.RequestPathModifier; rpm != nil {
-		p, err := rpm(reqPath)
+	if mrp := rp.ModifyRequestPath; mrp != nil {
+		p, err := mrp(reqPath)
 		if err != nil {
 			return err
 		}
@@ -678,8 +678,8 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 	}
 
 	targetHeader := r.req.Header.Clone()
-	if rhm := rp.RequestHeaderModifier; rhm != nil {
-		h, err := rhm(targetHeader)
+	if mrh := rp.ModifyRequestHeader; mrh != nil {
+		h, err := mrh(targetHeader)
 		if err != nil {
 			return err
 		}
@@ -694,8 +694,8 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 	}
 
 	targetBody := r.req.Body
-	if rbm := rp.RequestBodyModifier; rbm != nil {
-		b, err := rbm(targetBody)
+	if mrb := rp.ModifyRequestBody; mrb != nil {
+		b, err := mrb(targetBody)
 		if err != nil {
 			return err
 		}
@@ -721,8 +721,8 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 		ErrorLog:      r.Air.ErrorLogger,
 		BufferPool:    r.Air.reverseProxyBufferPool,
 		ModifyResponse: func(res *http.Response) error {
-			if rsm := rp.ResponseStatusModifier; rsm != nil {
-				s, err := rsm(res.StatusCode)
+			if mrs := rp.ModifyResponseStatus; mrs != nil {
+				s, err := mrs(res.StatusCode)
 				if err != nil {
 					return err
 				}
@@ -730,8 +730,8 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 				res.StatusCode = s
 			}
 
-			if rhm := rp.ResponseHeaderModifier; rhm != nil {
-				h, err := rhm(res.Header)
+			if mrh := rp.ModifyResponseHeader; mrh != nil {
+				h, err := mrh(res.Header)
 				if err != nil {
 					return err
 				}
@@ -739,8 +739,8 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 				res.Header = h
 			}
 
-			if rbm := rp.ResponseBodyModifier; rbm != nil {
-				b, err := rbm(res.Body)
+			if mrb := rp.ModifyResponseBody; mrb != nil {
+				b, err := mrb(res.Body)
 				if err != nil {
 					return err
 				}
@@ -814,43 +814,40 @@ type ReverseProxy struct {
 	// by the target and any host name in that certificate.
 	InsecureMode bool
 
-	// RequestMethodModifier modifies the method of the request to the
-	// target.
-	RequestMethodModifier func(method string) (string, error)
+	// ModifyRequestMethod modifies the method of the request to the target.
+	ModifyRequestMethod func(method string) (string, error)
 
-	// RequestPathModifier modifies the path of the request to the target.
+	// ModifyRequestPath modifies the path of the request to the target.
 	//
 	// Note that the path contains the query part (anyway, the HTTP/2
 	// specification says so). Therefore, the returned path must also be in
 	// this format.
-	RequestPathModifier func(path string) (string, error)
+	ModifyRequestPath func(path string) (string, error)
 
-	// RequestHeaderModifier modifies the header of the request to the
-	// target.
-	RequestHeaderModifier func(header http.Header) (http.Header, error)
+	// ModifyRequestHeader modifies the header of the request to the target.
+	ModifyRequestHeader func(header http.Header) (http.Header, error)
 
-	// RequestBodyModifier modifies the body of the request from the target.
+	// ModifyRequestBody modifies the body of the request from the target.
 	//
 	// It is the caller's responsibility to close the returned
 	// `io.ReadCloser`, which means that the `Response.ProxyPass` will be
 	/// responsible for closing it.
-	RequestBodyModifier func(body io.ReadCloser) (io.ReadCloser, error)
+	ModifyRequestBody func(body io.ReadCloser) (io.ReadCloser, error)
 
-	// ResponseStatusModifier modifies the status of the response from the
+	// ModifyResponseStatus modifies the status of the response from the
 	// target.
-	ResponseStatusModifier func(status int) (int, error)
+	ModifyResponseStatus func(status int) (int, error)
 
-	// ResponseHeaderModifier modifies the header of the response from the
+	// ModifyResponseHeader modifies the header of the response from the
 	// target.
-	ResponseHeaderModifier func(header http.Header) (http.Header, error)
+	ModifyResponseHeader func(header http.Header) (http.Header, error)
 
-	// ResponseBodyModifier modifies the body of the response from the
-	// target.
+	// ModifyResponseBody modifies the body of the response from the target.
 	//
 	// It is the caller's responsibility to close the returned
 	// `io.ReadCloser`, which means that the `Response.ProxyPass` will be
 	/// responsible for closing it.
-	ResponseBodyModifier func(body io.ReadCloser) (io.ReadCloser, error)
+	ModifyResponseBody func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // responseWriter is used to tie the `Response` and `http.ResponseWriter`
