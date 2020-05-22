@@ -331,32 +331,6 @@ func TestResponseWriteHTML(t *testing.T) {
 		rec.HeaderMap.Get("Content-Type"),
 	)
 	assert.Equal(t, "<!DOCTYPE html>", rec.Body.String())
-
-	req, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
-
-	a.AutoPushEnabled = true
-
-	hr := req.HTTPRequest()
-	hr.ProtoMajor = 2
-
-	req.SetHTTPRequest(hr)
-
-	assert.NoError(t, res.WriteHTML(`
-<!DOCTYPE html>
-<html>
-	<head>
-		<link rel="stylesheet" href="/assets/css/main.css">
-		<link rel="preload" href="/assets/css/style.css" as="style">
-		<link href="/assets/css/theme.css">
-		<link rel="shortcut icon" href="/favicon.ico">
-	</head>
-
-	<body>
-		<img src="/assets/images/avatar.jpg">
-		<script src="/assets/js/main.js"></script>
-	</body>
-</html>
-	`))
 }
 
 func TestResponseRender(t *testing.T) {

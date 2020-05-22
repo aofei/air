@@ -32,7 +32,6 @@ import (
 	"github.com/cespare/xxhash/v2"
 	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack"
-	"golang.org/x/net/html"
 	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/http2"
 	"google.golang.org/protobuf/proto"
@@ -339,65 +338,7 @@ func (r *Response) WriteYAML(v interface{}) error {
 
 // WriteHTML writes the h as a "text/html" content to the client.
 func (r *Response) WriteHTML(h string) error {
-	if r.Air.AutoPushEnabled && r.req.HTTPRequest().ProtoMajor == 2 {
-		tree, err := html.Parse(strings.NewReader(h))
-		if err != nil {
-			return err
-		}
-
-		var f func(*html.Node)
-		f = func(n *html.Node) {
-			if n.Type == html.ElementNode {
-				avoid, target := false, ""
-				switch strings.ToLower(n.Data) {
-				case "link":
-					relChecked := false
-				LinkLoop:
-					for _, a := range n.Attr {
-						switch strings.ToLower(a.Key) {
-						case "rel":
-							switch strings.ToLower(
-								a.Val,
-							) {
-							case "preload", "icon":
-								avoid = true
-								break LinkLoop
-							}
-
-							relChecked = true
-						case "href":
-							target = a.Val
-							if relChecked {
-								break LinkLoop
-							}
-						}
-					}
-				case "img", "script":
-				ImgScriptLoop:
-					for _, a := range n.Attr {
-						switch strings.ToLower(a.Key) {
-						case "src":
-							target = a.Val
-							break ImgScriptLoop
-						}
-					}
-				}
-
-				if !avoid && path.IsAbs(target) {
-					r.Push(target, nil)
-				}
-			}
-
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				f(c)
-			}
-		}
-
-		f(tree)
-	}
-
 	r.Header.Set("Content-Type", "text/html; charset=utf-8")
-
 	return r.Write(strings.NewReader(h))
 }
 

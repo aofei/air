@@ -65,7 +65,6 @@ func TestNew(t *testing.T) {
 	)
 	assert.IsType(t, DefaultErrorHandler, a.ErrorHandler)
 	assert.Nil(t, a.ErrorLogger)
-	assert.False(t, a.AutoPushEnabled)
 	assert.False(t, a.MinifierEnabled)
 	assert.ElementsMatch(t, a.MinifierMIMETypes, []string{
 		"text/html",

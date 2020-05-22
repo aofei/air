@@ -350,19 +350,6 @@ type Air struct {
 	// Default value: nil
 	ErrorLogger *log.Logger `mapstructure:"-"`
 
-	// AutoPushEnabled indicates whether the HTTP/2 server push automatic
-	// mechanism feature is enabled.
-	//
-	// The `AutoPushEnabled` gives the `Response.WriteHTML` the ability to
-	// automatically analyze the response body and use the `Response.Push`
-	// to push the appropriate resources to the client.
-	//
-	// The `AutoPushEnabled` only works when the protocol version of the
-	// request is HTTP/2.
-	//
-	// Default value: false
-	AutoPushEnabled bool `mapstructure:"auto_push_enabled"`
-
 	// MinifierEnabled indicates whether the minifier feature is enabled.
 	//
 	// The `MinifierEnabled` gives the `Response.Write` the ability to
