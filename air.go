@@ -505,16 +505,6 @@ type Air struct {
 	// Default value: "en-US"
 	I18nLocaleBase string `mapstructure:"i18n_locale_base"`
 
-	// ReverseProxyInsecureMode indicates whether the insecure mode is
-	// enabled for the reverse proxy feature.
-	//
-	// If the `ReverseProxyInsecureMode` is true, TLS accepts any
-	// certificate presented by the server and any host name in that
-	// certificate.
-	//
-	// Default value: false
-	ReverseProxyInsecureMode bool `mapstructure:"reverse_proxy_insecure_mode"`
-
 	// ConfigFile is the path to the configuration file that will be parsed
 	// into the matching fields before starting the server.
 	//
@@ -528,17 +518,18 @@ type Air struct {
 	// Default value: ""
 	ConfigFile string `mapstructure:"-"`
 
-	server                       *server
-	router                       *router
-	binder                       *binder
-	renderer                     *renderer
-	minifier                     *minifier
-	coffer                       *coffer
-	i18n                         *i18n
-	contentTypeSnifferBufferPool *sync.Pool
-	gzipWriterPool               *sync.Pool
-	reverseProxyTransport        *reverseProxyTransport
-	reverseProxyBufferPool       *reverseProxyBufferPool
+	server                        *server
+	router                        *router
+	binder                        *binder
+	renderer                      *renderer
+	minifier                      *minifier
+	coffer                        *coffer
+	i18n                          *i18n
+	contentTypeSnifferBufferPool  *sync.Pool
+	gzipWriterPool                *sync.Pool
+	reverseProxyTransport         *reverseProxyTransport
+	reverseProxyInsecureTransport *reverseProxyTransport
+	reverseProxyBufferPool        *reverseProxyBufferPool
 }
 
 // Default is the default instance of the `Air`.
@@ -630,7 +621,8 @@ func New() *Air {
 		},
 	}
 
-	a.reverseProxyTransport = newReverseProxyTransport()
+	a.reverseProxyTransport = newReverseProxyTransport(false)
+	a.reverseProxyInsecureTransport = newReverseProxyTransport(true)
 	a.reverseProxyBufferPool = newReverseProxyBufferPool()
 
 	return a
@@ -886,11 +878,6 @@ func (a *Air) Serve() error {
 			return err
 		}
 	}
-
-	a.reverseProxyTransport.hTransport.
-		TLSClientConfig.InsecureSkipVerify = a.ReverseProxyInsecureMode
-	a.reverseProxyTransport.h2Transport.
-		TLSClientConfig.InsecureSkipVerify = a.ReverseProxyInsecureMode
 
 	return a.server.serve()
 }

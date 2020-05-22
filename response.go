@@ -601,25 +601,24 @@ func (r *Response) Push(target string, pos *http.PushOptions) error {
 }
 
 // ProxyPass passes the request to the target and writes the response from the
-// target to the client by using the reverse proxy technique. If the rpm is
-// non-nil, then it will be used to modify the request to the target and
-// response from the target.
+// target to the client by using the reverse proxy technique. If the rp is nil,
+// then the default instance of the `ReverseProxy` will be used.
 //
 // The target must be based on the HTTP protocol (such as HTTP(S), WebSocket and
 // gRPC). So, the scheme of the target must be "http", "https", "ws", "wss",
 // "grpc" or "grpcs".
-func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
+func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 	if r.Written {
 		return errors.New("air: request has been written")
 	}
 
-	if rpm == nil {
-		rpm = &ReverseProxyModifier{}
+	if rp == nil {
+		rp = &ReverseProxy{}
 	}
 
 	targetMethod := r.req.Method
-	if mrm := rpm.ModifyRequestMethod; mrm != nil {
-		m, err := mrm(targetMethod)
+	if rmm := rp.RequestMethodModifier; rmm != nil {
+		m, err := rmm(targetMethod)
 		if err != nil {
 			return err
 		}
@@ -645,8 +644,8 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 	targetURL.Host = strings.ToLower(targetURL.Host)
 
 	reqPath := r.req.Path
-	if mrp := rpm.ModifyRequestPath; mrp != nil {
-		p, err := mrp(reqPath)
+	if rpm := rp.RequestPathModifier; rpm != nil {
+		p, err := rpm(reqPath)
 		if err != nil {
 			return err
 		}
@@ -679,8 +678,8 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 	}
 
 	targetHeader := r.req.Header.Clone()
-	if mrh := rpm.ModifyRequestHeader; mrh != nil {
-		h, err := mrh(targetHeader)
+	if rhm := rp.RequestHeaderModifier; rhm != nil {
+		h, err := rhm(targetHeader)
 		if err != nil {
 			return err
 		}
@@ -695,8 +694,8 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 	}
 
 	targetBody := r.req.Body
-	if mrb := rpm.ModifyRequestBody; mrb != nil {
-		b, err := mrb(targetBody)
+	if rbm := rp.RequestBodyModifier; rbm != nil {
+		b, err := rbm(targetBody)
 		if err != nil {
 			return err
 		}
@@ -705,7 +704,7 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 	}
 
 	var reverseProxyError error
-	rp := &httputil.ReverseProxy{
+	hrp := &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
 			req.Method = targetMethod
 			req.URL = targetURL
@@ -722,8 +721,8 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 		ErrorLog:      r.Air.ErrorLogger,
 		BufferPool:    r.Air.reverseProxyBufferPool,
 		ModifyResponse: func(res *http.Response) error {
-			if mrs := rpm.ModifyResponseStatus; mrs != nil {
-				s, err := mrs(res.StatusCode)
+			if rsm := rp.ResponseStatusModifier; rsm != nil {
+				s, err := rsm(res.StatusCode)
 				if err != nil {
 					return err
 				}
@@ -731,8 +730,8 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 				res.StatusCode = s
 			}
 
-			if mrh := rpm.ModifyResponseHeader; mrh != nil {
-				h, err := mrh(res.Header)
+			if rhm := rp.ResponseHeaderModifier; rhm != nil {
+				h, err := rhm(res.Header)
 				if err != nil {
 					return err
 				}
@@ -740,8 +739,8 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 				res.Header = h
 			}
 
-			if mrb := rpm.ModifyResponseBody; mrb != nil {
-				b, err := mrb(res.Body)
+			if rbm := rp.ResponseBodyModifier; rbm != nil {
+				b, err := rbm(res.Body)
 				if err != nil {
 					return err
 				}
@@ -770,7 +769,11 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 	}
 	switch targetURL.Scheme {
 	case "grpc", "grpcs":
-		rp.FlushInterval /= 100 // For gRPC streaming
+		hrp.FlushInterval /= 100 // For gRPC streaming
+	}
+
+	if rp.InsecureMode {
+		hrp.Transport = r.Air.reverseProxyInsecureTransport
 	}
 
 	defer func() {
@@ -788,7 +791,7 @@ func (r *Response) ProxyPass(target string, rpm *ReverseProxyModifier) error {
 	}
 
 	r.reverseProxying = true
-	rp.ServeHTTP(r.hrw, r.req.HTTPRequest())
+	hrp.ServeHTTP(r.hrw, r.req.HTTPRequest())
 	r.reverseProxying = false
 
 	return reverseProxyError
@@ -802,46 +805,52 @@ func (r *Response) Defer(f func()) {
 	}
 }
 
-// ReverseProxyModifier is used by the `Response.ProxyPass` to modify the
-// request to the target and response from the traget.
-//
-// Note that any field in the `ReverseProxyModifier` can be nil, which means
-// there is no need to modify that value.
-type ReverseProxyModifier struct {
-	// ModifyRequestMethod modifies the method of the request to the target.
-	ModifyRequestMethod func(method string) (string, error)
+// ReverseProxy is used by the `Response.ProxyPass` to achieve the reverse proxy
+// technique.
+type ReverseProxy struct {
+	// InsecureMode indicates whether the insecure mode is enabled.
+	//
+	// If the `InsecureMode` is true, TLS accepts any certificate presented
+	// by the target and any host name in that certificate.
+	InsecureMode bool
 
-	// ModifyRequestPath modifies the path of the request to the target.
+	// RequestMethodModifier modifies the method of the request to the
+	// target.
+	RequestMethodModifier func(method string) (string, error)
+
+	// RequestPathModifier modifies the path of the request to the target.
 	//
 	// Note that the path contains the query part (anyway, the HTTP/2
 	// specification says so). Therefore, the returned path must also be in
 	// this format.
-	ModifyRequestPath func(path string) (string, error)
+	RequestPathModifier func(path string) (string, error)
 
-	// ModifyRequestHeader modifies the header of the request to the target.
-	ModifyRequestHeader func(header http.Header) (http.Header, error)
+	// RequestHeaderModifier modifies the header of the request to the
+	// target.
+	RequestHeaderModifier func(header http.Header) (http.Header, error)
 
-	// ModifyRequestBody modifies the body of the request from the target.
+	// RequestBodyModifier modifies the body of the request from the target.
 	//
 	// It is the caller's responsibility to close the returned
 	// `io.ReadCloser`, which means that the `Response.ProxyPass` will be
 	/// responsible for closing it.
-	ModifyRequestBody func(body io.ReadCloser) (io.ReadCloser, error)
+	RequestBodyModifier func(body io.ReadCloser) (io.ReadCloser, error)
 
-	// ModifyResponseStatus modifies the status of the response from the
+	// ResponseStatusModifier modifies the status of the response from the
 	// target.
-	ModifyResponseStatus func(status int) (int, error)
+	ResponseStatusModifier func(status int) (int, error)
 
-	// ModifyResponseHeader modifies the header of the response from the
+	// ResponseHeaderModifier modifies the header of the response from the
 	// target.
-	ModifyResponseHeader func(header http.Header) (http.Header, error)
+	ResponseHeaderModifier func(header http.Header) (http.Header, error)
 
-	// ModifyResponseBody modifies the body of the response from the target.
+	// ResponseBodyModifier modifies the body of the response from the
+	// target.
 	//
 	// It is the caller's responsibility to close the returned
 	// `io.ReadCloser`, which means that the `Response.ProxyPass` will be
 	/// responsible for closing it.
-	ModifyResponseBody func(body io.ReadCloser) (io.ReadCloser, error)
+	ResponseBodyModifier func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // responseWriter is used to tie the `Response` and `http.ResponseWriter`
@@ -1132,8 +1141,8 @@ type reverseProxyTransport struct {
 }
 
 // newReverseProxyTransport returns a new instance of the
-// `reverseProxyTransport`.
-func newReverseProxyTransport() *reverseProxyTransport {
+// `reverseProxyTransport` with the insecureMode.
+func newReverseProxyTransport(insecureMode bool) *reverseProxyTransport {
 	return &reverseProxyTransport{
 		hTransport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -1142,7 +1151,9 @@ func newReverseProxyTransport() *reverseProxyTransport {
 				KeepAlive: 30 * time.Second,
 				DualStack: true,
 			}).DialContext,
-			TLSClientConfig:       &tls.Config{},
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: insecureMode,
+			},
 			DisableCompression:    true,
 			MaxIdleConnsPerHost:   200,
 			IdleConnTimeout:       90 * time.Second,
@@ -1150,7 +1161,9 @@ func newReverseProxyTransport() *reverseProxyTransport {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 		h2Transport: &http2.Transport{
-			TLSClientConfig:    &tls.Config{},
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: insecureMode,
+			},
 			DisableCompression: true,
 		},
 		h2cTransport: &http2.Transport{
