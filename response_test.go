@@ -388,6 +388,29 @@ func TestResponseDefer(t *testing.T) {
 	assert.Len(t, res.deferredFuncs, 1)
 }
 
+func TestResponseGzippable(t *testing.T) {
+	a := New()
+
+	req, res, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
+
+	assert.False(t, res.gzippable())
+
+	req.Header.Set("Accept-Encoding", "gzip")
+	assert.True(t, res.gzippable())
+
+	req.Header.Set("Accept-Encoding", "br")
+	assert.False(t, res.gzippable())
+
+	req.Header.Set("Accept-Encoding", "gzip, br")
+	assert.True(t, res.gzippable())
+
+	req.Header.Set("Accept-Encoding", "br, gzip")
+	assert.True(t, res.gzippable())
+
+	req.Header.Set("Accept-Encoding", "br;q=1.0, gzip;q=0.8, *;q=0.1")
+	assert.True(t, res.gzippable())
+}
+
 func TestNewReverseProxyBufferPool(t *testing.T) {
 	rpbp := newReverseProxyBufferPool()
 

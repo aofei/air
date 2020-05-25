@@ -380,10 +380,7 @@ func (r *Response) WriteFile(filename string) error {
 
 			var ac []byte
 			if r.Air.GzipEnabled && a.gzippedDigest != nil &&
-				httpguts.HeaderValuesContainsToken(
-					r.req.Header["Accept-Encoding"],
-					"gzip",
-				) {
+				r.gzippable() {
 				if ac = a.content(true); ac != nil {
 					r.Gzipped = true
 				}
@@ -805,6 +802,23 @@ func (r *Response) Defer(f func()) {
 	}
 }
 
+// gzippable reports whether the r is gzippable.
+func (r *Response) gzippable() bool {
+	for _, ae := range strings.Split(
+		strings.Join(r.req.Header["Accept-Encoding"], ","),
+		",",
+	) {
+		ae = strings.TrimSpace(ae)
+		ae = strings.Split(ae, ";")[0]
+		ae = strings.ToLower(ae)
+		if ae == "gzip" {
+			return true
+		}
+	}
+
+	return false
+}
+
 // ReverseProxy is used by the `Response.ProxyPass` to achieve the reverse proxy
 // technique.
 type ReverseProxy struct {
@@ -976,10 +990,7 @@ func (rw *responseWriter) handleGzip() {
 			return
 		}
 
-		if httpguts.HeaderValuesContainsToken(
-			rw.r.req.Header["Accept-Encoding"],
-			"gzip",
-		) {
+		if rw.r.gzippable() {
 			rw.gw, _ = rw.r.Air.gzipWriterPool.Get().(*gzip.Writer)
 			if rw.gw == nil {
 				return

@@ -192,7 +192,7 @@ func (r *Request) ClientAddress() string {
 	ca := r.RemoteAddress()
 	if f := r.Header.Get("Forwarded"); f != "" { // See RFC 7239
 		for _, p := range strings.Split(strings.Split(f, ",")[0], ";") {
-			p := strings.TrimSpace(p)
+			p = strings.TrimSpace(p)
 			if strings.HasPrefix(strings.ToLower(p), "for=") {
 				ca = p[4:]
 				ca = strings.TrimPrefix(ca, `"`)
