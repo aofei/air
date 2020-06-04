@@ -40,14 +40,18 @@ func TestNew(t *testing.T) {
 	assert.Empty(t, a.TLSCertFile)
 	assert.Empty(t, a.TLSKeyFile)
 	assert.False(t, a.ACMEEnabled)
+	assert.Nil(t, a.ACMEAccountKey)
 	assert.Equal(
 		t,
 		"https://acme-v02.api.letsencrypt.org/directory",
 		a.ACMEDirectoryURL,
 	)
+	assert.Nil(t, a.ACMETOSURLWhitelist)
 	assert.Equal(t, "acme-certs", a.ACMECertRoot)
 	assert.Empty(t, a.ACMEDefaultHost)
 	assert.Nil(t, a.ACMEHostWhitelist)
+	assert.Equal(t, 30*24*time.Hour, a.ACMERenewalWindow)
+	assert.Nil(t, a.ACMEExtraExts)
 	assert.False(t, a.HTTPSEnforced)
 	assert.Equal(t, "0", a.HTTPSEnforcedPort)
 	assert.Zero(t, a.WebSocketHandshakeTimeout)

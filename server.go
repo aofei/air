@@ -147,12 +147,27 @@ func (s *server) serve() error {
 
 	if s.a.ACMEEnabled {
 		acm := &autocert.Manager{
-			Prompt: autocert.AcceptTOS,
-			Cache:  autocert.DirCache(s.a.ACMECertRoot),
+			Prompt: func(tosURL string) bool {
+				if len(s.a.ACMETOSURLWhitelist) == 0 {
+					return true
+				}
+
+				for _, u := range s.a.ACMETOSURLWhitelist {
+					if u == tosURL {
+						return true
+					}
+				}
+
+				return false
+			},
+			Cache:       autocert.DirCache(s.a.ACMECertRoot),
+			RenewBefore: s.a.ACMERenewalWindow,
 			Client: &acme.Client{
+				Key:          s.a.ACMEAccountKey,
 				DirectoryURL: s.a.ACMEDirectoryURL,
 			},
-			Email: s.a.MaintainerEmail,
+			Email:           s.a.MaintainerEmail,
+			ExtraExtensions: s.a.ACMEExtraExts,
 		}
 		if s.a.ACMEHostWhitelist != nil {
 			acm.HostPolicy = autocert.HostWhitelist(

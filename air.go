@@ -45,7 +45,9 @@ package air
 import (
 	"compress/gzip"
 	"context"
+	"crypto"
 	"crypto/tls"
+	"crypto/x509/pkix"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -199,6 +201,21 @@ type Air struct {
 	// Default value: false
 	ACMEEnabled bool `mapstructure:"acme_enabled"`
 
+	// ACMEAccountKey is the account key of the ACME feature used to
+	// register which a CA and sign requests.
+	//
+	// Supported algorithms:
+	//   * RS256
+	//   * ES256
+	//   * ES384
+	//   * ES512
+	//
+	// If the `ACMEAccountKey` is nil, then a new ECDSA P-256 key is
+	// generated.
+	//
+	// Default value: nil
+	ACMEAccountKey crypto.Signer `mapstructure:"-"`
+
 	// ACMEDirectoryURL is the CA directory URL of the ACME feature.
 	//
 	// The CA directory must be trusted because the ACME will automatically
@@ -206,6 +223,14 @@ type Air struct {
 	//
 	// Default value: "https://acme-v02.api.letsencrypt.org/directory"
 	ACMEDirectoryURL string `mapstructure:"acme_directory_url"`
+
+	// ACMETOSURLWhitelist is the list of CA's Terms of Service (TOS) URL
+	// allowed by the ACME feature.
+	//
+	// If the length of the list is zero, then all TOS URLs will be allowed.
+	//
+	// Default value: nil
+	ACMETOSURLWhitelist []string `mapstructure:"acme_tos_url_whitelist"`
 
 	// ACMECertRoot is the root of the certificates of the ACME feature.
 	//
@@ -233,6 +258,18 @@ type Air struct {
 	//
 	// Default value: nil
 	ACMEHostWhitelist []string `mapstructure:"acme_host_whitelist"`
+
+	// ACMERenewalWindow is the renewal window before a certificate expires.
+	//
+	// Default value: 2592000000000000
+	ACMERenewalWindow time.Duration `mapstructure:"acme_renewal_window"`
+
+	// ACMEExtraExts is the list of extra extensions used when generating a
+	// new CSR (Certificate Request), thus allowing customization of the
+	// resulting certificate.
+	//
+	// Default value: nil
+	ACMEExtraExts []pkix.Extension `mapstructure:"-"`
 
 	// HTTPSEnforced indicates whether the server is forcibly accessible
 	// only via the HTTPS scheme (HTTP requests will automatically redirect
@@ -550,6 +587,7 @@ func New() *Air {
 		MaxHeaderBytes:          1 << 20,
 		ACMEDirectoryURL:        "https://acme-v02.api.letsencrypt.org/directory",
 		ACMECertRoot:            "acme-certs",
+		ACMERenewalWindow:       30 * 24 * time.Hour,
 		HTTPSEnforcedPort:       "0",
 		NotFoundHandler:         DefaultNotFoundHandler,
 		MethodNotAllowedHandler: DefaultMethodNotAllowedHandler,
