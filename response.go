@@ -31,7 +31,7 @@ import (
 	"github.com/aofei/mimesniffer"
 	"github.com/cespare/xxhash/v2"
 	"github.com/gorilla/websocket"
-	"github.com/vmihailenco/msgpack"
+	"github.com/vmihailenco/msgpack/v5"
 	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/http2"
 	"google.golang.org/protobuf/proto"
