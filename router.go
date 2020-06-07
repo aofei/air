@@ -48,10 +48,16 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 		panic("air: route handler cannot be nil")
 	}
 
+	hasTrailingSlash := path[len(path)-1] == '/'
+
 	path = ppath.Clean(path)
 	path = url.PathEscape(path)
 	path = strings.ReplaceAll(path, "%2F", "/")
 	path = strings.ReplaceAll(path, "%2A", "*")
+	if hasTrailingSlash && path != "/" {
+		path += "/"
+	}
+
 	if path[0] != '/' {
 		panic("air: route path must start with /")
 	} else if strings.Count(path, ":") > 1 {

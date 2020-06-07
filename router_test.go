@@ -120,6 +120,14 @@ func TestRouterRouteStatic(t *testing.T) {
 
 	r.register(
 		http.MethodGet,
+		"/",
+		func(_ *Request, res *Response) error {
+			return res.WriteString("Matched [GET /]")
+		},
+	)
+
+	r.register(
+		http.MethodGet,
 		"/foobar",
 		func(_ *Request, res *Response) error {
 			return res.WriteString("Matched [GET /foobar]")
@@ -136,9 +144,9 @@ func TestRouterRouteStatic(t *testing.T) {
 
 	r.register(
 		http.MethodGet,
-		"/",
+		"/foo/bar/",
 		func(_ *Request, res *Response) error {
-			return res.WriteString("Matched [GET /]")
+			return res.WriteString("Matched [GET /foo/bar/]")
 		},
 	)
 
@@ -161,6 +169,11 @@ func TestRouterRouteStatic(t *testing.T) {
 	assert.NoError(t, r.route(req)(req, res))
 	assert.Equal(t, http.StatusOK, res.Status)
 	assert.Equal(t, "Matched [GET /foo/bar]", rec.Body.String())
+
+	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar/", nil)
+	assert.NoError(t, r.route(req)(req, res))
+	assert.Equal(t, http.StatusOK, res.Status)
+	assert.Equal(t, "Matched [GET /foo/bar/]", rec.Body.String())
 
 	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo", nil)
 	assert.Error(t, r.route(req)(req, res))
