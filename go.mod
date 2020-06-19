@@ -10,15 +10,15 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/gorilla/websocket v1.4.2
-	github.com/mitchellh/mapstructure v1.3.1
+	github.com/mitchellh/mapstructure v1.3.2
 	github.com/stretchr/testify v1.6.1
-	github.com/tdewolff/minify/v2 v2.7.4
-	github.com/vmihailenco/msgpack/v5 v5.0.0-alpha.2
+	github.com/tdewolff/minify/v2 v2.7.6
+	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.1
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
-	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980 // indirect
-	golang.org/x/text v0.3.2
+	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 // indirect
+	golang.org/x/text v0.3.3
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.24.0
-	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 )
