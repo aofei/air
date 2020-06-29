@@ -569,17 +569,16 @@ type Air struct {
 	coffer   *coffer
 	i18n     *i18n
 
-	addressMap                    map[string]int
-	shutdownJobs                  []func()
-	shutdownJobMutex              *sync.Mutex
-	shutdownJobDone               chan struct{}
-	requestPool                   *sync.Pool
-	responsePool                  *sync.Pool
-	contentTypeSnifferBufferPool  *sync.Pool
-	gzipWriterPool                *sync.Pool
-	reverseProxyTransport         *reverseProxyTransport
-	reverseProxyInsecureTransport *reverseProxyTransport
-	reverseProxyBufferPool        *reverseProxyBufferPool
+	addressMap                   map[string]int
+	shutdownJobs                 []func()
+	shutdownJobMutex             *sync.Mutex
+	shutdownJobDone              chan struct{}
+	requestPool                  *sync.Pool
+	responsePool                 *sync.Pool
+	contentTypeSnifferBufferPool *sync.Pool
+	gzipWriterPool               *sync.Pool
+	reverseProxyTransport        *reverseProxyTransport
+	reverseProxyBufferPool       *reverseProxyBufferPool
 }
 
 // Default is the default instance of the `Air`.
@@ -688,8 +687,7 @@ func New() *Air {
 		},
 	}
 
-	a.reverseProxyTransport = newReverseProxyTransport(false)
-	a.reverseProxyInsecureTransport = newReverseProxyTransport(true)
+	a.reverseProxyTransport = newReverseProxyTransport()
 	a.reverseProxyBufferPool = newReverseProxyBufferPool()
 
 	return a

@@ -763,8 +763,8 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 		hrp.FlushInterval /= 100 // For gRPC streaming
 	}
 
-	if rp.InsecureMode {
-		hrp.Transport = r.Air.reverseProxyInsecureTransport
+	if rp.Transport != nil {
+		hrp.Transport = rp.Transport
 	}
 
 	defer func() {
@@ -814,11 +814,11 @@ func (r *Response) gzippable() bool {
 // ReverseProxy is used by the `Response.ProxyPass` to achieve the reverse proxy
 // technique.
 type ReverseProxy struct {
-	// InsecureMode indicates whether the insecure mode is enabled.
+	// Transport is used to perform the request to the target.
 	//
-	// If the `InsecureMode` is true, TLS accepts any certificate presented
-	// by the target and any host name in that certificate.
-	InsecureMode bool
+	// If the `Transport` is not nil, then it is responsible for keeping the
+	// `Response.ProxyPass` working properly.
+	Transport http.RoundTripper
 
 	// ModifyRequestMethod modifies the method of the request to the target.
 	ModifyRequestMethod func(method string) (string, error)
@@ -1067,28 +1067,37 @@ type reverseProxyTransport struct {
 }
 
 // newReverseProxyTransport returns a new instance of the
-// `reverseProxyTransport` with the insecureMode.
-func newReverseProxyTransport(insecureMode bool) *reverseProxyTransport {
+// `reverseProxyTransport`.
+func newReverseProxyTransport() *reverseProxyTransport {
+	dialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+		DualStack: true,
+	}
+
 	return &reverseProxyTransport{
 		hTransport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: insecureMode,
-			},
+			Proxy:                 http.ProxyFromEnvironment,
+			DialContext:           dialer.DialContext,
 			DisableCompression:    true,
 			MaxIdleConnsPerHost:   200,
 			IdleConnTimeout:       90 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
+			ForceAttemptHTTP2:     true,
 		},
 		h2Transport: &http2.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: insecureMode,
+			DialTLS: func(
+				network string,
+				address string,
+				tlsConfig *tls.Config,
+			) (net.Conn, error) {
+				return tls.DialWithDialer(
+					dialer,
+					network,
+					address,
+					tlsConfig,
+				)
 			},
 			DisableCompression: true,
 		},
@@ -1098,7 +1107,7 @@ func newReverseProxyTransport(insecureMode bool) *reverseProxyTransport {
 				address string,
 				_ *tls.Config,
 			) (net.Conn, error) {
-				return net.Dial(network, address)
+				return dialer.Dial(network, address)
 			},
 			DisableCompression: true,
 			AllowHTTP:          true,

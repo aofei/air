@@ -149,7 +149,6 @@ func TestNew(t *testing.T) {
 	assert.IsType(t, &gzip.Writer{}, a.gzipWriterPool.Get())
 
 	assert.NotNil(t, a.reverseProxyTransport)
-	assert.NotNil(t, a.reverseProxyInsecureTransport)
 	assert.NotNil(t, a.reverseProxyBufferPool)
 }
 
