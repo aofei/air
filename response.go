@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"crypto/tls"
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -98,7 +97,6 @@ type Response struct {
 	hrw               http.ResponseWriter
 	servingContent    bool
 	serveContentError error
-	reverseProxying   bool
 	deferredFuncs     []func()
 }
 
@@ -783,9 +781,7 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 		r.Status = http.StatusSwitchingProtocols
 	}
 
-	r.reverseProxying = true
 	hrp.ServeHTTP(r.hrw, r.req.HTTPRequest())
-	r.reverseProxying = false
 
 	return reverseProxyError
 }
@@ -904,7 +900,6 @@ func (rw *responseWriter) WriteHeader(status int) {
 	}
 
 	rw.handleGzip()
-	rw.handleReverseProxy()
 	rw.rw.WriteHeader(status)
 
 	rw.r.Status = status
@@ -1034,79 +1029,6 @@ func (rw *responseWriter) handleGzip() {
 	}
 }
 
-// handleReverseProxy handles the reverse proxy feature for the rw.
-func (rw *responseWriter) handleReverseProxy() {
-	if !rw.r.reverseProxying {
-		return
-	}
-
-	reqct := rw.r.req.Header.Get("Content-Type")
-	if !strings.HasPrefix(reqct, "application/grpc-web") {
-		return
-	}
-
-	reqmt := "application/grpc-web-text"
-	if strings.HasSuffix(reqct, reqmt) {
-		w := io.Writer(rw.w)
-		if rw.gw != nil {
-			w = rw.gw
-		}
-
-		rw.b64wc = base64.NewEncoder(base64.StdEncoding, w)
-	} else {
-		reqmt = "application/grpc-web"
-	}
-
-	rw.r.Header.Set("Content-Type", strings.Replace(
-		rw.r.Header.Get("Content-Type"),
-		"application/grpc",
-		reqmt,
-		1,
-	))
-
-	tns := strings.Split(rw.r.Header.Get("Trailer"), ", ")
-	rw.r.Header.Del("Trailer")
-
-	hns := make([]string, 0, len(rw.r.Header))
-	for n := range rw.r.Header {
-		hns = append(hns, n)
-	}
-
-	rw.r.Header.Set(
-		"Access-Control-Expose-Headers",
-		strings.Join(hns, ", "),
-	)
-
-	rw.r.Defer(func() {
-		ts := make(http.Header, len(tns))
-		for _, tn := range tns {
-			ltn := strings.ToLower(tn)
-			ts[ltn] = append(ts[ltn], rw.r.Header[tn]...)
-			rw.r.Header.Del(tn)
-		}
-
-		for n, vs := range rw.r.Header {
-			if !strings.HasPrefix(n, http.TrailerPrefix) {
-				continue
-			}
-
-			ltn := strings.ToLower(n[len(http.TrailerPrefix):])
-			ts[ltn] = append(ts[ltn], vs...)
-			rw.r.Header.Del(n)
-		}
-
-		tb := bytes.Buffer{}
-		ts.Write(&tb)
-
-		th := []byte{1 << 7, 0, 0, 0, 0}
-		binary.BigEndian.PutUint32(th[1:5], uint32(tb.Len()))
-
-		rw.Write(th)
-		rw.Write(tb.Bytes())
-		rw.Flush()
-	})
-}
-
 // responseHijacker is used to tie the `Response` and `http.Hijacker` together.
 type responseHijacker struct {
 	r *Response
@@ -1188,11 +1110,7 @@ func newReverseProxyTransport(insecureMode bool) *reverseProxyTransport {
 func (rpt *reverseProxyTransport) RoundTrip(
 	req *http.Request,
 ) (*http.Response, error) {
-	var (
-		transport     http.RoundTripper
-		handleGRPCWeb bool
-	)
-
+	var transport http.RoundTripper
 	switch req.URL.Scheme {
 	case "ws":
 		req.URL.Scheme = "http"
@@ -1203,39 +1121,11 @@ func (rpt *reverseProxyTransport) RoundTrip(
 	case "grpc":
 		req.URL.Scheme = "http"
 		transport = rpt.h2cTransport
-		handleGRPCWeb = true
 	case "grpcs":
 		req.URL.Scheme = "https"
 		transport = rpt.h2Transport
-		handleGRPCWeb = true
 	default:
 		transport = rpt.hTransport
-	}
-
-	if handleGRPCWeb {
-		ct := req.Header.Get("Content-Type")
-		if strings.HasPrefix(ct, "application/grpc-web") {
-			mt := "application/grpc-web-text"
-			if strings.HasSuffix(ct, mt) {
-				req.Body = (&struct {
-					io.Reader
-					io.Closer
-				}{
-					base64.NewDecoder(
-						base64.StdEncoding,
-						req.Body,
-					),
-					req.Body,
-				})
-			} else {
-				mt = "application/grpc-web"
-			}
-
-			req.Header.Set(
-				"Content-Type",
-				strings.Replace(ct, mt, "application/grpc", 1),
-			)
-		}
 	}
 
 	return transport.RoundTrip(req)

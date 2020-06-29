@@ -46,7 +46,6 @@ one thing: **Air can serve properly**.
 		* HTTP
 		* WebSocket
 		* gRPC
-		* gRPC-Web
 * Binder
 	* Binds HTTP request body into the provided struct
 	* Supported MIME types:

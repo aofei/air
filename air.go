@@ -1280,7 +1280,6 @@ func (a *Air) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	res.Gzipped = false
 	res.servingContent = false
 	res.serveContentError = nil
-	res.reverseProxying = false
 	res.deferredFuncs = res.deferredFuncs[:0]
 
 	hrw := http.ResponseWriter(&responseWriter{
