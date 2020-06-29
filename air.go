@@ -54,15 +54,21 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/mitchellh/mapstructure"
+	"golang.org/x/crypto/acme"
+	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"gopkg.in/yaml.v3"
 )
 
@@ -555,13 +561,20 @@ type Air struct {
 	// Default value: ""
 	ConfigFile string `mapstructure:"-"`
 
-	server                        *server
-	router                        *router
-	binder                        *binder
-	renderer                      *renderer
-	minifier                      *minifier
-	coffer                        *coffer
-	i18n                          *i18n
+	server   *http.Server
+	router   *router
+	binder   *binder
+	renderer *renderer
+	minifier *minifier
+	coffer   *coffer
+	i18n     *i18n
+
+	addressMap                    map[string]int
+	shutdownJobs                  []func()
+	shutdownJobMutex              *sync.Mutex
+	shutdownJobDone               chan struct{}
+	requestPool                   *sync.Pool
+	responsePool                  *sync.Pool
 	contentTypeSnifferBufferPool  *sync.Pool
 	gzipWriterPool                *sync.Pool
 	reverseProxyTransport         *reverseProxyTransport
@@ -639,13 +652,29 @@ func New() *Air {
 		I18nLocaleBase: "en-US",
 	}
 
-	a.server = newServer(a)
+	a.server = &http.Server{}
 	a.router = newRouter(a)
 	a.binder = newBinder(a)
 	a.renderer = newRenderer(a)
 	a.minifier = newMinifier(a)
 	a.coffer = newCoffer(a)
 	a.i18n = newI18n(a)
+
+	a.addressMap = map[string]int{}
+	a.shutdownJobMutex = &sync.Mutex{}
+	a.shutdownJobDone = make(chan struct{})
+	a.requestPool = &sync.Pool{
+		New: func() interface{} {
+			return &Request{}
+		},
+	}
+
+	a.responsePool = &sync.Pool{
+		New: func() interface{} {
+			return &Response{}
+		},
+	}
+
 	a.contentTypeSnifferBufferPool = &sync.Pool{
 		New: func() interface{} {
 			return make([]byte, 512)
@@ -917,12 +946,237 @@ func (a *Air) Serve() error {
 		}
 	}
 
-	return a.server.serve()
+	host, port, err := net.SplitHostPort(a.Address)
+	if err != nil {
+		return err
+	}
+
+	a.server.Addr = net.JoinHostPort(host, port)
+	a.server.Handler = a
+	a.server.ReadTimeout = a.ReadTimeout
+	a.server.ReadHeaderTimeout = a.ReadHeaderTimeout
+	a.server.WriteTimeout = a.WriteTimeout
+	a.server.IdleTimeout = a.IdleTimeout
+	a.server.MaxHeaderBytes = a.MaxHeaderBytes
+	a.server.ErrorLog = a.ErrorLogger
+
+	realPort := port
+	hh := http.Handler(http.HandlerFunc(func(
+		rw http.ResponseWriter,
+		r *http.Request,
+	) {
+		host, _, err := net.SplitHostPort(r.Host)
+		if err != nil {
+			host = r.Host
+		}
+
+		if realPort != "443" {
+			host = net.JoinHostPort(host, realPort)
+		}
+
+		http.Redirect(
+			rw,
+			r,
+			"https://"+host+r.RequestURI,
+			http.StatusMovedPermanently,
+		)
+	}))
+
+	shutdownJobRunOnce := sync.Once{}
+	a.server.RegisterOnShutdown(func() {
+		a.shutdownJobMutex.Lock()
+		defer a.shutdownJobMutex.Unlock()
+		shutdownJobRunOnce.Do(func() {
+			waitGroup := sync.WaitGroup{}
+			for _, job := range a.shutdownJobs {
+				if job != nil {
+					waitGroup.Add(1)
+					go func(job func()) {
+						job()
+						waitGroup.Done()
+					}(job)
+				}
+			}
+
+			waitGroup.Wait()
+
+			close(a.shutdownJobDone)
+		})
+	})
+
+	if a.DebugMode {
+		fmt.Println("air: serving in debug mode")
+	}
+
+	tlsConfig := a.TLSConfig
+	if tlsConfig != nil {
+		tlsConfig = tlsConfig.Clone()
+	}
+
+	if a.TLSCertFile != "" && a.TLSKeyFile != "" {
+		c, err := tls.LoadX509KeyPair(a.TLSCertFile, a.TLSKeyFile)
+		if err != nil {
+			return err
+		}
+
+		if tlsConfig == nil {
+			tlsConfig = &tls.Config{}
+		}
+
+		tlsConfig.Certificates = append(tlsConfig.Certificates, c)
+	}
+
+	if tlsConfig != nil {
+		for _, proto := range []string{"h2", "http/1.1"} {
+			if !stringSliceContains(
+				tlsConfig.NextProtos,
+				proto,
+				false,
+			) {
+				tlsConfig.NextProtos = append(
+					tlsConfig.NextProtos,
+					proto,
+				)
+			}
+		}
+	}
+
+	if a.ACMEEnabled {
+		acm := &autocert.Manager{
+			Prompt: func(tosURL string) bool {
+				if len(a.ACMETOSURLWhitelist) == 0 {
+					return true
+				}
+
+				for _, u := range a.ACMETOSURLWhitelist {
+					if u == tosURL {
+						return true
+					}
+				}
+
+				return false
+			},
+			Cache:       autocert.DirCache(a.ACMECertRoot),
+			RenewBefore: a.ACMERenewalWindow,
+			Client: &acme.Client{
+				Key:          a.ACMEAccountKey,
+				DirectoryURL: a.ACMEDirectoryURL,
+			},
+			Email:           a.MaintainerEmail,
+			ExtraExtensions: a.ACMEExtraExts,
+		}
+		if a.ACMEHostWhitelist != nil {
+			acm.HostPolicy = autocert.HostWhitelist(
+				a.ACMEHostWhitelist...,
+			)
+		}
+
+		hh = acm.HTTPHandler(hh)
+
+		acmTLSConfig := acm.TLSConfig()
+
+		if tlsConfig == nil {
+			tlsConfig = &tls.Config{}
+		}
+
+		getCertificate := tlsConfig.GetCertificate
+		tlsConfig.GetCertificate = func(
+			chi *tls.ClientHelloInfo,
+		) (*tls.Certificate, error) {
+			if getCertificate != nil {
+				c, err := getCertificate(chi)
+				if err != nil {
+					return nil, err
+				}
+
+				if c != nil {
+					return c, nil
+				}
+			}
+
+			if chi.ServerName == "" {
+				chi.ServerName = a.ACMEDefaultHost
+			}
+
+			return acm.GetCertificate(chi)
+		}
+
+		for _, proto := range acmTLSConfig.NextProtos {
+			if !stringSliceContains(
+				tlsConfig.NextProtos,
+				proto,
+				false,
+			) {
+				tlsConfig.NextProtos = append(
+					tlsConfig.NextProtos,
+					proto,
+				)
+			}
+		}
+	}
+
+	listener := newListener(a)
+	if err := listener.listen(a.server.Addr); err != nil {
+		return err
+	}
+	defer listener.Close()
+
+	a.addressMap[listener.Addr().String()] = 0
+	defer delete(a.addressMap, listener.Addr().String())
+
+	netListener := net.Listener(listener)
+	httpsEnforced := a.ACMEEnabled || a.HTTPSEnforced
+	if tlsConfig != nil {
+		netListener = tls.NewListener(netListener, tlsConfig)
+		if httpsEnforced {
+			hs := &http.Server{
+				Addr: net.JoinHostPort(
+					host,
+					a.HTTPSEnforcedPort,
+				),
+				Handler:           hh,
+				ReadTimeout:       a.ReadTimeout,
+				ReadHeaderTimeout: a.ReadHeaderTimeout,
+				WriteTimeout:      a.WriteTimeout,
+				IdleTimeout:       a.IdleTimeout,
+				MaxHeaderBytes:    a.MaxHeaderBytes,
+				ErrorLog:          a.ErrorLogger,
+			}
+
+			l := newListener(a)
+			if err := l.listen(hs.Addr); err != nil {
+				return err
+			}
+			defer l.Close()
+
+			a.addressMap[l.Addr().String()] = 1
+			defer delete(a.addressMap, l.Addr().String())
+
+			go hs.Serve(l)
+			defer hs.Close()
+		}
+	} else {
+		h2s := &http2.Server{
+			IdleTimeout: a.IdleTimeout,
+		}
+		if h2s.IdleTimeout == 0 {
+			h2s.IdleTimeout = a.ReadTimeout
+		}
+
+		a.server.Handler = h2c.NewHandler(a.server.Handler, h2s)
+	}
+
+	if realPort == "0" || (httpsEnforced && a.HTTPSEnforcedPort == "0") {
+		_, realPort, _ = net.SplitHostPort(netListener.Addr().String())
+		fmt.Printf("air: listening on %v\n", a.Addresses())
+	}
+
+	return a.server.Serve(netListener)
 }
 
 // Close closes the server of the a immediately.
 func (a *Air) Close() error {
-	return a.server.close()
+	return a.server.Close()
 }
 
 // Shutdown gracefully shuts down the server of the a without interrupting any
@@ -943,7 +1197,14 @@ func (a *Air) Close() error {
 // connections of shutdown and wait for them to close, if desired. See the
 // `AddShutdownJob` for a way to add shutdown jobs.
 func (a *Air) Shutdown(ctx context.Context) error {
-	return a.server.shutdown(ctx)
+	err := a.server.Shutdown(ctx)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-a.shutdownJobDone:
+	}
+
+	return err
 }
 
 // AddShutdownJob adds the f as a shutdown job that will run only once when the
@@ -951,19 +1212,163 @@ func (a *Air) Shutdown(ctx context.Context) error {
 // which can be used to remove the f from the shutdown job queue by calling the
 // `RemoveShutdownJob`.
 func (a *Air) AddShutdownJob(f func()) int {
-	return a.server.addShutdownJob(f)
+	a.shutdownJobMutex.Lock()
+	defer a.shutdownJobMutex.Unlock()
+	a.shutdownJobs = append(a.shutdownJobs, f)
+	return len(a.shutdownJobs) - 1
 }
 
 // RemoveShutdownJob removes the shutdown job targeted by the id from the
 // shutdown job queue.
 func (a *Air) RemoveShutdownJob(id int) {
-	a.server.removeShutdownJob(id)
+	a.shutdownJobMutex.Lock()
+	defer a.shutdownJobMutex.Unlock()
+	if id >= 0 && id < len(a.shutdownJobs) {
+		a.shutdownJobs[id] = nil
+	}
 }
 
 // Addresses returns all TCP addresses that the server of the a actually listens
 // on.
 func (a *Air) Addresses() []string {
-	return a.server.addresses()
+	asl := len(a.addressMap)
+	if asl == 0 {
+		return nil
+	}
+
+	as := make([]string, 0, asl)
+	for a := range a.addressMap {
+		as = append(as, a)
+	}
+
+	sort.Slice(as, func(i, j int) bool {
+		iw := a.addressMap[as[i]]
+		jw := a.addressMap[as[j]]
+		return iw < jw
+	})
+
+	return as
+}
+
+// ServeHTTP implements the `http.Handler`.
+func (a *Air) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	// Get request from the pool.
+
+	req := a.requestPool.Get().(*Request)
+	req.Air = a
+	req.params = req.params[:0]
+	req.routeParamNames = nil
+	req.routeParamValues = nil
+	req.parseRouteParamsOnce = &sync.Once{}
+	req.parseOtherParamsOnce = &sync.Once{}
+	for key := range req.values {
+		delete(req.values, key)
+	}
+
+	req.localizedString = nil
+
+	req.SetHTTPRequest(r)
+
+	// Get response from the pool.
+
+	res := a.responsePool.Get().(*Response)
+	res.Air = a
+	res.Status = http.StatusOK
+	res.ContentLength = -1
+	res.Written = false
+	res.Minified = false
+	res.Gzipped = false
+	res.servingContent = false
+	res.serveContentError = nil
+	res.reverseProxying = false
+	res.deferredFuncs = res.deferredFuncs[:0]
+
+	hrw := http.ResponseWriter(&responseWriter{
+		r:  res,
+		rw: rw,
+	})
+
+	if hijacker, ok := rw.(http.Hijacker); ok {
+		hrw = http.ResponseWriter(&struct {
+			http.ResponseWriter
+			http.Hijacker
+		}{
+			hrw,
+			&responseHijacker{
+				r: res,
+				h: hijacker,
+			},
+		})
+	}
+
+	if pusher, ok := rw.(http.Pusher); ok {
+		hrw = http.ResponseWriter(&struct {
+			http.ResponseWriter
+			http.Pusher
+		}{
+			hrw,
+			pusher,
+		})
+	}
+
+	res.SetHTTPResponseWriter(hrw)
+
+	// Tie the request and response together.
+
+	req.res = res
+	res.req = req
+
+	// Tie the request body and standard request body together.
+
+	r.Body = &requestBody{
+		r:  req,
+		hr: r,
+		rc: r.Body,
+	}
+
+	// Chain the gases stack.
+
+	h := func(req *Request, res *Response) error {
+		h := a.router.route(req)
+		for i := len(a.Gases) - 1; i >= 0; i-- {
+			h = a.Gases[i](h)
+		}
+
+		return h(req, res)
+	}
+
+	// Chain the pregases stack.
+
+	for i := len(a.Pregases) - 1; i >= 0; i-- {
+		h = a.Pregases[i](h)
+	}
+
+	// Execute the chain.
+
+	if err := h(req, res); err != nil {
+		if !res.Written && res.Status < http.StatusBadRequest {
+			res.Status = http.StatusInternalServerError
+		}
+
+		a.ErrorHandler(err, req, res)
+	}
+
+	// Execute the deferred functions.
+
+	for i := len(res.deferredFuncs) - 1; i >= 0; i-- {
+		res.deferredFuncs[i]()
+	}
+
+	// Put the route param values back to the pool.
+
+	if req.routeParamValues != nil {
+		a.router.routeParamValuesPool.Put(req.routeParamValues)
+	}
+
+	// Put the request and response back to the pool.
+
+	a.requestPool.Put(req)
+	a.responsePool.Put(res)
 }
 
 // logErrorf logs the v as an error in the format.

@@ -84,8 +84,7 @@ type Request struct {
 	// E.g.: {"Foo": ["bar"]}
 	Header http.Header
 
-	// Body is the message body. It will be closed by the server of the
-	// `Air`.
+	// Body is the message body. It will be closed by the server.
 	Body io.ReadCloser
 
 	// ContentLength records the length of the `Body`. The value -1

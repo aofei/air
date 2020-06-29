@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -129,6 +132,15 @@ func TestNew(t *testing.T) {
 	assert.NotNil(t, a.coffer)
 	assert.NotNil(t, a.i18n)
 
+	assert.NotNil(t, a.addressMap)
+	assert.Nil(t, a.shutdownJobs)
+	assert.NotNil(t, a.shutdownJobMutex)
+	assert.Zero(t, cap(a.shutdownJobDone))
+	assert.NotNil(t, a.requestPool)
+	assert.NotNil(t, a.responsePool)
+	assert.IsType(t, &Request{}, a.requestPool.Get())
+	assert.IsType(t, &Response{}, a.responsePool.Get())
+
 	assert.NotNil(t, a.contentTypeSnifferBufferPool)
 	assert.IsType(t, []byte{}, a.contentTypeSnifferBufferPool.Get())
 	assert.Len(t, a.contentTypeSnifferBufferPool.Get(), 512)
@@ -150,7 +162,7 @@ func TestAirGET(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/foobar", nil)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [GET /foobar]", rec.Body.String())
 }
@@ -164,7 +176,7 @@ func TestAirHEAD(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodHead, "/foobar", nil)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Empty(t, rec.Body.String())
 }
@@ -178,7 +190,7 @@ func TestAirPOST(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/foobar", nil)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [POST /foobar]", rec.Body.String())
 }
@@ -192,7 +204,7 @@ func TestAirPUT(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPut, "/foobar", nil)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [PUT /foobar]", rec.Body.String())
 }
@@ -206,7 +218,7 @@ func TestAirPATCH(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPatch, "/foobar", nil)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [PATCH /foobar]", rec.Body.String())
 }
@@ -220,7 +232,7 @@ func TestAirDELETE(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodDelete, "/foobar", nil)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [DELETE /foobar]", rec.Body.String())
 }
@@ -234,7 +246,7 @@ func TestAirCONNECT(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodConnect, "/foobar", nil)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [CONNECT /foobar]", rec.Body.String())
 }
@@ -248,7 +260,7 @@ func TestAirOPTIONS(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodOptions, "/foobar", nil)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [OPTIONS /foobar]", rec.Body.String())
 }
@@ -262,7 +274,7 @@ func TestAirTRACE(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodTrace, "/foobar", nil)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [TRACE /foobar]", rec.Body.String())
 }
@@ -276,55 +288,55 @@ func TestAirBATCH(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/foobar", nil)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodHead, "/foobar", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Empty(t, rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodPost, "/foobar", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodPut, "/foobar", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodPatch, "/foobar", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodDelete, "/foobar", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodConnect, "/foobar", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodOptions, "/foobar", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodTrace, "/foobar", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
 }
@@ -345,13 +357,13 @@ func TestAirFILE(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/foobar", nil)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Foobar", rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodHead, "/foobar", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Empty(t, rec.Body.String())
 
@@ -359,13 +371,13 @@ func TestAirFILE(t *testing.T) {
 
 	req = httptest.NewRequest(http.MethodGet, "/foobar2", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusNotFound, rec.Code)
 	assert.Equal(t, http.StatusText(rec.Code), rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodHead, "/foobar2", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusNotFound, rec.Code)
 	assert.Empty(t, rec.Body.String())
 }
@@ -402,7 +414,7 @@ func TestAirFILES(t *testing.T) {
 		nil,
 	)
 	rec := httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "Foobar", rec.Body.String())
 
@@ -412,19 +424,19 @@ func TestAirFILES(t *testing.T) {
 		nil,
 	)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Empty(t, rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodGet, "/foobar/nowhere", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusNotFound, rec.Code)
 	assert.Equal(t, http.StatusText(rec.Code), rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodHead, "/foobar/nowhere", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusNotFound, rec.Code)
 	assert.Empty(t, rec.Body.String())
 
@@ -432,13 +444,13 @@ func TestAirFILES(t *testing.T) {
 
 	req = httptest.NewRequest(http.MethodGet, "/foobar2/air.go", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.NotEmpty(t, rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodHead, "/foobar2/air.go", nil)
 	rec = httptest.NewRecorder()
-	a.server.ServeHTTP(rec, req)
+	a.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Empty(t, rec.Body.String())
 }
@@ -466,118 +478,338 @@ func TestAirServe(t *testing.T) {
 
 	assert.NoError(t, a.Close())
 
+	a = New()
+	a.Address = "-1:0"
+
+	assert.Error(t, a.Serve())
+
+	a = New()
+	a.Address = ""
+
+	assert.Error(t, a.Serve())
+
+	a = New()
+	a.Address = ":-1"
+
+	assert.Error(t, a.Serve())
+
+	a = New()
+	a.Address = ""
+
+	assert.Error(t, a.Serve())
+
 	dir, err := ioutil.TempDir("", "air.TestAirServe")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, dir)
 	defer os.RemoveAll(dir)
 
 	a = New()
+	a.DebugMode = true
 	a.Address = "localhost:0"
-	a.ConfigFile = filepath.Join(dir, "config.json")
 
-	assert.NoError(t, ioutil.WriteFile(
-		a.ConfigFile,
-		[]byte(`{"app_name":"foobar"}`),
-		os.ModePerm,
-	))
+	stdout, err := ioutil.TempFile(dir, "")
+	assert.NoError(t, err)
 
-	hijackOSStdout()
+	stdoutBackup := os.Stdout
+	os.Stdout = stdout
 
 	go a.Serve()
 	time.Sleep(100 * time.Millisecond)
 
-	revertOSStdout()
+	os.Stdout = stdoutBackup
 
-	assert.Equal(t, "foobar", a.AppName)
+	assert.NoError(t, stdout.Close())
 
-	assert.NoError(t, a.Close())
-
-	a = New()
-	a.Address = "localhost:0"
-	a.ConfigFile = filepath.Join(dir, "config.toml")
-
-	assert.NoError(t, ioutil.WriteFile(
-		a.ConfigFile,
-		[]byte(`app_name = "foobar"`),
-		os.ModePerm,
-	))
-
-	hijackOSStdout()
-
-	go a.Serve()
-	time.Sleep(100 * time.Millisecond)
-
-	revertOSStdout()
-
-	assert.Equal(t, "foobar", a.AppName)
-
-	assert.NoError(t, a.Close())
-
-	a = New()
-	a.Address = "localhost:0"
-	a.ConfigFile = filepath.Join(dir, "config.yaml")
-
-	assert.NoError(t, ioutil.WriteFile(
-		a.ConfigFile,
-		[]byte(`app_name: "foobar"`),
-		os.ModePerm,
-	))
-
-	hijackOSStdout()
-
-	go a.Serve()
-	time.Sleep(100 * time.Millisecond)
-
-	revertOSStdout()
-
-	assert.Equal(t, "foobar", a.AppName)
-
-	assert.NoError(t, a.Close())
-
-	a = New()
-	a.Address = "localhost:0"
-	a.ConfigFile = filepath.Join(dir, "config.yml")
-
-	assert.NoError(t, ioutil.WriteFile(
-		a.ConfigFile,
-		[]byte(`app_name: "foobar"`),
-		os.ModePerm,
-	))
-
-	hijackOSStdout()
-
-	go a.Serve()
-	time.Sleep(100 * time.Millisecond)
-
-	revertOSStdout()
-
-	assert.Equal(t, "foobar", a.AppName)
-
-	assert.NoError(t, a.Close())
-
-	a = New()
-	a.ConfigFile = "nowhere"
-	assert.True(t, os.IsNotExist(a.Serve()))
-
-	a = New()
-	a.ConfigFile = filepath.Join(dir, "config.ext")
-
-	assert.NoError(t, ioutil.WriteFile(a.ConfigFile, nil, os.ModePerm))
+	b, err := ioutil.ReadFile(stdout.Name())
+	assert.NoError(t, err)
 	assert.Equal(
 		t,
-		"air: unsupported configuration file extension: .ext",
-		a.Serve().Error(),
+		fmt.Sprintf(
+			"air: serving in debug mode\nair: listening on %v\n",
+			a.Addresses(),
+		),
+		string(b),
 	)
 
+	assert.NoError(t, a.Close())
+
 	a = New()
-	a.ConfigFile = filepath.Join(dir, "config.json")
+	a.Address = "localhost:0"
+
+	hijackOSStdout()
+
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	res, err := http.DefaultClient.Do(&http.Request{
+		Method: http.MethodGet,
+		URL: &url.URL{
+			Scheme: "http",
+			Host:   a.Addresses()[0],
+		},
+		Host: "localhost",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	res, err = http.DefaultClient.Do(&http.Request{
+		Method: http.MethodGet,
+		URL: &url.URL{
+			Scheme: "http",
+			Host:   a.Addresses()[0],
+		},
+		Host: "example.com",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assert.NoError(t, a.Close())
+
+	a = New()
+	a.Address = "localhost:0"
 
 	assert.NoError(t, ioutil.WriteFile(
-		a.ConfigFile,
-		[]byte(`{"app_name":0}`),
+		filepath.Join(dir, "tls_cert.pem"),
+		nil,
 		os.ModePerm,
 	))
+
+	assert.NoError(t, ioutil.WriteFile(
+		filepath.Join(dir, "tls_key.pem"),
+		nil,
+		os.ModePerm,
+	))
+
+	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")
+	a.TLSKeyFile = filepath.Join(dir, "tls_key.pem")
+
 	assert.Error(t, a.Serve())
+
+	a = New()
+	a.Address = "localhost:0"
+	a.HTTPSEnforced = true
+	a.HTTPSEnforcedPort = "0"
+	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
+
+	assert.NoError(t, ioutil.WriteFile(
+		filepath.Join(dir, "tls_cert.pem"),
+		[]byte(`
+-----BEGIN CERTIFICATE-----
+MIIFBTCCA+2gAwIBAgISA19vMeUvx/Tnt3mnfnbQKzIEMA0GCSqGSIb3DQEBCwUA
+MEoxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MSMwIQYDVQQD
+ExpMZXQncyBFbmNyeXB0IEF1dGhvcml0eSBYMzAeFw0xNzAxMjIwMzA3MDBaFw0x
+NzA0MjIwMzA3MDBaMBQxEjAQBgNVBAMTCWFpcndmLm9yZzCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMqIYMFjNRADYUbnQhfyIc77M0in8eWD4iVAEXcj
+lKUz/vf/Hxm1TfE+LQampJF57JceT0hfqmDNzt5W+52aN1P+wbx7XHa4F+3DdY5h
+MVfxm36Y1y4/OKAsNBpVlBhTtnFQJLIUO8c9mDs9VSX6DBCNSzAS/rSfnThlxDKN
+qTaQVXIAN8+iqiiIrK4q0SSlW12jOzok/BXxbOtiTWXaLEVnzKUEsYTZMkdGiRZF
+PyIJktIHY3eujG8c4tGr9KtX1b2ZvaaAIRcCOo0uhtJ18Sjb7IzQbz/Xba6LcqDL
+3Q0HWO3UmIPxbzeTPgVSftdpC18ig9s7gLws38Rb1yifbskCAwEAAaOCAhkwggIV
+MA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIw
+DAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUJ3IaKlnvlxFNz5q5kBBJkUtcamAwHwYD
+VR0jBBgwFoAUqEpqYwR93brm0Tm3pkVl7/Oo7KEwcAYIKwYBBQUHAQEEZDBiMC8G
+CCsGAQUFBzABhiNodHRwOi8vb2NzcC5pbnQteDMubGV0c2VuY3J5cHQub3JnLzAv
+BggrBgEFBQcwAoYjaHR0cDovL2NlcnQuaW50LXgzLmxldHNlbmNyeXB0Lm9yZy8w
+IwYDVR0RBBwwGoIJYWlyd2Yub3Jngg13d3cuYWlyd2Yub3JnMIH+BgNVHSAEgfYw
+gfMwCAYGZ4EMAQIBMIHmBgsrBgEEAYLfEwEBATCB1jAmBggrBgEFBQcCARYaaHR0
+cDovL2Nwcy5sZXRzZW5jcnlwdC5vcmcwgasGCCsGAQUFBwICMIGeDIGbVGhpcyBD
+ZXJ0aWZpY2F0ZSBtYXkgb25seSBiZSByZWxpZWQgdXBvbiBieSBSZWx5aW5nIFBh
+cnRpZXMgYW5kIG9ubHkgaW4gYWNjb3JkYW5jZSB3aXRoIHRoZSBDZXJ0aWZpY2F0
+ZSBQb2xpY3kgZm91bmQgYXQgaHR0cHM6Ly9sZXRzZW5jcnlwdC5vcmcvcmVwb3Np
+dG9yeS8wDQYJKoZIhvcNAQELBQADggEBAEeZuWoMm5E9V/CQxQv0GBJEr3jl7e/O
+Wauwl+sRLbQG9ajHlnKz46Af/oDoG4Z+e7iYRRZm9nIOLVCsp3Yp+h+GSjwm8yiP
+fwAyaLfBKNbtEk0S/FNmqzr7jjxCyHhqoloHhzFAfHJyhlYlMUwQhbxM1U5GbejE
+9ru76RTbdh3yb00HSXBMcc3woiaGWPc8FVaT8LGOweKIEH4kcYevC06m860ovHV/
+s87+zaamZW4j8uWLGPxS4eD2Ulg+nbLKdnprbYEx5F943M1b7s05LJ+E7SnqKS3i
+jiepPCVdRmlsROMoSfWQXFdfsTKEFAwOeIbIxfk7EgUIzrUgnnv0G7Q=
+-----END CERTIFICATE-----
+		`),
+		os.ModePerm,
+	))
+
+	assert.NoError(t, ioutil.WriteFile(
+		filepath.Join(dir, "tls_key.pem"),
+		[]byte(`
+-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDKiGDBYzUQA2FG
+50IX8iHO+zNIp/Hlg+IlQBF3I5SlM/73/x8ZtU3xPi0GpqSReeyXHk9IX6pgzc7e
+VvudmjdT/sG8e1x2uBftw3WOYTFX8Zt+mNcuPzigLDQaVZQYU7ZxUCSyFDvHPZg7
+PVUl+gwQjUswEv60n504ZcQyjak2kFVyADfPoqooiKyuKtEkpVtdozs6JPwV8Wzr
+Yk1l2ixFZ8ylBLGE2TJHRokWRT8iCZLSB2N3roxvHOLRq/SrV9W9mb2mgCEXAjqN
+LobSdfEo2+yM0G8/122ui3Kgy90NB1jt1JiD8W83kz4FUn7XaQtfIoPbO4C8LN/E
+W9con27JAgMBAAECggEAFUx6QFwafHCejkJLpREFlSq9nepreeOAqMIwFANd4nGx
+YoslziJO7AvJ2GU18UaNJuc9FzNYS43ZL3CeTVimcOLdpOCkPKfnfE2N00dNVR5H
+Z+zS1D45yj5bzFkrldNX4Fq5QTD3iGBl3fT5O2EsW6FAQvH8bypJ8mBhXZ+gJ+id
+4croKKwMsHGYSiLdCSVf6oGkytlQwggAl0B85KBCOR1ArMf2nrM9lf6yBLJRGo6f
+qzIEAvDPNicW5BWGf2lwQTmawKMecStWXniu8VdjKoRO9IXDe2WQAdwC8LjAQwxZ
+hQJbM6I8x0CExMmEthieUrX0VkblboOC/BQsUzNwAQKBgQDurZ07acp/P9icDIUN
+l53OiCafYrlBceZCdykheDHgpg+TBVfO8GUMsXywYIMOw1RzmGqDWWrU7uaiXnMn
+kL/LKFM9t/10vFrlt5F1cx45MJsknVDebfJGq+L6eHISx+7igTCyQ6JBD4sW2tcs
+c6MYHgVsAHioqrkcjvHBUY8cSQKBgQDZOzhFg41h3U+cTgePGjzZpziWB1VO8ird
+OJp8Hn8umUW8JfdYTalTvzs2CiNw0gOjGETMUmKKhS2YcGIol9j7elBOhT9mzxKf
+NHEJRiV6+2SInESUfcLaXZZQKbMMiw2YZfV2ADf8n+Lb79tlbAtSEnMnvmlDI/1K
+SASXbGS+gQKBgQDeh7JUBaOOFsnvXGDlNlokiJ5x9krBMN+9UnpfwT/HsyxMKCwh
+PdMJDaYykBlBN27Sw+VzB3hqhT81XZhB6FxZnwRVQ+kk4MRi707IUYd5TM8pSR9v
+8tRzfakHXCsHRa99MXRkkFiEDmjg6zK5OCt0vfDSLHJS17H1ZXUTh+ZFOQKBgFgX
+1OUTyTUDu7ImTphwynZ1gtQMm0LNoCZgOv3UnDz4eTgoqVrM+7rzlP6ANAkfkcwF
+HnlBe6azBV+JS7UshxjMbF67WI/Hr8SSTri1EqQB6K4huQoCyg8l3rwZfPu8NEI2
+LsmwowO2jxgj9/P0Uc7xnnNim2tX3/LMq9gAZAaBAoGBALI4Y4/lBNfBRB0IIA+p
+Edt9VRdifXbQE+q1JwyG9smGsumYuMCBGQFZp51Wa5/FD/NRqezRDP3myiRQzWiM
+fNAWEfZaazKKFmOrC4WgM+Z8bKAyrDpmCu2iNvdS2JPYujiIX+f5kq7W0muF4JXZ
+l7j2fuWjNfj9JfnXoP2SEgPG
+-----END PRIVATE KEY-----
+		`),
+		os.ModePerm,
+	))
+
+	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")
+	a.TLSKeyFile = filepath.Join(dir, "tls_key.pem")
+
+	hijackOSStdout()
+
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	res, err = http.DefaultClient.Do(&http.Request{
+		Method: http.MethodGet,
+		URL: &url.URL{
+			Scheme: "https",
+			Host:   a.Addresses()[0],
+		},
+		Host: "example.com",
+	})
+	assert.Error(t, err)
+	assert.Nil(t, res)
+
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	res, err = http.DefaultClient.Do(&http.Request{
+		Method: http.MethodGet,
+		URL: &url.URL{
+			Scheme: "https",
+			Host:   a.Addresses()[0],
+		},
+		Host: "localhost",
+	})
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = nil
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	res, err = http.DefaultClient.Do(&http.Request{
+		Method: http.MethodGet,
+		URL: &url.URL{
+			Scheme: "http",
+			Host:   a.Addresses()[1],
+		},
+		Host: "localhost",
+	})
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = nil
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assert.NoError(t, a.Close())
+
+	c, err := tls.LoadX509KeyPair(
+		filepath.Join(dir, "tls_cert.pem"),
+		filepath.Join(dir, "tls_key.pem"),
+	)
+	assert.NotNil(t, c)
+	assert.NoError(t, err)
+
+	a = New()
+	a.Address = "localhost:0"
+	a.TLSConfig = &tls.Config{
+		Certificates: []tls.Certificate{c},
+	}
+
+	hijackOSStdout()
+
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	assert.NoError(t, a.Close())
+
+	a = New()
+	a.Address = "-1:0"
+	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")
+	a.TLSKeyFile = filepath.Join(dir, "tls_key.pem")
+
+	assert.Error(t, a.Serve())
+
+	a = New()
+	a.Address = "localhost:0"
+	a.HTTPSEnforced = true
+	a.HTTPSEnforcedPort = "-1"
+	a.TLSCertFile = filepath.Join(dir, "tls_cert.pem")
+	a.TLSKeyFile = filepath.Join(dir, "tls_key.pem")
+
+	assert.Error(t, a.Serve())
+
+	a = New()
+	a.Address = "localhost:0"
+	a.ACMEEnabled = true
+	a.ACMECertRoot = dir
+	a.ACMEHostWhitelist = []string{"localhost"}
+	a.HTTPSEnforcedPort = "0"
+	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
+
+	hijackOSStdout()
+
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	res, err = http.DefaultClient.Do(&http.Request{
+		Method: http.MethodGet,
+		URL: &url.URL{
+			Scheme: "https",
+			Host:   a.Addresses()[0],
+		},
+		Host: "example.com",
+	})
+	assert.Error(t, err)
+	assert.Nil(t, res)
+
+	assert.NoError(t, a.Close())
+
+	a = New()
+	a.Address = "localhost:0"
+	a.ACMEEnabled = true
+	a.ACMECertRoot = dir
+	a.ACMEHostWhitelist = []string{"localhost"}
+	a.HTTPSEnforcedPort = "0"
+	a.ErrorLogger = log.New(ioutil.Discard, "", 0)
+
+	hijackOSStdout()
+
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	res, err = http.DefaultClient.Do(&http.Request{
+		Method: http.MethodGet,
+		URL: &url.URL{
+			Scheme: "https",
+			Host:   a.Addresses()[0],
+		},
+		Host: "example.com",
+	})
+	assert.Error(t, err)
+	assert.Nil(t, res)
+
+	assert.NoError(t, a.Close())
 }
 
 func TestAirClose(t *testing.T) {
@@ -612,6 +844,30 @@ func TestAirShutdown(t *testing.T) {
 
 	assert.NoError(t, a.Shutdown(context.Background()))
 	assert.Equal(t, "bar", foo)
+	assert.Len(t, a.shutdownJobs, 1)
+
+	a = New()
+	a.Address = "localhost:0"
+
+	foo = ""
+	a.AddShutdownJob(func() {
+		time.Sleep(100 * time.Millisecond)
+		foo = "bar"
+	})
+
+	hijackOSStdout()
+
+	go a.Serve()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	assert.Error(t, context.Canceled, a.Shutdown(ctx))
+	assert.Empty(t, foo)
+	assert.Len(t, a.shutdownJobs, 1)
 }
 
 func TestAirAddShutdownJob(t *testing.T) {
@@ -674,6 +930,96 @@ func TestAirAddresses(t *testing.T) {
 	assert.Len(t, a.Addresses(), 1)
 
 	assert.NoError(t, a.Close())
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Len(t, a.Addresses(), 0)
+}
+
+func TestAirServeHTTP(t *testing.T) {
+	a := New()
+	a.Pregases = []Gas{func(next Handler) Handler {
+		return func(req *Request, res *Response) error {
+			req.SetValue("EasterEgg", easterEgg)
+
+			res.Defer(func() {
+				res.WriteString("Defer")
+			})
+
+			if err := res.WriteString("Pregas - "); err != nil {
+				return err
+			}
+
+			return next(req, res)
+		}
+	}}
+	a.Gases = []Gas{func(next Handler) Handler {
+		return func(req *Request, res *Response) error {
+			if err := res.WriteString("Gas - "); err != nil {
+				return err
+			}
+
+			return next(req, res)
+		}
+	}}
+
+	a.GET("/hello/:Name", func(req *Request, res *Response) error {
+		if req.Value("EasterEgg") != easterEgg {
+			return errors.New("wrong easter egg")
+		}
+
+		return res.WriteString(
+			"Hello, " + req.Param("Name").Value().String() + " - ",
+		)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/hello/Air", nil)
+	rec := httptest.NewRecorder()
+	a.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(
+		t,
+		"text/plain; charset=utf-8",
+		rec.HeaderMap.Get("Content-Type"),
+	)
+	assert.Equal(t, "Pregas - Gas - Hello, Air - Defer", rec.Body.String())
+
+	a = New()
+
+	a.GET("/", func(req *Request, res *Response) error {
+		return errors.New("handler error")
+	})
+
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	rec = httptest.NewRecorder()
+	a.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Equal(
+		t,
+		"text/plain; charset=utf-8",
+		rec.HeaderMap.Get("Content-Type"),
+	)
+	assert.Equal(t, "Internal Server Error", rec.Body.String())
+
+	a = New()
+	a.DebugMode = true
+
+	a.GET("/:Foo", func(req *Request, res *Response) error {
+		return errors.New("handler error")
+	})
+
+	req = httptest.NewRequest(http.MethodGet, "/bar", nil)
+	rec = httptest.NewRecorder()
+	a.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Equal(
+		t,
+		"text/plain; charset=utf-8",
+		rec.HeaderMap.Get("Content-Type"),
+	)
+	assert.Equal(t, "handler error", rec.Body.String())
 }
 
 func TestAirLogErrorf(t *testing.T) {
