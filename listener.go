@@ -32,23 +32,21 @@ type listener struct {
 // newListener returns a new instance of the `listener` with the a.
 func newListener(a *Air) *listener {
 	var ipNets []*net.IPNet
-	if len(a.PROXYRelayerIPWhitelist) > 0 {
-		for _, s := range a.PROXYRelayerIPWhitelist {
-			if ip := net.ParseIP(s); ip != nil {
-				s = ip.String()
-				switch {
-				case ip.IsUnspecified():
-					s += "/0"
-				case ip.To4() != nil: // IPv4
-					s += "/32"
-				case ip.To16() != nil: // IPv6
-					s += "/128"
-				}
+	for _, s := range a.PROXYRelayerIPWhitelist {
+		if ip := net.ParseIP(s); ip != nil {
+			s = ip.String()
+			switch {
+			case ip.IsUnspecified():
+				s += "/0"
+			case ip.To4() != nil:
+				s += "/32"
+			case ip.To16() != nil:
+				s += "/128"
 			}
+		}
 
-			if _, ipNet, _ := net.ParseCIDR(s); ipNet != nil {
-				ipNets = append(ipNets, ipNet)
-			}
+		if _, ipNet, _ := net.ParseCIDR(s); ipNet != nil {
+			ipNets = append(ipNets, ipNet)
 		}
 	}
 

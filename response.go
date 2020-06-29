@@ -491,6 +491,27 @@ func (r *Response) Redirect(url string) error {
 	return nil
 }
 
+// Push initiates an HTTP/2 server push. This constructs a synthetic request
+// using the target and pos, serializes that request into a "PUSH_PROMISE"
+// frame, then dispatches that request using the server's request handler. If
+// pos is nil, default options are used.
+//
+// The target must either be an absolute path (like "/path") or an absolute URL
+// that contains a valid authority and the same scheme as the parent request. If
+// the target is a path, it will inherit the scheme and authority of the parent
+// request.
+//
+// It returns `http.ErrNotSupported` if the client has disabled push or if push
+// is not supported on the underlying connection.
+func (r *Response) Push(target string, pos *http.PushOptions) error {
+	p, ok := r.hrw.(http.Pusher)
+	if !ok {
+		return http.ErrNotSupported
+	}
+
+	return p.Push(target, pos)
+}
+
 // WebSocket switches the connection of the r to the WebSocket protocol. See RFC
 // 6455.
 func (r *Response) WebSocket() (*WebSocket, error) {
@@ -498,8 +519,11 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 		return nil, errors.New("air: request has been written")
 	}
 
-	wsu := &websocket.Upgrader{
+	r.Status = http.StatusSwitchingProtocols
+
+	conn, err := (&websocket.Upgrader{
 		HandshakeTimeout: r.Air.WebSocketHandshakeTimeout,
+		Subprotocols:     r.Air.WebSocketSubprotocols,
 		Error: func(
 			_ http.ResponseWriter,
 			_ *http.Request,
@@ -511,14 +535,7 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 		CheckOrigin: func(*http.Request) bool {
 			return true
 		},
-	}
-	if len(r.Air.WebSocketSubprotocols) > 0 {
-		wsu.Subprotocols = r.Air.WebSocketSubprotocols
-	}
-
-	r.Status = http.StatusSwitchingProtocols
-
-	conn, err := wsu.Upgrade(r.hrw, r.req.HTTPRequest(), r.Header)
+	}).Upgrade(r.hrw, r.req.HTTPRequest(), r.Header)
 	if err != nil {
 		return nil, err
 	}
@@ -574,27 +591,6 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 	})
 
 	return ws, nil
-}
-
-// Push initiates an HTTP/2 server push. This constructs a synthetic request
-// using the target and pos, serializes that request into a "PUSH_PROMISE"
-// frame, then dispatches that request using the server's request handler. If
-// pos is nil, default options are used.
-//
-// The target must either be an absolute path (like "/path") or an absolute URL
-// that contains a valid authority and the same scheme as the parent request. If
-// the target is a path, it will inherit the scheme and authority of the parent
-// request.
-//
-// It returns `http.ErrNotSupported` if the client has disabled push or if push
-// is not supported on the underlying connection.
-func (r *Response) Push(target string, pos *http.PushOptions) error {
-	p, ok := r.hrw.(http.Pusher)
-	if !ok {
-		return http.ErrNotSupported
-	}
-
-	return p.Push(target, pos)
 }
 
 // ProxyPass passes the request to the target and writes the response from the
@@ -1022,7 +1018,7 @@ func (rw *responseWriter) handleGzip() {
 
 		rw.r.Header.Del("Content-Length")
 
-		// See RFC 2732, section 2.3.3.
+		// See RFC 7232, section 2.3.3.
 		if et := rw.r.Header.Get("ETag"); et != "" {
 			et = strings.TrimSuffix(et, `"`)
 			et = fmt.Sprint(et, `-gzip"`)

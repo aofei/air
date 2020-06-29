@@ -458,7 +458,7 @@ func (r *router) route(req *Request) Handler {
 	h := cn.handlers[req.Method]
 	if h != nil {
 		req.routeParamNames = cn.paramNames
-	} else if len(cn.handlers) != 0 {
+	} else if len(cn.handlers) > 0 {
 		h = r.a.MethodNotAllowedHandler
 	} else {
 		h = r.a.NotFoundHandler
