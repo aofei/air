@@ -114,7 +114,7 @@ func TestRouterRegister(t *testing.T) {
 	r.register(m, "/foo/:bar/*", h)
 }
 
-func TestRouterRouteStatic(t *testing.T) {
+func TestRouterRouteSTATIC(t *testing.T) {
 	a := New()
 	r := a.router
 
@@ -191,7 +191,7 @@ func TestRouterRouteStatic(t *testing.T) {
 	assert.Empty(t, rec.Body.String())
 }
 
-func TestRouterRouteParam(t *testing.T) {
+func TestRouterRoutePARAM(t *testing.T) {
 	a := New()
 	r := a.router
 
@@ -276,7 +276,7 @@ func TestRouterRouteParam(t *testing.T) {
 	assert.Equal(t, "Matched [GET /:foo/:bar]", rec.Body.String())
 }
 
-func TestRouterRouteAny(t *testing.T) {
+func TestRouterRouteANY(t *testing.T) {
 	a := New()
 	r := a.router
 
@@ -642,7 +642,7 @@ func TestRouterRouteMix(t *testing.T) {
 	assert.Equal(t, "Matched [GET /:foo/:bar/*]", rec.Body.String())
 }
 
-func TestRouterRouteFallBackToAny(t *testing.T) {
+func TestRouterRouteFallBackToANY(t *testing.T) {
 	a := New()
 	r := a.router
 
@@ -714,15 +714,15 @@ func TestRouteNodeChild(t *testing.T) {
 	n := &routeNode{}
 	n.children = append(n.children, &routeNode{
 		label: 'a',
-		nType: routeNodeTypeStatic,
+		nType: routeNodeTypeSTATIC,
 	})
 
-	assert.NotNil(t, n.child('a', routeNodeTypeStatic))
-	assert.Nil(t, n.child('b', routeNodeTypeParam))
+	assert.NotNil(t, n.child('a', routeNodeTypeSTATIC))
+	assert.Nil(t, n.child('b', routeNodeTypePARAM))
 
 	assert.NotNil(t, n.childByLabel('a'))
 	assert.Nil(t, n.childByLabel('b'))
 
-	assert.NotNil(t, n.childByType(routeNodeTypeStatic))
-	assert.Nil(t, n.childByType(routeNodeTypeParam))
+	assert.NotNil(t, n.childByType(routeNodeTypeSTATIC))
+	assert.Nil(t, n.childByType(routeNodeTypePARAM))
 }

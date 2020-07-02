@@ -30,13 +30,13 @@ framework, registering a route usually requires at least two params:
 	)
 
 The first param is a route path that contains 6 components. Among them, "users",
-"posts" and "assets" are static components, ":UserID" and ":PostID" are param
-components, "*" is an any param component. Note that all route params (param
-component(s) and any param component) will be parsed into the `Request` and can
+"posts" and "assets" are STATIC components, ":UserID" and ":PostID" are param
+components, "*" is an ANY param component. Note that all route params (param
+component(s) and ANY param component) will be parsed into the `Request` and can
 be accessed via the `Request.Param` and `Request.Params`. The name of a
 `RequestParam` parsed from a param component always discards its leading ":",
 such as ":UserID" will become "UserID". The name of a `RequestParam` parsed from
-an any param component is "*".
+an ANY param component is "*".
 
 The second param is a `Handler` that serves the requests that match this route.
 */
@@ -692,7 +692,7 @@ func New() *Air {
 // GET registers a new GET route for the path with the matching h in the router
 // of the a with the optional route-level gases.
 //
-// The path may consist of static component(s), param component(s) and any param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY param
 // component.
 //
 // The gases is always FILO.
@@ -703,7 +703,7 @@ func (a *Air) GET(path string, h Handler, gases ...Gas) {
 // HEAD registers a new HEAD route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of static component(s), param component(s) and any param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY param
 // component.
 //
 // The way, the gases is always FILO.
@@ -714,7 +714,7 @@ func (a *Air) HEAD(path string, h Handler, gases ...Gas) {
 // POST registers a new POST route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of static component(s), param component(s) and any param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY param
 // component.
 //
 // The gases is always FILO.
@@ -725,7 +725,7 @@ func (a *Air) POST(path string, h Handler, gases ...Gas) {
 // PUT registers a new PUT route for the path with the matching h in the router
 // of the a with the optional route-level gases.
 //
-// The path may consist of static component(s), param component(s) and any param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY param
 // component.
 //
 // The gases is always FILO.
@@ -736,7 +736,7 @@ func (a *Air) PUT(path string, h Handler, gases ...Gas) {
 // PATCH registers a new PATCH route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of static component(s), param component(s) and any param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY param
 // component.
 //
 // The gases is always FILO.
@@ -747,7 +747,7 @@ func (a *Air) PATCH(path string, h Handler, gases ...Gas) {
 // DELETE registers a new DELETE route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of static component(s), param component(s) and any param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY param
 // component.
 //
 // The gases is always FILO.
@@ -758,7 +758,7 @@ func (a *Air) DELETE(path string, h Handler, gases ...Gas) {
 // CONNECT registers a new CONNECT route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of static component(s), param component(s) and any param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY param
 // component.
 //
 // The gases is always FILO.
@@ -769,7 +769,7 @@ func (a *Air) CONNECT(path string, h Handler, gases ...Gas) {
 // OPTIONS registers a new OPTIONS route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of static component(s), param component(s) and any param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY param
 // component.
 //
 // The gases is always FILO.
@@ -780,7 +780,7 @@ func (a *Air) OPTIONS(path string, h Handler, gases ...Gas) {
 // TRACE registers a new TRACE route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of static component(s), param component(s) and any param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY param
 // component.
 //
 // The gases is always FILO.
@@ -795,7 +795,7 @@ func (a *Air) TRACE(path string, h Handler, gases ...Gas) {
 // "GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS" and
 // "TRACE". Invalid methods will be silently ignored.
 //
-// The path may consist of static component(s), param component(s) and any param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY param
 // component.
 //
 // The gases is always FILO.
@@ -842,7 +842,7 @@ func (a *Air) BATCH(methods []string, path string, h Handler, gases ...Gas) {
 // the a to serve a static file with the filename and optional route-level
 // gases.
 //
-// The path may consist of static component(s), param component(s) and any param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY param
 // component.
 //
 // The gases is always FILO.
@@ -863,8 +863,8 @@ func (a *Air) FILE(path, filename string, gases ...Gas) {
 // router of the a to serve the static files from the root with the optional
 // route-level gases.
 //
-// The path prefix may consits of static component(s) and param component(s).
-// But it must not contain an any param component.
+// The path prefix may consits of STATIC component(s) and PARAM component(s).
+// But it must not contain an ANY param component.
 //
 // The gases is always FILO.
 func (a *Air) FILES(prefix, root string, gases ...Gas) {
@@ -897,8 +897,8 @@ func (a *Air) FILES(prefix, root string, gases ...Gas) {
 // Group returns a new instance of the `Group` with the path prefix and optional
 // group-level gases that inherited from the a.
 //
-// The path prefix may consits of static component(s) and param component(s).
-// But it must not contain an any param component.
+// The path prefix may consits of STATIC component(s) and param component(s).
+// But it must not contain an ANY param component.
 //
 // The gases is always FILO.
 func (a *Air) Group(prefix string, gases ...Gas) *Group {

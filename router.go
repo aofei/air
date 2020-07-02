@@ -123,7 +123,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 				method,
 				path[:i],
 				nil,
-				routeNodeTypeStatic,
+				routeNodeTypeSTATIC,
 				nil,
 			)
 
@@ -147,7 +147,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 					method,
 					path,
 					rh,
-					routeNodeTypeParam,
+					routeNodeTypePARAM,
 					paramNames,
 				)
 				return
@@ -157,7 +157,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 				method,
 				path[:i],
 				nil,
-				routeNodeTypeParam,
+				routeNodeTypePARAM,
 				paramNames,
 			)
 		} else if path[i] == '*' {
@@ -165,7 +165,7 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 				method,
 				path[:i],
 				nil,
-				routeNodeTypeStatic,
+				routeNodeTypeSTATIC,
 				nil,
 			)
 			paramNames = append(paramNames, "*")
@@ -173,14 +173,14 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 				method,
 				path[:i+1],
 				rh,
-				routeNodeTypeAny,
+				routeNodeTypeANY,
 				paramNames,
 			)
 			return
 		}
 	}
 
-	r.insert(method, path, rh, routeNodeTypeStatic, paramNames)
+	r.insert(method, path, rh, routeNodeTypeSTATIC, paramNames)
 }
 
 // insert inserts a new route into the `r.routeTree`.
@@ -238,7 +238,7 @@ func (r *router) insert(
 
 			// Reset current node.
 			cn.label = cn.prefix[0]
-			cn.nType = routeNodeTypeStatic
+			cn.nType = routeNodeTypeSTATIC
 			cn.prefix = cn.prefix[:ll]
 			cn.children = []*routeNode{nn}
 			cn.paramNames = nil
@@ -308,8 +308,8 @@ func (r *router) route(req *Request) Handler {
 		sn   *routeNode      // Saved node
 		snt  routeNodeType   // Saved type
 		ss   string          // Saved search
-		sapn *routeNode      // Saved any parent node
-		saps string          // Saved any parent search
+		sapn *routeNode      // Saved ANY parent node
+		saps string          // Saved ANY parent search
 		sl   int             // Search length
 		pl   int             // Prefix length
 		ll   int             // LCP length
@@ -318,16 +318,16 @@ func (r *router) route(req *Request) Handler {
 		pc   int             // Param counter
 	)
 
-	// Search order: static route > param route > any route.
+	// Search order: STATIC > PARAM > ANY.
 	for {
 		if s == "" {
 			if len(cn.handlers) == 0 {
-				if cn.childByType(routeNodeTypeParam) != nil {
-					goto TryParam
+				if cn.childByType(routeNodeTypePARAM) != nil {
+					goto TryPARAM
 				}
 
-				if cn.childByType(routeNodeTypeAny) != nil {
-					goto TryAny
+				if cn.childByType(routeNodeTypeANY) != nil {
+					goto TryANY
 				}
 
 				if sapn != nil {
@@ -368,19 +368,19 @@ func (r *router) route(req *Request) Handler {
 			continue
 		}
 
-		// Save any parent node for struggling.
-		if cn != sapn && cn.childByType(routeNodeTypeAny) != nil {
+		// Save ANY parent node for struggling.
+		if cn != sapn && cn.childByType(routeNodeTypeANY) != nil {
 			sapn = cn
 			saps = s
 		}
 
-		// Try static node.
-		if nn = cn.child(s[0], routeNodeTypeStatic); nn != nil {
+		// Try STATIC node.
+		if nn = cn.child(s[0], routeNodeTypeSTATIC); nn != nil {
 			// Save node for struggling.
 			if pl = len(cn.prefix); pl > 0 &&
 				cn.prefix[pl-1] == '/' {
 				sn = cn
-				snt = routeNodeTypeParam
+				snt = routeNodeTypePARAM
 				ss = s
 			}
 
@@ -389,14 +389,14 @@ func (r *router) route(req *Request) Handler {
 			continue
 		}
 
-		// Try param node.
-	TryParam:
-		if nn = cn.childByType(routeNodeTypeParam); nn != nil {
+		// Try PARAM node.
+	TryPARAM:
+		if nn = cn.childByType(routeNodeTypePARAM); nn != nil {
 			// Save node for struggling.
 			if pl = len(cn.prefix); pl > 0 &&
 				cn.prefix[pl-1] == '/' {
 				sn = cn
-				snt = routeNodeTypeAny
+				snt = routeNodeTypeANY
 				ss = s
 			}
 
@@ -420,9 +420,9 @@ func (r *router) route(req *Request) Handler {
 			continue
 		}
 
-		// Try any node.
-	TryAny:
-		if cn = cn.childByType(routeNodeTypeAny); cn != nil {
+		// Try ANY node.
+	TryANY:
+		if cn = cn.childByType(routeNodeTypeANY); cn != nil {
 			if req.routeParamValues == nil {
 				req.routeParamValues = r.allocRouteParamValues()
 			}
@@ -440,16 +440,16 @@ func (r *router) route(req *Request) Handler {
 			sn = nil
 			s = ss
 			switch snt {
-			case routeNodeTypeParam:
-				goto TryParam
-			case routeNodeTypeAny:
-				goto TryAny
+			case routeNodeTypePARAM:
+				goto TryPARAM
+			case routeNodeTypeANY:
+				goto TryANY
 			}
 		} else if sapn != nil {
 			cn = sapn
 			sapn = nil
 			s = saps
-			goto TryAny
+			goto TryANY
 		}
 
 		return r.a.NotFoundHandler
@@ -526,7 +526,7 @@ type routeNodeType uint8
 
 // The route node types.
 const (
-	routeNodeTypeStatic routeNodeType = iota
-	routeNodeTypeParam
-	routeNodeTypeAny
+	routeNodeTypeSTATIC routeNodeType = iota
+	routeNodeTypePARAM
+	routeNodeTypeANY
 )
