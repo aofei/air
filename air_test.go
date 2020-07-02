@@ -524,7 +524,7 @@ func TestAirServe(t *testing.T) {
 	assert.Equal(
 		t,
 		fmt.Sprintf(
-			"air: serving in debug mode\nair: listening on %v\n",
+			"air: listening on %v\nair: serving in debug mode\n",
 			a.Addresses(),
 		),
 		string(b),

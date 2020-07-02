@@ -12,7 +12,7 @@ type Group struct {
 	// All paths of routes registered by the group will share the `Prefix`.
 	//
 	// The `Prefix` may consits of STATIC component(s) and PARAM
-	// component(s), but it must not contain an ANY param component.
+	// component(s), but it must not contain an ANY component.
 	Prefix string
 
 	// Gases is the group-level gases.

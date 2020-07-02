@@ -30,13 +30,13 @@ framework, registering a route usually requires at least two params:
 	)
 
 The first param is a route path that contains 6 components. Among them, "users",
-"posts" and "assets" are STATIC components, ":UserID" and ":PostID" are param
-components, "*" is an ANY param component. Note that all route params (param
-component(s) and ANY param component) will be parsed into the `Request` and can
-be accessed via the `Request.Param` and `Request.Params`. The name of a
-`RequestParam` parsed from a param component always discards its leading ":",
+"posts" and "assets" are STATIC components, ":UserID" and ":PostID" are PARAM
+components, "*" is an ANY component. Note that all route params (PARAM
+component(s) and ANY component) will be parsed into the `Request` and can be
+accessed via the `Request.Param` and `Request.Params`. The name of a
+`RequestParam` parsed from a PARAM component always discards its leading ":",
 such as ":UserID" will become "UserID". The name of a `RequestParam` parsed from
-an ANY param component is "*".
+an ANY component is "*".
 
 The second param is a `Handler` that serves the requests that match this route.
 */
@@ -692,7 +692,7 @@ func New() *Air {
 // GET registers a new GET route for the path with the matching h in the router
 // of the a with the optional route-level gases.
 //
-// The path may consist of STATIC component(s), PARAM component(s) and ANY param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY
 // component.
 //
 // The gases is always FILO.
@@ -703,7 +703,7 @@ func (a *Air) GET(path string, h Handler, gases ...Gas) {
 // HEAD registers a new HEAD route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of STATIC component(s), PARAM component(s) and ANY param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY
 // component.
 //
 // The way, the gases is always FILO.
@@ -714,7 +714,7 @@ func (a *Air) HEAD(path string, h Handler, gases ...Gas) {
 // POST registers a new POST route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of STATIC component(s), PARAM component(s) and ANY param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY
 // component.
 //
 // The gases is always FILO.
@@ -725,7 +725,7 @@ func (a *Air) POST(path string, h Handler, gases ...Gas) {
 // PUT registers a new PUT route for the path with the matching h in the router
 // of the a with the optional route-level gases.
 //
-// The path may consist of STATIC component(s), PARAM component(s) and ANY param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY
 // component.
 //
 // The gases is always FILO.
@@ -736,7 +736,7 @@ func (a *Air) PUT(path string, h Handler, gases ...Gas) {
 // PATCH registers a new PATCH route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of STATIC component(s), PARAM component(s) and ANY param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY
 // component.
 //
 // The gases is always FILO.
@@ -747,7 +747,7 @@ func (a *Air) PATCH(path string, h Handler, gases ...Gas) {
 // DELETE registers a new DELETE route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of STATIC component(s), PARAM component(s) and ANY param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY
 // component.
 //
 // The gases is always FILO.
@@ -758,7 +758,7 @@ func (a *Air) DELETE(path string, h Handler, gases ...Gas) {
 // CONNECT registers a new CONNECT route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of STATIC component(s), PARAM component(s) and ANY param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY
 // component.
 //
 // The gases is always FILO.
@@ -769,7 +769,7 @@ func (a *Air) CONNECT(path string, h Handler, gases ...Gas) {
 // OPTIONS registers a new OPTIONS route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of STATIC component(s), PARAM component(s) and ANY param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY
 // component.
 //
 // The gases is always FILO.
@@ -780,7 +780,7 @@ func (a *Air) OPTIONS(path string, h Handler, gases ...Gas) {
 // TRACE registers a new TRACE route for the path with the matching h in the
 // router of the a with the optional route-level gases.
 //
-// The path may consist of STATIC component(s), PARAM component(s) and ANY param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY
 // component.
 //
 // The gases is always FILO.
@@ -795,7 +795,7 @@ func (a *Air) TRACE(path string, h Handler, gases ...Gas) {
 // "GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS" and
 // "TRACE". Invalid methods will be silently ignored.
 //
-// The path may consist of STATIC component(s), PARAM component(s) and ANY param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY
 // component.
 //
 // The gases is always FILO.
@@ -842,7 +842,7 @@ func (a *Air) BATCH(methods []string, path string, h Handler, gases ...Gas) {
 // the a to serve a static file with the filename and optional route-level
 // gases.
 //
-// The path may consist of STATIC component(s), PARAM component(s) and ANY param
+// The path may consist of STATIC component(s), PARAM component(s) and ANY
 // component.
 //
 // The gases is always FILO.
@@ -864,7 +864,7 @@ func (a *Air) FILE(path, filename string, gases ...Gas) {
 // route-level gases.
 //
 // The path prefix may consits of STATIC component(s) and PARAM component(s).
-// But it must not contain an ANY param component.
+// But it must not contain an ANY component.
 //
 // The gases is always FILO.
 func (a *Air) FILES(prefix, root string, gases ...Gas) {
@@ -898,7 +898,7 @@ func (a *Air) FILES(prefix, root string, gases ...Gas) {
 // group-level gases that inherited from the a.
 //
 // The path prefix may consits of STATIC component(s) and param component(s).
-// But it must not contain an ANY param component.
+// But it must not contain an ANY component.
 //
 // The gases is always FILO.
 func (a *Air) Group(prefix string, gases ...Gas) *Group {
@@ -954,54 +954,6 @@ func (a *Air) Serve() error {
 	a.server.MaxHeaderBytes = a.MaxHeaderBytes
 	a.server.ErrorLog = a.ErrorLogger
 
-	realPort := port
-	hh := http.Handler(http.HandlerFunc(func(
-		rw http.ResponseWriter,
-		r *http.Request,
-	) {
-		host, _, err := net.SplitHostPort(r.Host)
-		if err != nil {
-			host = r.Host
-		}
-
-		if realPort != "443" {
-			host = net.JoinHostPort(host, realPort)
-		}
-
-		http.Redirect(
-			rw,
-			r,
-			"https://"+host+r.RequestURI,
-			http.StatusMovedPermanently,
-		)
-	}))
-
-	shutdownJobRunOnce := sync.Once{}
-	a.server.RegisterOnShutdown(func() {
-		a.shutdownJobMutex.Lock()
-		defer a.shutdownJobMutex.Unlock()
-		shutdownJobRunOnce.Do(func() {
-			waitGroup := sync.WaitGroup{}
-			for _, job := range a.shutdownJobs {
-				if job != nil {
-					waitGroup.Add(1)
-					go func(job func()) {
-						job()
-						waitGroup.Done()
-					}(job)
-				}
-			}
-
-			waitGroup.Wait()
-
-			close(a.shutdownJobDone)
-		})
-	})
-
-	if a.DebugMode {
-		fmt.Println("air: serving in debug mode")
-	}
-
 	tlsConfig := a.TLSConfig
 	if tlsConfig != nil {
 		tlsConfig = tlsConfig.Clone()
@@ -1035,6 +987,27 @@ func (a *Air) Serve() error {
 		}
 	}
 
+	hh := http.Handler(http.HandlerFunc(func(
+		rw http.ResponseWriter,
+		r *http.Request,
+	) {
+		host, _, err := net.SplitHostPort(r.Host)
+		if err != nil {
+			host = r.Host
+		}
+
+		if port != "443" {
+			host = net.JoinHostPort(host, port)
+		}
+
+		http.Redirect(
+			rw,
+			r,
+			fmt.Sprint("https://", host, r.RequestURI),
+			http.StatusMovedPermanently,
+		)
+	}))
+
 	if a.ACMEEnabled {
 		acm := &autocert.Manager{
 			Prompt: func(tosURL string) bool {
@@ -1067,8 +1040,6 @@ func (a *Air) Serve() error {
 
 		hh = acm.HTTPHandler(hh)
 
-		acmTLSConfig := acm.TLSConfig()
-
 		if tlsConfig == nil {
 			tlsConfig = &tls.Config{}
 		}
@@ -1095,7 +1066,7 @@ func (a *Air) Serve() error {
 			return acm.GetCertificate(chi)
 		}
 
-		for _, proto := range acmTLSConfig.NextProtos {
+		for _, proto := range acm.TLSConfig().NextProtos {
 			if !stringSliceContains(
 				tlsConfig.NextProtos,
 				proto,
@@ -1119,7 +1090,7 @@ func (a *Air) Serve() error {
 	defer delete(a.addressMap, listener.Addr().String())
 
 	netListener := net.Listener(listener)
-	httpsEnforced := a.ACMEEnabled || a.HTTPSEnforced
+	httpsEnforced := a.HTTPSEnforced || a.ACMEEnabled
 	if tlsConfig != nil {
 		netListener = tls.NewListener(netListener, tlsConfig)
 		if httpsEnforced {
@@ -1160,9 +1131,35 @@ func (a *Air) Serve() error {
 		a.server.Handler = h2c.NewHandler(a.server.Handler, h2s)
 	}
 
-	if realPort == "0" || (httpsEnforced && a.HTTPSEnforcedPort == "0") {
-		_, realPort, _ = net.SplitHostPort(netListener.Addr().String())
+	if port == "0" || (httpsEnforced && a.HTTPSEnforcedPort == "0") {
+		_, port, _ = net.SplitHostPort(netListener.Addr().String())
 		fmt.Printf("air: listening on %v\n", a.Addresses())
+	}
+
+	shutdownJobRunOnce := sync.Once{}
+	a.server.RegisterOnShutdown(func() {
+		a.shutdownJobMutex.Lock()
+		defer a.shutdownJobMutex.Unlock()
+		shutdownJobRunOnce.Do(func() {
+			waitGroup := sync.WaitGroup{}
+			for _, job := range a.shutdownJobs {
+				if job != nil {
+					waitGroup.Add(1)
+					go func(job func()) {
+						job()
+						waitGroup.Done()
+					}(job)
+				}
+			}
+
+			waitGroup.Wait()
+
+			close(a.shutdownJobDone)
+		})
+	})
+
+	if a.DebugMode {
+		fmt.Println("air: serving in debug mode")
 	}
 
 	return a.server.Serve(netListener)
@@ -1236,9 +1233,7 @@ func (a *Air) Addresses() []string {
 	}
 
 	sort.Slice(as, func(i, j int) bool {
-		iw := a.addressMap[as[i]]
-		jw := a.addressMap[as[j]]
-		return iw < jw
+		return a.addressMap[as[i]] < a.addressMap[as[j]]
 	})
 
 	return as
@@ -1261,6 +1256,12 @@ func (a *Air) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	req.localizedString = nil
 
+	r.Body = &requestBody{
+		r:  req,
+		hr: r,
+		rc: r.Body,
+	}
+
 	req.SetHTTPRequest(r)
 
 	// Get response from the pool.
@@ -1280,7 +1281,6 @@ func (a *Air) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		r:  res,
 		rw: rw,
 	})
-
 	if hijacker, ok := rw.(http.Hijacker); ok {
 		hrw = http.ResponseWriter(&struct {
 			http.ResponseWriter
@@ -1310,14 +1310,6 @@ func (a *Air) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	req.res = res
 	res.req = req
-
-	// Tie the request body and standard request body together.
-
-	r.Body = &requestBody{
-		r:  req,
-		hr: r,
-		rc: r.Body,
-	}
 
 	// Chain the gases stack.
 
