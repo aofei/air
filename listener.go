@@ -149,8 +149,8 @@ func (pc *proxyConn) RemoteAddr() net.Addr {
 	return pc.Conn.RemoteAddr()
 }
 
-// readHeader reads the PROXY protocol header. It does nothing if the underlying
-// connection is not speaking the PROXY protocol.
+// readHeader reads the PROXY protocol header. It does nothing if the connection
+// of the pc is not speaking the PROXY protocol.
 func (pc *proxyConn) readHeader() {
 	if pc.readHeaderTimeout != 0 {
 		pc.SetReadDeadline(time.Now().Add(pc.readHeaderTimeout))

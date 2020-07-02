@@ -40,7 +40,7 @@ import (
 // Response is an HTTP response.
 //
 // The `Response` not only represents HTTP/1.x responses, but also represents
-// HTTP/2 responses, and always acts as HTTP/2 responses.
+// HTTP/2 responses, and always show as HTTP/2 responses.
 type Response struct {
 	// Air is where the response belongs.
 	Air *Air
@@ -49,7 +49,7 @@ type Response struct {
 	//
 	// See RFC 7231, section 6.
 	//
-	// For HTTP/1.x, it will be put in the response-line.
+	// For HTTP/1.x, it will be put in the Response-Line.
 	//
 	// For HTTP/2, it will be the ":status" pseudo-header.
 	//
@@ -58,11 +58,11 @@ type Response struct {
 
 	// Header is the header map.
 	//
+	// See RFC 7231, section 7.
+	//
 	// By setting the Trailer header to the names of the trailers which will
 	// come later. In this case, those names of the header map are treated
 	// as if they were trailers.
-	//
-	// See RFC 7231, section 7.
 	//
 	// The `Header` is basically the same for both HTTP/1.x and HTTP/2. The
 	// only difference is that HTTP/2 requires header names to be lowercase
@@ -84,7 +84,7 @@ type Response struct {
 	ContentLength int64
 
 	// Written indicates whether at least one byte has been written to the
-	// client, or the underlying connection has been hijacked.
+	// client, or the connection has been hijacked.
 	Written bool
 
 	// Minified indicates whether the `Body` has been minified.
@@ -471,9 +471,10 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 	return r.WriteHTML(buf.String())
 }
 
-// Redirect writes the url as a redirection to the client. Note that the
-// `Status` of the r will be the `http.StatusFound` if it is not a redirection
-// status.
+// Redirect writes the url as a redirection to the client.
+//
+// The `Status` of the r will be the `http.StatusFound` if it is not a
+// redirection status.
 func (r *Response) Redirect(url string) error {
 	if r.Written {
 		return errors.New("air: request has been written")
@@ -500,7 +501,7 @@ func (r *Response) Redirect(url string) error {
 // request.
 //
 // It returns `http.ErrNotSupported` if the client has disabled push or if push
-// is not supported on the underlying connection.
+// is not supported on the connection of the r.
 func (r *Response) Push(target string, pos *http.PushOptions) error {
 	p, ok := r.hrw.(http.Pusher)
 	if !ok {
@@ -593,9 +594,9 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 
 // ProxyPass passes the request to the target and writes the response from the
 // target to the client by using the reverse proxy technique. If the rp is nil,
-// then the default instance of the `ReverseProxy` will be used.
+// the default instance of the `ReverseProxy` will be used.
 //
-// The target must be based on the HTTP protocol (such as HTTP(S), WebSocket and
+// The target must be based on the HTTP protocol (such as HTTP, WebSocket and
 // gRPC). So, the scheme of the target must be "http", "https", "ws", "wss",
 // "grpc" or "grpcs".
 func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
@@ -816,8 +817,9 @@ func (r *Response) gzippable() bool {
 type ReverseProxy struct {
 	// Transport is used to perform the request to the target.
 	//
-	// If the `Transport` is not nil, then it is responsible for keeping the
-	// `Response.ProxyPass` working properly.
+	// Normally the `Transport` should be nil, which means that a default
+	// and well-improved one will be used. If the `Transport` is not nil, it
+	// is responsible for keeping the `Response.ProxyPass` working properly.
 	Transport http.RoundTripper
 
 	// ModifyRequestMethod modifies the method of the request to the target.
@@ -837,7 +839,7 @@ type ReverseProxy struct {
 	//
 	// It is the caller's responsibility to close the returned
 	// `io.ReadCloser`, which means that the `Response.ProxyPass` will be
-	/// responsible for closing it.
+	// responsible for closing it.
 	ModifyRequestBody func(body io.ReadCloser) (io.ReadCloser, error)
 
 	// ModifyResponseStatus modifies the status of the response from the
@@ -852,7 +854,7 @@ type ReverseProxy struct {
 	//
 	// It is the caller's responsibility to close the returned
 	// `io.ReadCloser`, which means that the `Response.ProxyPass` will be
-	/// responsible for closing it.
+	// responsible for closing it.
 	ModifyResponseBody func(body io.ReadCloser) (io.ReadCloser, error)
 }
 

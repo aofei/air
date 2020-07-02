@@ -9,7 +9,7 @@ import (
 
 // WebSocket is a WebSocket peer.
 //
-// It is highly recommended not to modify the handlers of the `WebSocket` after
+// It is highly recommended not to modify any handlers of the `WebSocket` after
 // calling the `WebSocket.Listen`, which will cause unpredictable problems.
 type WebSocket struct {
 	// TextHandler is the handler that handles the incoming text messages.
@@ -33,30 +33,30 @@ type WebSocket struct {
 	// messages.
 	ErrorHandler func(err error)
 
-	// Closed indicates whether the underlying connection has been closed.
+	// Closed indicates whether the connection has been closed.
 	Closed bool
 
 	conn     *websocket.Conn
 	listened bool
 }
 
-// SetMaxMessageBytes sets the maximum number of bytes the ws will read messages
-// from the remote peer. If a message exceeds the limit, the ws sends a close
-// message to the remote peer.
+// SetMaxMessageBytes sets the maximum number of bytes allowed for the ws to
+// read messages from the remote peer. If a message exceeds the limit, the ws
+// sends a close message to the remote peer.
 func (ws *WebSocket) SetMaxMessageBytes(mmb int64) {
 	ws.conn.SetReadLimit(mmb)
 }
 
-// SetReadDeadline sets the read deadline on the underlying connection of the
-// ws. After a read has timed out, the state of the ws is corrupt and all future
-// reads will return an error immediately.
+// SetReadDeadline sets the read deadline on the connection of the ws. After a
+// read has timed out, the state of the ws is corrupt and all future reads will
+// return an error immediately.
 func (ws *WebSocket) SetReadDeadline(t time.Time) error {
 	return ws.conn.SetReadDeadline(t)
 }
 
-// SetWriteDeadline sets the write deadline on the underlying connection of the
-// ws. After a write has timed out, the state of the ws is corrupt and all
-// future writes will return an error immediately.
+// SetWriteDeadline sets the write deadline on the connection of the ws. After a
+// write has timed out, the state of the ws is corrupt and all future writes
+// will return an error immediately.
 func (ws *WebSocket) SetWriteDeadline(t time.Time) error {
 	return ws.conn.SetWriteDeadline(t)
 }

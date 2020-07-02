@@ -9,19 +9,18 @@ type Group struct {
 
 	// Prefix is the prefix of all route paths.
 	//
-	// All paths of routes registered by the group will share the same
-	// prefix.
+	// All paths of routes registered by the group will share the `Prefix`.
 	//
-	// The path prefix may consits of static component(s) and param
-	// component(s). But it must not contain an any param component.
+	// The `Prefix` may consits of static component(s) and param
+	// component(s), but it must not contain an any param component.
 	Prefix string
 
 	// Gases is the group-level gases.
 	//
-	// All gases of routes registered by the group will share the same
-	// group-level gases at the bottom of the stack.
+	// All gases of routes registered by the group will share the `Gases`
+	// at the bottom of the stack.
 	//
-	// The gases is always FILO.
+	// The `Gases` is always FILO.
 	Gases []Gas
 }
 

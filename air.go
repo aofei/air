@@ -78,118 +78,120 @@ import (
 // after calling the `Air.Serve`, which will cause unpredictable problems.
 //
 // The new instances of the `Air` should only be created by calling the `New`.
-// If you only need one instance of the `Air`, then it is recommended to use the
+// If you only need one instance of the `Air`, it is recommended to use the
 // `Default`, which will help you simplify the scope management.
 type Air struct {
 	// AppName is the name of the web application.
 	//
-	// It is recommended to set a name and try to ensure that the name is
+	// It is recommended to set the `AppName` and try to ensure that it is
 	// unique (used to distinguish between different web applications).
 	//
 	// Default value: "air"
 	AppName string `mapstructure:"app_name"`
 
 	// MaintainerEmail is the e-mail address of the one who is responsible
-	// for maintenance.
+	// for maintaining the web application.
 	//
-	// It is recommended to set an e-mail if the ACME feature is enabled
-	// (used by the CAs, such as Let's Encrypt, to notify about problems
-	// with issued certificates).
+	// It is recommended to set the `MaintainerEmail` if the `ACMEEnabled`
+	// is true (used by the CAs, such as Let's Encrypt, to notify about
+	// problems with issued certificates).
 	//
 	// Default value: ""
 	MaintainerEmail string `mapstructure:"maintainer_email"`
 
 	// DebugMode indicates whether the web application is in debug mode.
 	//
-	// Please keep in mind that the debug mode is quite bossy, some features
-	// will be affected in the debug mode. So never use the debug mode in a
-	// production environment unless you want to do something crazy.
+	// Please keep in mind that the `DebugMode` is quite bossy, some
+	// features will be affected if it is true. So never set the `DebugMode`
+	// to true in a production environment unless you want to do something
+	// crazy.
 	//
 	// Default value: false
 	DebugMode bool `mapstructure:"debug_mode"`
 
 	// Address is the TCP address that the server listens on.
 	//
-	// There is always an address here that contains a free port.
-	//
-	// If the port of the `Address` is "0", a port is automatically chosen.
-	// The `Addresses` can be used to discover the chosen port.
+	// The `Address` is never empty and contains a free port. If the port of
+	// the `Address` is "0", a random port is automatically chosen. The
+	// `Addresses` can be used to discover the chosen port.
 	//
 	// Default value: "localhost:8080"
 	Address string `mapstructure:"address"`
 
-	// ReadTimeout is the maximum duration the server reads a request
-	// entirely, including the body part.
+	// ReadTimeout is the maximum duration allowed for the server to read a
+	// request entirely, including the body part.
 	//
-	// The `ReadTimeout` does not let the handlers make per-request
+	// The `ReadTimeout` does not let the `Handler` make per-request
 	// decisions on each request body's acceptable deadline or upload rate.
 	//
 	// Default value: 0
 	ReadTimeout time.Duration `mapstructure:"read_timeout"`
 
-	// ReadHeaderTimeout is the amount of time allowed the server reads the
-	// headers of a request.
+	// ReadHeaderTimeout is the maximum duration allowed for the server to
+	// read the headers of a request.
 	//
-	// The connection's read deadline is reset after reading the headers and
-	// the handler can decide what is considered too slow for the body.
+	// The connection's read deadline is reset after reading the headers of
+	// a request and the `Handler` can decide what is considered too slow
+	// for the body.
+	//
+	// If the `ReadHeaderTimeout` is zero, the value of the `ReadTimeout` is
+	// used. If both are zero, there is no timeout.
 	//
 	// Default value: 0
 	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
 
-	// WriteTimeout is the maximum duration the server writes a response.
+	// WriteTimeout is the maximum duration allowed for the server to write
+	// a response.
 	//
-	// The `WriteTimeout` is reset whenever a new request's header is read.
-	// Like the `ReadTimeout`, the `WriteTimeout` does not let handlers make
-	// decisions on a per-request basis.
+	// The `WriteTimeout` is reset whenever the headers of a new request are
+	// read. Like the `ReadTimeout`, the `WriteTimeout` does not let the
+	// `Handler` make decisions on a per-request basis.
 	//
 	// Default value: 0
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
 
-	// IdleTimeout is the maximum amount of time the server waits for the
-	// next request.
+	// IdleTimeout is the maximum duration allowed for the server to wait
+	// for the next request.
 	//
 	// If the `IdleTimeout` is zero, the value of the `ReadTimeout` is used.
-	// If both are zero, the value of the `ReadHeaderTimeout` is used.
+	// If both are zero, there is no timeout.
 	//
 	// Default value: 0
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 
 	// MaxHeaderBytes is the maximum number of bytes the server will read
-	// parsing the request header's names and values, including the request
-	// line.
+	// parsing the request headers' names and values, including the HTTP/1.x
+	// Request-Line.
 	//
 	// Default value: 1048576
 	MaxHeaderBytes int `mapstructure:"max_header_bytes"`
 
-	// TLSConfig is the `tls.Config` to make the server to handle requests
-	// on incoming TLS connections.
-	//
-	// The `TLSConfig` will be cloned when starting the server.
+	// TLSConfig is the TLS configuration to make the server to handle
+	// requests on incoming TLS connections.
 	//
 	// Default value: nil
 	TLSConfig *tls.Config `mapstructure:"-"`
 
-	// TLSCertFile is the path to the TLS certificate file used when
-	// starting the server.
+	// TLSCertFile is the path to the TLS certificate file.
 	//
-	// If the certificate is signed by a certificate authority, the TLS
-	// certificate file should be the concatenation of the certificate, any
-	// intermediates, and the CA's certificate.
+	// The `TLSCertFile` must be set together wth the `TLSKeyFile`.
 	//
-	// The `TLSCertFile` must be set at the same time as the `TLSKeyFile`.
+	// If the certificate targeted by the `TLSCertFile` is signed by a CA,
+	// it should be the concatenation of the certificate, any intermediates,
+	// and the CA's certificate.
 	//
-	// If the `TLSConfig` is not nil, then the certificate targeted by the
+	// If the `TLSConfig` is not nil, the certificate targeted by the
 	// `TLSCertFile` will be appended to the end of the `Certificates` of
 	// the `TLSConfig`'s clone. Otherwise, a new instance of the
-	// `tls.Config` will be created.
+	// `tls.Config` will be created with the certificate.
 	//
 	// Default value: ""
 	TLSCertFile string `mapstructure:"tls_cert_file"`
 
-	// TLSKeyFile is the path to the TLS key file used when starting the
-	// server.
+	// TLSKeyFile is the path to the TLS key file.
 	//
-	// The key must match the certificate targeted by the `TLSCertFile`.
+	// The key targeted by the `TLSKeyFile` must match the certificate
+	// targeted by the `TLSCertFile`.
 	//
 	// Default value: ""
 	TLSKeyFile string `mapstructure:"tls_key_file"`
@@ -197,18 +199,32 @@ type Air struct {
 	// ACMEEnabled indicates whether the ACME feature is enabled.
 	//
 	// The `ACMEEnabled` gives the server the ability to automatically
-	// retrieve new TLS certificates from the ACME CA targeted by the
-	// `ACMEDirectoryURL`.
+	// obtain new certificates from the ACME CA.
 	//
-	// If the `TLSConfig` and `TLSConfig.GetCertificate` are not nil, then
-	// the server will respect it and use the ACME feature as a backup.
-	// Otherwise, a new instance of the `tls.Config` will be created.
+	// If the `TLSConfig` and `TLSConfig.GetCertificate` are not nil, the
+	// server will respect it and use the ACME feature as a backup.
+	// Otherwise, a new instance of the `tls.Config` will be created with
+	// the ACME feature.
 	//
 	// Default value: false
 	ACMEEnabled bool `mapstructure:"acme_enabled"`
 
+	// ACMEDirectoryURL is the ACME CA directory URL of the ACME feature.
+	//
+	// Default value: "https://acme-v02.api.letsencrypt.org/directory"
+	ACMEDirectoryURL string `mapstructure:"acme_directory_url"`
+
+	// ACMETOSURLWhitelist is the list of ACME CA's Terms of Service (TOS)
+	// URL allowed by the ACME feature.
+	//
+	// If the length of the `ACMETOSURLWhitelist` is zero, all TOS URLs will
+	// be allowed.
+	//
+	// Default value: nil
+	ACMETOSURLWhitelist []string `mapstructure:"acme_tos_url_whitelist"`
+
 	// ACMEAccountKey is the account key of the ACME feature used to
-	// register which a CA and sign requests.
+	// register with an ACME CA and sign requests.
 	//
 	// Supported algorithms:
 	//   * RS256
@@ -216,33 +232,16 @@ type Air struct {
 	//   * ES384
 	//   * ES512
 	//
-	// If the `ACMEAccountKey` is nil, then a new ECDSA P-256 key is
-	// generated.
+	// If the `ACMEAccountKey` is nil, a new ECDSA P-256 key is generated.
 	//
 	// Default value: nil
 	ACMEAccountKey crypto.Signer `mapstructure:"-"`
 
-	// ACMEDirectoryURL is the CA directory URL of the ACME feature.
-	//
-	// The CA directory must be trusted because the ACME will automatically
-	// accept the Terms of Service (TOS) prompted from it.
-	//
-	// Default value: "https://acme-v02.api.letsencrypt.org/directory"
-	ACMEDirectoryURL string `mapstructure:"acme_directory_url"`
-
-	// ACMETOSURLWhitelist is the list of CA's Terms of Service (TOS) URL
-	// allowed by the ACME feature.
-	//
-	// If the length of the list is zero, then all TOS URLs will be allowed.
-	//
-	// Default value: nil
-	ACMETOSURLWhitelist []string `mapstructure:"acme_tos_url_whitelist"`
-
 	// ACMECertRoot is the root of the certificates of the ACME feature.
 	//
-	// It is recommended to set a persistent root since all CAs have a rate
-	// limit on issuing certificates. Different web applications can share
-	// the same place (if they are all built using this framework).
+	// It is recommended to set the `ACMECertRoot` since all ACME CAs have a
+	// rate limit on issuing certificates. Different web applications can
+	// share the same place (if they are all built using this framework).
 	//
 	// Default value: "acme-certs"
 	ACMECertRoot string `mapstructure:"acme_cert_root"`
@@ -257,15 +256,16 @@ type Air struct {
 
 	// ACMEHostWhitelist is the list of hosts allowed by the ACME feature.
 	//
-	// It is highly recommended to set a list of hosts. If the length of the
-	// list is not zero, then all connections that are not connected to the
-	// hosts in the list will not be able to obtain new TLS certificates
-	// from the ACME CA targeted by the `ACMEDirectoryURL`.
+	// It is highly recommended to set the `ACMEHostWhitelist`. If the
+	// length of the `ACMEHostWhitelist` is not zero, all connections that
+	// are not connected to the hosts in it will not be able to obtain new
+	// certificates from the ACME CA.
 	//
 	// Default value: nil
 	ACMEHostWhitelist []string `mapstructure:"acme_host_whitelist"`
 
-	// ACMERenewalWindow is the renewal window before a certificate expires.
+	// ACMERenewalWindow is the renewal window of the ACME feature before a
+	// certificate expires.
 	//
 	// Default value: 2592000000000000
 	ACMERenewalWindow time.Duration `mapstructure:"acme_renewal_window"`
@@ -278,8 +278,8 @@ type Air struct {
 	ACMEExtraExts []pkix.Extension `mapstructure:"-"`
 
 	// HTTPSEnforced indicates whether the server is forcibly accessible
-	// only via the HTTPS scheme (HTTP requests will automatically redirect
-	// to HTTPS).
+	// only via the HTTPS scheme (HTTP requests will be automatically
+	// redirected to HTTPS).
 	//
 	// The `HTTPSEnforced` will always be treated as true when the
 	// `ACMEEnabled` is true.
@@ -289,16 +289,16 @@ type Air struct {
 
 	// HTTPSEnforcedPort is the port of the TCP address (share the same host
 	// as the `Address`) that the server listens on. All requests to this
-	// port will be forced to redirect to HTTPS.
+	// port will be automatically redirected to HTTPS.
 	//
-	// If the `HTTPSEnforcedPort` is "0", a port is automatically chosen.
-	// The `Addresses` can be used to discover the chosen port.
+	// If the `HTTPSEnforcedPort` is "0", a random port is automatically
+	// chosen. The `Addresses` can be used to discover the chosen port.
 	//
 	// Default value: "0"
 	HTTPSEnforcedPort string `mapstructure:"https_enforced_port"`
 
-	// WebSocketHandshakeTimeout is the maximum amount of time the server
-	// waits for a WebSocket handshake to complete.
+	// WebSocketHandshakeTimeout is the maximum duration allowed for the
+	// server to wait for a WebSocket handshake to complete.
 	//
 	// Default value: 0
 	WebSocketHandshakeTimeout time.Duration `mapstructure:"websocket_handshake_timeout"`
@@ -306,9 +306,9 @@ type Air struct {
 	// WebSocketSubprotocols is the list of supported WebSocket subprotocols
 	// of the server.
 	//
-	// If the length of the list is not zero, then the `Response.WebSocket`
-	// negotiates a subprotocol by selecting the first match in the list
-	// with a protocol requested by the client. If there is no match, then
+	// If the length of the `WebSocketSubprotocols` is not zero, the
+	// `Response.WebSocket` negotiates a subprotocol by selecting the first
+	// match with a protocol requested by the client. If there is no match,
 	// no protocol is negotiated (the Sec-Websocket-Protocol header is not
 	// included in the handshake response).
 	//
@@ -324,8 +324,8 @@ type Air struct {
 	// Default value: false
 	PROXYEnabled bool `mapstructure:"proxy_enabled"`
 
-	// PROXYReadHeaderTimeout is the amount of time allowed the PROXY
-	// feature reads the PROXY protocol header of a connection.
+	// PROXYReadHeaderTimeout is the maximum duration allowed for the server
+	// to read the PROXY protocol header of a connection.
 	//
 	// The connection's read deadline is reset after reading the PROXY
 	// protocol header.
@@ -336,24 +336,24 @@ type Air struct {
 	// PROXYRelayerIPWhitelist is the list of IP addresses or CIDR notation
 	// IP address ranges of the relayers allowed by the PROXY feature.
 	//
-	// It is highly recommended to set a list of IP addresses or CIDR
-	// notation IP address ranges. If the length of the list is not zero,
-	// then all connections relayed from the IP addresses are not in the
-	// list will not be able to act the PROXY protocol.
+	// It is highly recommended to set the `PROXYRelayerIPWhitelist`. If the
+	// length of the `PROXYRelayerIPWhitelist` is not zero, all connections
+	// relayed from the IP addresses are not in it will not be able to act
+	// the PROXY protocol.
 	//
 	// Default value: nil
 	PROXYRelayerIPWhitelist []string `mapstructure:"proxy_relayer_ip_whitelist"`
 
 	// Pregases is the `Gas` chain stack that performs before routing.
 	//
-	// The stack is always FILO.
+	// The `Pregases` is always FILO.
 	//
 	// Default value: nil
 	Pregases []Gas `mapstructure:"-"`
 
 	// Gases is the `Gas` chain stack that performs after routing.
 	//
-	// The stack is always FILO.
+	// The `Gases` is always FILO.
 	//
 	// Default value: nil
 	Gases []Gas `mapstructure:"-"`
@@ -361,7 +361,7 @@ type Air struct {
 	// NotFoundHandler is the `Handler` that returns not found error.
 	//
 	// The `NotFoundHandler` is never nil because the router will use it as
-	// the default `Handler` when no matching routes are found.
+	// the default `Handler` when no match is found.
 	//
 	// Default value: `DefaultNotFoundHandler`
 	NotFoundHandler func(*Request, *Response) error `mapstructure:"-"`
@@ -370,22 +370,22 @@ type Air struct {
 	// allowed error.
 	//
 	// The `MethodNotAllowedHandler` is never nil because the router will
-	// use it as the default `Handler` when it finds a matching route but
-	// its method is not registered.
+	// use it as the default `Handler` when a match is found but the request
+	// method is not registered.
 	//
 	// Default value: `DefaultMethodNotAllowedHandler`
 	MethodNotAllowedHandler func(*Request, *Response) error `mapstructure:"-"`
 
-	// ErrorHandler is the centralized error handler of the server.
+	// ErrorHandler is the centralized error handler.
 	//
-	// The `ErrorHandler` is never nil because it is used in every
-	// request-response cycle that has an error.
+	// The `ErrorHandler` is never nil because the server will use it in
+	// every request-response cycle that has an error.
 	//
 	// Default value: `DefaultErrorHandler`
 	ErrorHandler func(error, *Request, *Response) `mapstructure:"-"`
 
 	// ErrorLogger is the `log.Logger` that logs errors that occur in the
-	// server.
+	// web application.
 	//
 	// If the `ErrorLogger` is nil, logging is done via the log package's
 	// standard logger.
@@ -396,16 +396,16 @@ type Air struct {
 	// RendererTemplateRoot is the root of the HTML templates of the
 	// renderer feature.
 	//
-	// All HTML template files inside the root will be recursively parsed
-	// into the renderer.
+	// All HTML template files inside the `RendererTemplateRoot` will be
+	// recursively parsed into the renderer and their names will be used as
+	// HTML template names.
 	//
 	// Default value: "templates"
 	RendererTemplateRoot string `mapstructure:"renderer_template_root"`
 
 	// RendererTemplateExts is the list of filename extensions of the HTML
 	// templates of the renderer feature used to distinguish the HTML
-	// template files in the `RendererTemplateRoot` when parsing them into
-	// the renderer.
+	// template files in the `RendererTemplateRoot`.
 	//
 	// Default value: [".html"]
 	RendererTemplateExts []string `mapstructure:"renderer_template_exts"`
@@ -463,9 +463,8 @@ type Air struct {
 	GzipEnabled bool `mapstructure:"gzip_enabled"`
 
 	// GzipMinContentLength is the minimum content length of the gzip
-	// featrue used to limit at least how much response body can be gzipped.
-	//
-	// The content length is determined only from the Content-Length header.
+	// featrue used to limit at least how big (determined only from the
+	// Content-Length header) response body can be gzipped.
 	//
 	// Default value: 1024
 	GzipMinContentLength int64 `mapstructure:"gzip_min_content_length"`
@@ -485,11 +484,9 @@ type Air struct {
 
 	// GzipFlushThreshold is the flush threshold of the gzip feature.
 	//
-	// Once the pending compressed data in the gzip writer reach the flush
-	// threshold, they will be flushed into the underlying writer of the
-	// gzip writer immediately.
-	//
-	// The `GzipFlushThreshold` only works when it is greater than zero.
+	// If the `GzipFlushThreshold` is not zero, once the pending compressed
+	// data in the gzip writer reach the `GzipFlushThreshold`, they will be
+	// flushed into the underlying writer of the gzip writer immediately.
 	//
 	// Default value: 8192
 	GzipFlushThreshold int `mapstructure:"gzip_flush_threshold"`
@@ -503,22 +500,22 @@ type Air struct {
 	CofferEnabled bool `mapstructure:"coffer_enabled"`
 
 	// CofferMaxMemoryBytes is the maximum number of bytes of the runtime
-	// memory the coffer feature will use.
+	// memory allowed for the coffer feature to use.
 	//
 	// Default value: 33554432
 	CofferMaxMemoryBytes int `mapstructure:"coffer_max_memory_bytes"`
 
 	// CofferAssetRoot is the root of the assets of the coffer feature.
 	//
-	// All asset files inside the root will be recursively parsed into the
-	// coffer.
+	// All asset files inside the `CofferAssetRoot` will be recursively
+	// parsed into the coffer and their names will be used as asset names.
 	//
 	// Default value: "assets"
 	CofferAssetRoot string `mapstructure:"coffer_asset_root"`
 
 	// CofferAssetExts is the list of filename extensions of the assets of
 	// the coffer feature used to distinguish the asset files in the
-	// `CofferAssetRoot` when loading them into the coffer.
+	// `CofferAssetRoot`.
 	//
 	// Default value: [".html", ".css", ".js", ".json", ".xml", ".toml",
 	// ".yaml", ".yml", ".svg", ".jpg", ".jpeg", ".png", ".gif"]
@@ -536,8 +533,8 @@ type Air struct {
 	// I18nLocaleRoot is the root of the locales of the i18n feature.
 	//
 	// All TOML-based locale files (".toml" is the extension) inside the
-	// root will be parsed into the i18n and their names (without extension)
-	// will be used as locales.
+	// `I18nLocaleRoot` will be parsed into the i18n and their names
+	// (without extension) will be used as locales.
 	//
 	// Default value: "locales"
 	I18nLocaleRoot string `mapstructure:"i18n_locale_root"`
@@ -583,9 +580,8 @@ type Air struct {
 
 // Default is the default instance of the `Air`.
 //
-// If you only need one instance of the `Air`, then you should use the
-// `Default`. Unless you think you can efficiently pass your instance in
-// different scopes.
+// If you only need one instance of the `Air`, you should use the `Default`.
+// Unless you think you can efficiently pass your instance in different scopes.
 var Default = New()
 
 // New returns a new instance of the `Air` with default field values.
@@ -842,9 +838,9 @@ func (a *Air) BATCH(methods []string, path string, h Handler, gases ...Gas) {
 	}
 }
 
-// FILE registers a new GET route and a new HEAD route with the path in the
-// router of the a to serve a static file with the filename and optional
-// route-level gases.
+// FILE registers a new GET and HEAD route pair with the path in the router of
+// the a to serve a static file with the filename and optional route-level
+// gases.
 //
 // The path may consist of static component(s), param component(s) and any param
 // component.
@@ -863,8 +859,8 @@ func (a *Air) FILE(path, filename string, gases ...Gas) {
 	a.BATCH([]string{http.MethodGet, http.MethodHead}, path, h, gases...)
 }
 
-// FILES registers a new GET route and a new HEAD route with the path prefix in
-// the router of the a to serve the static files from the root with the optional
+// FILES registers some new GET and HEAD route paris with the path prefix in the
+// router of the a to serve the static files from the root with the optional
 // route-level gases.
 //
 // The path prefix may consits of static component(s) and param component(s).
@@ -1403,7 +1399,7 @@ func DefaultMethodNotAllowedHandler(req *Request, res *Response) error {
 	return errors.New(http.StatusText(res.Status))
 }
 
-// DefaultErrorHandler is the default centralized error handler for the server.
+// DefaultErrorHandler is the default centralized error handler.
 func DefaultErrorHandler(err error, req *Request, res *Response) {
 	if res.Written {
 		return
@@ -1422,7 +1418,7 @@ func DefaultErrorHandler(err error, req *Request, res *Response) {
 // `Request` and `Response` which it uses to perform a specific action, for
 // example, logging every request or recovering from panics.
 //
-// The argument is the next `Handler` that the gas will be called.
+// The param is the next `Handler` that the gas will be called.
 //
 // The return value is the gas that is wrapped into a `Handler`.
 type Gas func(Handler) Handler

@@ -17,7 +17,7 @@ import (
 // Request is an HTTP request.
 //
 // The `Request` not only represents HTTP/1.x requests, but also represents
-// HTTP/2 requests, and always acts as HTTP/2 requests.
+// HTTP/2 requests, and always show as HTTP/2 requests.
 type Request struct {
 	// Air is where the request belongs.
 	Air *Air
@@ -26,7 +26,7 @@ type Request struct {
 	//
 	// See RFC 7231, section 4.3.
 	//
-	// For HTTP/1.x, it is from the request-line.
+	// For HTTP/1.x, it is from the Request-Line.
 	//
 	// For HTTP/2, it is from the ":method" pseudo-header.
 	//
@@ -37,7 +37,7 @@ type Request struct {
 	//
 	// See RFC 3986, section 3.1.
 	//
-	// For HTTP/1.x, it is from the request-line.
+	// For HTTP/1.x, it is from the Request-Line.
 	//
 	// For HTTP/2, it is from the ":scheme" pseudo-header.
 	//
@@ -58,7 +58,7 @@ type Request struct {
 	// Path is the path. Note that it contains the query part (anyway, the
 	// HTTP/2 specification says so).
 	//
-	// For HTTP/1.x, it represents the request-target of the request-line.
+	// For HTTP/1.x, it represents the request-target of the Request-Line.
 	// See RFC 7230, section 3.1.1.
 	//
 	// For HTTP/2, it represents the ":path" pseudo-header. See RFC 7540,
@@ -69,11 +69,11 @@ type Request struct {
 
 	// Header is the header map.
 	//
+	// See RFC 7231, section 5.
+	//
 	// The values of the Trailer header are the names of the trailers which
 	// will come later. In this case, those names of the header map will be
 	// set after reading from the `Body` returns the `io.EOF`.
-	//
-	// See RFC 7231, section 5.
 	//
 	// The `Header` is basically the same for both HTTP/1.x and HTTP/2. The
 	// only difference is that HTTP/2 requires header names to be lowercase
@@ -95,9 +95,9 @@ type Request struct {
 
 	// Context is the associated context.
 	//
-	// The `Context` is canceled when the client's connection closes, the
-	// request is canceled (with HTTP/2), or when the request-response cycle
-	// is finished.
+	// The `Context` is canceled when the connection closes, the request is
+	// canceled (with HTTP/2), or when the request-response cycle is
+	// finished.
 	Context context.Context
 
 	hr                   *http.Request
@@ -489,7 +489,7 @@ func (r *Request) LocalizedString(key string) string {
 // RequestParam is an HTTP request param.
 //
 // The param may come from the route params, the request query, the request
-// form, the request multipart form.
+// form and the request multipart form.
 type RequestParam struct {
 	// Name is the name.
 	Name string

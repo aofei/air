@@ -43,13 +43,13 @@ func TestNew(t *testing.T) {
 	assert.Empty(t, a.TLSCertFile)
 	assert.Empty(t, a.TLSKeyFile)
 	assert.False(t, a.ACMEEnabled)
-	assert.Nil(t, a.ACMEAccountKey)
 	assert.Equal(
 		t,
 		"https://acme-v02.api.letsencrypt.org/directory",
 		a.ACMEDirectoryURL,
 	)
 	assert.Nil(t, a.ACMETOSURLWhitelist)
+	assert.Nil(t, a.ACMEAccountKey)
 	assert.Equal(t, "acme-certs", a.ACMECertRoot)
 	assert.Empty(t, a.ACMEDefaultHost)
 	assert.Nil(t, a.ACMEHostWhitelist)
