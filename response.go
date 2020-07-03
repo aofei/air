@@ -67,8 +67,7 @@ type Response struct {
 	// The `Header` is basically the same for both HTTP/1.x and HTTP/2. The
 	// only difference is that HTTP/2 requires header names to be lowercase
 	// (for aesthetic reasons, this framework decided to follow this rule
-	// implicitly, so please use the header name in the HTTP/1.x way). See
-	// RFC 7540, section 8.1.2.
+	// implicitly, so please use the header name in HTTP/1.x style).
 	//
 	// E.g.: {"Foo": ["bar"]}
 	Header http.Header
@@ -827,9 +826,8 @@ type ReverseProxy struct {
 
 	// ModifyRequestPath modifies the path of the request to the target.
 	//
-	// Note that the path contains the query part (anyway, the HTTP/2
-	// specification says so). Therefore, the returned path must also be in
-	// this format.
+	// Note that the path contains the query part. Therefore, the returned
+	// path must also be in this format.
 	ModifyRequestPath func(path string) (string, error)
 
 	// ModifyRequestHeader modifies the header of the request to the target.

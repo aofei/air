@@ -26,7 +26,7 @@ type Request struct {
 	//
 	// See RFC 7231, section 4.3.
 	//
-	// For HTTP/1.x, it is from the Request-Line.
+	// For HTTP/1.x, it is from the request-line.
 	//
 	// For HTTP/2, it is from the ":method" pseudo-header.
 	//
@@ -37,7 +37,7 @@ type Request struct {
 	//
 	// See RFC 3986, section 3.1.
 	//
-	// For HTTP/1.x, it is from the Request-Line.
+	// For HTTP/1.x, it is from the request-line.
 	//
 	// For HTTP/2, it is from the ":scheme" pseudo-header.
 	//
@@ -55,14 +55,13 @@ type Request struct {
 	// E.g.: "localhost:8080"
 	Authority string
 
-	// Path is the path. Note that it contains the query part (anyway, the
-	// HTTP/2 specification says so).
+	// Path is the path. It may contain the query part.
 	//
-	// For HTTP/1.x, it represents the request-target of the Request-Line.
-	// See RFC 7230, section 3.1.1.
+	// See RFC 7540, section 8.1.2.3.
 	//
-	// For HTTP/2, it represents the ":path" pseudo-header. See RFC 7540,
-	// section 8.1.2.3.
+	// For HTTP/1.x, it represents the request-target of the request-line.
+	//
+	// For HTTP/2, it represents the ":path" pseudo-header.
 	//
 	// E.g.: "/foo/bar?foo=bar"
 	Path string
@@ -78,8 +77,7 @@ type Request struct {
 	// The `Header` is basically the same for both HTTP/1.x and HTTP/2. The
 	// only difference is that HTTP/2 requires header names to be lowercase
 	// (for aesthetic reasons, this framework decided to follow this rule
-	// implicitly, so please use the header name in the HTTP/1.x way). See
-	// RFC 7540, section 8.1.2.
+	// implicitly, so please use the header name in HTTP/1.x style).
 	//
 	// E.g.: {"Foo": ["bar"]}
 	Header http.Header
