@@ -11,7 +11,7 @@ jobs:
           - "1.14.x"
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v2.0.3
+        uses: actions/setup-go@v2.1.0
         with:
           go-version: ${{matrix.go}}
       - name: Check out code
@@ -21,7 +21,7 @@ jobs:
       - name: Test
         run: go test -v --coverprofile=cover.out ./...
       - name: Upload coverage profile
-        uses: codecov/codecov-action@v1.0.7
+        uses: codecov/codecov-action@v1.0.10
         with:
           token: ${{secrets.CODECOV_TOKEN}}
           file: cover.out
