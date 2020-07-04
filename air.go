@@ -1259,25 +1259,45 @@ func (a *Air) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		r:  res,
 		rw: rw,
 	})
-	if hijacker, ok := rw.(http.Hijacker); ok {
+
+	hijacker, isHijacker := rw.(http.Hijacker)
+	pusher, isPusher := rw.(http.Pusher)
+	if isHijacker && isPusher {
 		hrw = http.ResponseWriter(&struct {
 			http.ResponseWriter
+			http.Flusher
+			http.Hijacker
+			http.Pusher
+		}{
+			hrw,
+			hrw.(http.Flusher),
+			&responseHijacker{
+				r: res,
+				h: hijacker,
+			},
+			pusher,
+		})
+	} else if isHijacker {
+		hrw = http.ResponseWriter(&struct {
+			http.ResponseWriter
+			http.Flusher
 			http.Hijacker
 		}{
 			hrw,
+			hrw.(http.Flusher),
 			&responseHijacker{
 				r: res,
 				h: hijacker,
 			},
 		})
-	}
-
-	if pusher, ok := rw.(http.Pusher); ok {
+	} else if isPusher {
 		hrw = http.ResponseWriter(&struct {
 			http.ResponseWriter
+			http.Flusher
 			http.Pusher
 		}{
 			hrw,
+			hrw.(http.Flusher),
 			pusher,
 		})
 	}
