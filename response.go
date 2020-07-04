@@ -489,6 +489,16 @@ func (r *Response) Redirect(url string) error {
 	return nil
 }
 
+// Flush flushes any buffered data to the client.
+//
+// It does nothing if flush is not supported by the underlying
+// `http.ResponseWriter` of the r.
+func (r *Response) Flush() {
+	if flusher, ok := r.hrw.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
 // Push initiates an HTTP/2 server push. This constructs a synthetic request
 // using the target and pos, serializes that request into a "PUSH_PROMISE"
 // frame, then dispatches that request using the server's request handler. If
@@ -500,7 +510,7 @@ func (r *Response) Redirect(url string) error {
 // request.
 //
 // It returns `http.ErrNotSupported` if the client has disabled push or if push
-// is not supported on the connection of the r.
+// is not supported by the underlying `http.ResponseWriter` of the r.
 func (r *Response) Push(target string, pos *http.PushOptions) error {
 	if pusher, ok := r.hrw.(http.Pusher); ok {
 		return pusher.Push(target, pos)
