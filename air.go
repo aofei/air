@@ -481,15 +481,6 @@ type Air struct {
 	// Default value: `gzip.DefaultCompression`
 	GzipCompressionLevel int `mapstructure:"gzip_compression_level"`
 
-	// GzipFlushThreshold is the flush threshold of the gzip feature.
-	//
-	// If the `GzipFlushThreshold` is not zero, once the pending compressed
-	// data in the gzip writer reach the `GzipFlushThreshold`, they will be
-	// flushed into the underlying writer of the gzip writer immediately.
-	//
-	// Default value: 8192
-	GzipFlushThreshold int `mapstructure:"gzip_flush_threshold"`
-
 	// CofferEnabled indicates whether the coffer feature is enabled.
 	//
 	// The `CofferEnabled` gives the `Response.WriteFile` the ability to use
@@ -620,7 +611,6 @@ func New() *Air {
 			"image/svg+xml",
 		},
 		GzipCompressionLevel:       gzip.DefaultCompression,
-		GzipFlushThreshold:         8 << 10,
 		RendererTemplateRoot:       "templates",
 		RendererTemplateExts:       []string{".html"},
 		RendererTemplateLeftDelim:  "{{",

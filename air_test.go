@@ -95,7 +95,6 @@ func TestNew(t *testing.T) {
 		"image/svg+xml",
 	})
 	assert.Equal(t, gzip.DefaultCompression, a.GzipCompressionLevel)
-	assert.Equal(t, 8192, a.GzipFlushThreshold)
 	assert.Equal(t, "templates", a.RendererTemplateRoot)
 	assert.ElementsMatch(t, a.RendererTemplateExts, []string{".html"})
 	assert.Equal(t, "{{", a.RendererTemplateLeftDelim)

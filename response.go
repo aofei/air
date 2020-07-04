@@ -502,12 +502,11 @@ func (r *Response) Redirect(url string) error {
 // It returns `http.ErrNotSupported` if the client has disabled push or if push
 // is not supported on the connection of the r.
 func (r *Response) Push(target string, pos *http.PushOptions) error {
-	p, ok := r.hrw.(http.Pusher)
-	if !ok {
-		return http.ErrNotSupported
+	if pusher, ok := r.hrw.(http.Pusher); ok {
+		return pusher.Push(target, pos)
 	}
 
-	return p.Push(target, pos)
+	return http.ErrNotSupported
 }
 
 // WebSocket switches the connection of the r to the WebSocket protocol. See RFC
@@ -861,12 +860,10 @@ type ReverseProxy struct {
 type responseWriter struct {
 	sync.Mutex
 
-	r     *Response
-	rw    http.ResponseWriter
-	w     *countWriter
-	gw    *gzip.Writer
-	gwn   int
-	b64wc io.WriteCloser
+	r  *Response
+	rw http.ResponseWriter
+	w  *countWriter
+	gw *gzip.Writer
 }
 
 // Header implements the `http.ResponseWriter`.
@@ -922,42 +919,22 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	}
 
 	w := io.Writer(rw.w)
-	if rw.b64wc != nil {
-		w = rw.b64wc
-	} else if rw.gw != nil {
+	if rw.gw != nil {
 		w = rw.gw
 	}
 
-	n, err := w.Write(b)
-	if n > 0 && w == rw.gw && rw.r.Air.GzipFlushThreshold > 0 {
-		rw.gwn += n
-		if rw.gwn >= rw.r.Air.GzipFlushThreshold {
-			rw.gwn = 0
-			rw.gw.Flush()
-		}
-	}
-
-	return n, err
+	return w.Write(b)
 }
 
 // Flush implements the `http.Flusher`.
 func (rw *responseWriter) Flush() {
-	if rw.b64wc != nil {
-		rw.b64wc.Close()
-
-		w := io.Writer(rw.w)
-		if rw.gw != nil {
-			w = rw.gw
-		}
-
-		rw.b64wc = base64.NewEncoder(base64.StdEncoding, w)
-	}
-
 	if rw.gw != nil {
 		rw.gw.Flush()
 	}
 
-	rw.rw.(http.Flusher).Flush()
+	if flusher, ok := rw.rw.(http.Flusher); ok {
+		flusher.Flush()
+	}
 }
 
 // handleGzip handles the gzip feature for the rw.

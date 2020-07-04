@@ -110,9 +110,11 @@ func (r *renderer) load() {
 
 			return r.watcher.Add(p)
 		},
-	); r.loadError == nil {
-		r.template = t
+	); r.loadError != nil {
+		return
 	}
+
+	r.template = t
 }
 
 // render renders the v into the w for the HTML template name.
