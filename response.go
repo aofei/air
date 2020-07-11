@@ -491,7 +491,7 @@ func (r *Response) Redirect(url string) error {
 
 // Flush flushes any buffered data to the client.
 //
-// It does nothing if flush is not supported by the underlying
+// The `Flush` does nothing if it is not supported by the underlying
 // `http.ResponseWriter` of the r.
 func (r *Response) Flush() {
 	if flusher, ok := r.hrw.(http.Flusher); ok {
@@ -509,8 +509,8 @@ func (r *Response) Flush() {
 // the target is a path, it will inherit the scheme and authority of the parent
 // request.
 //
-// It returns `http.ErrNotSupported` if the client has disabled push or if push
-// is not supported by the underlying `http.ResponseWriter` of the r.
+// The `Push` returns `http.ErrNotSupported` if the client has disabled it or if
+// it is not supported by the underlying `http.ResponseWriter` of the r.
 func (r *Response) Push(target string, pos *http.PushOptions) error {
 	if pusher, ok := r.hrw.(http.Pusher); ok {
 		return pusher.Push(target, pos)

@@ -461,13 +461,6 @@ type Air struct {
 	// Default value: false
 	GzipEnabled bool `mapstructure:"gzip_enabled"`
 
-	// GzipMinContentLength is the minimum content length of the gzip
-	// featrue used to limit at least how big (determined only from the
-	// Content-Length header) response body can be gzipped.
-	//
-	// Default value: 1024
-	GzipMinContentLength int64 `mapstructure:"gzip_min_content_length"`
-
 	// GzipMIMETypes is the list of MIME types of the gzip feature that will
 	// trigger the gzip.
 	//
@@ -480,6 +473,13 @@ type Air struct {
 	//
 	// Default value: `gzip.DefaultCompression`
 	GzipCompressionLevel int `mapstructure:"gzip_compression_level"`
+
+	// GzipMinContentLength is the minimum content length of the gzip
+	// featrue used to limit at least how big (determined only from the
+	// Content-Length header) response body can be gzipped.
+	//
+	// Default value: 1024
+	GzipMinContentLength int64 `mapstructure:"gzip_min_content_length"`
 
 	// CofferEnabled indicates whether the coffer feature is enabled.
 	//
@@ -598,7 +598,6 @@ func New() *Air {
 			"application/xml",
 			"image/svg+xml",
 		},
-		GzipMinContentLength: 1 << 10,
 		GzipMIMETypes: []string{
 			"text/plain",
 			"text/html",
@@ -611,6 +610,7 @@ func New() *Air {
 			"image/svg+xml",
 		},
 		GzipCompressionLevel:       gzip.DefaultCompression,
+		GzipMinContentLength:       1 << 10,
 		RendererTemplateRoot:       "templates",
 		RendererTemplateExts:       []string{".html"},
 		RendererTemplateLeftDelim:  "{{",

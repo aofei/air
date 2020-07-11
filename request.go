@@ -515,8 +515,9 @@ func (rp *RequestParam) Value() *RequestParamValue {
 
 // RequestParamValue is an HTTP request param value.
 //
-// It may represent a route param value, a request query value, a request form
-// value, a request multipart form value or a request multipart form file value.
+// The `RequestParamValue` may represent a route param value, a request query
+// value, a request form value, a request multipart form value or a request
+// multipart form file value.
 type RequestParamValue struct {
 	i    interface{}
 	b    *bool

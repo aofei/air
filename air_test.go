@@ -82,7 +82,6 @@ func TestNew(t *testing.T) {
 		"image/svg+xml",
 	})
 	assert.False(t, a.GzipEnabled)
-	assert.Equal(t, int64(1024), a.GzipMinContentLength)
 	assert.ElementsMatch(t, a.GzipMIMETypes, []string{
 		"text/plain",
 		"text/html",
@@ -95,6 +94,7 @@ func TestNew(t *testing.T) {
 		"image/svg+xml",
 	})
 	assert.Equal(t, gzip.DefaultCompression, a.GzipCompressionLevel)
+	assert.Equal(t, int64(1024), a.GzipMinContentLength)
 	assert.Equal(t, "templates", a.RendererTemplateRoot)
 	assert.ElementsMatch(t, a.RendererTemplateExts, []string{".html"})
 	assert.Equal(t, "{{", a.RendererTemplateLeftDelim)
