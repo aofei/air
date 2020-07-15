@@ -3,7 +3,7 @@
 [![GitHub Actions](https://github.com/aofei/air/workflows/Main/badge.svg)](https://github.com/aofei/air)
 [![codecov](https://codecov.io/gh/aofei/air/branch/master/graph/badge.svg)](https://codecov.io/gh/aofei/air)
 [![Go Report Card](https://goreportcard.com/badge/github.com/aofei/air)](https://goreportcard.com/report/github.com/aofei/air)
-[![PkgGoDev](https://pkg.go.dev/github.com/aofei/air)](https://pkg.go.dev/badge/github.com/aofei/air)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/aofei/air)](https://pkg.go.dev/github.com/aofei/air)
 
 An ideally refined web framework for Go.
 
