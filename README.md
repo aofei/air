@@ -3,7 +3,7 @@
 [![GitHub Actions](https://github.com/aofei/air/workflows/Main/badge.svg)](https://github.com/aofei/air)
 [![codecov](https://codecov.io/gh/aofei/air/branch/master/graph/badge.svg)](https://codecov.io/gh/aofei/air)
 [![Go Report Card](https://goreportcard.com/badge/github.com/aofei/air)](https://goreportcard.com/report/github.com/aofei/air)
-[![GoDoc](https://godoc.org/github.com/aofei/air?status.svg)](https://godoc.org/github.com/aofei/air)
+[![PkgGoDev](https://pkg.go.dev/github.com/aofei/air)](https://pkg.go.dev/badge/github.com/aofei/air)
 
 An ideally refined web framework for Go.
 
@@ -83,7 +83,7 @@ one thing: **Air can serve properly**.
 		* `image/svg+xml`
 * Coffer
 	* Accesses binary asset files by using the runtime memory
-	* Significantly improves the performance of the [`air.Response.WriteFile`](https://godoc.org/github.com/aofei/air#Response.WriteFile)
+	* Significantly improves the performance of the [`air.Response.WriteFile`](https://pkg.go.dev/github.com/aofei/air#Response.WriteFile)
 	* Asset file minimization and gzip support
 	* Default asset file extensions:
 		* `.html`
@@ -102,7 +102,7 @@ one thing: **Air can serve properly**.
 	* Hot update support
 * I18n
 	* Adapt to the request's favorite conventions
-	* Implanted into the [`air.Response.Render`](https://godoc.org/github.com/aofei/air#Response.Render)
+	* Implanted into the [`air.Response.Render`](https://pkg.go.dev/github.com/aofei/air#Response.Render)
 	* Hot update support
 * Error
 	* Centralized handling
@@ -148,7 +148,7 @@ then visit `http://localhost:8080`.
 
 Does all web frameworks need to have a complicated (or a lovely but lengthy)
 website to guide people how to use them? Well, Air has only one
-[GoDoc](https://godoc.org/github.com/aofei/air) with useful comments. In fact,
+[Doc](https://pkg.go.dev/github.com/aofei/air) with useful comments. In fact,
 Air is so succinct that you don't need to understand how to use it through a
 large document.
 
@@ -159,8 +159,8 @@ Air adopts the gas as its composition. Everyone can create new gas and use it
 within Air simply.
 
 A gas is a function chained in the HTTP request-response cycle with access to
-the [`air.Request`](https://godoc.org/github.com/aofei/air#Request) and
-[`air.Response`](https://godoc.org/github.com/aofei/air#Response) which it uses
+the [`air.Request`](https://pkg.go.dev/github.com/aofei/air#Request) and
+[`air.Response`](https://pkg.go.dev/github.com/aofei/air#Response) which it uses
 to perform a specific action, for example, logging every request or recovering
 from panics.
 
@@ -175,7 +175,7 @@ return func(next air.Handler) air.Handler {
 
 If you already have some good HTTP middleware, you can simply wrap them into
 gases by calling the
-[`air.WrapHTTPMiddleware`](https://godoc.org/github.com/aofei/air#WrapHTTPMiddleware).
+[`air.WrapHTTPMiddleware`](https://pkg.go.dev/github.com/aofei/air#WrapHTTPMiddleware).
 
 If you are looking for some useful gases, simply visit
 [here](https://github.com/air-gases).
@@ -191,24 +191,24 @@ If you want to be familiar with Air as soon as possible, simply visit
 
 "A" for "An", "I" for "Ideally" and "R" for "Refined". So, Air.
 
-### Why based on the [net/http](https://godoc.org/net/http)?
+### Why based on the [net/http](https://pkg.go.dev/net/http)?
 
 In fact, I've tried to implement a full-featured HTTP server (just like the
 awesome [valyala/fasthttp](https://github.com/valyala/fasthttp)). But when I
 finished about half of the work, I suddenly realized: What about stability? What
 about those awesome middleware outside? And, seriously, what am I doing?
 
-### Why not just use the [net/http](https://godoc.org/net/http)?
+### Why not just use the [net/http](https://pkg.go.dev/net/http)?
 
-Yeah, we can of course use the [net/http](https://godoc.org/net/http) directly,
+Yeah, we can of course use the [net/http](https://pkg.go.dev/net/http) directly,
 after all, it can meet many requirements. But, ummm... it's really too stable,
 isn't it? I mean, to ensure Go's backward compatibility (which is extremely
 necessary), we can't easily add some handy features to the
-[net/http](https://godoc.org/net/http). And, the
-[`http.Request`](https://godoc.org/net/http#Request) does not only represents
+[net/http](https://pkg.go.dev/net/http). And, the
+[`http.Request`](https://pkg.go.dev/net/http#Request) does not only represents
 the request received by the server, but also represents the request made by the
 client. In some cases it can be confusing. So why not just use the
-[net/http](https://godoc.org/net/http) as the underlying server, and then
+[net/http](https://pkg.go.dev/net/http) as the underlying server, and then
 implement a refined web framework that are only used for the server-side on top
 of it?
 
@@ -223,9 +223,9 @@ quo, you will be fine.
 ### What about the fantastic [Gorilla web toolkit](https://github.com/gorilla)?
 
 Just call the
-[`air.WrapHTTPHandler`](https://godoc.org/github.com/aofei/air#WrapHTTPHandler)
+[`air.WrapHTTPHandler`](https://pkg.go.dev/github.com/aofei/air#WrapHTTPHandler)
 and
-[`air.WrapHTTPMiddleware`](https://godoc.org/github.com/aofei/air#WrapHTTPMiddleware).
+[`air.WrapHTTPMiddleware`](https://pkg.go.dev/github.com/aofei/air#WrapHTTPMiddleware).
 
 ### Is Air good enough?
 
