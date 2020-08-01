@@ -486,8 +486,8 @@ func (r *Request) LocalizedString(key string) string {
 
 // RequestParam is an HTTP request param.
 //
-// The param may come from the route params, the request query, the request
-// form and the request multipart form.
+// The param may come from the route params, request query, request form and
+// request multipart form.
 type RequestParam struct {
 	// Name is the name.
 	Name string
@@ -499,7 +499,7 @@ type RequestParam struct {
 	// request multipart form file(s).
 	//
 	// Note that there will always be at least one value when the request
-	// param is from the `Request.Param` or the `Request.Params`.
+	// param is from the `Request.Param` or `Request.Params`.
 	Values []*RequestParamValue
 }
 
@@ -515,9 +515,9 @@ func (rp *RequestParam) Value() *RequestParamValue {
 
 // RequestParamValue is an HTTP request param value.
 //
-// The `RequestParamValue` may represent a route param value, a request query
-// value, a request form value, a request multipart form value or a request
-// multipart form file value.
+// The `RequestParamValue` may represent a route param value, request query
+// value, request form value, request multipart form value or request multipart
+// form file value.
 type RequestParamValue struct {
 	i    interface{}
 	b    *bool
@@ -788,8 +788,9 @@ func (rb *requestBody) Read(b []byte) (n int, err error) {
 	if errors.Is(err, io.EOF) {
 		rb.sawEOF = true
 
-		tns := strings.Split(rb.r.Header.Get("Trailer"), ", ")
+		tns := strings.Split(rb.r.Header.Get("Trailer"), ",")
 		for _, tn := range tns {
+			tn = strings.TrimSpace(tn)
 			rb.r.Header[tn] = rb.hr.Trailer[tn]
 		}
 
