@@ -91,167 +91,297 @@ func TestGroup(t *testing.T) {
 	assert.Equal(t, "/foo/bar5", g2.Prefix)
 	assert.Nil(t, g2.Gases)
 
-	req := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [GET /foo/bar]", rec.Body.String())
+	hr := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
+	hrw := httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodHead, "/foo/bar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	a.ServeHTTP(hrw, hr)
 
-	req = httptest.NewRequest(http.MethodPost, "/foo/bar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [POST /foo/bar]", rec.Body.String())
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
 
-	req = httptest.NewRequest(http.MethodPut, "/foo/bar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [PUT /foo/bar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foo/bar]", string(hrwrb))
 
-	req = httptest.NewRequest(http.MethodPatch, "/foo/bar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [PATCH /foo/bar]", rec.Body.String())
+	hr = httptest.NewRequest(http.MethodHead, "/foo/bar", nil)
+	hrw = httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodDelete, "/foo/bar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [DELETE /foo/bar]", rec.Body.String())
+	a.ServeHTTP(hrw, hr)
 
-	req = httptest.NewRequest(http.MethodConnect, "/foo/bar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [CONNECT /foo/bar]", rec.Body.String())
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
 
-	req = httptest.NewRequest(http.MethodOptions, "/foo/bar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [OPTIONS /foo/bar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
 
-	req = httptest.NewRequest(http.MethodTrace, "/foo/bar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [TRACE /foo/bar]", rec.Body.String())
+	hr = httptest.NewRequest(http.MethodPost, "/foo/bar", nil)
+	hrw = httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodGet, "/foo/bar2", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foo/bar2]", rec.Body.String())
+	a.ServeHTTP(hrw, hr)
 
-	req = httptest.NewRequest(http.MethodHead, "/foo/bar2", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
 
-	req = httptest.NewRequest(http.MethodPost, "/foo/bar2", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foo/bar2]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [POST /foo/bar]", string(hrwrb))
 
-	req = httptest.NewRequest(http.MethodPut, "/foo/bar2", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foo/bar2]", rec.Body.String())
+	hr = httptest.NewRequest(http.MethodPut, "/foo/bar", nil)
+	hrw = httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodPatch, "/foo/bar2", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foo/bar2]", rec.Body.String())
+	a.ServeHTTP(hrw, hr)
 
-	req = httptest.NewRequest(http.MethodDelete, "/foo/bar2", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foo/bar2]", rec.Body.String())
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
 
-	req = httptest.NewRequest(http.MethodConnect, "/foo/bar2", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foo/bar2]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [PUT /foo/bar]", string(hrwrb))
 
-	req = httptest.NewRequest(http.MethodOptions, "/foo/bar2", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foo/bar2]", rec.Body.String())
+	hr = httptest.NewRequest(http.MethodPatch, "/foo/bar", nil)
+	hrw = httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodTrace, "/foo/bar2", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foo/bar2]", rec.Body.String())
+	a.ServeHTTP(hrw, hr)
 
-	req = httptest.NewRequest(http.MethodGet, "/foo/bar4", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusNotFound, rec.Code)
-	assert.Equal(t, "Not Found", rec.Body.String())
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
 
-	req = httptest.NewRequest(http.MethodHead, "/foo/bar4", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusNotFound, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [PATCH /foo/bar]", string(hrwrb))
 
-	req = httptest.NewRequest(http.MethodGet, "/foo/bar5", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusNotFound, rec.Code)
-	assert.Equal(t, "Not Found", rec.Body.String())
+	hr = httptest.NewRequest(http.MethodDelete, "/foo/bar", nil)
+	hrw = httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodHead, "/foo/bar5", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusNotFound, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	a.ServeHTTP(hrw, hr)
 
-	req = httptest.NewRequest(http.MethodGet, "/foo/bar3", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Foobar", rec.Body.String())
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
 
-	req = httptest.NewRequest(http.MethodHead, "/foo/bar3", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [DELETE /foo/bar]", string(hrwrb))
 
-	req = httptest.NewRequest(
+	hr = httptest.NewRequest(http.MethodConnect, "/foo/bar", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [CONNECT /foo/bar]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodOptions, "/foo/bar", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [OPTIONS /foo/bar]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodTrace, "/foo/bar", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [TRACE /foo/bar]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodGet, "/foo/bar2", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foo/bar2]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodHead, "/foo/bar2", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
+
+	hr = httptest.NewRequest(http.MethodPost, "/foo/bar2", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foo/bar2]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodPut, "/foo/bar2", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foo/bar2]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodPatch, "/foo/bar2", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foo/bar2]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodDelete, "/foo/bar2", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foo/bar2]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodConnect, "/foo/bar2", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foo/bar2]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodOptions, "/foo/bar2", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foo/bar2]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodTrace, "/foo/bar2", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foo/bar2]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodGet, "/foo/bar4", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusNotFound, hrwr.StatusCode)
+	assert.Equal(t, "Not Found", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodHead, "/foo/bar4", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusNotFound, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
+
+	hr = httptest.NewRequest(http.MethodGet, "/foo/bar5", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusNotFound, hrwr.StatusCode)
+	assert.Equal(t, "Not Found", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodHead, "/foo/bar5", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusNotFound, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
+
+	hr = httptest.NewRequest(http.MethodGet, "/foo/bar3", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Foobar", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodHead, "/foo/bar3", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
+
+	hr = httptest.NewRequest(
 		http.MethodGet,
 		path.Join("/foo/bar4", filepath.Base(f2.Name())),
 		nil,
 	)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Foobar2", rec.Body.String())
+	hrw = httptest.NewRecorder()
 
-	req = httptest.NewRequest(
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Foobar2", string(hrwrb))
+
+	hr = httptest.NewRequest(
 		http.MethodHead,
 		path.Join("/foo/bar4/", filepath.Base(f2.Name())),
 		nil,
 	)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
 }

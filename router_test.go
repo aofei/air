@@ -1,6 +1,7 @@
 package air
 
 import (
+	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -150,45 +151,83 @@ func TestRouterRouteSTATIC(t *testing.T) {
 		},
 	)
 
-	req, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
-	assert.NoError(t, r.route(req)(req, res))
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /]", rec.Body.String())
+	req, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "//", nil)
 	assert.NoError(t, r.route(req)(req, res))
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /]", rec.Body.String())
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /]", string(hrwrb))
+
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "//", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foobar]", rec.Body.String())
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /]", string(hrwrb))
+
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foo/bar]", rec.Body.String())
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar/", nil)
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foobar]", string(hrwrb))
+
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foo/bar/]", rec.Body.String())
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo", nil)
-	assert.Error(t, r.route(req)(req, res))
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foo/bar]", string(hrwrb))
+
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/bar/", nil)
+
+	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foo/bar/]", string(hrwrb))
+
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo", nil)
+
+	err := r.route(req)(req, res)
+	assert.Error(t, err)
+
 	assert.Equal(t, http.StatusNotFound, res.Status)
-	assert.Empty(t, rec.Body.String())
+	assert.Equal(t, http.StatusText(http.StatusNotFound), err.Error())
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar/foobar", nil)
-	assert.Error(t, r.route(req)(req, res))
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/bar/foobar", nil)
+
+	err = r.route(req)(req, res)
+	assert.Error(t, err)
+
 	assert.Equal(t, http.StatusNotFound, res.Status)
-	assert.Empty(t, rec.Body.String())
+	assert.Equal(t, http.StatusText(http.StatusNotFound), err.Error())
 
-	req, res, rec = fakeRRCycle(a, http.MethodHead, "/", nil)
-	assert.Error(t, r.route(req)(req, res))
+	req, res, hrw = fakeRRCycle(a, http.MethodHead, "/", nil)
+
+	err = r.route(req)(req, res)
+	assert.Error(t, err)
+
 	assert.Equal(t, http.StatusMethodNotAllowed, res.Status)
-	assert.Empty(t, rec.Body.String())
+	assert.Equal(
+		t,
+		http.StatusText(http.StatusMethodNotAllowed),
+		err.Error(),
+	)
 }
 
 func TestRouterRoutePARAM(t *testing.T) {
@@ -203,34 +242,52 @@ func TestRouterRoutePARAM(t *testing.T) {
 		},
 	)
 
-	req, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	req, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("foobar"))
 	assert.NotNil(t, req.Param("foobar").Value())
 	assert.Empty(t, req.Param("foobar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /:foobar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /:foobar]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "//", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "//", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("foobar"))
 	assert.NotNil(t, req.Param("foobar").Value())
 	assert.Empty(t, req.Param("foobar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /:foobar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /:foobar]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("foobar"))
 	assert.NotNil(t, req.Param("foobar").Value())
 	assert.Equal(t, "foobar", req.Param("foobar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /:foobar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /:foobar]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar/", nil)
-	assert.Error(t, r.route(req)(req, res))
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar/", nil)
+
+	err := r.route(req)(req, res)
+	assert.Error(t, err)
+
 	assert.Equal(t, http.StatusNotFound, res.Status)
-	assert.Empty(t, rec.Body.String())
+	assert.Equal(t, http.StatusText(http.StatusNotFound), err.Error())
 
 	r.register(
 		http.MethodGet,
@@ -240,21 +297,31 @@ func TestRouterRoutePARAM(t *testing.T) {
 		},
 	)
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("bar"))
 	assert.NotNil(t, req.Param("bar").Value())
 	assert.Empty(t, req.Param("bar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foo:bar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foo:bar]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("bar"))
 	assert.NotNil(t, req.Param("bar").Value())
 	assert.Equal(t, "bar", req.Param("bar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foo:bar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foo:bar]", string(hrwrb))
 
 	r.register(
 		http.MethodGet,
@@ -264,16 +331,21 @@ func TestRouterRoutePARAM(t *testing.T) {
 		},
 	)
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("foo"))
 	assert.NotNil(t, req.Param("foo").Value())
 	assert.NotNil(t, req.Param("bar"))
 	assert.NotNil(t, req.Param("bar").Value())
 	assert.Equal(t, "foo", req.Param("foo").Value().String())
 	assert.Equal(t, "bar", req.Param("bar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /:foo/:bar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /:foo/:bar]", string(hrwrb))
 }
 
 func TestRouterRouteANY(t *testing.T) {
@@ -288,69 +360,109 @@ func TestRouterRouteANY(t *testing.T) {
 		},
 	)
 
-	req, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	req, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Empty(t, req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "//", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "//", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Empty(t, req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "foobar", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar/", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar/", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "foobar/", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar//", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar//", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "foobar//", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "foo/bar", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar/", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/bar/", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "foo/bar/", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar//", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/bar//", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "foo/bar//", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /*]", string(hrwrb))
 
 	r.register(
 		http.MethodGet,
@@ -360,29 +472,44 @@ func TestRouterRouteANY(t *testing.T) {
 		},
 	)
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Empty(t, req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foobar*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foobar*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar/", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar/", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "/", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foobar*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foobar*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar//", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar//", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "//", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foobar*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foobar*]", string(hrwrb))
 
 	r.register(
 		http.MethodGet,
@@ -392,13 +519,18 @@ func TestRouterRouteANY(t *testing.T) {
 		},
 	)
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar/", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar/", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Empty(t, req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foobar/*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foobar/*]", string(hrwrb))
 
 	r.register(
 		http.MethodGet,
@@ -408,13 +540,18 @@ func TestRouterRouteANY(t *testing.T) {
 		},
 	)
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar2/", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar2/", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Empty(t, req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foobar2/*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foobar2/*]", string(hrwrb))
 }
 
 func TestRouterRouteMix(t *testing.T) {
@@ -531,104 +668,174 @@ func TestRouterRouteMix(t *testing.T) {
 		},
 	)
 
-	req, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
-	assert.NoError(t, r.route(req)(req, res))
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "bar", res.Header.Get("Foo"))
-	assert.Equal(t, "Matched [GET /]", rec.Body.String())
+	req, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo", nil)
 	assert.NoError(t, r.route(req)(req, res))
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foo]", rec.Body.String())
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/bar", nil)
-	assert.NoError(t, r.route(req)(req, res))
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /bar]", rec.Body.String())
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
-	assert.NoError(t, r.route(req)(req, res))
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foobar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "bar", hrwr.Header.Get("Foo"))
+	assert.Equal(t, "Matched [GET /]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/barfoo", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foo]", string(hrwrb))
+
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/bar", nil)
+
+	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /bar]", string(hrwrb))
+
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+
+	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foobar]", string(hrwrb))
+
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/barfoo", nil)
+
+	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("foobar"))
 	assert.NotNil(t, req.Param("foobar").Value())
 	assert.Equal(t, "barfoo", req.Param("foobar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /:foobar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /:foobar]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("bar"))
 	assert.NotNil(t, req.Param("bar").Value())
 	assert.Empty(t, req.Param("bar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foo/:bar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foo/:bar]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("bar"))
 	assert.NotNil(t, req.Param("bar").Value())
 	assert.Equal(t, "bar", req.Param("bar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foo/:bar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foo/:bar]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/fooobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/fooobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("bar"))
 	assert.NotNil(t, req.Param("bar").Value())
 	assert.Equal(t, "obar", req.Param("bar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foo:bar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foo:bar]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/bar/foo", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/bar/foo", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("foo"))
 	assert.NotNil(t, req.Param("foo").Value())
 	assert.Equal(t, "bar", req.Param("foo").Value().String())
 	assert.NotNil(t, req.Param("bar"))
 	assert.NotNil(t, req.Param("bar").Value())
 	assert.Equal(t, "foo", req.Param("bar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /:foo/:bar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /:foo/:bar]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobarfoobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobarfoobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "foobar", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foobar*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foobar*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar/foobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar/foobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "foobar", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foobar/*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foobar/*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar/foobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/bar/foobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "foobar", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foo/:bar/*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foo/:bar/*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foofoobar/foobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foofoobar/foobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "foobar", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /foo:bar/*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foo:bar/*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/bar/foo/foobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/bar/foo/foobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.NotNil(t, req.Param("foo"))
 	assert.NotNil(t, req.Param("foo").Value())
 	assert.Equal(t, "bar", req.Param("foo").Value().String())
@@ -638,8 +845,8 @@ func TestRouterRouteMix(t *testing.T) {
 	assert.NotNil(t, req.Param("*"))
 	assert.NotNil(t, req.Param("*").Value())
 	assert.Equal(t, "foobar", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /:foo/:bar/*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /:foo/:bar/*]", string(hrwrb))
 }
 
 func TestRouterRouteFallBackToANY(t *testing.T) {
@@ -662,30 +869,50 @@ func TestRouterRouteFallBackToANY(t *testing.T) {
 		},
 	)
 
-	req, res, rec := fakeRRCycle(a, http.MethodGet, "/foo", nil)
+	req, res, hrw := fakeRRCycle(a, http.MethodGet, "/foo", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
 	assert.Equal(t, "foo", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.Equal(t, "foobar", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /*]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/bar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.Equal(t, "foo", req.Param("foo").Value().String())
 	assert.Equal(t, "bar", req.Param("bar").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /:foo/:bar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /:foo/:bar]", string(hrwrb))
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/foo/bar/foobar", nil)
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/foo/bar/foobar", nil)
+
 	assert.NoError(t, r.route(req)(req, res))
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
 	assert.Equal(t, "foo/bar/foobar", req.Param("*").Value().String())
-	assert.Equal(t, http.StatusOK, res.Status)
-	assert.Equal(t, "Matched [GET /*]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /*]", string(hrwrb))
 }
 
 func TestRouterAllocRouteParamValues(t *testing.T) {

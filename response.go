@@ -99,6 +99,70 @@ type Response struct {
 	deferredFuncs     []func()
 }
 
+// reset resets the r with the a, hrw and req.
+func (r *Response) reset(a *Air, hrw http.ResponseWriter, req *Request) {
+	r.Air = a
+	r.Status = http.StatusOK
+	r.ContentLength = -1
+	r.Written = false
+	r.Minified = false
+	r.Gzipped = false
+	r.req = req
+	r.servingContent = false
+	r.serveContentError = nil
+	r.deferredFuncs = r.deferredFuncs[:0]
+
+	rw := &responseWriter{
+		r:   r,
+		hrw: hrw,
+	}
+
+	hijacker, isHijacker := hrw.(http.Hijacker)
+	pusher, isPusher := hrw.(http.Pusher)
+	switch {
+	case isHijacker && isPusher:
+		r.SetHTTPResponseWriter(&struct {
+			http.ResponseWriter
+			http.Flusher
+			http.Hijacker
+			http.Pusher
+		}{
+			rw,
+			rw,
+			&responseHijacker{
+				r: r,
+				h: hijacker,
+			},
+			pusher,
+		})
+	case isHijacker:
+		r.SetHTTPResponseWriter(&struct {
+			http.ResponseWriter
+			http.Flusher
+			http.Hijacker
+		}{
+			rw,
+			rw,
+			&responseHijacker{
+				r: r,
+				h: hijacker,
+			},
+		})
+	case isPusher:
+		r.SetHTTPResponseWriter(&struct {
+			http.ResponseWriter
+			http.Flusher
+			http.Pusher
+		}{
+			rw,
+			rw,
+			pusher,
+		})
+	default:
+		r.SetHTTPResponseWriter(rw)
+	}
+}
+
 // HTTPResponseWriter returns the underlying `http.ResponseWriter` of the r.
 //
 // ATTENTION: You should never call this method unless you know what you are
@@ -870,15 +934,15 @@ type ReverseProxy struct {
 type responseWriter struct {
 	sync.Mutex
 
-	r  *Response
-	rw http.ResponseWriter
-	w  *countWriter
-	gw *gzip.Writer
+	r   *Response
+	hrw http.ResponseWriter
+	cw  *countWriter
+	gw  *gzip.Writer
 }
 
 // Header implements the `http.ResponseWriter`.
 func (rw *responseWriter) Header() http.Header {
-	return rw.rw.Header()
+	return rw.hrw.Header()
 }
 
 // WriteHeader implements the `http.ResponseWriter`.
@@ -901,13 +965,13 @@ func (rw *responseWriter) WriteHeader(status int) {
 		}
 	}
 
-	rw.w = &countWriter{
-		w: rw.rw,
+	rw.cw = &countWriter{
+		w: rw.hrw,
 		c: &rw.r.ContentLength,
 	}
 
 	rw.handleGzip()
-	rw.rw.WriteHeader(status)
+	rw.hrw.WriteHeader(status)
 
 	rw.r.Status = status
 	rw.r.ContentLength = 0
@@ -928,7 +992,7 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 		return 0, nil
 	}
 
-	w := io.Writer(rw.w)
+	w := io.Writer(rw.cw)
 	if rw.gw != nil {
 		w = rw.gw
 	}
@@ -942,7 +1006,7 @@ func (rw *responseWriter) Flush() {
 		rw.gw.Flush()
 	}
 
-	if flusher, ok := rw.rw.(http.Flusher); ok {
+	if flusher, ok := rw.hrw.(http.Flusher); ok {
 		flusher.Flush()
 	}
 }
@@ -974,7 +1038,7 @@ func (rw *responseWriter) handleGzip() {
 				return
 			}
 
-			rw.gw.Reset(rw.w)
+			rw.gw.Reset(rw.cw)
 			rw.r.Defer(func() {
 				if rw.r.ContentLength == 0 {
 					rw.gw.Reset(ioutil.Discard)

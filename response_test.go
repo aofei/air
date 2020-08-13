@@ -17,7 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-func TestResponseHTTPRequest(t *testing.T) {
+func TestResponseHTTPResponseWriter(t *testing.T) {
 	a := New()
 
 	req, res, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
@@ -61,23 +61,36 @@ func TestResponseSetCookie(t *testing.T) {
 func TestResponseWrite(t *testing.T) {
 	a := New()
 
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	assert.NoError(t, res.Write(nil))
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Body.String())
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
+
+	_, res, hrw = fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	assert.NoError(t, res.Write(strings.NewReader("foobar")))
-	assert.Equal(t, "foobar", rec.Body.String())
 
-	_, res, rec = fakeRRCycle(a, http.MethodHead, "/", nil)
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "foobar", string(hrwrb))
+
+	_, res, hrw = fakeRRCycle(a, http.MethodHead, "/", nil)
 
 	assert.NoError(t, res.Write(nil))
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Body.String())
-
 	assert.NoError(t, res.Write(strings.NewReader("foobar")))
-	assert.Empty(t, rec.Body.String())
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
 
 	_, res, _ = fakeRRCycle(a, http.MethodGet, "/", nil)
 
@@ -145,37 +158,45 @@ func TestResponseWrite(t *testing.T) {
 func TestResponseWriteString(t *testing.T) {
 	a := New()
 
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	assert.NoError(t, res.WriteString("foobar"))
-	assert.Equal(t, http.StatusOK, rec.Code)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"text/plain; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, "foobar", rec.Body.String())
+	assert.Equal(t, "foobar", string(hrwrb))
 }
 
 func TestResponseWriteHTML(t *testing.T) {
 	a := New()
 
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	assert.NoError(t, res.WriteHTML("<!DOCTYPE html>"))
-	assert.Equal(t, http.StatusOK, rec.Code)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"text/html; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, "<!DOCTYPE html>", rec.Body.String())
+	assert.Equal(t, "<!DOCTYPE html>", string(hrwrb))
 }
 
 func TestResponseWriteJSON(t *testing.T) {
 	a := New()
 
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	var foobar struct {
 		Foo string `json:"foo"`
@@ -184,33 +205,41 @@ func TestResponseWriteJSON(t *testing.T) {
 
 	assert.Error(t, res.WriteJSON(&errorJSONMarshaler{}))
 	assert.NoError(t, res.WriteJSON(&foobar))
-	assert.Equal(t, http.StatusOK, rec.Code)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"application/json; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, `{"foo":"bar"}`, rec.Body.String())
+	assert.Equal(t, `{"foo":"bar"}`, string(hrwrb))
 
-	_, res, rec = fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw = fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	a.DebugMode = true
 
 	assert.Error(t, res.WriteJSON(&errorJSONMarshaler{}))
 	assert.NoError(t, res.WriteJSON(&foobar))
-	assert.Equal(t, http.StatusOK, rec.Code)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"application/json; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, "{\n\t\"foo\": \"bar\"\n}", rec.Body.String())
+	assert.Equal(t, "{\n\t\"foo\": \"bar\"\n}", string(hrwrb))
 }
 
 func TestResponseWriteXML(t *testing.T) {
 	a := New()
 
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	var foobar struct {
 		XMLName xml.Name `xml:"foobar"`
@@ -220,60 +249,72 @@ func TestResponseWriteXML(t *testing.T) {
 
 	assert.Error(t, res.WriteXML(&errorXMLMarshaler{}))
 	assert.NoError(t, res.WriteXML(&foobar))
-	assert.Equal(t, http.StatusOK, rec.Code)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"application/xml; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
 	assert.Equal(
 		t,
 		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
 			"<foobar><foo>bar</foo></foobar>",
-		rec.Body.String(),
+		string(hrwrb),
 	)
 
-	_, res, rec = fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw = fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	a.DebugMode = true
 
 	assert.Error(t, res.WriteXML(&errorXMLMarshaler{}))
 	assert.NoError(t, res.WriteXML(&foobar))
-	assert.Equal(t, http.StatusOK, rec.Code)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"application/xml; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
 	assert.Equal(
 		t,
 		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
 			"<foobar>\n\t<foo>bar</foo>\n</foobar>",
-		rec.Body.String(),
+		string(hrwrb),
 	)
 }
 
 func TestResponseWriteProtobuf(t *testing.T) {
 	a := New()
 
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	assert.NoError(t, res.WriteProtobuf(&wrapperspb.StringValue{
 		Value: "foobar",
 	}))
-	assert.Equal(t, http.StatusOK, rec.Code)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"application/protobuf",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, "\n\x06foobar", rec.Body.String())
+	assert.Equal(t, "\n\x06foobar", string(hrwrb))
 }
 
 func TestResponseWriteMsgpack(t *testing.T) {
 	a := New()
 
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	var foobar struct {
 		Foo string `msgpack:"foo"`
@@ -282,19 +323,23 @@ func TestResponseWriteMsgpack(t *testing.T) {
 
 	assert.Error(t, res.WriteMsgpack(&errorMsgpackMarshaler{}))
 	assert.NoError(t, res.WriteMsgpack(&foobar))
-	assert.Equal(t, http.StatusOK, rec.Code)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"application/msgpack",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, "\x81\xa3foo\xa3bar", rec.Body.String())
+	assert.Equal(t, "\x81\xa3foo\xa3bar", string(hrwrb))
 }
 
 func TestResponseWriteTOML(t *testing.T) {
 	a := New()
 
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	var foobar struct {
 		Foo string `toml:"foo"`
@@ -303,19 +348,23 @@ func TestResponseWriteTOML(t *testing.T) {
 
 	assert.Error(t, res.WriteTOML(""))
 	assert.NoError(t, res.WriteTOML(&foobar))
-	assert.Equal(t, http.StatusOK, rec.Code)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"application/toml; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, "foo = \"bar\"\n", rec.Body.String())
+	assert.Equal(t, "foo = \"bar\"\n", string(hrwrb))
 }
 
 func TestResponseWriteYAML(t *testing.T) {
 	a := New()
 
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	var foobar struct {
 		Foo string `yaml:"foo"`
@@ -324,13 +373,17 @@ func TestResponseWriteYAML(t *testing.T) {
 
 	assert.Error(t, res.WriteYAML(&errorYAMLMarshaler{}))
 	assert.NoError(t, res.WriteYAML(&foobar))
-	assert.Equal(t, http.StatusOK, rec.Code)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"application/yaml; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, "foo: bar\n", rec.Body.String())
+	assert.Equal(t, "foo: bar\n", string(hrwrb))
 }
 
 func TestResponseRender(t *testing.T) {
@@ -349,30 +402,37 @@ func TestResponseRender(t *testing.T) {
 		os.ModePerm,
 	))
 
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	assert.Error(t, res.Render(nil, "foobar.html"))
 	assert.NoError(t, res.Render(nil, "test.html"))
-	assert.Equal(t, http.StatusOK, rec.Code)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"text/html; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, `<a href="/">Go Home</a>`, rec.Body.String())
+	assert.Equal(t, `<a href="/">Go Home</a>`, string(hrwrb))
 }
 
-func TestResponseRedirect(t *testing.T) {
+func TestResponseRedihrwt(t *testing.T) {
 	a := New()
 
-	_, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	_, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 
 	assert.NoError(t, res.Redirect("http://example.com/foo/bar"))
-	assert.Equal(t, http.StatusFound, rec.Code)
+
+	hrwr := hrw.Result()
+
+	assert.Equal(t, http.StatusFound, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"http://example.com/foo/bar",
-		rec.HeaderMap.Get("Location"),
+		hrw.HeaderMap.Get("Location"),
 	)
 }
 

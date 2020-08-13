@@ -16,7 +16,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
 
@@ -158,11 +157,16 @@ func TestAirGET(t *testing.T) {
 		return res.WriteString("Matched [GET /foobar]")
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/foobar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [GET /foobar]", rec.Body.String())
+	hr := httptest.NewRequest(http.MethodGet, "/foobar", nil)
+	hrw := httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [GET /foobar]", string(hrwrb))
 }
 
 func TestAirHEAD(t *testing.T) {
@@ -172,11 +176,16 @@ func TestAirHEAD(t *testing.T) {
 		return res.Write(nil)
 	})
 
-	req := httptest.NewRequest(http.MethodHead, "/foobar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	hr := httptest.NewRequest(http.MethodHead, "/foobar", nil)
+	hrw := httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
 }
 
 func TestAirPOST(t *testing.T) {
@@ -186,11 +195,16 @@ func TestAirPOST(t *testing.T) {
 		return res.WriteString("Matched [POST /foobar]")
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/foobar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [POST /foobar]", rec.Body.String())
+	hr := httptest.NewRequest(http.MethodPost, "/foobar", nil)
+	hrw := httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [POST /foobar]", string(hrwrb))
 }
 
 func TestAirPUT(t *testing.T) {
@@ -200,11 +214,16 @@ func TestAirPUT(t *testing.T) {
 		return res.WriteString("Matched [PUT /foobar]")
 	})
 
-	req := httptest.NewRequest(http.MethodPut, "/foobar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [PUT /foobar]", rec.Body.String())
+	hr := httptest.NewRequest(http.MethodPut, "/foobar", nil)
+	hrw := httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [PUT /foobar]", string(hrwrb))
 }
 
 func TestAirPATCH(t *testing.T) {
@@ -214,11 +233,16 @@ func TestAirPATCH(t *testing.T) {
 		return res.WriteString("Matched [PATCH /foobar]")
 	})
 
-	req := httptest.NewRequest(http.MethodPatch, "/foobar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [PATCH /foobar]", rec.Body.String())
+	hr := httptest.NewRequest(http.MethodPatch, "/foobar", nil)
+	hrw := httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [PATCH /foobar]", string(hrwrb))
 }
 
 func TestAirDELETE(t *testing.T) {
@@ -228,11 +252,16 @@ func TestAirDELETE(t *testing.T) {
 		return res.WriteString("Matched [DELETE /foobar]")
 	})
 
-	req := httptest.NewRequest(http.MethodDelete, "/foobar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [DELETE /foobar]", rec.Body.String())
+	hr := httptest.NewRequest(http.MethodDelete, "/foobar", nil)
+	hrw := httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [DELETE /foobar]", string(hrwrb))
 }
 
 func TestAirCONNECT(t *testing.T) {
@@ -242,11 +271,16 @@ func TestAirCONNECT(t *testing.T) {
 		return res.WriteString("Matched [CONNECT /foobar]")
 	})
 
-	req := httptest.NewRequest(http.MethodConnect, "/foobar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [CONNECT /foobar]", rec.Body.String())
+	hr := httptest.NewRequest(http.MethodConnect, "/foobar", nil)
+	hrw := httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [CONNECT /foobar]", string(hrwrb))
 }
 
 func TestAirOPTIONS(t *testing.T) {
@@ -256,11 +290,16 @@ func TestAirOPTIONS(t *testing.T) {
 		return res.WriteString("Matched [OPTIONS /foobar]")
 	})
 
-	req := httptest.NewRequest(http.MethodOptions, "/foobar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [OPTIONS /foobar]", rec.Body.String())
+	hr := httptest.NewRequest(http.MethodOptions, "/foobar", nil)
+	hrw := httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [OPTIONS /foobar]", string(hrwrb))
 }
 
 func TestAirTRACE(t *testing.T) {
@@ -270,11 +309,16 @@ func TestAirTRACE(t *testing.T) {
 		return res.WriteString("Matched [TRACE /foobar]")
 	})
 
-	req := httptest.NewRequest(http.MethodTrace, "/foobar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [TRACE /foobar]", rec.Body.String())
+	hr := httptest.NewRequest(http.MethodTrace, "/foobar", nil)
+	hrw := httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [TRACE /foobar]", string(hrwrb))
 }
 
 func TestAirBATCH(t *testing.T) {
@@ -284,59 +328,104 @@ func TestAirBATCH(t *testing.T) {
 		return res.WriteString("Matched [* /foobar]")
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/foobar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
+	hr := httptest.NewRequest(http.MethodGet, "/foobar", nil)
+	hrw := httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodHead, "/foobar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	a.ServeHTTP(hrw, hr)
 
-	req = httptest.NewRequest(http.MethodPost, "/foobar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
 
-	req = httptest.NewRequest(http.MethodPut, "/foobar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foobar]", string(hrwrb))
 
-	req = httptest.NewRequest(http.MethodPatch, "/foobar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
+	hr = httptest.NewRequest(http.MethodHead, "/foobar", nil)
+	hrw = httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodDelete, "/foobar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
+	a.ServeHTTP(hrw, hr)
 
-	req = httptest.NewRequest(http.MethodConnect, "/foobar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
 
-	req = httptest.NewRequest(http.MethodOptions, "/foobar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
 
-	req = httptest.NewRequest(http.MethodTrace, "/foobar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Matched [* /foobar]", rec.Body.String())
+	hr = httptest.NewRequest(http.MethodPost, "/foobar", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foobar]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodPut, "/foobar", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foobar]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodPatch, "/foobar", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foobar]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodDelete, "/foobar", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foobar]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodConnect, "/foobar", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foobar]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodOptions, "/foobar", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foobar]", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodTrace, "/foobar", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Matched [* /foobar]", string(hrwrb))
 }
 
 func TestAirFILE(t *testing.T) {
@@ -353,31 +442,51 @@ func TestAirFILE(t *testing.T) {
 
 	a.FILE("/foobar", f.Name())
 
-	req := httptest.NewRequest(http.MethodGet, "/foobar", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Foobar", rec.Body.String())
+	hr := httptest.NewRequest(http.MethodGet, "/foobar", nil)
+	hrw := httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodHead, "/foobar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Foobar", string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodHead, "/foobar", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
 
 	a.FILE("/foobar2", "nowhere")
 
-	req = httptest.NewRequest(http.MethodGet, "/foobar2", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusNotFound, rec.Code)
-	assert.Equal(t, http.StatusText(rec.Code), rec.Body.String())
+	hr = httptest.NewRequest(http.MethodGet, "/foobar2", nil)
+	hrw = httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodHead, "/foobar2", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusNotFound, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusNotFound, hrwr.StatusCode)
+	assert.Equal(t, http.StatusText(hrwr.StatusCode), string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodHead, "/foobar2", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusNotFound, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
 }
 
 func TestAirFILES(t *testing.T) {
@@ -406,51 +515,81 @@ func TestAirFILES(t *testing.T) {
 
 	a.FILES("/foobar", dir)
 
-	req := httptest.NewRequest(
+	hr := httptest.NewRequest(
 		http.MethodGet,
 		path.Join("/foobar", filepath.Base(f.Name())),
 		nil,
 	)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Foobar", rec.Body.String())
+	hrw := httptest.NewRecorder()
 
-	req = httptest.NewRequest(
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Foobar", string(hrwrb))
+
+	hr = httptest.NewRequest(
 		http.MethodHead,
 		path.Join("/foobar", filepath.Base(f.Name())),
 		nil,
 	)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	hrw = httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodGet, "/foobar/nowhere", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusNotFound, rec.Code)
-	assert.Equal(t, http.StatusText(rec.Code), rec.Body.String())
+	a.ServeHTTP(hrw, hr)
 
-	req = httptest.NewRequest(http.MethodHead, "/foobar/nowhere", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusNotFound, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
+
+	hr = httptest.NewRequest(http.MethodGet, "/foobar/nowhere", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusNotFound, hrwr.StatusCode)
+	assert.Equal(t, http.StatusText(hrwr.StatusCode), string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodHead, "/foobar/nowhere", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusNotFound, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
 
 	a.FILES("/foobar2/", "")
 
-	req = httptest.NewRequest(http.MethodGet, "/foobar2/air.go", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.NotEmpty(t, rec.Body.String())
+	hr = httptest.NewRequest(http.MethodGet, "/foobar2/air.go", nil)
+	hrw = httptest.NewRecorder()
 
-	req = httptest.NewRequest(http.MethodHead, "/foobar2/air.go", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Body.String())
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.NotEmpty(t, string(hrwrb))
+
+	hr = httptest.NewRequest(http.MethodHead, "/foobar2/air.go", nil)
+	hrw = httptest.NewRecorder()
+
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Len(t, hrwrb, 0)
 }
 
 func TestAirGroup(t *testing.T) {
@@ -970,17 +1109,21 @@ func TestAirServeHTTP(t *testing.T) {
 		)
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/hello/Air", nil)
-	rec := httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	hr := httptest.NewRequest(http.MethodGet, "/hello/Air", nil)
+	hrw := httptest.NewRecorder()
 
-	assert.Equal(t, http.StatusOK, rec.Code)
+	a.ServeHTTP(hrw, hr)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"text/plain; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, "Pregas - Gas - Hello, Air - Defer", rec.Body.String())
+	assert.Equal(t, "Pregas - Gas - Hello, Air - Defer", string(hrwrb))
 
 	a = New()
 
@@ -988,17 +1131,21 @@ func TestAirServeHTTP(t *testing.T) {
 		return errors.New("handler error")
 	})
 
-	req = httptest.NewRequest(http.MethodGet, "/", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	hr = httptest.NewRequest(http.MethodGet, "/", nil)
+	hrw = httptest.NewRecorder()
 
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusInternalServerError, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"text/plain; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, "Internal Server Error", rec.Body.String())
+	assert.Equal(t, "Internal Server Error", string(hrwrb))
 
 	a = New()
 	a.DebugMode = true
@@ -1007,17 +1154,21 @@ func TestAirServeHTTP(t *testing.T) {
 		return errors.New("handler error")
 	})
 
-	req = httptest.NewRequest(http.MethodGet, "/bar", nil)
-	rec = httptest.NewRecorder()
-	a.ServeHTTP(rec, req)
+	hr = httptest.NewRequest(http.MethodGet, "/bar", nil)
+	hrw = httptest.NewRecorder()
 
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	a.ServeHTTP(hrw, hr)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusInternalServerError, hrwr.StatusCode)
 	assert.Equal(
 		t,
 		"text/plain; charset=utf-8",
-		rec.HeaderMap.Get("Content-Type"),
+		hrw.HeaderMap.Get("Content-Type"),
 	)
-	assert.Equal(t, "handler error", rec.Body.String())
+	assert.Equal(t, "handler error", string(hrwrb))
 }
 
 func TestAirLogErrorf(t *testing.T) {
@@ -1042,14 +1193,19 @@ func TestAirLogErrorf(t *testing.T) {
 func TestWrapHTTPHandler(t *testing.T) {
 	a := New()
 
-	req, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	req, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
+
 	assert.NoError(t, WrapHTTPHandler(http.HandlerFunc(func(
 		rw http.ResponseWriter,
 		r *http.Request,
 	) {
 		rw.Write([]byte("Foobar"))
 	}))(req, res))
-	assert.Equal(t, "Foobar", rec.Body.String())
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, "Foobar", string(hrwrb))
 }
 
 func TestDefaultNotFoundHandler(t *testing.T) {
@@ -1075,26 +1231,42 @@ func TestDefaultMethodNotAllowedHandler(t *testing.T) {
 func TestDefaultErrorHandler(t *testing.T) {
 	a := New()
 
-	req, res, rec := fakeRRCycle(a, http.MethodGet, "/", nil)
+	req, res, hrw := fakeRRCycle(a, http.MethodGet, "/", nil)
 	res.Status = http.StatusBadRequest
-	DefaultErrorHandler(errors.New("foobar"), req, res)
-	assert.Equal(t, "foobar", rec.Body.String())
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/", nil)
+	DefaultErrorHandler(errors.New("foobar"), req, res)
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, "foobar", string(hrwrb))
+
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/", nil)
 	res.Status = http.StatusInternalServerError
-	DefaultErrorHandler(errors.New("foobar"), req, res)
-	assert.Equal(t, http.StatusText(res.Status), rec.Body.String())
 
-	req, res, rec = fakeRRCycle(a, http.MethodGet, "/", nil)
-	assert.NoError(t, res.WriteString("everything is fine"))
 	DefaultErrorHandler(errors.New("foobar"), req, res)
-	assert.Equal(t, "everything is fine", rec.Body.String())
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, http.StatusText(res.Status), string(hrwrb))
+
+	req, res, hrw = fakeRRCycle(a, http.MethodGet, "/", nil)
+	assert.NoError(t, res.WriteString("everything is fine"))
+
+	DefaultErrorHandler(errors.New("foobar"), req, res)
+
+	hrwr = hrw.Result()
+	hrwrb, _ = ioutil.ReadAll(hrwr.Body)
+
+	assert.Equal(t, "everything is fine", string(hrwrb))
 }
 
 func TestWrapHTTPMiddleWare(t *testing.T) {
 	a := New()
 
-	req, res, rec := fakeRRCycle(a, http.MethodHead, "/", nil)
+	req, res, hrw := fakeRRCycle(a, http.MethodHead, "/", nil)
+
 	assert.NoError(t, WrapHTTPMiddleware(func(
 		next http.Handler,
 	) http.Handler {
@@ -1108,9 +1280,13 @@ func TestWrapHTTPMiddleWare(t *testing.T) {
 	})(func(req *Request, res *Response) error {
 		return res.WriteString("Foobar")
 	})(req, res))
+
+	hrwr := hrw.Result()
+	hrwrb, _ := ioutil.ReadAll(hrwr.Body)
+
 	assert.Equal(t, http.MethodGet, req.Method)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Foobar", rec.Body.String())
+	assert.Equal(t, http.StatusOK, hrwr.StatusCode)
+	assert.Equal(t, "Foobar", string(hrwrb))
 }
 
 func TestStringSliceContains(t *testing.T) {
@@ -1124,32 +1300,19 @@ func TestStringSliceContains(t *testing.T) {
 
 func fakeRRCycle(
 	a *Air,
-	method string,
-	target string,
-	body io.Reader,
+	requestMethod string,
+	requestTarget string,
+	requestBody io.Reader,
 ) (*Request, *Response, *httptest.ResponseRecorder) {
-	req := &Request{
-		Air: a,
+	req := &Request{}
+	res := &Response{}
+	hr := httptest.NewRequest(requestMethod, requestTarget, requestBody)
+	hrw := httptest.NewRecorder()
 
-		parseRouteParamsOnce: &sync.Once{},
-		parseOtherParamsOnce: &sync.Once{},
-	}
-	req.SetHTTPRequest(httptest.NewRequest(method, target, body))
+	req.reset(a, hr, res)
+	res.reset(a, hrw, req)
 
-	rec := httptest.NewRecorder()
-	res := &Response{
-		Air:    a,
-		Status: http.StatusOK,
-	}
-	res.SetHTTPResponseWriter(&responseWriter{
-		r:  res,
-		rw: rec,
-	})
-
-	req.res = res
-	res.req = req
-
-	return req, res, rec
+	return req, res, hrw
 }
 
 var osStdout = os.Stdout

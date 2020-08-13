@@ -109,6 +109,30 @@ type Request struct {
 	localizedString      func(string) string
 }
 
+// reset resets the r with the a, hr and res.
+func (r *Request) reset(a *Air, hr *http.Request, res *Response) {
+	r.Air = a
+	r.res = res
+	r.params = r.params[:0]
+	r.routeParamNames = nil
+	r.routeParamValues = nil
+	r.parseRouteParamsOnce = &sync.Once{}
+	r.parseOtherParamsOnce = &sync.Once{}
+	for key := range r.values {
+		delete(r.values, key)
+	}
+
+	r.localizedString = nil
+
+	hr.Body = &requestBody{
+		r:  r,
+		hr: hr,
+		rc: hr.Body,
+	}
+
+	r.SetHTTPRequest(hr)
+}
+
 // HTTPRequest returns the underlying `http.Request` of the r.
 //
 // ATTENTION: You should never call this method unless you know what you are

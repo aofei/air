@@ -1219,95 +1219,13 @@ func (a *Air) Addresses() []string {
 
 // ServeHTTP implements the `http.Handler`.
 func (a *Air) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	// Get request from the pool.
+	// Get the request and response from the pool.
 
 	req := a.requestPool.Get().(*Request)
-	req.Air = a
-	req.params = req.params[:0]
-	req.routeParamNames = nil
-	req.routeParamValues = nil
-	req.parseRouteParamsOnce = &sync.Once{}
-	req.parseOtherParamsOnce = &sync.Once{}
-	for key := range req.values {
-		delete(req.values, key)
-	}
-
-	req.localizedString = nil
-
-	r.Body = &requestBody{
-		r:  req,
-		hr: r,
-		rc: r.Body,
-	}
-
-	req.SetHTTPRequest(r)
-
-	// Get response from the pool.
-
 	res := a.responsePool.Get().(*Response)
-	res.Air = a
-	res.Status = http.StatusOK
-	res.ContentLength = -1
-	res.Written = false
-	res.Minified = false
-	res.Gzipped = false
-	res.servingContent = false
-	res.serveContentError = nil
-	res.deferredFuncs = res.deferredFuncs[:0]
 
-	hrw := http.ResponseWriter(&responseWriter{
-		r:  res,
-		rw: rw,
-	})
-
-	hijacker, isHijacker := rw.(http.Hijacker)
-	pusher, isPusher := rw.(http.Pusher)
-	if isHijacker && isPusher {
-		hrw = http.ResponseWriter(&struct {
-			http.ResponseWriter
-			http.Flusher
-			http.Hijacker
-			http.Pusher
-		}{
-			hrw,
-			hrw.(http.Flusher),
-			&responseHijacker{
-				r: res,
-				h: hijacker,
-			},
-			pusher,
-		})
-	} else if isHijacker {
-		hrw = http.ResponseWriter(&struct {
-			http.ResponseWriter
-			http.Flusher
-			http.Hijacker
-		}{
-			hrw,
-			hrw.(http.Flusher),
-			&responseHijacker{
-				r: res,
-				h: hijacker,
-			},
-		})
-	} else if isPusher {
-		hrw = http.ResponseWriter(&struct {
-			http.ResponseWriter
-			http.Flusher
-			http.Pusher
-		}{
-			hrw,
-			hrw.(http.Flusher),
-			pusher,
-		})
-	}
-
-	res.SetHTTPResponseWriter(hrw)
-
-	// Tie the request and response together.
-
-	req.res = res
-	res.req = req
+	req.reset(a, r, res)
+	res.reset(a, rw, req)
 
 	// Chain the gases stack.
 
