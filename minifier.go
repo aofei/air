@@ -31,12 +31,12 @@ func newMinifier(a *Air) *minifier {
 // load loads the stuff of the m up.
 func (m *minifier) load() {
 	m.minifier = minify.New()
-	m.minifier.Add("text/html", html.DefaultMinifier)
-	m.minifier.Add("text/css", css.DefaultMinifier)
-	m.minifier.Add("application/javascript", js.DefaultMinifier)
-	m.minifier.Add("application/json", json.DefaultMinifier)
-	m.minifier.Add("application/xml", xml.DefaultMinifier)
-	m.minifier.Add("image/svg+xml", svg.DefaultMinifier)
+	m.minifier.Add("text/html", &html.Minifier{})
+	m.minifier.Add("text/css", &css.Minifier{})
+	m.minifier.Add("application/javascript", &js.Minifier{})
+	m.minifier.Add("application/json", &json.Minifier{})
+	m.minifier.Add("application/xml", &xml.Minifier{})
+	m.minifier.Add("image/svg+xml", &svg.Minifier{})
 }
 
 // minify minifies the b based on the mimeType.
