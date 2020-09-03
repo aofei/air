@@ -130,6 +130,8 @@ func TestNew(t *testing.T) {
 	assert.NotNil(t, a.coffer)
 	assert.NotNil(t, a.i18n)
 
+	assert.NotNil(t, a.context)
+	assert.NotNil(t, a.contextCancel)
 	assert.NotNil(t, a.addressMap)
 	assert.Nil(t, a.shutdownJobs)
 	assert.NotNil(t, a.shutdownJobMutex)

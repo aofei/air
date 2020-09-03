@@ -556,6 +556,8 @@ type Air struct {
 	coffer   *coffer
 	i18n     *i18n
 
+	context                      context.Context
+	contextCancel                context.CancelFunc
 	addressMap                   map[string]int
 	shutdownJobs                 []func()
 	shutdownJobMutex             *sync.Mutex
@@ -644,6 +646,7 @@ func New() *Air {
 	a.coffer = newCoffer(a)
 	a.i18n = newI18n(a)
 
+	a.context, a.contextCancel = context.WithCancel(context.Background())
 	a.addressMap = map[string]int{}
 	a.shutdownJobMutex = &sync.Mutex{}
 	a.shutdownJobDone = make(chan struct{})
@@ -1145,6 +1148,7 @@ func (a *Air) Serve() error {
 
 // Close closes the server of the a immediately.
 func (a *Air) Close() error {
+	defer a.contextCancel()
 	return a.server.Close()
 }
 
@@ -1166,6 +1170,8 @@ func (a *Air) Close() error {
 // connections of shutdown and wait for them to close, if desired. See the
 // `AddShutdownJob` for a way to add shutdown jobs.
 func (a *Air) Shutdown(ctx context.Context) error {
+	defer a.contextCancel()
+
 	err := a.server.Shutdown(ctx)
 	select {
 	case <-ctx.Done():
