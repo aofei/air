@@ -22,7 +22,7 @@ jobs:
       - name: Test
         run: go test -v --coverprofile=cover.out ./...
       - name: Upload coverage profile
-        uses: codecov/codecov-action@v1.0.12
+        uses: codecov/codecov-action@v1.0.13
         with:
           token: ${{secrets.CODECOV_TOKEN}}
           file: cover.out
