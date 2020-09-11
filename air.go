@@ -245,14 +245,6 @@ type Air struct {
 	// Default value: "acme-certs"
 	ACMECertRoot string `mapstructure:"acme_cert_root"`
 
-	// ACMEDefaultHost is the default host of the ACME feature.
-	//
-	// The `ACMEDefaultHost` is only used when the host is missing from the
-	// TLS handshake.
-	//
-	// Default value: ""
-	ACMEDefaultHost string `mapstructure:"acme_default_host"`
-
 	// ACMEHostWhitelist is the list of hosts allowed by the ACME feature.
 	//
 	// It is highly recommended to set the `ACMEHostWhitelist`. If the
@@ -1038,10 +1030,6 @@ func (a *Air) Serve() error {
 				if c != nil {
 					return c, nil
 				}
-			}
-
-			if chi.ServerName == "" {
-				chi.ServerName = a.ACMEDefaultHost
 			}
 
 			return acm.GetCertificate(chi)

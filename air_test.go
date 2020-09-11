@@ -50,7 +50,6 @@ func TestNew(t *testing.T) {
 	assert.Nil(t, a.ACMETOSURLWhitelist)
 	assert.Nil(t, a.ACMEAccountKey)
 	assert.Equal(t, "acme-certs", a.ACMECertRoot)
-	assert.Empty(t, a.ACMEDefaultHost)
 	assert.Nil(t, a.ACMEHostWhitelist)
 	assert.Equal(t, 30*24*time.Hour, a.ACMERenewalWindow)
 	assert.Nil(t, a.ACMEExtraExts)
