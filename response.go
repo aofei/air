@@ -26,10 +26,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/aofei/mimesniffer"
 	"github.com/cespare/xxhash/v2"
 	"github.com/gorilla/websocket"
+	"github.com/pelletier/go-toml"
 	"github.com/vmihailenco/msgpack/v5"
 	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/http2"
@@ -380,27 +380,27 @@ func (r *Response) WriteMsgpack(v interface{}) error {
 // WriteTOML writes an "application/toml" content encoded from the v to the
 // client.
 func (r *Response) WriteTOML(v interface{}) error {
-	buf := bytes.Buffer{}
-	if err := toml.NewEncoder(&buf).Encode(v); err != nil {
+	b, err := toml.Marshal(v)
+	if err != nil {
 		return err
 	}
 
 	r.Header.Set("Content-Type", "application/toml; charset=utf-8")
 
-	return r.Write(bytes.NewReader(buf.Bytes()))
+	return r.Write(bytes.NewReader(b))
 }
 
 // WriteYAML writes an "application/yaml" content encoded from the v to the
 // client.
 func (r *Response) WriteYAML(v interface{}) error {
-	buf := bytes.Buffer{}
-	if err := yaml.NewEncoder(&buf).Encode(v); err != nil {
+	b, err := yaml.Marshal(v)
+	if err != nil {
 		return err
 	}
 
 	r.Header.Set("Content-Type", "application/yaml; charset=utf-8")
 
-	return r.Write(bytes.NewReader(buf.Bytes()))
+	return r.Write(bytes.NewReader(b))
 }
 
 // WriteFile writes a file content targeted by the filename to the client.

@@ -3,7 +3,6 @@ module github.com/aofei/air
 go 1.13
 
 require (
-	github.com/BurntSushi/toml v0.3.1
 	github.com/VictoriaMetrics/fastcache v1.5.7
 	github.com/aofei/mimesniffer v1.1.5
 	github.com/cespare/xxhash/v2 v2.1.1
@@ -11,6 +10,7 @@ require (
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/mitchellh/mapstructure v1.3.3
+	github.com/pelletier/go-toml v1.8.1
 	github.com/stretchr/testify v1.6.1
 	github.com/tdewolff/minify/v2 v2.9.3
 	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.1

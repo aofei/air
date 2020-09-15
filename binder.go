@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/BurntSushi/toml"
+	"github.com/pelletier/go-toml"
 	"github.com/vmihailenco/msgpack/v5"
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
@@ -59,7 +59,7 @@ func (b *binder) bind(v interface{}, r *Request) error {
 	case "application/msgpack":
 		err = msgpack.NewDecoder(r.Body).Decode(v)
 	case "application/toml":
-		_, err = toml.DecodeReader(r.Body, v)
+		err = toml.NewDecoder(r.Body).Decode(v)
 	case "application/yaml":
 		err = yaml.NewDecoder(r.Body).Decode(v)
 	case "application/x-www-form-urlencoded", "multipart/form-data":
