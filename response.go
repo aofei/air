@@ -245,6 +245,7 @@ func (r *Response) Write(content io.ReadSeeker) error {
 			}
 
 			content = bytes.NewReader(b)
+
 			r.Minified = true
 			defer func() {
 				if !r.Written {
@@ -438,15 +439,23 @@ func (r *Response) WriteFile(filename string) error {
 			return err
 		} else if a != nil {
 			r.Minified = a.minified
+			defer func() {
+				if !r.Written {
+					r.Minified = false
+				}
+			}()
 
 			var ac []byte
-			if r.Air.GzipEnabled && a.gzippedDigest != nil &&
-				r.gzippable() {
-				if ac = a.content(true); ac != nil {
-					r.Gzipped = true
-				}
-			} else {
+			if !r.Air.GzipEnabled || a.gzippedDigest == nil ||
+				!r.gzippable() {
 				ac = a.content(false)
+			} else if ac = a.content(true); ac != nil {
+				r.Gzipped = true
+				defer func() {
+					if !r.Written {
+						r.Gzipped = false
+					}
+				}()
 			}
 
 			if ac != nil {
@@ -812,6 +821,7 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 				res.Body = b
 			}
 
+			r.Status = res.StatusCode
 			r.Gzipped = httpguts.HeaderValuesContainsToken(
 				res.Header["Content-Encoding"],
 				"gzip",
@@ -826,6 +836,10 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 		) {
 			if r.Status < http.StatusBadRequest {
 				r.Status = http.StatusBadGateway
+			}
+
+			if !r.Written {
+				r.Gzipped = false
 			}
 
 			reverseProxyError = err
@@ -848,11 +862,6 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 
 		panic(r)
 	}()
-
-	switch targetURL.Scheme {
-	case "ws", "wss":
-		r.Status = http.StatusSwitchingProtocols
-	}
 
 	hrp.ServeHTTP(r.hrw, r.req.HTTPRequest())
 
