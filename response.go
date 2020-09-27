@@ -789,8 +789,8 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 			// version of Air has fixed this bug.
 			req.Host = ""
 		},
-		FlushInterval: 100 * time.Millisecond,
-		Transport:     r.Air.reverseProxyTransport,
+		Transport:     rp.Transport,
+		FlushInterval: rp.FlushInterval,
 		ErrorLog:      r.Air.ErrorLogger,
 		BufferPool:    r.Air.reverseProxyBufferPool,
 		ModifyResponse: func(res *http.Response) error {
@@ -845,13 +845,9 @@ func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 			reverseProxyError = err
 		},
 	}
-	switch targetURL.Scheme {
-	case "grpc", "grpcs":
-		hrp.FlushInterval /= 100 // For gRPC streaming
-	}
 
-	if rp.Transport != nil {
-		hrp.Transport = rp.Transport
+	if hrp.Transport == nil {
+		hrp.Transport = r.Air.reverseProxyTransport
 	}
 
 	defer func() {
@@ -902,6 +898,18 @@ type ReverseProxy struct {
 	// and well-improved one will be used. If the `Transport` is not nil, it
 	// is responsible for keeping the `Response.ProxyPass` working properly.
 	Transport http.RoundTripper
+
+	// FlushInterval is the flush interval to flush to the client while
+	// copying the body of the response from the target.
+	//
+	// If the `FlushInterval` is zero, no periodic flushing is done.
+	//
+	// If the `FlushInterval` is negative, copies are flushed to the client
+	// immediately.
+	//
+	// The `FlushInterval` will always be treated as negative when the
+	// response from the target is recognized as a streaming response.
+	FlushInterval time.Duration
 
 	// ModifyRequestMethod modifies the method of the request to the target.
 	ModifyRequestMethod func(method string) (string, error)
