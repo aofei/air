@@ -448,6 +448,27 @@ func TestResponseDefer(t *testing.T) {
 	assert.Len(t, res.deferredFuncs, 1)
 }
 
+func TestResponseOmittableHeader(t *testing.T) {
+	a := New()
+
+	_, res, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
+
+	assert.False(t, res.omittableHeader("Foobar"))
+
+	res.Header.Set("Foobar", "")
+	assert.False(t, res.omittableHeader("Foobar"))
+
+	res.Header.Set("Foobar", "foobar")
+	assert.False(t, res.omittableHeader("Foobar"))
+
+	res.Header["Foobar"] = nil
+	assert.True(t, res.omittableHeader("Foobar"))
+	assert.True(t, res.omittableHeader("FooBar"))
+
+	res.Header["Foobar"] = []string{}
+	assert.False(t, res.omittableHeader("Foobar"))
+}
+
 func TestResponseGzippable(t *testing.T) {
 	a := New()
 

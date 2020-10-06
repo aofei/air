@@ -491,7 +491,7 @@ func (r *Response) WriteFile(filename string) error {
 		r.Header.Set("Content-Type", ct)
 	}
 
-	if r.Header.Get("ETag") == "" {
+	if !r.omittableHeader("ETag") && r.Header.Get("ETag") == "" {
 		if et == nil {
 			h := xxhash.New()
 			if _, err := io.Copy(h, c); err != nil {
@@ -511,7 +511,8 @@ func (r *Response) WriteFile(filename string) error {
 		))
 	}
 
-	if r.Header.Get("Last-Modified") == "" {
+	if !r.omittableHeader("Last-Modified") &&
+		r.Header.Get("Last-Modified") == "" {
 		r.Header.Set("Last-Modified", mt.UTC().Format(http.TimeFormat))
 	}
 
@@ -870,6 +871,12 @@ func (r *Response) Defer(f func()) {
 	if f != nil {
 		r.deferredFuncs = append(r.deferredFuncs, f)
 	}
+}
+
+// omittableHeader reports whether the header targeted by the key is omittable.
+func (r *Response) omittableHeader(key string) bool {
+	vs, ok := r.Header[http.CanonicalHeaderKey(key)]
+	return ok && vs == nil
 }
 
 // gzippable reports whether the r is gzippable.
