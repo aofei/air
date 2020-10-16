@@ -142,7 +142,7 @@ func (r *renderer) render(
 	}).Execute(w, v)
 }
 
-// strlen returns the number of characters in the s.
+// strlen returns the number of characters of the s.
 func strlen(s string) int {
 	return len([]rune(s))
 }

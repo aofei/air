@@ -493,7 +493,7 @@ func (r *Request) Bind(v interface{}) error {
 	return r.Air.binder.bind(v, r)
 }
 
-// LocalizedString returns localized string for the key based on the
+// LocalizedString returns a localized string for the key based on the
 // Accept-Language header. It returns the key without any changes if the
 // `I18nEnabled` of the `Air` of the r is false or something goes wrong.
 func (r *Request) LocalizedString(key string) string {

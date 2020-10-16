@@ -416,6 +416,23 @@ type Air struct {
 	// RendererTemplateFuncMap is the HTML template function map of the
 	// renderer feature.
 	//
+	// The HTML template functions described in
+	// https://pkg.go.dev/text/template#hdr-Functions and the following are
+	// always available:
+	//  * strlen
+	//      Returns the number of characters of its argument.
+	//  * substr
+	//      Returns the substring consisting of the characters of its first
+	//      argument starting at a start index (the second argument) and
+	//      continuing up to, but not including, the character at an end
+	//      index (the third argument).
+	//  * timefmt
+	//      Returns a textual representation of its first argument for the
+	//      time layout (the second argument).
+	//  * locstr
+	//      Returns a localized string for its argument. It works exactly
+	//      the same as the `Request.LocalizedString`
+	//
 	// Default value: nil
 	RendererTemplateFuncMap template.FuncMap `mapstructure:"-"`
 
