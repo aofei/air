@@ -297,6 +297,12 @@ func (r *Request) Param(name string) *RequestParam {
 	return nil
 }
 
+// ParamValue returns the first value of the matched `RequestParam` for the
+// name. It returns nil if not found or there are no values.
+func (r *Request) ParamValue(name string) *RequestParamValue {
+	return r.Param(name).Value()
+}
+
 // parseRouteParams parses the route params sent with the r into the `r.params`.
 func (r *Request) parseRouteParams() {
 	if r.routeParamNames == nil {
@@ -518,9 +524,9 @@ type RequestParam struct {
 
 	// Values is the values.
 	//
-	// Access order: route param value (always at the first) > request query
-	// value(s) > request form value(s) > request multipart form value(s) >
-	// request multipart form file(s).
+	// Access order: route param value > request query value(s) > request
+	// form value(s) > request multipart form value(s) > request multipart
+	// form file(s).
 	//
 	// Note that there will always be at least one value when the request
 	// param is from the `Request.Param` or `Request.Params`.

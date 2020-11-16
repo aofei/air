@@ -260,6 +260,41 @@ func TestRequestParam(t *testing.T) {
 	assert.Equal(t, "bar2", p.Values[2].String())
 }
 
+func TestRequestParamValue(t *testing.T) {
+	a := New()
+
+	req, _, _ := fakeRRCycle(a, http.MethodGet, "/", nil)
+
+	pv := req.ParamValue("foo")
+	assert.Nil(t, pv)
+
+	req, _, _ = fakeRRCycle(a, http.MethodGet, "/?foobar", nil)
+
+	pv = req.ParamValue("foobar")
+	assert.NotNil(t, pv)
+	assert.Empty(t, pv.String())
+
+	req, _, _ = fakeRRCycle(a, http.MethodGet, "/?foo=bar", nil)
+
+	pv = req.ParamValue("foo")
+	assert.NotNil(t, pv)
+	assert.Equal(t, "bar", pv.String())
+
+	req, _, _ = fakeRRCycle(a, http.MethodGet, "/?foo=bar&foo=bar2", nil)
+
+	pv = req.ParamValue("foo")
+	assert.NotNil(t, pv)
+	assert.Equal(t, "bar", pv.String())
+
+	req, _, _ = fakeRRCycle(a, http.MethodGet, "/?foo=bar1&foo=bar2", nil)
+	req.routeParamNames = []string{"foo"}
+	req.routeParamValues = []string{"bar"}
+
+	pv = req.ParamValue("foo")
+	assert.NotNil(t, pv)
+	assert.Equal(t, "bar", pv.String())
+}
+
 func TestRequestParseRouteParams(t *testing.T) {
 	a := New()
 
@@ -450,24 +485,6 @@ func TestRequestLocalizedString(t *testing.T) {
 	a.I18nLocaleRoot = dir
 
 	assert.Equal(t, "foo", req.LocalizedString("foo"))
-}
-
-func TestRequestParamValue(t *testing.T) {
-	rp := &RequestParam{
-		Name: "foo",
-	}
-	assert.Nil(t, rp.Values)
-	assert.Nil(t, rp.Value())
-
-	rp.Values = []*RequestParamValue{
-		{
-			i: "bar",
-		},
-		{
-			i: "foobar",
-		},
-	}
-	assert.Equal(t, "bar", rp.Value().String())
 }
 
 func TestRequestParamValueBool(t *testing.T) {
