@@ -793,6 +793,26 @@ func TestRequestParamValueString(t *testing.T) {
 	assert.NotNil(t, rpv.s)
 }
 
+func TestRequestParamValueBytes(t *testing.T) {
+	rpv := &RequestParamValue{
+		i: "foobar",
+	}
+	assert.Nil(t, rpv.s)
+
+	b := rpv.Bytes()
+	assert.Equal(t, []byte("foobar"), b)
+	assert.NotNil(t, rpv.s)
+
+	rpv = &RequestParamValue{
+		i: errors.New("foobar"),
+	}
+	assert.Nil(t, rpv.s)
+
+	b = rpv.Bytes()
+	assert.Equal(t, []byte("foobar"), b)
+	assert.NotNil(t, rpv.s)
+}
+
 func TestRequestParamValueFile(t *testing.T) {
 	rpv := &RequestParamValue{
 		i: &multipart.FileHeader{},

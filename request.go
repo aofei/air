@@ -755,6 +755,16 @@ func (rpv *RequestParamValue) String() string {
 	return *rpv.s
 }
 
+// Bytes returns a `[]byte` from the underlying value of the rpv. It returns nil
+// if the rpv is not text-based.
+func (rpv *RequestParamValue) Bytes() []byte {
+	if s := rpv.String(); s != "" {
+		return []byte(s)
+	}
+
+	return nil
+}
+
 // File returns a `multipart.FileHeader` from the underlying value of the rpv.
 func (rpv *RequestParamValue) File() (*multipart.FileHeader, error) {
 	if rpv.f == nil {
