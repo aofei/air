@@ -789,7 +789,7 @@ func TestRequestParamValueString(t *testing.T) {
 	assert.Nil(t, rpv.s)
 
 	s = rpv.String()
-	assert.Equal(t, "foobar", s)
+	assert.Empty(t, s)
 	assert.NotNil(t, rpv.s)
 }
 
@@ -809,7 +809,7 @@ func TestRequestParamValueBytes(t *testing.T) {
 	assert.Nil(t, rpv.s)
 
 	b = rpv.Bytes()
-	assert.Equal(t, []byte("foobar"), b)
+	assert.Nil(t, b)
 	assert.NotNil(t, rpv.s)
 }
 

@@ -3,7 +3,6 @@ package air
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net"
@@ -744,12 +743,8 @@ func (rpv *RequestParamValue) Float64() (float64, error) {
 // if the rpv is not text-based.
 func (rpv *RequestParamValue) String() string {
 	if rpv.s == nil {
-		if s, ok := rpv.i.(string); ok {
-			rpv.s = &s
-		} else {
-			s := fmt.Sprint(rpv.i)
-			rpv.s = &s
-		}
+		s, _ := rpv.i.(string)
+		rpv.s = &s
 	}
 
 	return *rpv.s
