@@ -569,12 +569,12 @@ type Air struct {
 	contextCancel                context.CancelFunc
 	addressMap                   map[string]int
 	shutdownJobs                 []func()
-	shutdownJobMutex             *sync.Mutex
+	shutdownJobMutex             sync.Mutex
 	shutdownJobDone              chan struct{}
-	requestPool                  *sync.Pool
-	responsePool                 *sync.Pool
-	contentTypeSnifferBufferPool *sync.Pool
-	gzipWriterPool               *sync.Pool
+	requestPool                  sync.Pool
+	responsePool                 sync.Pool
+	contentTypeSnifferBufferPool sync.Pool
+	gzipWriterPool               sync.Pool
 	reverseProxyTransport        *reverseProxyTransport
 	reverseProxyBufferPool       *reverseProxyBufferPool
 }
@@ -657,31 +657,22 @@ func New() *Air {
 
 	a.context, a.contextCancel = context.WithCancel(context.Background())
 	a.addressMap = map[string]int{}
-	a.shutdownJobMutex = &sync.Mutex{}
 	a.shutdownJobDone = make(chan struct{})
-	a.requestPool = &sync.Pool{
-		New: func() interface{} {
-			return &Request{}
-		},
+	a.requestPool.New = func() interface{} {
+		return &Request{}
 	}
 
-	a.responsePool = &sync.Pool{
-		New: func() interface{} {
-			return &Response{}
-		},
+	a.responsePool.New = func() interface{} {
+		return &Response{}
 	}
 
-	a.contentTypeSnifferBufferPool = &sync.Pool{
-		New: func() interface{} {
-			return make([]byte, 512)
-		},
+	a.contentTypeSnifferBufferPool.New = func() interface{} {
+		return make([]byte, 512)
 	}
 
-	a.gzipWriterPool = &sync.Pool{
-		New: func() interface{} {
-			w, _ := gzip.NewWriterLevel(nil, a.GzipCompressionLevel)
-			return w
-		},
+	a.gzipWriterPool.New = func() interface{} {
+		w, _ := gzip.NewWriterLevel(nil, a.GzipCompressionLevel)
+		return w
 	}
 
 	a.reverseProxyTransport = newReverseProxyTransport()

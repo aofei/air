@@ -15,7 +15,7 @@ type router struct {
 	routeTree            *routeNode
 	registeredRoutes     map[string]bool
 	maxRouteParams       int
-	routeParamValuesPool *sync.Pool
+	routeParamValuesPool sync.Pool
 }
 
 // newRouter returns a new instance of the `router` with the a.
@@ -27,10 +27,9 @@ func newRouter(a *Air) *router {
 		},
 		registeredRoutes: map[string]bool{},
 	}
-	r.routeParamValuesPool = &sync.Pool{
-		New: func() interface{} {
-			return make([]string, r.maxRouteParams)
-		},
+
+	r.routeParamValuesPool.New = func() interface{} {
+		return make([]string, r.maxRouteParams)
 	}
 
 	return r

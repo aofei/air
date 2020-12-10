@@ -12,7 +12,6 @@ func TestNewMinifier(t *testing.T) {
 
 	assert.NotNil(t, m)
 	assert.NotNil(t, m.a)
-	assert.NotNil(t, m.loadOnce)
 	assert.Nil(t, m.minifier)
 }
 

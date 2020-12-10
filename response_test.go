@@ -493,9 +493,7 @@ func TestResponseGzippable(t *testing.T) {
 }
 
 func TestNewReverseProxyBufferPool(t *testing.T) {
-	rpbp := newReverseProxyBufferPool()
-
-	assert.NotNil(t, rpbp.pool)
+	assert.NotNil(t, newReverseProxyBufferPool())
 }
 
 func TestReverseProxyBufferPoolGet(t *testing.T) {

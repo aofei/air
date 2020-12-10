@@ -16,15 +16,14 @@ import (
 // minifier is a minifier that minifies contents based on the MIME types.
 type minifier struct {
 	a        *Air
-	loadOnce *sync.Once
+	loadOnce sync.Once
 	minifier *minify.M
 }
 
 // newMinifier returns a new instance of the `minifier` with the a.
 func newMinifier(a *Air) *minifier {
 	return &minifier{
-		a:        a,
-		loadOnce: &sync.Once{},
+		a: a,
 	}
 }
 

@@ -25,7 +25,7 @@ type coffer struct {
 	loadOnce  *sync.Once
 	loadError error
 	watcher   *fsnotify.Watcher
-	assets    *sync.Map
+	assets    sync.Map
 	cache     *fastcache.Cache
 }
 
@@ -78,7 +78,6 @@ func (c *coffer) load() {
 		}()
 	}
 
-	c.assets = &sync.Map{}
 	c.cache = fastcache.New(c.a.CofferMaxMemoryBytes)
 }
 

@@ -98,7 +98,6 @@ func TestListenerAccept(t *testing.T) {
 	assert.NotNil(t, pc.bufReader)
 	assert.Nil(t, pc.srcAddr)
 	assert.Nil(t, pc.dstAddr)
-	assert.NotNil(t, pc.readHeaderOnce)
 	assert.Nil(t, pc.readHeaderError)
 	assert.Zero(t, pc.readHeaderTimeout)
 

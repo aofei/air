@@ -18,7 +18,6 @@ func TestNewCoffer(t *testing.T) {
 	assert.NotNil(t, c.a)
 	assert.NotNil(t, c.loadOnce)
 	assert.Nil(t, c.watcher)
-	assert.Nil(t, c.assets)
 	assert.Nil(t, c.cache)
 }
 
@@ -29,7 +28,6 @@ func TestCofferLoad(t *testing.T) {
 	c.load()
 	assert.Nil(t, c.loadError)
 	assert.NotNil(t, c.watcher)
-	assert.NotNil(t, c.assets)
 	assert.NotNil(t, c.cache)
 }
 

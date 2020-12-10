@@ -133,18 +133,13 @@ func TestNew(t *testing.T) {
 	assert.NotNil(t, a.contextCancel)
 	assert.NotNil(t, a.addressMap)
 	assert.Nil(t, a.shutdownJobs)
-	assert.NotNil(t, a.shutdownJobMutex)
 	assert.Zero(t, cap(a.shutdownJobDone))
-	assert.NotNil(t, a.requestPool)
-	assert.NotNil(t, a.responsePool)
 	assert.IsType(t, &Request{}, a.requestPool.Get())
 	assert.IsType(t, &Response{}, a.responsePool.Get())
 
-	assert.NotNil(t, a.contentTypeSnifferBufferPool)
 	assert.IsType(t, []byte{}, a.contentTypeSnifferBufferPool.Get())
 	assert.Len(t, a.contentTypeSnifferBufferPool.Get(), 512)
 
-	assert.NotNil(t, a.gzipWriterPool)
 	assert.IsType(t, &gzip.Writer{}, a.gzipWriterPool.Get())
 
 	assert.NotNil(t, a.reverseProxyTransport)

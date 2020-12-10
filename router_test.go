@@ -17,7 +17,6 @@ func TestNewRouter(t *testing.T) {
 	assert.NotNil(t, r.routeTree)
 	assert.NotNil(t, r.routeTree.handlers)
 	assert.NotNil(t, r.registeredRoutes)
-	assert.NotNil(t, r.routeParamValuesPool)
 }
 
 func TestRouterRegister(t *testing.T) {

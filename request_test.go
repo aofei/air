@@ -26,8 +26,6 @@ func TestRequestHTTPRequest(t *testing.T) {
 	assert.Len(t, req.params, 0)
 	assert.Len(t, req.routeParamNames, 0)
 	assert.Len(t, req.routeParamValues, 0)
-	assert.NotNil(t, req.parseRouteParamsOnce)
-	assert.NotNil(t, req.parseOtherParamsOnce)
 	assert.Nil(t, req.values)
 	assert.Nil(t, req.localizedString)
 

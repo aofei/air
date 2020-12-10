@@ -98,7 +98,6 @@ func (l *listener) Accept() (net.Conn, error) {
 		return &proxyConn{
 			Conn:              tc,
 			bufReader:         bufio.NewReader(tc),
-			readHeaderOnce:    &sync.Once{},
 			readHeaderTimeout: l.a.PROXYReadHeaderTimeout,
 		}, nil
 	}
@@ -114,7 +113,7 @@ type proxyConn struct {
 	bufReader         *bufio.Reader
 	srcAddr           *net.TCPAddr
 	dstAddr           *net.TCPAddr
-	readHeaderOnce    *sync.Once
+	readHeaderOnce    sync.Once
 	readHeaderError   error
 	readHeaderTimeout time.Duration
 }

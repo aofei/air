@@ -102,8 +102,8 @@ type Request struct {
 	params               []*RequestParam
 	routeParamNames      []string
 	routeParamValues     []string
-	parseRouteParamsOnce *sync.Once
-	parseOtherParamsOnce *sync.Once
+	parseRouteParamsOnce sync.Once
+	parseOtherParamsOnce sync.Once
 	values               map[string]interface{}
 	localizedString      func(string) string
 }
@@ -115,8 +115,8 @@ func (r *Request) reset(a *Air, hr *http.Request, res *Response) {
 	r.params = r.params[:0]
 	r.routeParamNames = nil
 	r.routeParamValues = nil
-	r.parseRouteParamsOnce = &sync.Once{}
-	r.parseOtherParamsOnce = &sync.Once{}
+	r.parseRouteParamsOnce = sync.Once{}
+	r.parseOtherParamsOnce = sync.Once{}
 	for key := range r.values {
 		delete(r.values, key)
 	}
