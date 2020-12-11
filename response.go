@@ -550,7 +550,7 @@ func (r *Response) Render(m map[string]interface{}, templates ...string) error {
 // redirection status.
 func (r *Response) Redirect(url string) error {
 	if r.Written {
-		return errors.New("air: request has been written")
+		return errors.New("air: response has already been written")
 	}
 
 	if r.Status < http.StatusMultipleChoices ||
@@ -597,7 +597,7 @@ func (r *Response) Push(target string, pos *http.PushOptions) error {
 // 6455.
 func (r *Response) WebSocket() (*WebSocket, error) {
 	if r.Written {
-		return nil, errors.New("air: request has been written")
+		return nil, errors.New("air: response has already been written")
 	}
 
 	r.Status = http.StatusSwitchingProtocols
@@ -683,7 +683,7 @@ func (r *Response) WebSocket() (*WebSocket, error) {
 // "grpc" or "grpcs".
 func (r *Response) ProxyPass(target string, rp *ReverseProxy) error {
 	if r.Written {
-		return errors.New("air: request has been written")
+		return errors.New("air: response has already been written")
 	}
 
 	if rp == nil {
