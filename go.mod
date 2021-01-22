@@ -10,17 +10,16 @@ require (
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.0
+	github.com/mitchellh/mapstructure v1.4.1
 	github.com/pelletier/go-toml v1.8.1
-	github.com/stretchr/testify v1.6.1
-	github.com/tdewolff/minify/v2 v2.9.10
-	github.com/tdewolff/parse/v2 v2.5.6 // indirect
-	github.com/vmihailenco/msgpack/v5 v5.1.0
-	golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9
-	golang.org/x/net v0.0.0-20201209123823-ac852fbbde11
-	golang.org/x/sys v0.0.0-20201207223542-d4d67f95c62d // indirect
-	golang.org/x/text v0.3.4
+	github.com/stretchr/testify v1.7.0
+	github.com/tdewolff/minify/v2 v2.9.11
+	github.com/vmihailenco/msgpack/v5 v5.1.4
+	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
+	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
+	golang.org/x/text v0.3.5
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
