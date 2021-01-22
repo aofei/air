@@ -2,6 +2,7 @@ package air
 
 import (
 	"io/ioutil"
+	"net"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -38,6 +39,14 @@ type WebSocket struct {
 
 	conn     *websocket.Conn
 	listened bool
+}
+
+// NetConn returns the underlying `net.Conn` of the ws.
+//
+// ATTENTION: You should never call this method unless you know what you are
+// doing.
+func (ws *WebSocket) NetConn() net.Conn {
+	return ws.conn.UnderlyingConn()
 }
 
 // SetMaxMessageBytes sets the maximum number of bytes allowed for the ws to

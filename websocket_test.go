@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"testing"
 	"time"
@@ -11,6 +12,49 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestWebSocketNetConn(t *testing.T) {
+	a := New()
+	a.Address = "localhost:0"
+
+	buf := bytes.Buffer{}
+	a.GET("/", func(req *Request, res *Response) error {
+		ws, err := res.WebSocket()
+		if err != nil {
+			return err
+		}
+
+		if _, err := io.Copy(&buf, ws.NetConn()); err != nil {
+			return err
+		}
+
+		return ws.Close()
+	})
+
+	hijackOSStdout()
+
+	go a.Serve()
+	defer a.Close()
+	time.Sleep(100 * time.Millisecond)
+
+	revertOSStdout()
+
+	conn, _, err := websocket.DefaultDialer.Dial(
+		"ws://"+a.Addresses()[0],
+		nil,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+	defer conn.Close()
+
+	time.Sleep(100 * time.Millisecond)
+
+	n, err := conn.UnderlyingConn().Write([]byte("Foobar"))
+	assert.NoError(t, err)
+	assert.Equal(t, 6, n)
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, "Foobar", buf.String())
+}
 
 func TestWebSocketSetMaxMessageBytes(t *testing.T) {
 	a := New()
