@@ -1,7 +1,6 @@
 package air
 
 import (
-	"net/url"
 	ppath "path"
 	"strings"
 	"sync"
@@ -50,9 +49,6 @@ func (r *router) register(method, path string, h Handler, gases ...Gas) {
 	hasTrailingSlash := path[len(path)-1] == '/'
 
 	path = ppath.Clean(path)
-	path = url.PathEscape(path)
-	path = strings.ReplaceAll(path, "%2F", "/")
-	path = strings.ReplaceAll(path, "%2A", "*")
 	if hasTrailingSlash && path != "/" {
 		path += "/"
 	}
