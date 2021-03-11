@@ -419,6 +419,11 @@ type Air struct {
 	// The HTML template functions described in
 	// https://pkg.go.dev/text/template#hdr-Functions and the following are
 	// always available:
+	//  * locstr
+	//      Returns a localized string for its argument. It works exactly
+	//      the same as the `Request.LocalizedString`
+	//  * str2html
+	//      Returns a `template.HTML` for its argument.
 	//  * strlen
 	//      Returns the number of characters of its argument.
 	//  * substr
@@ -429,9 +434,6 @@ type Air struct {
 	//  * timefmt
 	//      Returns a textual representation of its first argument for the
 	//      time layout (the second argument).
-	//  * locstr
-	//      Returns a localized string for its argument. It works exactly
-	//      the same as the `Request.LocalizedString`
 	//
 	// Default value: nil
 	RendererTemplateFuncMap template.FuncMap `mapstructure:"-"`

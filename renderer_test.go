@@ -1,6 +1,7 @@
 package air
 
 import (
+	"html/template"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -78,6 +79,14 @@ func TestRendererRender(t *testing.T) {
 	assert.NoError(t, r.render(ioutil.Discard, "test.html", nil, locstr))
 }
 
+func TestLocstr(t *testing.T) {
+	assert.Equal(t, "Foobar", locstr("Foobar"))
+}
+
+func TestStr2html(t *testing.T) {
+	assert.Equal(t, template.HTML("Foobar"), str2html("Foobar"))
+}
+
 func TestStrlen(t *testing.T) {
 	assert.Equal(t, 6, strlen("Foobar"))
 	assert.Equal(t, 2, strlen("测试"))
@@ -94,8 +103,4 @@ func TestTimefmt(t *testing.T) {
 		"1970-01-01T00:00:00Z",
 		timefmt(time.Unix(0, 0).UTC(), time.RFC3339),
 	)
-}
-
-func TestLocstr(t *testing.T) {
-	assert.Equal(t, "Foobar", locstr("Foobar"))
 }

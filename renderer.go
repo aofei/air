@@ -75,10 +75,11 @@ func (r *renderer) load() {
 			r.a.RendererTemplateRightDelim,
 		).
 		Funcs(template.FuncMap{
-			"strlen":  strlen,
-			"substr":  substr,
-			"timefmt": timefmt,
-			"locstr":  locstr,
+			"locstr":   locstr,
+			"str2html": str2html,
+			"strlen":   strlen,
+			"substr":   substr,
+			"timefmt":  timefmt,
 		}).
 		Funcs(r.a.RendererTemplateFuncMap)
 	if r.loadError = filepath.Walk(
@@ -142,6 +143,16 @@ func (r *renderer) render(
 	}).Execute(w, v)
 }
 
+// locstr returns the key without any changes.
+func locstr(key string) string {
+	return key
+}
+
+// str2html returns a `template.HTML` for the s.
+func str2html(s string) template.HTML {
+	return template.HTML(s)
+}
+
 // strlen returns the number of characters of the s.
 func strlen(s string) int {
 	return len([]rune(s))
@@ -157,9 +168,4 @@ func substr(s string, i, j int) string {
 // timefmt returns a textual representation of the t formatted for the layout.
 func timefmt(t time.Time, layout string) string {
 	return t.Format(layout)
-}
-
-// locstr returns the key without any changes.
-func locstr(key string) string {
-	return key
 }
